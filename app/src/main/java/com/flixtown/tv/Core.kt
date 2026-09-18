@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.ConcurrentHashMap
 
 const val PANEL_BASE = "https://panelsandapps.com/panels/flixtown2027"
 const val PANEL_CONFIG_URL = "$PANEL_BASE/api/config.php"
@@ -28,7 +29,8 @@ data class AppConfig(
     val announcement: String = "",
     val logo_url: String = "",
     val intro_video_url: String = "",
-    val maintenance_mode: Boolean = false
+    val maintenance_mode: Boolean = false,
+    val tmdb_image_base: String = "https://image.tmdb.org/t/p/w185"
 )
 
 data class Credentials(val username: String, val password: String)
@@ -57,19 +59,27 @@ data class Episode(
     val plot: String = ""
 )
 
+data class CastMember(
+    val name: String,
+    val image: String? = null,
+    val character: String = ""
+)
+
 data class SeriesDetails(
     val item: ContentItem,
     val episodes: Map<Int, List<Episode>>,
     val plot: String,
     val backdrop: String?,
-    val trailer: String? = null
+    val trailer: String? = null,
+    val cast: List<CastMember> = emptyList()
 )
 
 data class MovieDetails(
     val item: ContentItem,
     val plot: String,
     val backdrop: String?,
-    val trailer: String?
+    val trailer: String?,
+    val cast: List<CastMember> = emptyList()
 )
 
 data class PlayRequest(
@@ -166,6 +176,29 @@ suspend fun loadCategories(config: AppConfig, credentials: Credentials, type: Co
     return Gson().fromJson(Api.arrayFrom(Api.apiUrl(config, credentials, action)), Array<Category>::class.java).toList()
 }
 
+object CatalogCache {
+    private val categories = ConcurrentHashMap<ContentType, List<Category>>()
+    private val content = ConcurrentHashMap<String, List<ContentItem>>()
+    private val movies = ConcurrentHashMap<Int, MovieDetails>()
+    private val series = ConcurrentHashMap<Int, SeriesDetails>()
+
+    suspend fun categories(config: AppConfig, credentials: Credentials, type: ContentType): List<Category> =
+        categories[type] ?: loadCategories(config, credentials, type).also { categories[type] = it }
+
+    suspend fun content(config: AppConfig, credentials: Credentials, type: ContentType, category: String? = null): List<ContentItem> {
+        val key = "${type.name}:${category.orEmpty()}"
+        return content[key] ?: loadContent(config, credentials, type, category).also { content[key] = it }
+    }
+
+    suspend fun movieDetails(config: AppConfig, credentials: Credentials, item: ContentItem): MovieDetails =
+        movies[item.id] ?: loadMovieDetails(config, credentials, item).also { movies[item.id] = it }
+
+    suspend fun seriesDetails(config: AppConfig, credentials: Credentials, item: ContentItem): SeriesDetails =
+        series[item.id] ?: loadSeriesDetails(config, credentials, item).also { series[item.id] = it }
+
+    fun clear() { categories.clear(); content.clear(); movies.clear(); series.clear() }
+}
+
 suspend fun loadContent(config: AppConfig, credentials: Credentials, type: ContentType, category: String? = null): List<ContentItem> {
     val action = if (type == ContentType.MOVIE) "get_vod_streams" else "get_series"
     val extra = if (category.isNullOrBlank()) emptyMap() else mapOf("category_id" to category)
@@ -215,7 +248,7 @@ suspend fun loadSeriesDetails(config: AppConfig, credentials: Credentials, item:
         }
         grouped[season] = episodes
     }
-    return SeriesDetails(item, grouped, plot, backdrop, trailer)
+    return SeriesDetails(item, grouped, plot, backdrop, trailer, parseCast(info))
 }
 
 suspend fun loadMovieDetails(config: AppConfig, credentials: Credentials, item: ContentItem): MovieDetails {
@@ -228,7 +261,33 @@ suspend fun loadMovieDetails(config: AppConfig, credentials: Credentials, item: 
         ?: info.stringOrNull("trailer")
         ?: movieData.stringOrNull("youtube_trailer")
         ?: movieData.stringOrNull("trailer")
-    return MovieDetails(item, plot, backdrop, trailer)
+    return MovieDetails(item, plot, backdrop, trailer, parseCast(info))
+}
+
+private fun parseCast(info: JsonObject): List<CastMember> {
+    val candidates = listOf("actors", "cast")
+    for (key in candidates) {
+        val value = info.get(key) ?: continue
+        if (value.isJsonArray) {
+            val parsed = value.asJsonArray.mapNotNull { element ->
+                if (element.isJsonObject) {
+                    val actor = element.asJsonObject
+                    val name = actor.stringOrNull("name") ?: actor.stringOrNull("actor") ?: return@mapNotNull null
+                    CastMember(name, normalizeCastImage(actor.stringOrNull("profile_path") ?: actor.stringOrNull("image") ?: actor.stringOrNull("photo")), actor.stringOrNull("character").orEmpty())
+                } else element.takeUnless { it.isJsonNull }?.asString?.takeIf { it.isNotBlank() }?.let { CastMember(it) }
+            }
+            if (parsed.isNotEmpty()) return parsed.take(20)
+        }
+        if (value.isJsonPrimitive) {
+            val parsed = value.asString.split(',').mapNotNull { it.trim().takeIf(String::isNotBlank)?.let(::CastMember) }
+            if (parsed.isNotEmpty()) return parsed.take(20)
+        }
+    }
+    return emptyList()
+}
+
+private fun normalizeCastImage(value: String?): String? = value?.takeIf { it.isNotBlank() }?.let {
+    if (it.startsWith("http://") || it.startsWith("https://")) it else "https://image.tmdb.org/t/p/w185/${it.trimStart('/')}"
 }
 
 fun streamUrl(config: AppConfig, credentials: Credentials, type: ContentType, id: Int, extension: String): String {

@@ -4,4 +4,4 @@ Fresh Android TV client for Movies and Series. The interface is designed for det
 
 ## Build
 
-Open the Actions tab, choose **Build Flix Town APK**, and download the `FlixTown-TV-v1.0.0` artifact after the green check mark appears.
+Open the Actions tab, choose **Build Flix Town APK**, and download the latest Flix Town TV artifact after the green check mark appears.

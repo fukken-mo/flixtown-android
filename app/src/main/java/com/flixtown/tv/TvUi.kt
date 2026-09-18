@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -133,8 +134,8 @@ fun HomeScreen(config: AppConfig, credentials: Credentials, account: AccountInfo
     val rowState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
-        val a = async { runCatching { loadContent(config, credentials, ContentType.MOVIE) }.getOrDefault(emptyList()) }
-        val b = async { runCatching { loadContent(config, credentials, ContentType.SERIES) }.getOrDefault(emptyList()) }
+        val a = async { runCatching { CatalogCache.content(config, credentials, ContentType.MOVIE) }.getOrDefault(emptyList()) }
+        val b = async { runCatching { CatalogCache.content(config, credentials, ContentType.SERIES) }.getOrDefault(emptyList()) }
         movies = a.await(); series = b.await(); loading = false
         focus.requestFocus()
     }
@@ -213,8 +214,8 @@ fun CatalogScreen(config: AppConfig, credentials: Credentials, type: ContentType
     val sorts = listOf("Newest", "A-Z", "Rating")
 
     fun reorder() { shown = when (sort) { 1 -> items.sortedBy { it.title.lowercase() }; 2 -> items.sortedByDescending { it.rating.toDoubleOrNull() ?: 0.0 }; else -> items }.toList(); index = 0 }
-    LaunchedEffect(Unit) { categories = listOf(Category("", "All")) + runCatching { loadCategories(config, credentials, type) }.getOrDefault(emptyList()); items = runCatching { loadContent(config, credentials, type) }.getOrDefault(emptyList()); reorder(); focus.requestFocus() }
-    LaunchedEffect(category) { categoryState.animateScrollToItem(category); val id = categories.getOrNull(category)?.category_id; items = runCatching { loadContent(config, credentials, type, id) }.getOrDefault(emptyList()); reorder() }
+    LaunchedEffect(Unit) { categories = listOf(Category("", "All")) + runCatching { CatalogCache.categories(config, credentials, type) }.getOrDefault(emptyList()); focus.requestFocus() }
+    LaunchedEffect(category) { categoryState.animateScrollToItem(category); val id = categories.getOrNull(category)?.category_id; items = runCatching { CatalogCache.content(config, credentials, type, id) }.getOrDefault(emptyList()); reorder() }
     LaunchedEffect(index) { if (zone == 2 && shown.isNotEmpty()) gridState.animateScrollToItem(index) }
 
     Box(Modifier.fillMaxSize().focusRequester(focus).focusable().onPreviewKeyEvent { e ->
@@ -259,40 +260,114 @@ private fun Poster(item: ContentItem, selected: Boolean, width: androidx.compose
 
 @Composable
 fun DetailsScreen(config: AppConfig, credentials: Credentials, item: ContentItem, onPlay: (PlayRequest) -> Unit, onBack: () -> Unit) {
-    val focus = remember { FocusRequester() }; var plot by remember { mutableStateOf(item.plot) }; var backdrop by remember { mutableStateOf(item.backdrop) }
-    var episodes by remember { mutableStateOf<List<Episode>>(emptyList()) }; var selected by remember { mutableIntStateOf(0) }; var zone by remember { mutableIntStateOf(0) }
-    val list = rememberLazyListState()
+    val context = LocalContext.current
+    val focus = remember { FocusRequester() }
+    var plot by remember { mutableStateOf(item.plot) }
+    var backdrop by remember { mutableStateOf(item.backdrop) }
+    var trailer by remember { mutableStateOf<String?>(null) }
+    var cast by remember { mutableStateOf<List<CastMember>>(emptyList()) }
+    var episodes by remember { mutableStateOf<List<Episode>>(emptyList()) }
+    var zone by remember { mutableIntStateOf(0) } // 0 actions, 1 cast, 2 episodes
+    var action by remember { mutableIntStateOf(0) }
+    var castIndex by remember { mutableIntStateOf(0) }
+    var episodeIndex by remember { mutableIntStateOf(0) }
+    val castState = rememberLazyListState()
+    val episodeState = rememberLazyListState()
+
+    fun openTrailer() {
+        val raw = trailer?.trim().orEmpty()
+        if (raw.isBlank()) return
+        val url = when {
+            raw.startsWith("http://") || raw.startsWith("https://") -> raw
+            else -> "https://www.youtube.com/watch?v=$raw"
+        }
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+    }
+
     LaunchedEffect(item.id) {
-        if (item.type == ContentType.MOVIE) runCatching { loadMovieDetails(config, credentials, item) }.onSuccess { plot = it.plot; backdrop = it.backdrop }
-        else runCatching { loadSeriesDetails(config, credentials, item) }.onSuccess { details -> plot = details.plot; backdrop = details.backdrop; episodes = details.episodes.values.flatten() }
+        if (item.type == ContentType.MOVIE) {
+            runCatching { CatalogCache.movieDetails(config, credentials, item) }.onSuccess {
+                plot = it.plot; backdrop = it.backdrop; trailer = it.trailer; cast = it.cast
+            }
+        } else {
+            runCatching { CatalogCache.seriesDetails(config, credentials, item) }.onSuccess {
+                plot = it.plot; backdrop = it.backdrop; trailer = it.trailer; cast = it.cast
+                episodes = it.episodes.values.flatten()
+            }
+        }
         focus.requestFocus()
     }
-    LaunchedEffect(selected) { if (zone == 1 && episodes.isNotEmpty()) list.animateScrollToItem(selected) }
+    LaunchedEffect(castIndex, zone) { if (zone == 1 && cast.isNotEmpty()) castState.animateScrollToItem(castIndex) }
+    LaunchedEffect(episodeIndex, zone) { if (zone == 2 && episodes.isNotEmpty()) episodeState.animateScrollToItem(episodeIndex) }
+
     Box(Modifier.fillMaxSize().focusRequester(focus).focusable().onPreviewKeyEvent { e ->
         if (e.type != KeyEventType.KeyDown) false else when (e.key) {
-            Key.DirectionDown -> { if (episodes.isNotEmpty()) zone = 1; true }
-            Key.DirectionUp -> { if (zone == 1) zone = 0; true }
-            Key.DirectionLeft -> { if (zone == 1) selected = (selected - 1).coerceAtLeast(0); true }
-            Key.DirectionRight -> { if (zone == 1) selected = (selected + 1).coerceAtMost(episodes.lastIndex); true }
-            Key.Enter, Key.DirectionCenter -> { if (zone == 0 && item.type == ContentType.MOVIE) onPlay(PlayRequest(streamUrl(config, credentials, item.type, item.id, item.extension), item.title, item.poster, item, "movie-${item.id}", item.type, item.id, item.extension)) else episodes.getOrNull(selected)?.let { ep -> onPlay(PlayRequest(streamUrl(config, credentials, ContentType.SERIES, ep.id, ep.extension), "${item.title} - ${ep.title}", ep.poster ?: item.poster, item, "series-${item.id}-${ep.id}", ContentType.SERIES, ep.id, ep.extension)) }; true }
+            Key.DirectionDown -> {
+                zone = when (zone) { 0 -> if (cast.isNotEmpty()) 1 else if (episodes.isNotEmpty()) 2 else 0; 1 -> if (episodes.isNotEmpty()) 2 else 1; else -> 2 }
+                true
+            }
+            Key.DirectionUp -> { zone = when (zone) { 2 -> if (cast.isNotEmpty()) 1 else 0; 1 -> 0; else -> 0 }; true }
+            Key.DirectionLeft -> {
+                when (zone) { 0 -> action = (action - 1).coerceAtLeast(0); 1 -> castIndex = (castIndex - 1).coerceAtLeast(0); 2 -> episodeIndex = (episodeIndex - 1).coerceAtLeast(0) }
+                true
+            }
+            Key.DirectionRight -> {
+                when (zone) { 0 -> action = (action + 1).coerceAtMost(if (trailer.isNullOrBlank()) 0 else 1); 1 -> castIndex = (castIndex + 1).coerceAtMost(cast.lastIndex); 2 -> episodeIndex = (episodeIndex + 1).coerceAtMost(episodes.lastIndex) }
+                true
+            }
+            Key.Enter, Key.DirectionCenter -> {
+                when (zone) {
+                    0 -> if (action == 1) openTrailer() else if (item.type == ContentType.MOVIE) {
+                        onPlay(PlayRequest(streamUrl(config, credentials, item.type, item.id, item.extension), item.title, item.poster, item, "movie-${item.id}", item.type, item.id, item.extension))
+                    } else if (episodes.isNotEmpty()) zone = 2
+                    2 -> episodes.getOrNull(episodeIndex)?.let { ep -> onPlay(PlayRequest(streamUrl(config, credentials, ContentType.SERIES, ep.id, ep.extension), "${item.title} - ${ep.title}", ep.poster ?: item.poster, item, "series-${item.id}-${ep.id}", ContentType.SERIES, ep.id, ep.extension)) }
+                }
+                true
+            }
             Key.Back -> { onBack(); true }
             else -> false
         }
     }) {
         AsyncImage(backdrop ?: item.poster, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = .48f)
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(FlixBlack, FlixBlack.copy(.76f), Color.Transparent))))
-        Column(Modifier.fillMaxSize().padding(48.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 34.dp)) {
             Text("‹  BACK", color = FlixMuted, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            Spacer(Modifier.height(34.dp)); Text(item.title, fontSize = 42.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(680.dp), maxLines = 2)
+            Spacer(Modifier.height(20.dp)); Text(item.title, fontSize = 38.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(680.dp), maxLines = 2)
             if (item.rating.isNotBlank()) Text("★ ${item.rating}", color = Color(0xFFFFD166), fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
-            Text(plot.ifBlank { "No description available." }, color = Color.LightGray, fontSize = 14.sp, lineHeight = 21.sp, maxLines = 5, modifier = Modifier.width(650.dp).padding(vertical = 18.dp))
-            val playFocused = zone == 0
-            Box(Modifier.clip(RoundedCornerShape(9.dp)).background(if (playFocused) FlixRed else Color.White).border(if (playFocused) 3.dp else 0.dp, Color.White, RoundedCornerShape(9.dp)).padding(horizontal = 28.dp, vertical = 12.dp)) { Text(if (item.type == ContentType.MOVIE) "▶  PLAY" else "SELECT EPISODE", color = if (playFocused) Color.White else Color.Black, fontWeight = FontWeight.Black) }
-            if (episodes.isNotEmpty()) { Spacer(Modifier.height(24.dp)); Text("Episodes", fontSize = 20.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(10.dp)); LazyRow(state = list, horizontalArrangement = Arrangement.spacedBy(12.dp)) { itemsIndexed(episodes) { i, ep ->
-                val chosen = zone == 1 && selected == i
+            Text(plot.ifBlank { "No description available." }, color = Color.LightGray, fontSize = 14.sp, lineHeight = 20.sp, maxLines = 4, modifier = Modifier.width(650.dp).padding(vertical = 14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                DetailAction(if (item.type == ContentType.MOVIE) "▶  PLAY" else "EPISODES", zone == 0 && action == 0)
+                if (!trailer.isNullOrBlank()) DetailAction("▶  TRAILER", zone == 0 && action == 1)
+            }
+            if (cast.isNotEmpty()) {
+                Spacer(Modifier.height(18.dp)); Text("Cast", fontSize = 18.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(8.dp))
+                LazyRow(state = castState, horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.height(112.dp)) {
+                    itemsIndexed(cast) { i, person -> ActorCard(person, zone == 1 && castIndex == i) }
+                }
+            }
+            if (episodes.isNotEmpty()) { Spacer(Modifier.height(12.dp)); Text("Episodes", fontSize = 18.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(8.dp)); LazyRow(state = episodeState, horizontalArrangement = Arrangement.spacedBy(12.dp)) { itemsIndexed(episodes) { i, ep ->
+                val chosen = zone == 2 && episodeIndex == i
                 Column(Modifier.width(190.dp).clip(RoundedCornerShape(9.dp)).background(if (chosen) FlixRed else FlixPanel).border(if (chosen) 3.dp else 1.dp, if (chosen) Color.White else Color.DarkGray, RoundedCornerShape(9.dp)).padding(12.dp)) { Text("S${ep.season} E${ep.episodeNumber}", fontSize = 11.sp, fontWeight = FontWeight.Black); Text(ep.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp)) }
             } } }
         }
+    }
+}
+
+@Composable
+private fun DetailAction(label: String, focused: Boolean) {
+    Box(Modifier.clip(RoundedCornerShape(9.dp)).background(if (focused) FlixRed else Color.White).border(if (focused) 3.dp else 0.dp, Color.White, RoundedCornerShape(9.dp)).padding(horizontal = 27.dp, vertical = 11.dp)) {
+        Text(label, color = if (focused) Color.White else Color.Black, fontWeight = FontWeight.Black, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun ActorCard(person: CastMember, focused: Boolean) {
+    Column(Modifier.width(82.dp).scale(if (focused) 1.07f else 1f), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(66.dp).clip(CircleShape).background(Color(0xFF30323A)).border(if (focused) 4.dp else 1.dp, if (focused) FlixRed else Color.DarkGray, CircleShape), contentAlignment = Alignment.Center) {
+            if (!person.image.isNullOrBlank()) AsyncImage(person.image, person.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            else Text(person.name.take(1).uppercase(), fontSize = 24.sp, fontWeight = FontWeight.Black, color = FlixMuted)
+        }
+        Text(person.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 10.sp, fontWeight = if (focused) FontWeight.Black else FontWeight.Normal, modifier = Modifier.padding(top = 5.dp))
     }
 }
 

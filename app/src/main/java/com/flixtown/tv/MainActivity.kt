@@ -23,11 +23,22 @@ val FlixMuted = Color(0xFF9297A4)
 
 enum class Route { LOGIN, HOME, MOVIES, SERIES, DETAILS, PLAYER, RENEW }
 
+private object LaunchState { var introShown = false }
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme(primary = FlixRed, background = FlixBlack)) {
+            MaterialTheme(colorScheme = darkColorScheme(
+                primary = FlixRed,
+                onPrimary = Color.White,
+                background = FlixBlack,
+                onBackground = Color.White,
+                surface = FlixPanel,
+                onSurface = Color.White,
+                surfaceVariant = Color(0xFF24262D),
+                onSurfaceVariant = Color.White
+            )) {
                 Box(Modifier.fillMaxSize().background(FlixBlack)) { FlixTownApp() }
             }
         }
@@ -46,6 +57,7 @@ private fun FlixTownApp() {
     var request by remember { mutableStateOf<PlayRequest?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var checking by remember { mutableStateOf(credentials != null) }
+    var introPending by remember { mutableStateOf(!LaunchState.introShown) }
 
     fun open(item: ContentItem) { selected = item; route = Route.DETAILS }
     fun play(item: PlayRequest) { request = item; route = Route.PLAYER }
@@ -77,6 +89,10 @@ private fun FlixTownApp() {
 
     when {
         checking && config == null -> SplashScreen()
+        introPending && config != null -> IntroScreen(config!!.intro_video_url) {
+            LaunchState.introShown = true
+            introPending = false
+        }
         route == Route.LOGIN -> LoginScreen(config, message) { user, pass ->
             scope.launch {
                 message = null
