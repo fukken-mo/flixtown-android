@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.FlixTown" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:colorAccent">#E50914</item>
+        <item name="android:windowBackground">#050507</item>
+    </style>
+</resources>
