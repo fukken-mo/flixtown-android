@@ -1,0 +1,28 @@
+name: Bootstrap fresh source
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    if: ${{ hashFiles('FlixTownFreshSource.zip') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack fresh project
+        run: |
+          unzip -o FlixTownFreshSource.zip
+          rm FlixTownFreshSource.zip
+          chmod +x gradlew
+      - name: Publish project files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Create fresh Flix Town TV project"
+          git push
