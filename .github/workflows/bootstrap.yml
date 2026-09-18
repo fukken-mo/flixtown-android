@@ -21,6 +21,7 @@ jobs:
           fi
           unzip -o FlixTownFreshSource.zip
           rm FlixTownFreshSource.zip
+          rm -f .github/workflows/build-apk.yml
           chmod +x gradlew
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
