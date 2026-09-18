@@ -16,15 +16,14 @@ jobs:
       - name: Unpack and publish fresh project
         run: |
           if [ ! -f FlixTownFreshSource.zip ]; then
-            echo "Source already unpacked"
+            echo "No source update package"
             exit 0
           fi
           unzip -o FlixTownFreshSource.zip
           rm FlixTownFreshSource.zip
-          rm -f .github/workflows/build-apk.yml
           chmod +x gradlew
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Create fresh Flix Town TV project"
+          git commit -m "Improve TV performance and remote navigation"
           git push
