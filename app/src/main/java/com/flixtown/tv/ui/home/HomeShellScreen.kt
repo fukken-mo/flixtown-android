@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,11 +37,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.foundation.ExperimentalTvFoundationApi
-import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.TvLazyRow
-import androidx.tv.foundation.lazy.list.items
-import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.AccountStatusStore
@@ -85,7 +85,6 @@ private val POSTER_WIDTH = 168.dp
  * root, and Android TV convention is that Back from a root screen
  * backgrounds/exits rather than doing something custom.
  */
-@OptIn(ExperimentalTvFoundationApi::class)
 @Composable
 fun HomeShellScreen(accountStatusStore: AccountStatusStore) {
     var selected by rememberSaveable { mutableStateOf(NavSection.Home) }
@@ -201,7 +200,6 @@ private fun ExpirationLabel(expiresAtEpochSeconds: Long?) {
     )
 }
 
-@OptIn(ExperimentalTvFoundationApi::class)
 @Composable
 private fun HomeBody(section: NavSection) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -217,10 +215,9 @@ private fun HomeBody(section: NavSection) {
     }
 }
 
-@OptIn(ExperimentalTvFoundationApi::class)
 @Composable
 private fun HomeRows() {
-    TvLazyColumn(
+    LazyColumn(
         contentPadding = PaddingValues(start = 40.dp, end = 40.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(28.dp)
     ) {
@@ -230,14 +227,13 @@ private fun HomeRows() {
     }
 }
 
-@OptIn(ExperimentalTvFoundationApi::class)
 @Composable
 private fun PosterRow(title: String, placeholderCount: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(text = title, style = MaterialTheme.typography.titleMedium, color = FtTextPrimary)
 
-        val listState = rememberTvLazyListState()
-        TvLazyRow(
+        val listState = rememberLazyListState()
+        LazyRow(
             state = listState,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
