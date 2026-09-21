@@ -1,6 +1,8 @@
 package com.flixtown.tv.ui.home
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,19 +17,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,8 +58,10 @@ import com.flixtown.tv.ui.components.PosterSkeletonCard
 import com.flixtown.tv.ui.details.MovieDetailsScreen
 import com.flixtown.tv.ui.details.SeriesDetailsScreen
 import com.flixtown.tv.ui.nav.ContentScreen
+import com.flixtown.tv.ui.nav.LocalRailRevealFocusRequester
 import com.flixtown.tv.ui.nav.NavSection
 import com.flixtown.tv.ui.nav.sectionFor
+import com.flixtown.tv.ui.player.PlayerScreen
 import com.flixtown.tv.ui.search.SearchScreen
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtBackground
@@ -61,8 +71,10 @@ import com.flixtown.tv.ui.theme.FtTextSecondary
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 private val NAV_RAIL_WIDTH = 148.dp
+private val NAV_RAIL_COLLAPSED_WIDTH = 0.dp
 
 /**
  * The authenticated app shell: a slim original left nav rail plus a
@@ -88,11 +100,24 @@ fun HomeShellScreen(graph: AppGraph) {
     val backStack = remember { mutableStateListOf<ContentScreen>(ContentScreen.Home) }
     val saveableStateHolder = rememberSaveableStateHolder()
     val current = backStack.last()
+    val coroutineScope = rememberCoroutineScope()
 
     val firstNavFocus = remember { FocusRequester() }
+    val railRevealFocusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { firstNavFocus.requestFocus() }
 
-    BackHandler(enabled = backStack.size > 1) {
+    // The rail collapses whenever focus leaves it (the user is browsing
+    // content) and expands the moment it — or one of its items via
+    // railRevealFocusRequester — regains focus. Driven purely by focus state
+    // so it works the same on Home's rows as on the Movies/Series grids.
+    var railHasFocus by remember { mutableStateOf(true) }
+    val railWidth by animateDpAsState(
+        targetValue = if (railHasFocus) NAV_RAIL_WIDTH else NAV_RAIL_COLLAPSED_WIDTH,
+        animationSpec = tween(durationMillis = 220),
+        label = "railWidth"
+    )
+
+    BackHandler(enabled = backStack.size > 1 && current !is ContentScreen.Player) {
         backStack.removeAt(backStack.lastIndex)
     }
 
@@ -103,6 +128,54 @@ fun HomeShellScreen(graph: AppGraph) {
     fun popToRoot(screen: ContentScreen) {
         backStack.clear()
         backStack.add(screen)
+    }
+
+    fun exitPlayer() {
+        if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+    }
+
+    fun playContinueWatching(entry: ContinueWatchingEntry) {
+        val snapshot = (catalogState as? CatalogUiState.Loaded)?.snapshot ?: return
+        if (entry.mediaType == "movie") {
+            val movie = snapshot.movies.firstOrNull { it.streamId == entry.streamId } ?: return
+            val url = graph.catalogRepository.buildMovieStreamUrl(movie) ?: return
+            push(
+                ContentScreen.Player(
+                    contentId = movie.streamId,
+                    mediaType = "movie",
+                    title = movie.name,
+                    posterUrl = movie.posterUrl,
+                    streamUrl = url,
+                    resumePositionMs = entry.positionMs
+                )
+            )
+        } else {
+            val series = snapshot.series.firstOrNull { it.seriesId == entry.seriesId } ?: return
+            coroutineScope.launch {
+                val details = graph.catalogRepository.getSeriesDetails(series)
+                val episode = details?.seasons?.firstOrNull { it.seasonNumber == entry.season }
+                    ?.episodes?.firstOrNull { it.episodeNumber == entry.episode } ?: return@launch
+                val url = graph.catalogRepository.buildEpisodeStreamUrl(episode) ?: return@launch
+                push(
+                    ContentScreen.Player(
+                        contentId = episode.id.toIntOrNull() ?: entry.streamId,
+                        mediaType = "episode",
+                        title = entry.title,
+                        posterUrl = entry.posterUrl,
+                        streamUrl = url,
+                        seriesId = series.seriesId,
+                        season = entry.season,
+                        episodeNumber = entry.episode,
+                        resumePositionMs = entry.positionMs
+                    )
+                )
+            }
+        }
+    }
+
+    if (current is ContentScreen.Player) {
+        PlayerScreen(graph = graph, screen = current, onExit = { exitPlayer() })
+        return
     }
 
     Row(
@@ -121,70 +194,81 @@ fun HomeShellScreen(graph: AppGraph) {
                     NavSection.Settings -> popToRoot(ContentScreen.Settings)
                 }
             },
-            firstItemFocusRequester = firstNavFocus
+            firstItemFocusRequester = firstNavFocus,
+            revealFocusRequester = railRevealFocusRequester,
+            modifier = Modifier
+                .width(railWidth)
+                .fillMaxHeight()
+                .onFocusChanged { state -> railHasFocus = state.hasFocus }
         )
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-        ) {
-            when (val screen = current) {
-                is ContentScreen.Home -> saveableStateHolder.SaveableStateProvider("home") {
-                    Column {
-                        HomeHeader(sectionLabel = "Home", accountStatusStore = graph.accountStatusStore)
-                        HomeRows(
+        CompositionLocalProvider(LocalRailRevealFocusRequester provides railRevealFocusRequester) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            ) {
+                when (val screen = current) {
+                    is ContentScreen.Home -> saveableStateHolder.SaveableStateProvider("home") {
+                        Column {
+                            HomeHeader(sectionLabel = "Home", accountStatusStore = graph.accountStatusStore)
+                            HomeRows(
+                                catalogState = catalogState,
+                                continueWatching = graph.continueWatchingStore.getAll(),
+                                onRetry = { catalogViewModel.retry() },
+                                onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) },
+                                onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) },
+                                onContinueWatchingClick = { playContinueWatching(it) }
+                            )
+                        }
+                    }
+                    is ContentScreen.Movies -> saveableStateHolder.SaveableStateProvider("movies") {
+                        MoviesScreen(
                             catalogState = catalogState,
-                            continueWatching = graph.continueWatchingStore.getAll(),
-                            onRetry = { catalogViewModel.retry() },
+                            initialCategoryId = screen.categoryId,
+                            onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) },
+                            onSearchClick = { push(ContentScreen.Search) },
+                            onRetry = { catalogViewModel.retry() }
+                        )
+                    }
+                    is ContentScreen.SeriesBrowse -> saveableStateHolder.SaveableStateProvider("series") {
+                        SeriesScreen(
+                            catalogState = catalogState,
+                            initialCategoryId = screen.categoryId,
+                            onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) },
+                            onSearchClick = { push(ContentScreen.Search) },
+                            onRetry = { catalogViewModel.retry() }
+                        )
+                    }
+                    is ContentScreen.MovieDetails -> MovieDetailsScreen(
+                        graph = graph,
+                        catalogState = catalogState,
+                        streamId = screen.streamId,
+                        onPlay = { push(it) }
+                    )
+                    is ContentScreen.SeriesDetails -> SeriesDetailsScreen(
+                        graph = graph,
+                        catalogState = catalogState,
+                        seriesId = screen.seriesId,
+                        onPlay = { push(it) }
+                    )
+                    is ContentScreen.Search -> saveableStateHolder.SaveableStateProvider("search") {
+                        SearchScreen(
+                            catalogState = catalogState,
                             onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) },
                             onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) }
                         )
                     }
-                }
-                is ContentScreen.Movies -> saveableStateHolder.SaveableStateProvider("movies") {
-                    MoviesScreen(
-                        catalogState = catalogState,
-                        initialCategoryId = screen.categoryId,
-                        onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) },
-                        onSearchClick = { push(ContentScreen.Search) },
-                        onRetry = { catalogViewModel.retry() }
-                    )
-                }
-                is ContentScreen.SeriesBrowse -> saveableStateHolder.SaveableStateProvider("series") {
-                    SeriesScreen(
-                        catalogState = catalogState,
-                        initialCategoryId = screen.categoryId,
-                        onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) },
-                        onSearchClick = { push(ContentScreen.Search) },
-                        onRetry = { catalogViewModel.retry() }
-                    )
-                }
-                is ContentScreen.MovieDetails -> MovieDetailsScreen(
-                    graph = graph,
-                    catalogState = catalogState,
-                    streamId = screen.streamId
-                )
-                is ContentScreen.SeriesDetails -> SeriesDetailsScreen(
-                    graph = graph,
-                    catalogState = catalogState,
-                    seriesId = screen.seriesId
-                )
-                is ContentScreen.Search -> saveableStateHolder.SaveableStateProvider("search") {
-                    SearchScreen(
-                        catalogState = catalogState,
-                        onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) },
-                        onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) }
-                    )
-                }
-                is ContentScreen.Settings -> Box(
-                    modifier = Modifier.fillMaxSize().padding(40.dp)
-                ) {
-                    Text(
-                        text = "Settings is coming in the next milestone.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = FtTextSecondary
-                    )
+                    is ContentScreen.Settings -> Box(
+                        modifier = Modifier.fillMaxSize().padding(40.dp)
+                    ) {
+                        Text(
+                            text = "Settings is coming in the next milestone.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = FtTextSecondary
+                        )
+                    }
+                    is ContentScreen.Player -> Unit // handled by the fullscreen branch above
                 }
             }
         }
@@ -195,12 +279,12 @@ fun HomeShellScreen(graph: AppGraph) {
 private fun NavRail(
     selected: NavSection,
     onSelect: (NavSection) -> Unit,
-    firstItemFocusRequester: FocusRequester
+    firstItemFocusRequester: FocusRequester,
+    revealFocusRequester: FocusRequester,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
-            .width(NAV_RAIL_WIDTH)
-            .fillMaxHeight()
+        modifier = modifier
             .background(FtSurface)
             .padding(vertical = 24.dp, horizontal = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -218,11 +302,15 @@ private fun NavRail(
         Spacer(modifier = Modifier.height(28.dp))
 
         NavSection.entries.forEachIndexed { index, section ->
+            val isSelected = section == selected
+            var itemModifier: Modifier = Modifier
+            if (index == 0) itemModifier = itemModifier.focusRequester(firstItemFocusRequester)
+            if (isSelected) itemModifier = itemModifier.focusRequester(revealFocusRequester)
             NavRailItem(
                 label = section.label,
-                isSelected = section == selected,
+                isSelected = isSelected,
                 onClick = { onSelect(section) },
-                modifier = if (index == 0) Modifier.focusRequester(firstItemFocusRequester) else Modifier
+                modifier = itemModifier
             )
         }
     }
@@ -290,7 +378,8 @@ private fun HomeRows(
     continueWatching: List<ContinueWatchingEntry>,
     onRetry: () -> Unit,
     onMovieClick: (Movie) -> Unit,
-    onSeriesClick: (Series) -> Unit
+    onSeriesClick: (Series) -> Unit,
+    onContinueWatchingClick: (ContinueWatchingEntry) -> Unit
 ) {
     when (catalogState) {
         is CatalogUiState.Loading -> HomeRowsSkeleton()
@@ -312,7 +401,9 @@ private fun HomeRows(
                     val percent = (entry.positionMs * 100 / entry.durationMs).coerceIn(0, 100)
                     "$percent% watched"
                 } else null
-                RowItem("cw-${entry.mediaType}-${entry.streamId}", entry.title, entry.posterUrl, progressLabel) {}
+                RowItem("cw-${entry.mediaType}-${entry.streamId}", entry.title, entry.posterUrl, progressLabel) {
+                    onContinueWatchingClick(entry)
+                }
             }
 
             val recentlyAdded = (snapshot.movies.map { it to it.addedEpochSeconds } + snapshot.series.map { it to it.addedEpochSeconds })
@@ -388,6 +479,7 @@ private fun HomeRowsSkeleton() {
 
 @Composable
 private fun PosterRow(title: String, items: List<RowItem>) {
+    val railFocusRequester = LocalRailRevealFocusRequester.current
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(modifier = Modifier.padding(start = 40.dp)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium, color = FtTextPrimary)
@@ -398,13 +490,21 @@ private fun PosterRow(title: String, items: List<RowItem>) {
             contentPadding = PaddingValues(horizontal = 40.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(items, key = { it.key }) { item ->
+            itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
                 PosterCard(
                     title = item.title,
                     posterUrl = item.posterUrl,
                     subtitle = item.subtitle,
                     onClick = item.onClick,
-                    modifier = Modifier.width(DEFAULT_POSTER_WIDTH)
+                    modifier = Modifier
+                        .width(DEFAULT_POSTER_WIDTH)
+                        .let { m ->
+                            if (index == 0 && railFocusRequester != null) {
+                                m.focusProperties { left = railFocusRequester }
+                            } else {
+                                m
+                            }
+                        }
                 )
             }
         }

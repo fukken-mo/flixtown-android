@@ -45,6 +45,8 @@ import com.flixtown.tv.ui.catalog.CatalogUiState
 import com.flixtown.tv.ui.components.CastRow
 import com.flixtown.tv.ui.components.FilterChip
 import com.flixtown.tv.ui.components.FlixFocusSurface
+import com.flixtown.tv.ui.components.SelectorMenu
+import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.player.SimpleVideoPlayerScreen
 import com.flixtown.tv.ui.player.openYouTubeVideo
 import com.flixtown.tv.ui.theme.FtBackground
@@ -53,7 +55,12 @@ import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 
 @Composable
-fun SeriesDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, seriesId: Int) {
+fun SeriesDetailsScreen(
+    graph: AppGraph,
+    catalogState: CatalogUiState,
+    seriesId: Int,
+    onPlay: (ContentScreen.Player) -> Unit
+) {
     val series = (catalogState as? CatalogUiState.Loaded)?.snapshot?.series?.firstOrNull { it.seriesId == seriesId }
 
     if (series == null) {
@@ -74,8 +81,34 @@ fun SeriesDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, seriesId:
     }
 
     var showTrailer by remember(seriesId) { mutableStateOf(false) }
+    var pendingEpisode by remember(seriesId) { mutableStateOf<Episode?>(null) }
     val context = LocalContext.current
     val trailerSource = TrailerResolver.resolve(series.trailer)
+
+    fun launchEpisode(episode: Episode, resumeMs: Long) {
+        val url = graph.catalogRepository.buildEpisodeStreamUrl(episode) ?: return
+        onPlay(
+            ContentScreen.Player(
+                contentId = episode.id.toIntOrNull() ?: episode.id.hashCode(),
+                mediaType = "episode",
+                title = "${series.name} – ${episode.title}",
+                posterUrl = episode.thumbnailUrl ?: series.posterUrl,
+                streamUrl = url,
+                seriesId = series.seriesId,
+                season = selectedSeasonNumber,
+                episodeNumber = episode.episodeNumber,
+                resumePositionMs = resumeMs
+            )
+        )
+    }
+
+    fun onEpisodeClick(episode: Episode) {
+        val existing = graph.continueWatchingStore.getAll().firstOrNull {
+            it.mediaType == "episode" && it.seriesId == series.seriesId &&
+                it.episode == episode.episodeNumber && it.season == selectedSeasonNumber
+        }
+        if (existing != null) pendingEpisode = episode else launchEpisode(episode, 0L)
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(FtBackground)) {
         Column(
@@ -198,7 +231,7 @@ fun SeriesDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, seriesId:
                     modifier = Modifier.padding(horizontal = 40.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    episodes.forEach { episode -> EpisodeCard(episode) }
+                    episodes.forEach { episode -> EpisodeCard(episode, onClick = { onEpisodeClick(episode) }) }
                 }
             } else if (details != null) {
                 Box(modifier = Modifier.padding(horizontal = 40.dp)) {
@@ -215,12 +248,33 @@ fun SeriesDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, seriesId:
                 SimpleVideoPlayerScreen(videoUrl = source.url, onClose = { showTrailer = false })
             }
         }
+
+        val pending = pendingEpisode
+        if (pending != null) {
+            val existing = graph.continueWatchingStore.getAll().firstOrNull {
+                it.mediaType == "episode" && it.seriesId == series.seriesId &&
+                    it.episode == pending.episodeNumber && it.season == selectedSeasonNumber
+            }
+            Box(modifier = Modifier.align(Alignment.Center)) {
+                SelectorMenu(
+                    title = "Continue Watching?",
+                    options = listOf("Resume", "Restart"),
+                    selected = "Resume",
+                    optionLabel = { it },
+                    onSelect = { choice ->
+                        launchEpisode(pending, if (choice == "Resume") existing?.positionMs ?: 0L else 0L)
+                        pendingEpisode = null
+                    },
+                    onDismiss = { pendingEpisode = null }
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun EpisodeCard(episode: Episode) {
-    FlixFocusSurface(onClick = { /* Playback ships in the next milestone. */ }, modifier = Modifier.fillMaxWidth()) {
+private fun EpisodeCard(episode: Episode, onClick: () -> Unit) {
+    FlixFocusSurface(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)

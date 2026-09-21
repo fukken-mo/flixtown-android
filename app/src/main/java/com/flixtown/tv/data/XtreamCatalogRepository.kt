@@ -138,6 +138,22 @@ class XtreamCatalogRepository(
         }
     }
 
+    /**
+     * Builds the playable Xtream VOD URL. Contains credentials in the path
+     * (standard Xtream URL shape) — callers must never log this value; use
+     * [com.flixtown.tv.core.SafeLog] if it's ever logged at all.
+     */
+    fun buildMovieStreamUrl(movie: Movie): String? {
+        val creds = try { credentialsOrThrow() } catch (e: Exception) { return null }
+        return "${creds.baseUrl}/movie/${creds.username}/${creds.password}/${movie.streamId}.${movie.containerExtension}"
+    }
+
+    /** Same credential-bearing-URL caveat as [buildMovieStreamUrl]. */
+    fun buildEpisodeStreamUrl(episode: com.flixtown.tv.data.model.Episode): String? {
+        val creds = try { credentialsOrThrow() } catch (e: Exception) { return null }
+        return "${creds.baseUrl}/series/${creds.username}/${creds.password}/${episode.id}.${episode.containerExtension}"
+    }
+
     private data class Credentials(val baseUrl: String, val username: String, val password: String)
 
     private fun credentialsOrThrow(): Credentials {
@@ -203,7 +219,8 @@ private fun VodStreamDto.toDomain(): Movie? {
         rating = rating?.toDoubleOrNull() ?: rating5Based,
         addedEpochSeconds = addedEpochSeconds?.toLongOrNull() ?: 0L,
         categoryId = categoryId,
-        year = year?.toIntOrNull() ?: extractYearFromTitle(title)
+        year = year?.toIntOrNull() ?: extractYearFromTitle(title),
+        containerExtension = containerExtension?.takeIf { it.isNotBlank() } ?: "mp4"
     )
 }
 
@@ -235,7 +252,8 @@ private fun EpisodeDto.toDomain(fallbackImage: String?): Episode? {
         title = title?.takeIf { it.isNotBlank() } ?: "Episode $number",
         thumbnailUrl = info?.movieImage?.takeIf { it.isNotBlank() } ?: fallbackImage,
         plot = info?.plot?.takeIf { it.isNotBlank() },
-        runtimeMinutes = parseRuntimeMinutes(info?.durationSecs, info?.duration)
+        runtimeMinutes = parseRuntimeMinutes(info?.durationSecs, info?.duration),
+        containerExtension = containerExtension?.takeIf { it.isNotBlank() } ?: "mp4"
     )
 }
 

@@ -37,7 +37,8 @@ data class Movie(
     val rating: Double?,
     val addedEpochSeconds: Long,
     val categoryId: String?,
-    val year: Int?
+    val year: Int?,
+    val containerExtension: String
 )
 
 data class VodInfoResponseDto(
@@ -125,6 +126,7 @@ data class EpisodeDto(
     @SerializedName("episode_num") val episodeNum: Int?,
     @SerializedName("title") val title: String?,
     @SerializedName("season") val season: Int?,
+    @SerializedName("container_extension") val containerExtension: String?,
     @SerializedName("info") val info: EpisodeInfoDto?
 )
 
@@ -152,5 +154,6 @@ data class Episode(
     val title: String,
     val thumbnailUrl: String?,
     val plot: String?,
-    val runtimeMinutes: Int?
+    val runtimeMinutes: Int?,
+    val containerExtension: String
 )

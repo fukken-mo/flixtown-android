@@ -40,6 +40,8 @@ import com.flixtown.tv.data.model.MovieDetails
 import com.flixtown.tv.ui.catalog.CatalogUiState
 import com.flixtown.tv.ui.components.CastRow
 import com.flixtown.tv.ui.components.FlixFocusSurface
+import com.flixtown.tv.ui.components.SelectorMenu
+import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.player.SimpleVideoPlayerScreen
 import com.flixtown.tv.ui.player.openYouTubeVideo
 import com.flixtown.tv.ui.theme.FtBackground
@@ -48,7 +50,12 @@ import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 
 @Composable
-fun MovieDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, streamId: Int) {
+fun MovieDetailsScreen(
+    graph: AppGraph,
+    catalogState: CatalogUiState,
+    streamId: Int,
+    onPlay: (ContentScreen.Player) -> Unit
+) {
     val movie = (catalogState as? CatalogUiState.Loaded)?.snapshot?.movies?.firstOrNull { it.streamId == streamId }
 
     if (movie == null) {
@@ -64,8 +71,27 @@ fun MovieDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, streamId: 
     }
 
     var showTrailer by remember(streamId) { mutableStateOf(false) }
+    var showResumeMenu by remember(streamId) { mutableStateOf(false) }
     val context = LocalContext.current
     val trailerSource = TrailerResolver.resolve(details?.trailer)
+
+    val existingProgress = remember(streamId) {
+        graph.continueWatchingStore.getAll().firstOrNull { it.streamId == movie.streamId && it.mediaType == "movie" }
+    }
+
+    fun launchPlayer(resumeMs: Long) {
+        val url = graph.catalogRepository.buildMovieStreamUrl(movie) ?: return
+        onPlay(
+            ContentScreen.Player(
+                contentId = movie.streamId,
+                mediaType = "movie",
+                title = movie.name,
+                posterUrl = movie.posterUrl,
+                streamUrl = url,
+                resumePositionMs = resumeMs
+            )
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(FtBackground)) {
         Column(
@@ -141,7 +167,11 @@ fun MovieDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, streamId: 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        FlixFocusSurface(onClick = { /* Playback ships in the next milestone. */ }) {
+                        FlixFocusSurface(
+                            onClick = {
+                                if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
+                            }
+                        ) {
                             Text("Play")
                         }
                         if (trailerSource != TrailerSource.None) {
@@ -174,6 +204,22 @@ fun MovieDetailsScreen(graph: AppGraph, catalogState: CatalogUiState, streamId: 
             val source = trailerSource
             if (source is TrailerSource.DirectVideo) {
                 SimpleVideoPlayerScreen(videoUrl = source.url, onClose = { showTrailer = false })
+            }
+        }
+
+        if (showResumeMenu) {
+            Box(modifier = Modifier.align(Alignment.Center)) {
+                SelectorMenu(
+                    title = "Continue Watching?",
+                    options = listOf("Resume", "Restart"),
+                    selected = "Resume",
+                    optionLabel = { it },
+                    onSelect = { choice ->
+                        showResumeMenu = false
+                        launchPlayer(if (choice == "Resume") existingProgress?.positionMs ?: 0L else 0L)
+                    },
+                    onDismiss = { showResumeMenu = false }
+                )
             }
         }
     }
