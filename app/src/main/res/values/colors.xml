@@ -1,3 +1,10 @@
 <resources>
-    <color name="black">#050507</color>
+    <!-- Flix Town brand palette: near-black canvas, elevated dark surfaces, single red accent. -->
+    <color name="ft_background">#0A0A0C</color>
+    <color name="ft_surface">#161619</color>
+    <color name="ft_surface_elevated">#1F1F24</color>
+    <color name="ft_accent">#E3283A</color>
+    <color name="ft_accent_dim">#7A1620</color>
+    <color name="ft_text_primary">#FFFFFF</color>
+    <color name="ft_text_secondary">#AFAFB8</color>
 </resources>

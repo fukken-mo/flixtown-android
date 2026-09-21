@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#0A0A0C"
+        android:pathData="M0,0h320v180h-320z" />
+    <!-- Mark: red town block + play notch, left-aligned for the Leanback row -->
+    <path
+        android:fillColor="#E3283A"
+        android:pathData="M40,60 L64,46 L88,60 L88,120 L40,120 Z" />
+    <path
+        android:fillColor="#0A0A0C"
+        android:pathData="M54,74 L76,85 L54,96 Z" />
+    <!-- Wordmark bars stand in for the "Flix Town" lockup at banner scale -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M112,66 h96 v10 h-96 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M112,86 h140 v10 h-140 z" />
+    <path
+        android:fillColor="#AFAFB8"
+        android:pathData="M112,106 h70 v8 h-70 z" />
+</vector>
