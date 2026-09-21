@@ -1,12 +1,13 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/util.php';
-require_once __DIR__ . '/../includes/xtream_client.php';
-require_once __DIR__ . '/../includes/crypto.php';
-require_once __DIR__ . '/../includes/rate_limit.php';
-require_once __DIR__ . '/../includes/audit_log.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/bootstrap.php';
+require_once FT_BACKEND_ROOT . '/includes/db.php';
+require_once FT_BACKEND_ROOT . '/includes/util.php';
+require_once FT_BACKEND_ROOT . '/includes/xtream_client.php';
+require_once FT_BACKEND_ROOT . '/includes/crypto.php';
+require_once FT_BACKEND_ROOT . '/includes/rate_limit.php';
+require_once FT_BACKEND_ROOT . '/includes/audit_log.php';
 
 // Safe Browsing / customer-trust requirement: this page must never be
 // reachable, or degrade, over plain HTTP.

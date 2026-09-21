@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../includes/db.php';
-require_once __DIR__ . '/../../../includes/http.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/bootstrap.php';
+require_once FT_BACKEND_ROOT . '/includes/db.php';
+require_once FT_BACKEND_ROOT . '/includes/http.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     ft_json_error('Method not allowed', 405);
