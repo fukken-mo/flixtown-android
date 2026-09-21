@@ -65,5 +65,10 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.google.zxing:core:3.5.3")
 
+    // Intro video only: core player + PlayerView, no extra extractors/formats.
+    // Constructed lazily, only when a remote-configured intro is actually shown.
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

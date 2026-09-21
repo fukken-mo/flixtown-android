@@ -10,9 +10,10 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.flixtown.tv.core.InstallationId
 import com.flixtown.tv.ui.Route
+import com.flixtown.tv.ui.home.HomeShellScreen
+import com.flixtown.tv.ui.intro.IntroScreen
 import com.flixtown.tv.ui.login.LoginScreen
 import com.flixtown.tv.ui.screens.ConfigUnavailableScreen
-import com.flixtown.tv.ui.screens.HomePlaceholderScreen
 import com.flixtown.tv.ui.screens.MaintenanceScreen
 import com.flixtown.tv.ui.screens.RenewalRequiredScreen
 import com.flixtown.tv.ui.screens.StartupScreen
@@ -45,6 +46,10 @@ class MainActivity : ComponentActivity() {
 
                 when (val current = route) {
                     Route.Loading -> StartupScreen()
+                    is Route.Intro -> IntroScreen(
+                        videoUrl = current.videoUrl,
+                        onFinished = { startupViewModel.onIntroFinished() }
+                    )
                     Route.ConfigUnavailable -> ConfigUnavailableScreen(onRetry = { startupViewModel.start() })
                     is Route.Maintenance -> MaintenanceScreen(message = current.message)
                     is Route.UpdateRequired -> UpdateRequiredScreen(updateUrl = current.updateUrl)
@@ -55,7 +60,7 @@ class MainActivity : ComponentActivity() {
                         onAuthenticated = { startupViewModel.start() }
                     )
                     is Route.RenewalRequired -> RenewalRequiredScreen(xtreamStatus = current.xtreamStatus)
-                    Route.Home -> HomePlaceholderScreen()
+                    Route.Home -> HomeShellScreen()
                 }
             }
         }

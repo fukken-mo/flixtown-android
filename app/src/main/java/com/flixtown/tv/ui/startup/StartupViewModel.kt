@@ -7,6 +7,7 @@ import com.flixtown.tv.BuildConfig
 import com.flixtown.tv.data.AuthRepository
 import com.flixtown.tv.data.ConfigRepository
 import com.flixtown.tv.data.XtreamRepository
+import com.flixtown.tv.data.model.RemoteConfig
 import com.flixtown.tv.data.model.XtreamAuthResult
 import com.flixtown.tv.security.SecureCredentialStore
 import com.flixtown.tv.ui.Route
@@ -15,10 +16,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Drives the startup flow: load cached config immediately, refresh it in the
- * background, then check stored credentials and route to Login, a required
- * Maintenance/Update screen, Renewal, or Home. Never blocks longer than a
- * single network round trip, and only on first-ever launch (no cache yet).
+ * Drives the startup flow.
+ *
+ * Cold-start speed is priority one: cached config is read synchronously (a
+ * SharedPreferences hit, not a network call) and, when a device session is
+ * already stored, the app routes straight to Home instead of waiting on an
+ * Xtream `player_api.php` round trip first. That Xtream check still runs,
+ * but in the background, after Home is already showing — a definitive
+ * rejection (revoked/banned credentials) or an expired account switches the
+ * route away; a network hiccup or timeout does not, so a flaky connection
+ * never locks out an already-paired customer.
+ *
+ * The only startup work that legitimately blocks the UI is a first-ever
+ * launch with no cached config at all (nothing to route on yet).
  */
 class StartupViewModel(
     private val configRepository: ConfigRepository,
@@ -29,6 +39,10 @@ class StartupViewModel(
 
     private val _route = MutableStateFlow<Route>(Route.Loading)
     val route: StateFlow<Route> = _route
+
+    // Process-lifetime, not UI state: the intro must play at most once per
+    // app launch, including when start() is re-invoked after a fresh login.
+    private var introConsumedThisLaunch = false
 
     fun start() {
         viewModelScope.launch {
@@ -57,31 +71,65 @@ class StartupViewModel(
                 return@launch
             }
 
-            if (!authRepository.hasStoredSession()) {
-                _route.value = Route.Login
+            val introUrl = config.introVideoUrl
+            if (!introConsumedThisLaunch && config.introEnabled && !introUrl.isNullOrBlank()) {
+                introConsumedThisLaunch = true
+                _route.value = Route.Intro(introUrl)
                 return@launch
             }
 
-            val username = secureStore.getXtreamUsername()
-            val password = secureStore.getXtreamPassword()
-            if (username == null || password == null) {
-                _route.value = Route.Login
+            routePastIntro(config)
+        }
+    }
+
+    /** Called by the intro screen when playback finishes, errors, or times out. */
+    fun onIntroFinished() {
+        viewModelScope.launch {
+            // Re-read from cache (instant) rather than re-triggering a network fetch;
+            // the config we just used to decide to show the intro is still current.
+            val config = configRepository.getCached()
+            if (config == null) {
+                _route.value = Route.ConfigUnavailable
                 return@launch
             }
+            routePastIntro(config)
+        }
+    }
 
+    private suspend fun routePastIntro(config: RemoteConfig) {
+        if (!authRepository.hasStoredSession()) {
+            _route.value = Route.Login
+            return
+        }
+
+        val username = secureStore.getXtreamUsername()
+        val password = secureStore.getXtreamPassword()
+        if (username == null || password == null) {
+            _route.value = Route.Login
+            return
+        }
+
+        // A device session is already stored: proceed into the app immediately
+        // rather than blocking on a network round trip that may never even be
+        // needed (an already-paired, still-active customer is the common case).
+        _route.value = Route.Home
+
+        viewModelScope.launch {
             when (val result = xtreamRepository.authenticate(config.xtreamBaseUrl, username, password)) {
                 is XtreamAuthResult.Success -> {
-                    _route.value = if (result.isActive) Route.Home else Route.RenewalRequired(result.status)
+                    if (!result.isActive) {
+                        _route.value = Route.RenewalRequired(result.status)
+                    }
+                    // Active: already on Home, nothing to do.
                 }
                 is XtreamAuthResult.InvalidCredentials -> {
-                    // Credentials Xtream itself rejects (revoked/banned): stored data is left
-                    // intact per policy, but the customer must re-authenticate to proceed.
+                    // Definitive rejection (revoked/banned) — not a timeout. Stored data is
+                    // left intact per policy, but the customer must re-authenticate.
                     _route.value = Route.Login
                 }
                 is XtreamAuthResult.NetworkError, is XtreamAuthResult.ServerError -> {
-                    // Offline or the Xtream panel is briefly unreachable: don't lock out an
-                    // already-paired customer over a transient network hiccup.
-                    _route.value = Route.Home
+                    // Transient/offline: never send an already-paired customer back to
+                    // login just because a background check timed out.
                 }
             }
         }

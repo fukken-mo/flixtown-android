@@ -95,11 +95,3 @@ fun RenewalRequiredScreen(xtreamStatus: String) {
         message = "Account status: $xtreamStatus\n\nRenewal is coming soon. Please contact support to reactivate your subscription."
     )
 }
-
-@Composable
-fun HomePlaceholderScreen() {
-    FullScreenMessage(
-        title = "You're signed in",
-        message = "Authentication succeeded. The Home screen, catalog, and player are built in the next milestone."
-    )
-}
