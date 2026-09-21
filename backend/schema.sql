@@ -61,14 +61,21 @@ CREATE TABLE IF NOT EXISTS pairings (
     poll_token_hash CHAR(64) NOT NULL,
     installation_id CHAR(36) NOT NULL,
     device_model VARCHAR(100) NULL,
-    status ENUM('pending', 'completed', 'expired') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'completed', 'acked', 'expired') NOT NULL DEFAULT 'pending',
     encrypted_credentials TEXT NULL,
+    -- Set only once, when a pairing first transitions to 'acked': the
+    -- permanent device token, encrypted at rest, kept solely so a delivery
+    -- retry of pair/ack.php can replay the same token instead of minting a
+    -- second one. tools/cleanup_pairings.php reaps acked rows after a short
+    -- grace window.
+    issued_device_token_encrypted TEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     completed_at TIMESTAMP NULL,
     UNIQUE KEY uniq_pairing_id (pairing_id),
     UNIQUE KEY uniq_public_code (public_code),
-    INDEX idx_expires_at (expires_at)
+    INDEX idx_expires_at (expires_at),
+    INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Not yet wired to an API endpoint (renewal milestone); table exists now so
@@ -112,3 +119,13 @@ CREATE TABLE IF NOT EXISTS rate_limits (
     window_started_at INT UNSIGNED NOT NULL,
     PRIMARY KEY (bucket, identifier)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------------
+-- Migration for a database created from an earlier version of this schema
+-- (one that only had pairings.status ENUM('pending','completed','expired')
+-- and no issued_device_token_encrypted column). Safe to skip on a fresh
+-- install using the CREATE TABLE above.
+-- ---------------------------------------------------------------------------
+-- ALTER TABLE pairings MODIFY status ENUM('pending', 'completed', 'acked', 'expired') NOT NULL DEFAULT 'pending';
+-- ALTER TABLE pairings ADD COLUMN issued_device_token_encrypted TEXT NULL AFTER encrypted_credentials;
+-- ALTER TABLE pairings ADD INDEX idx_status (status);

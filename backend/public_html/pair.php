@@ -163,7 +163,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     <button type="submit">Activate</button>
   </form>
   <?php endif; ?>
-  <p class="hint">Flix Town &middot; tv.streamtown.live</p>
+  <p class="hint">Flix Town &middot; flixtown.panelsandapps.com</p>
 </div>
 </body>
 </html>

@@ -19,5 +19,5 @@ Options -MultiViews
 RewriteEngine On
 RewriteRule ^(secrets\.php|includes/) - [F,L]
 
-# Clean activation URL shown on the TV screen: tv.streamtown.live/pair
+# Clean activation URL shown on the TV screen: flixtown.panelsandapps.com/pair
 RewriteRule ^pair/?$ pair.php [L,QSA]

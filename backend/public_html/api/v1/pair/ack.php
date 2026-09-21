@@ -26,11 +26,13 @@ if ($pairingId === '' || $pollToken === '' || $tempDeviceToken === '') {
 
 $deviceToken = null;
 $installationIdForAudit = null;
+$isReplay = false;
 
 $pdo->beginTransaction();
 try {
     // Row lock: two ack calls for the same pairing_id (a client retry racing
-    // the original request) serialize here instead of both promoting a session.
+    // the original request, or a genuine retry after a dropped response)
+    // serialize here instead of both promoting a session.
     $stmt = $pdo->prepare('SELECT * FROM pairings WHERE pairing_id = ? FOR UPDATE');
     $stmt->execute([$pairingId]);
     $pairing = $stmt->fetch();
@@ -42,39 +44,58 @@ try {
 
     $installationIdForAudit = $pairing['installation_id'];
 
-    if ($pairing['status'] !== 'completed') {
+    if ($pairing['status'] === 'acked') {
+        // Delivery retry: the first ack already succeeded and promoted a
+        // device session, but the TV never received (or is re-sending
+        // because it never received) that response. Replay the SAME device
+        // token instead of minting a new one, so a retry can never result in
+        // two valid tokens for one pairing. The row is kept around (not
+        // deleted) for exactly this purpose until the cleanup cron reaps it;
+        // see tools/cleanup_pairings.php.
+        $payload = json_decode(ft_decrypt((string) $pairing['encrypted_credentials']), true);
+        if (!is_array($payload) || !hash_equals((string) ($payload['temp_device_token'] ?? ''), $tempDeviceToken)) {
+            $pdo->rollBack();
+            ft_json_error('Invalid temporary device token', 403);
+        }
+        $deviceToken = ft_decrypt((string) $pairing['issued_device_token_encrypted']);
+        $isReplay = true;
+        $pdo->commit();
+    } elseif ($pairing['status'] === 'completed') {
+        $payload = json_decode(ft_decrypt((string) $pairing['encrypted_credentials']), true);
+        if (!is_array($payload) || !hash_equals((string) ($payload['temp_device_token'] ?? ''), $tempDeviceToken)) {
+            $pdo->rollBack();
+            ft_json_error('Invalid temporary device token', 403);
+        }
+
+        $deviceToken = bin2hex(random_bytes(32));
+        $deviceTokenHash = hash('sha256', $deviceToken);
+
+        $upsert = $pdo->prepare(
+            'INSERT INTO devices (installation_id, device_model, device_token_hash, xtream_username, status, last_seen_at)
+             VALUES (?, ?, ?, ?, "active", NOW())
+             ON DUPLICATE KEY UPDATE device_model = VALUES(device_model), device_token_hash = VALUES(device_token_hash),
+                 xtream_username = VALUES(xtream_username), status = "active", last_seen_at = NOW()'
+        );
+        $upsert->execute([
+            $pairing['installation_id'],
+            $pairing['device_model'],
+            $deviceTokenHash,
+            $payload['xtream_username'] ?? null,
+        ]);
+
+        // Mark acked (not deleted) and remember the plaintext token, encrypted
+        // at rest, so a delivery retry above can replay it. The permanent
+        // session in `devices` already exists at this point either way.
+        $update = $pdo->prepare(
+            "UPDATE pairings SET status = 'acked', issued_device_token_encrypted = ? WHERE pairing_id = ?"
+        );
+        $update->execute([ft_encrypt($deviceToken), $pairingId]);
+
+        $pdo->commit();
+    } else {
         $pdo->rollBack();
         ft_json_error('Pairing is not ready to be acknowledged', 409);
     }
-
-    $payload = json_decode(ft_decrypt((string) $pairing['encrypted_credentials']), true);
-    if (!is_array($payload) || !hash_equals((string) ($payload['temp_device_token'] ?? ''), $tempDeviceToken)) {
-        $pdo->rollBack();
-        ft_json_error('Invalid temporary device token', 403);
-    }
-
-    $deviceToken = bin2hex(random_bytes(32));
-    $deviceTokenHash = hash('sha256', $deviceToken);
-
-    $upsert = $pdo->prepare(
-        'INSERT INTO devices (installation_id, device_model, device_token_hash, xtream_username, status, last_seen_at)
-         VALUES (?, ?, ?, ?, "active", NOW())
-         ON DUPLICATE KEY UPDATE device_model = VALUES(device_model), device_token_hash = VALUES(device_token_hash),
-             xtream_username = VALUES(xtream_username), status = "active", last_seen_at = NOW()'
-    );
-    $upsert->execute([
-        $pairing['installation_id'],
-        $pairing['device_model'],
-        $deviceTokenHash,
-        $payload['xtream_username'] ?? null,
-    ]);
-
-    // The pairing record's job is done: delete it now that a permanent
-    // session exists, per the "temporary record deleted after ACK" policy.
-    $del = $pdo->prepare('DELETE FROM pairings WHERE pairing_id = ?');
-    $del->execute([$pairingId]);
-
-    $pdo->commit();
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
@@ -83,6 +104,6 @@ try {
     ft_json_error('Internal server error', 500);
 }
 
-ft_audit($pdo, 'pair_ack', $installationIdForAudit);
+ft_audit($pdo, $isReplay ? 'pair_ack_replay' : 'pair_ack', $installationIdForAudit);
 
 ft_json_response(['device_token' => $deviceToken]);
