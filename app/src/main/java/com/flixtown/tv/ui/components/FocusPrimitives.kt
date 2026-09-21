@@ -2,6 +2,7 @@ package com.flixtown.tv.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -28,6 +29,7 @@ fun FlixFocusSurface(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(12.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
     content: @Composable () -> Unit
 ) {
     Surface(
@@ -53,7 +55,7 @@ fun FlixFocusSurface(
             )
         )
     ) {
-        Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp)) {
+        Box(modifier = Modifier.padding(contentPadding)) {
             content()
         }
     }

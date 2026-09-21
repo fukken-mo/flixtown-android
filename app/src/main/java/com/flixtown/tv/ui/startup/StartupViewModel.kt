@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.flixtown.tv.BuildConfig
+import com.flixtown.tv.data.AccountStatusStore
 import com.flixtown.tv.data.AuthRepository
 import com.flixtown.tv.data.ConfigRepository
 import com.flixtown.tv.data.XtreamRepository
@@ -34,7 +35,8 @@ class StartupViewModel(
     private val configRepository: ConfigRepository,
     private val xtreamRepository: XtreamRepository,
     private val authRepository: AuthRepository,
-    private val secureStore: SecureCredentialStore
+    private val secureStore: SecureCredentialStore,
+    private val accountStatusStore: AccountStatusStore
 ) : ViewModel() {
 
     private val _route = MutableStateFlow<Route>(Route.Loading)
@@ -117,6 +119,7 @@ class StartupViewModel(
         viewModelScope.launch {
             when (val result = xtreamRepository.authenticate(config.xtreamBaseUrl, username, password)) {
                 is XtreamAuthResult.Success -> {
+                    accountStatusStore.save(result.expiresAtEpochSeconds)
                     if (!result.isActive) {
                         _route.value = Route.RenewalRequired(result.status)
                     }
@@ -139,11 +142,12 @@ class StartupViewModel(
         private val configRepository: ConfigRepository,
         private val xtreamRepository: XtreamRepository,
         private val authRepository: AuthRepository,
-        private val secureStore: SecureCredentialStore
+        private val secureStore: SecureCredentialStore,
+        private val accountStatusStore: AccountStatusStore
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return StartupViewModel(configRepository, xtreamRepository, authRepository, secureStore) as T
+            return StartupViewModel(configRepository, xtreamRepository, authRepository, secureStore, accountStatusStore) as T
         }
     }
 }

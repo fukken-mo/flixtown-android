@@ -1,6 +1,7 @@
 package com.flixtown.tv
 
 import android.content.Context
+import com.flixtown.tv.data.AccountStatusStore
 import com.flixtown.tv.data.AuthRepository
 import com.flixtown.tv.data.BackendApi
 import com.flixtown.tv.data.ConfigRepository
@@ -18,6 +19,7 @@ class AppGraph(context: Context) {
     val xtreamRepository = XtreamRepository()
     val backendApi = BackendApi()
     val secureCredentialStore = SecureCredentialStore(context)
+    val accountStatusStore = AccountStatusStore(context)
     val authRepository = AuthRepository(configRepository, xtreamRepository, backendApi, secureCredentialStore)
     val pairingRepository = PairingRepository(backendApi, secureCredentialStore)
 }

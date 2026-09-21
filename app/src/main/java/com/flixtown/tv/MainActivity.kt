@@ -37,7 +37,8 @@ class MainActivity : ComponentActivity() {
                         graph.configRepository,
                         graph.xtreamRepository,
                         graph.authRepository,
-                        graph.secureCredentialStore
+                        graph.secureCredentialStore,
+                        graph.accountStatusStore
                     )
                 )
 
@@ -60,7 +61,7 @@ class MainActivity : ComponentActivity() {
                         onAuthenticated = { startupViewModel.start() }
                     )
                     is Route.RenewalRequired -> RenewalRequiredScreen(xtreamStatus = current.xtreamStatus)
-                    Route.Home -> HomeShellScreen()
+                    Route.Home -> HomeShellScreen(accountStatusStore = graph.accountStatusStore)
                 }
             }
         }
