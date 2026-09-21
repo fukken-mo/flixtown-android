@@ -5,7 +5,9 @@ import com.flixtown.tv.data.AccountStatusStore
 import com.flixtown.tv.data.AuthRepository
 import com.flixtown.tv.data.BackendApi
 import com.flixtown.tv.data.ConfigRepository
+import com.flixtown.tv.data.ContinueWatchingStore
 import com.flixtown.tv.data.PairingRepository
+import com.flixtown.tv.data.XtreamCatalogRepository
 import com.flixtown.tv.data.XtreamRepository
 import com.flixtown.tv.security.SecureCredentialStore
 
@@ -22,4 +24,6 @@ class AppGraph(context: Context) {
     val accountStatusStore = AccountStatusStore(context)
     val authRepository = AuthRepository(configRepository, xtreamRepository, backendApi, secureCredentialStore)
     val pairingRepository = PairingRepository(backendApi, secureCredentialStore)
+    val catalogRepository = XtreamCatalogRepository(context, configRepository, secureCredentialStore)
+    val continueWatchingStore = ContinueWatchingStore(context)
 }

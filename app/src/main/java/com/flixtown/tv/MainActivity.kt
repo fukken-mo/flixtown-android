@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
                         onAuthenticated = { startupViewModel.start() }
                     )
                     is Route.RenewalRequired -> RenewalRequiredScreen(xtreamStatus = current.xtreamStatus)
-                    Route.Home -> HomeShellScreen(accountStatusStore = graph.accountStatusStore)
+                    Route.Home -> HomeShellScreen(graph = graph)
                 }
             }
         }
