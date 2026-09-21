@@ -99,7 +99,7 @@ fun MovieDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            Box(modifier = Modifier.fillMaxWidth().height(340.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
                 val backdropUrl = details?.backdropUrl ?: movie.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -119,7 +119,9 @@ fun MovieDetailsScreen(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 40.dp, end = 40.dp, top = (-56).dp),
                 horizontalArrangement = Arrangement.spacedBy(32.dp)
             ) {
                 Box(

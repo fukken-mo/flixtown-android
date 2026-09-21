@@ -7,23 +7,36 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
+
+private val MENU_WIDTH = 400.dp
+private val MENU_ROW_HEIGHT = 48.dp
+private const val MENU_VISIBLE_ROWS = 5
 
 /**
  * A compact "Label: value" trigger that opens a focused, D-pad navigable
@@ -67,40 +80,60 @@ fun <T> SelectorMenu(
 
     Column(
         modifier = Modifier
-            .width(300.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .width(MENU_WIDTH)
+            .clip(RoundedCornerShape(10.dp))
             .background(FtSurfaceElevated)
-            .padding(vertical = 12.dp)
+            .padding(vertical = 6.dp)
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             color = FtTextSecondary,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
         )
-        options.forEachIndexed { index, option ->
-            val isSelected = option == selected
-            FlixFocusSurface(
-                onClick = {
-                    onSelect(option)
-                    onDismiss()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequesters[index]),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+        LazyColumn(
+            modifier = Modifier.heightIn(max = MENU_ROW_HEIGHT * MENU_VISIBLE_ROWS)
+        ) {
+            itemsIndexed(options, key = { index, _ -> index }) { index, option ->
+                val isSelected = option == selected
+                Surface(
+                    onClick = {
+                        onSelect(option)
+                        onDismiss()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(MENU_ROW_HEIGHT)
+                        .focusRequester(focusRequesters[index]),
+                    shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(6.dp)),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = Color.Transparent,
+                        contentColor = FtTextPrimary,
+                        focusedContainerColor = FtAccent.copy(alpha = 0.2f),
+                        focusedContentColor = FtTextPrimary,
+                        pressedContainerColor = FtAccent.copy(alpha = 0.28f),
+                        pressedContentColor = FtTextPrimary
+                    ),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f)
                 ) {
-                    Text(
-                        text = optionLabel(option),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (isSelected) FtAccent else FtTextPrimary
-                    )
-                    if (isSelected) {
-                        Text(text = "✓", style = MaterialTheme.typography.bodyLarge, color = FtAccent)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = optionLabel(option),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isSelected) FtAccent else FtTextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (isSelected) {
+                            Text(text = "✓", style = MaterialTheme.typography.bodyMedium, color = FtAccent)
+                        }
                     }
                 }
             }

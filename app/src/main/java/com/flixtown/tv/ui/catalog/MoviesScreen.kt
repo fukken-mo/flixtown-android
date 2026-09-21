@@ -28,7 +28,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Movie
-import com.flixtown.tv.ui.components.BackdropBackground
+import com.flixtown.tv.ui.components.BackdropLayer
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.SelectorButton
@@ -86,10 +86,13 @@ private fun MoviesLoaded(
     // per-title details call does, and firing that on every focus change
     // would lag remote navigation) — poster art is the practical, instant
     // fallback per the dynamic-background spec.
-    var focusedBackdropUrl by remember { mutableStateOf<String?>(null) }
+    // Held as a State object (not `by`) and only ever unwrapped inside
+    // BackdropLayer, so a focus-change write here never recomposes this
+    // whole screen (grid included) — only that leaf.
+    val focusedBackdropState = remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        BackdropBackground(imageUrl = focusedBackdropUrl)
+        BackdropLayer(state = focusedBackdropState)
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -136,7 +139,7 @@ private fun MoviesLoaded(
                         onClick = { onMovieClick(movie) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .onFocusChanged { state -> if (state.isFocused) focusedBackdropUrl = movie.posterUrl }
+                            .onFocusChanged { s -> if (s.isFocused) focusedBackdropState.value = movie.posterUrl }
                             .let { m ->
                                 if (isLeftEdge && railFocusRequester != null) {
                                     m.focusProperties { left = railFocusRequester }

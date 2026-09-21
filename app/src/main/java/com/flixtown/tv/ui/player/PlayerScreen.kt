@@ -142,10 +142,14 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
         lastScrubDirection = direction
         lastScrubAtMs = now
 
-        val base = if (durationMs > 0) (durationMs / 100).coerceAtLeast(SCRUB_BASE_MIN_MS) else SCRUB_BASE_MIN_MS
-        val increment = (base * (1L shl scrubStreak)).let { inc ->
-            if (durationMs > 0) inc.coerceAtMost(durationMs / 5) else inc.coerceAtMost(10 * SCRUB_BASE_MIN_MS)
+        // 30s, then 60s, then doubling from there (120s, 240s, ...) — matches
+        // "initial press ~30s, repeated ~1min, continued larger jumps".
+        val raw = when (scrubStreak) {
+            0 -> SCRUB_BASE_MIN_MS
+            1 -> SCRUB_BASE_MIN_MS * 2
+            else -> SCRUB_BASE_MIN_MS * 2 * (1L shl (scrubStreak - 1))
         }
+        val increment = if (durationMs > 0) raw.coerceAtMost(durationMs / 5) else raw.coerceAtMost(10 * SCRUB_BASE_MIN_MS)
         val cap = if (durationMs > 0) durationMs else Long.MAX_VALUE
         val target = if (direction > 0) {
             (positionMs + increment).coerceAtMost(cap)
@@ -221,8 +225,13 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
         }
     }
 
-    LaunchedEffect(controlsVisible, isPlaying, interactionTick) {
-        if (controlsVisible && isPlaying) {
+    // Never auto-hide while a track menu is open: the Subtitles/Audio
+    // buttons those menus restore focus to live inside this same
+    // controls-visible block, so hiding it out from under an open menu was
+    // leaving onDismiss's requestFocus() with no target to land on — the
+    // "stuck" focus bug.
+    LaunchedEffect(controlsVisible, isPlaying, interactionTick, showSubtitleMenu, showAudioMenu) {
+        if (controlsVisible && isPlaying && !showSubtitleMenu && !showAudioMenu) {
             delay(AUTO_HIDE_DELAY_MS)
             controlsVisible = false
         }

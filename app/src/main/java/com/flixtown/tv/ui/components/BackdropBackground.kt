@@ -6,14 +6,52 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.flixtown.tv.ui.theme.FtBackground
+import kotlinx.coroutines.delay
 
 private const val CROSSFADE_MS = 220
+private const val BACKDROP_DEBOUNCE_MS = 130L
+
+/**
+ * Debounces a rapidly-changing value (e.g. the URL of whatever poster
+ * currently has focus) so fast D-pad navigation doesn't fire a decode/crossfade
+ * per transient stop — only the value that's still current after
+ * [BACKDROP_DEBOUNCE_MS] of no further change is ever handed to the caller,
+ * which also means intermediate URLs are never requested at all (nothing to
+ * "cancel").
+ */
+@Composable
+fun rememberDebouncedBackdropUrl(target: String?): String? {
+    var debounced by remember { mutableStateOf(target) }
+    LaunchedEffect(target) {
+        delay(BACKDROP_DEBOUNCE_MS)
+        debounced = target
+    }
+    return debounced
+}
+
+/**
+ * Renders the backdrop for whatever [state] currently holds, reading its
+ * `.value` inside this leaf composable rather than the caller — this is what
+ * keeps a focus-change write from recomposing the whole screen (grid/rows
+ * included): callers only ever pass the stable [State] reference down, never
+ * unwrap it themselves.
+ */
+@Composable
+fun BackdropLayer(state: State<String?>, modifier: Modifier = Modifier) {
+    BackdropBackground(imageUrl = rememberDebouncedBackdropUrl(state.value), modifier = modifier)
+}
 
 /**
  * The cinematic full-bleed background used behind Home/Movies/Series and

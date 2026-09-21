@@ -28,7 +28,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Series
-import com.flixtown.tv.ui.components.BackdropBackground
+import com.flixtown.tv.ui.components.BackdropLayer
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.SelectorButton
@@ -82,10 +82,10 @@ private fun SeriesLoaded(
     }
 
     val railFocusRequester = LocalRailRevealFocusRequester.current
-    var focusedBackdropUrl by remember { mutableStateOf<String?>(null) }
+    val focusedBackdropState = remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        BackdropBackground(imageUrl = focusedBackdropUrl)
+        BackdropLayer(state = focusedBackdropState)
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -132,8 +132,8 @@ private fun SeriesLoaded(
                         onClick = { onSeriesClick(show) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .onFocusChanged { state ->
-                                if (state.isFocused) focusedBackdropUrl = show.backdropUrl ?: show.posterUrl
+                            .onFocusChanged { s ->
+                                if (s.isFocused) focusedBackdropState.value = show.backdropUrl ?: show.posterUrl
                             }
                             .let { m ->
                                 if (isLeftEdge && railFocusRequester != null) {

@@ -23,7 +23,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,7 +55,7 @@ import com.flixtown.tv.ui.catalog.CatalogUiState
 import com.flixtown.tv.ui.catalog.CatalogViewModel
 import com.flixtown.tv.ui.catalog.MoviesScreen
 import com.flixtown.tv.ui.catalog.SeriesScreen
-import com.flixtown.tv.ui.components.BackdropBackground
+import com.flixtown.tv.ui.components.BackdropLayer
 import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
@@ -390,14 +392,18 @@ private fun HomeContent(
     onSeriesClick: (Series) -> Unit,
     onContinueWatchingClick: (ContinueWatchingEntry) -> Unit
 ) {
-    var focused by remember { mutableStateOf<RowItem?>(null) }
+    // A State object, not `by` — HomeContent itself never unwraps `.value`,
+    // so a focus-change write (from deep inside the rows below) never
+    // recomposes this function/the rows. Only the two leaf composables that
+    // actually read `.value` (hero text instantly, backdrop debounced) do.
+    val focused = remember { mutableStateOf<RowItem?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        BackdropBackground(imageUrl = focused?.backdropUrl)
+        BackdropLayer(state = remember { derivedStateOf { focused.value?.backdropUrl } })
 
         Column(modifier = Modifier.fillMaxSize()) {
             HomeHeader(sectionLabel = "Home", accountStatusStore = accountStatusStore)
-            FocusedHero(item = focused)
+            HeroLayer(state = focused)
             HomeRows(
                 catalogState = catalogState,
                 continueWatching = continueWatching,
@@ -405,10 +411,15 @@ private fun HomeContent(
                 onMovieClick = onMovieClick,
                 onSeriesClick = onSeriesClick,
                 onContinueWatchingClick = onContinueWatchingClick,
-                onFocusedItemChange = { focused = it }
+                onFocusedItemChange = { focused.value = it }
             )
         }
     }
+}
+
+@Composable
+private fun HeroLayer(state: State<RowItem?>) {
+    FocusedHero(item = state.value)
 }
 
 @Composable
