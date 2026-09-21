@@ -22,11 +22,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Movie
+import com.flixtown.tv.ui.components.BackdropBackground
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.SelectorButton
@@ -80,8 +82,14 @@ private fun MoviesLoaded(
     }
 
     val railFocusRequester = LocalRailRevealFocusRequester.current
+    // Movies don't carry a TMDB/Xtream backdrop in list data (only the
+    // per-title details call does, and firing that on every focus change
+    // would lag remote navigation) — poster art is the practical, instant
+    // fallback per the dynamic-background spec.
+    var focusedBackdropUrl by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        BackdropBackground(imageUrl = focusedBackdropUrl)
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -128,6 +136,7 @@ private fun MoviesLoaded(
                         onClick = { onMovieClick(movie) },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .onFocusChanged { state -> if (state.isFocused) focusedBackdropUrl = movie.posterUrl }
                             .let { m ->
                                 if (isLeftEdge && railFocusRequester != null) {
                                     m.focusProperties { left = railFocusRequester }

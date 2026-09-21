@@ -22,11 +22,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Series
+import com.flixtown.tv.ui.components.BackdropBackground
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.SelectorButton
@@ -80,8 +82,10 @@ private fun SeriesLoaded(
     }
 
     val railFocusRequester = LocalRailRevealFocusRequester.current
+    var focusedBackdropUrl by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        BackdropBackground(imageUrl = focusedBackdropUrl)
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -128,6 +132,9 @@ private fun SeriesLoaded(
                         onClick = { onSeriesClick(show) },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .onFocusChanged { state ->
+                                if (state.isFocused) focusedBackdropUrl = show.backdropUrl ?: show.posterUrl
+                            }
                             .let { m ->
                                 if (isLeftEdge && railFocusRequester != null) {
                                     m.focusProperties { left = railFocusRequester }

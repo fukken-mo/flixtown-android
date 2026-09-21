@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +38,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,6 +53,7 @@ import com.flixtown.tv.ui.catalog.CatalogUiState
 import com.flixtown.tv.ui.catalog.CatalogViewModel
 import com.flixtown.tv.ui.catalog.MoviesScreen
 import com.flixtown.tv.ui.catalog.SeriesScreen
+import com.flixtown.tv.ui.components.BackdropBackground
 import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
@@ -210,17 +213,15 @@ fun HomeShellScreen(graph: AppGraph) {
             ) {
                 when (val screen = current) {
                     is ContentScreen.Home -> saveableStateHolder.SaveableStateProvider("home") {
-                        Column {
-                            HomeHeader(sectionLabel = "Home", accountStatusStore = graph.accountStatusStore)
-                            HomeRows(
-                                catalogState = catalogState,
-                                continueWatching = graph.continueWatchingStore.getAll(),
-                                onRetry = { catalogViewModel.retry() },
-                                onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) },
-                                onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) },
-                                onContinueWatchingClick = { playContinueWatching(it) }
-                            )
-                        }
+                        HomeContent(
+                            catalogState = catalogState,
+                            continueWatching = graph.continueWatchingStore.getAll(),
+                            accountStatusStore = graph.accountStatusStore,
+                            onRetry = { catalogViewModel.retry() },
+                            onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) },
+                            onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) },
+                            onContinueWatchingClick = { playContinueWatching(it) }
+                        )
                     }
                     is ContentScreen.Movies -> saveableStateHolder.SaveableStateProvider("movies") {
                         MoviesScreen(
@@ -369,8 +370,77 @@ private data class RowItem(
     val title: String,
     val posterUrl: String?,
     val subtitle: String?,
+    val backdropUrl: String?,
     val onClick: () -> Unit
 )
+
+/**
+ * Home's outer shell: a dynamic backdrop behind everything (whatever the
+ * currently focused row item resolves to — see [RowItem.backdropUrl]), the
+ * header, a small fixed-height hero line so text appearing/disappearing
+ * never shifts the rows below it, then the scrollable rows themselves.
+ */
+@Composable
+private fun HomeContent(
+    catalogState: CatalogUiState,
+    continueWatching: List<ContinueWatchingEntry>,
+    accountStatusStore: AccountStatusStore,
+    onRetry: () -> Unit,
+    onMovieClick: (Movie) -> Unit,
+    onSeriesClick: (Series) -> Unit,
+    onContinueWatchingClick: (ContinueWatchingEntry) -> Unit
+) {
+    var focused by remember { mutableStateOf<RowItem?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        BackdropBackground(imageUrl = focused?.backdropUrl)
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            HomeHeader(sectionLabel = "Home", accountStatusStore = accountStatusStore)
+            FocusedHero(item = focused)
+            HomeRows(
+                catalogState = catalogState,
+                continueWatching = continueWatching,
+                onRetry = onRetry,
+                onMovieClick = onMovieClick,
+                onSeriesClick = onSeriesClick,
+                onContinueWatchingClick = onContinueWatchingClick,
+                onFocusedItemChange = { focused = it }
+            )
+        }
+    }
+}
+
+@Composable
+private fun FocusedHero(item: RowItem?) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .padding(horizontal = 40.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        if (item != null) {
+            Column {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = FtTextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!item.subtitle.isNullOrBlank()) {
+                    Text(
+                        text = item.subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = FtTextSecondary,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun HomeRows(
@@ -379,7 +449,8 @@ private fun HomeRows(
     onRetry: () -> Unit,
     onMovieClick: (Movie) -> Unit,
     onSeriesClick: (Series) -> Unit,
-    onContinueWatchingClick: (ContinueWatchingEntry) -> Unit
+    onContinueWatchingClick: (ContinueWatchingEntry) -> Unit,
+    onFocusedItemChange: (RowItem) -> Unit
 ) {
     when (catalogState) {
         is CatalogUiState.Loading -> HomeRowsSkeleton()
@@ -401,7 +472,7 @@ private fun HomeRows(
                     val percent = (entry.positionMs * 100 / entry.durationMs).coerceIn(0, 100)
                     "$percent% watched"
                 } else null
-                RowItem("cw-${entry.mediaType}-${entry.streamId}", entry.title, entry.posterUrl, progressLabel) {
+                RowItem("cw-${entry.mediaType}-${entry.streamId}", entry.title, entry.posterUrl, progressLabel, entry.posterUrl) {
                     onContinueWatchingClick(entry)
                 }
             }
@@ -429,26 +500,40 @@ private fun HomeRows(
                 .take(ROW_ITEM_LIMIT)
                 .map { it.toRowItem(onSeriesClick) }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 40.dp),
+            // A LazyColumn: every row is measured with an unbounded main-axis
+            // constraint (that's how lazy layouts work), so a poster row can
+            // never be squeezed by "not enough remaining height" the way a
+            // plain fillMaxSize() Column would squeeze it. If everything
+            // doesn't fit on screen at once, it scrolls instead of shrinking.
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 40.dp),
                 verticalArrangement = Arrangement.spacedBy(28.dp)
             ) {
                 if (continueWatchingItems.isNotEmpty()) {
-                    PosterRow("Continue Watching", continueWatchingItems)
+                    item(key = "row-continue-watching") {
+                        PosterRow("Continue Watching", continueWatchingItems, onFocusedItemChange)
+                    }
                 }
                 if (recentlyAdded.isNotEmpty()) {
-                    PosterRow("Recently Added", recentlyAdded)
+                    item(key = "row-recently-added") {
+                        PosterRow("Recently Added", recentlyAdded, onFocusedItemChange)
+                    }
                 }
                 if (trending.isNotEmpty()) {
-                    PosterRow("Trending", trending)
+                    item(key = "row-trending") {
+                        PosterRow("Trending", trending, onFocusedItemChange)
+                    }
                 }
                 if (latestMovies.isNotEmpty()) {
-                    PosterRow("Latest Movies", latestMovies)
+                    item(key = "row-latest-movies") {
+                        PosterRow("Latest Movies", latestMovies, onFocusedItemChange)
+                    }
                 }
                 if (latestSeries.isNotEmpty()) {
-                    PosterRow("Latest Series", latestSeries)
+                    item(key = "row-latest-series") {
+                        PosterRow("Latest Series", latestSeries, onFocusedItemChange)
+                    }
                 }
             }
         }
@@ -458,7 +543,7 @@ private fun HomeRows(
 @Composable
 private fun HomeRowsSkeleton() {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(28.dp)
     ) {
         repeat(3) {
@@ -478,7 +563,7 @@ private fun HomeRowsSkeleton() {
 }
 
 @Composable
-private fun PosterRow(title: String, items: List<RowItem>) {
+private fun PosterRow(title: String, items: List<RowItem>, onFocusedItemChange: (RowItem) -> Unit) {
     val railFocusRequester = LocalRailRevealFocusRequester.current
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(modifier = Modifier.padding(start = 40.dp)) {
@@ -498,6 +583,7 @@ private fun PosterRow(title: String, items: List<RowItem>) {
                     onClick = item.onClick,
                     modifier = Modifier
                         .width(DEFAULT_POSTER_WIDTH)
+                        .onFocusChanged { state -> if (state.isFocused) onFocusedItemChange(item) }
                         .let { m ->
                             if (index == 0 && railFocusRequester != null) {
                                 m.focusProperties { left = railFocusRequester }
@@ -521,10 +607,10 @@ private fun trendingScore(rating: Double?, addedEpochSeconds: Long): Double {
 }
 
 private fun Movie.toRowItem(onClick: (Movie) -> Unit): RowItem =
-    RowItem("movie-$streamId", name, posterUrl, year?.toString(), onClick = { onClick(this) })
+    RowItem("movie-$streamId", name, posterUrl, year?.toString(), posterUrl, onClick = { onClick(this) })
 
 private fun Series.toRowItem(onClick: (Series) -> Unit): RowItem =
-    RowItem("series-$seriesId", name, posterUrl, year?.toString(), onClick = { onClick(this) })
+    RowItem("series-$seriesId", name, posterUrl, year?.toString(), backdropUrl ?: posterUrl, onClick = { onClick(this) })
 
 @JvmName("movieOrSeriesToRowItem")
 private fun Any.toRowItem(onMovieClick: (Movie) -> Unit, onSeriesClick: (Series) -> Unit): RowItem = when (this) {

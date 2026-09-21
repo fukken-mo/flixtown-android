@@ -3,16 +3,20 @@ package com.flixtown.tv.ui.player
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -26,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -66,6 +71,9 @@ private const val AUTO_HIDE_DELAY_MS = 4_000L
 private const val SAVE_INTERVAL_MS = 5_000L
 private const val PROGRESS_POLL_MS = 500L
 private const val COMPLETE_THRESHOLD = 0.92
+private const val SCRUB_BASE_MIN_MS = 30_000L
+private const val SCRUB_STREAK_WINDOW_MS = 900L
+private const val SCRUB_MAX_STREAK = 4
 
 private data class TrackChoice(val label: String, val groupIndex: Int, val trackIndex: Int)
 
@@ -104,14 +112,49 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
     var showSubtitleMenu by remember { mutableStateOf(false) }
     var showAudioMenu by remember { mutableStateOf(false) }
     var interactionTick by remember { mutableStateOf(0) }
+    var seekBarHasFocus by remember { mutableStateOf(false) }
+    var scrubStreak by remember { mutableStateOf(0) }
+    var lastScrubDirection by remember { mutableStateOf(0) }
+    var lastScrubAtMs by remember { mutableStateOf(0L) }
 
     val surfaceFocusRequester = remember { FocusRequester() }
     val playPauseFocusRequester = remember { FocusRequester() }
+    val seekBarFocusRequester = remember { FocusRequester() }
     val subtitleFocusRequester = remember { FocusRequester() }
     val audioFocusRequester = remember { FocusRequester() }
 
     fun bump() {
         interactionTick++
+    }
+
+    // Accelerating scrub: each press starts at ~1% of the runtime (floor
+    // 30s) and doubles for every consecutive same-direction press within
+    // SCRUB_STREAK_WINDOW_MS, capped so one press can never jump more than a
+    // fifth of the whole title. Immediate seekTo + local position update, so
+    // the thumb and time label move the instant the key is pressed.
+    fun scrubSeek(direction: Int) {
+        val now = System.currentTimeMillis()
+        scrubStreak = if (direction == lastScrubDirection && (now - lastScrubAtMs) < SCRUB_STREAK_WINDOW_MS) {
+            (scrubStreak + 1).coerceAtMost(SCRUB_MAX_STREAK)
+        } else {
+            0
+        }
+        lastScrubDirection = direction
+        lastScrubAtMs = now
+
+        val base = if (durationMs > 0) (durationMs / 100).coerceAtLeast(SCRUB_BASE_MIN_MS) else SCRUB_BASE_MIN_MS
+        val increment = (base * (1L shl scrubStreak)).let { inc ->
+            if (durationMs > 0) inc.coerceAtMost(durationMs / 5) else inc.coerceAtMost(10 * SCRUB_BASE_MIN_MS)
+        }
+        val cap = if (durationMs > 0) durationMs else Long.MAX_VALUE
+        val target = if (direction > 0) {
+            (positionMs + increment).coerceAtMost(cap)
+        } else {
+            (positionMs - increment).coerceAtLeast(0)
+        }
+        player.seekTo(target)
+        positionMs = target
+        bump()
     }
 
     fun saveProgress(pos: Long, dur: Long) {
@@ -258,6 +301,13 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
         }
     }
 
+    // Composed after the handler above, so while the seek bar is focused
+    // this one wins: Back exits scrubbing back to the normal controls
+    // instead of hiding controls or leaving the player.
+    BackHandler(enabled = seekBarHasFocus) {
+        playPauseFocusRequester.requestFocus()
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -317,7 +367,27 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
                     Text(text = episodeLabel, style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
                 }
 
-                ProgressBar(progress = if (durationMs > 0) positionMs.toFloat() / durationMs.toFloat() else 0f)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(seekBarFocusRequester)
+                        .onFocusChanged { state -> seekBarHasFocus = state.isFocused }
+                        .focusable()
+                        .onKeyEvent { event ->
+                            if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
+                            when (event.key) {
+                                Key.DirectionLeft -> { scrubSeek(-1); true }
+                                Key.DirectionRight -> { scrubSeek(1); true }
+                                else -> false
+                            }
+                        }
+                        .padding(vertical = 8.dp)
+                ) {
+                    SeekBar(
+                        progress = if (durationMs > 0) positionMs.toFloat() / durationMs.toFloat() else 0f,
+                        isFocused = seekBarHasFocus
+                    )
+                }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(text = formatTime(positionMs), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
@@ -396,20 +466,44 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
     }
 }
 
+/**
+ * The player's scrub bar: a thin track, a red filled portion up to the
+ * current position, and a thumb that grows and gains a white ring when the
+ * bar itself has focus (the same red-only focus language as everywhere
+ * else, just on a shape instead of a border rect).
+ */
 @Composable
-private fun ProgressBar(progress: Float, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(4.dp)
-            .clip(RoundedCornerShape(2.dp))
-            .background(Color.White.copy(alpha = 0.25f))
-    ) {
+private fun SeekBar(progress: Float, isFocused: Boolean, modifier: Modifier = Modifier) {
+    val fraction = progress.coerceIn(0f, 1f)
+    val thumbSize = if (isFocused) 18.dp else 11.dp
+    BoxWithConstraints(modifier = modifier.fillMaxWidth().height(18.dp)) {
+        val trackWidth = maxWidth
+        val thumbOffsetX = (trackWidth - thumbSize) * fraction
+
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .align(Alignment.CenterStart)
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(Color.White.copy(alpha = 0.25f))
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .fillMaxWidth(fraction)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
                 .background(FtAccent)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(x = thumbOffsetX)
+                .size(thumbSize)
+                .clip(CircleShape)
+                .background(FtAccent)
+                .let { m -> if (isFocused) m.border(2.dp, Color.White, CircleShape) else m }
         )
     }
 }
