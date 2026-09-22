@@ -27,7 +27,7 @@ import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 
 private const val FOCUS_ANIM_MS = 90
-private const val FOCUSED_SCALE = 1.025f
+private const val FOCUSED_SCALE = 1.015f
 
 /**
  * The one focus treatment used across every interactive element in the app:

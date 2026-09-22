@@ -111,7 +111,14 @@ fun MovieDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+            // The poster/title/meta row overlaps the bottom of the backdrop
+            // by being a child of this same Box, aligned to BottomStart —
+            // not by giving it negative padding (Modifier.padding requires
+            // non-negative values and throws IllegalArgumentException; a
+            // literal `top = (-56).dp` here is what crashed every details
+            // open). This Box is sized tall enough to hold both the visible
+            // backdrop strip above and the full poster height below.
+            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                 val backdropUrl = details?.backdropUrl ?: movie.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -128,84 +135,84 @@ fun MovieDetailsScreen(
                         .fillMaxSize()
                         .background(Brush.verticalGradient(listOf(Color.Transparent, FtBackground)))
                 )
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 40.dp, end = 40.dp, top = (-56).dp),
-                horizontalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .width(200.dp)
-                        .aspectRatio(2f / 3f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(FtSurfaceElevated)
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .padding(horizontal = 40.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
-                    if (!movie.posterUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = movie.posterUrl,
-                            contentDescription = movie.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(text = movie.name, style = MaterialTheme.typography.headlineLarge, color = FtTextPrimary)
-
-                    val metaParts = listOfNotNull(
-                        movie.year?.toString(),
-                        details?.runtimeMinutes?.let { "${it}m" },
-                        movie.rating?.let { "★ ${"%.1f".format(it)}" }
-                    )
-                    if (metaParts.isNotEmpty()) {
-                        Text(text = metaParts.joinToString("   •   "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
-                    }
-
-                    if (!details?.genres.isNullOrEmpty()) {
-                        Text(text = details!!.genres.joinToString(", "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
-                    }
-
-                    Text(
-                        text = details?.plot ?: "No description available.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = FtTextSecondary
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        FlixFocusSurface(
-                            onClick = {
-                                if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
-                            }
-                        ) {
-                            Text("Play")
+                    Box(
+                        modifier = Modifier
+                            .width(170.dp)
+                            .aspectRatio(2f / 3f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(FtSurfaceElevated)
+                    ) {
+                        if (!movie.posterUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = movie.posterUrl,
+                                contentDescription = movie.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
-                        if (trailerSource != TrailerSource.None) {
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = movie.name, style = MaterialTheme.typography.headlineLarge, color = FtTextPrimary)
+
+                        val metaParts = listOfNotNull(
+                            movie.year?.toString(),
+                            details?.runtimeMinutes?.let { "${it}m" },
+                            movie.rating?.let { "★ ${"%.1f".format(it)}" }
+                        )
+                        if (metaParts.isNotEmpty()) {
+                            Text(text = metaParts.joinToString("   •   "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                        }
+
+                        if (!details?.genres.isNullOrEmpty()) {
+                            Text(text = details!!.genres.joinToString(", "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                        }
+
+                        Text(
+                            text = details?.plot ?: "No description available.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = FtTextSecondary,
+                            maxLines = 3
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             FlixFocusSurface(
                                 onClick = {
-                                    when (val source = trailerSource) {
-                                        is TrailerSource.DirectVideo -> showTrailer = true
-                                        is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
-                                        TrailerSource.None -> Unit
-                                    }
+                                    if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
                                 }
                             ) {
-                                Text("Trailer")
+                                Text("Play")
+                            }
+                            if (trailerSource != TrailerSource.None) {
+                                FlixFocusSurface(
+                                    onClick = {
+                                        when (val source = trailerSource) {
+                                            is TrailerSource.DirectVideo -> showTrailer = true
+                                            is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
+                                            TrailerSource.None -> Unit
+                                        }
+                                    }
+                                ) {
+                                    Text("Trailer")
+                                }
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)) {
                 CastRow(cast = (details?.cast ?: emptyList()).map { it to null })

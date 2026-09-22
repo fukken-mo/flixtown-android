@@ -130,7 +130,11 @@ fun SeriesDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+            // Poster/title/meta overlaps the backdrop by being aligned
+            // BottomStart inside this same Box — never via negative padding
+            // (Modifier.padding requires non-negative values and throws
+            // IllegalArgumentException; that was the crash on every open).
+            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                 val backdropUrl = series.backdropUrl ?: series.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -147,72 +151,74 @@ fun SeriesDetailsScreen(
                         .fillMaxSize()
                         .background(Brush.verticalGradient(listOf(Color.Transparent, FtBackground)))
                 )
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 40.dp, end = 40.dp, top = (-56).dp),
-                horizontalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .width(200.dp)
-                        .aspectRatio(2f / 3f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(FtSurfaceElevated)
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .padding(horizontal = 40.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
-                    if (!series.posterUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = series.posterUrl,
-                            contentDescription = series.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                    Box(
+                        modifier = Modifier
+                            .width(170.dp)
+                            .aspectRatio(2f / 3f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(FtSurfaceElevated)
+                    ) {
+                        if (!series.posterUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = series.posterUrl,
+                                contentDescription = series.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = series.name, style = MaterialTheme.typography.headlineLarge, color = FtTextPrimary)
+
+                        val metaParts = listOfNotNull(
+                            series.year?.toString(),
+                            series.rating?.let { "★ ${"%.1f".format(it)}" }
                         )
-                    }
-                }
+                        if (metaParts.isNotEmpty()) {
+                            Text(text = metaParts.joinToString("   •   "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                        }
 
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(text = series.name, style = MaterialTheme.typography.headlineLarge, color = FtTextPrimary)
+                        if (series.genres.isNotEmpty()) {
+                            Text(text = series.genres.joinToString(", "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                        }
 
-                    val metaParts = listOfNotNull(
-                        series.year?.toString(),
-                        series.rating?.let { "★ ${"%.1f".format(it)}" }
-                    )
-                    if (metaParts.isNotEmpty()) {
-                        Text(text = metaParts.joinToString("   •   "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
-                    }
+                        Text(
+                            text = series.plot ?: "No description available.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = FtTextSecondary,
+                            maxLines = 3
+                        )
 
-                    if (series.genres.isNotEmpty()) {
-                        Text(text = series.genres.joinToString(", "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
-                    }
-
-                    Text(
-                        text = series.plot ?: "No description available.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = FtTextSecondary
-                    )
-
-                    if (trailerSource != TrailerSource.None) {
-                        FlixFocusSurface(
-                            onClick = {
-                                when (val source = trailerSource) {
-                                    is TrailerSource.DirectVideo -> showTrailer = true
-                                    is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
-                                    TrailerSource.None -> Unit
+                        if (trailerSource != TrailerSource.None) {
+                            FlixFocusSurface(
+                                onClick = {
+                                    when (val source = trailerSource) {
+                                        is TrailerSource.DirectVideo -> showTrailer = true
+                                        is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
+                                        TrailerSource.None -> Unit
+                                    }
                                 }
+                            ) {
+                                Text("Trailer")
                             }
-                        ) {
-                            Text("Trailer")
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             if (series.cast.isNotEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)) {
