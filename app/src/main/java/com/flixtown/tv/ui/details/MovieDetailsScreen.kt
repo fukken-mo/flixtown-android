@@ -43,6 +43,7 @@ import com.flixtown.tv.AppGraph
 import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.TrailerResolver
 import com.flixtown.tv.data.TrailerSource
+import com.flixtown.tv.data.model.CastMember
 import com.flixtown.tv.data.model.Movie
 import com.flixtown.tv.data.model.MovieDetails
 import com.flixtown.tv.ui.catalog.CatalogUiState
@@ -106,6 +107,20 @@ fun MovieDetailsScreen(
     // visible highlight beforehand, which reads as broken on a real TV.
     val playButtonFocusRequester = remember(streamId) { FocusRequester() }
     LaunchedEffect(streamId) { playButtonFocusRequester.requestFocus() }
+
+    // Cast never blocks the rest of the screen: details (and everything that
+    // depends on it) render immediately, this just fills in once TMDB (or,
+    // failing that, Xtream's plain names) resolves in the background.
+    var castMembers by remember(streamId) { mutableStateOf<List<CastMember>?>(null) }
+    LaunchedEffect(details) {
+        val loadedDetails = details ?: return@LaunchedEffect
+        val tmdbCast = graph.tmdbRepository.getMovieCast(loadedDetails.tmdbId, movie.name, movie.year)
+        castMembers = tmdbCast.ifEmpty {
+            loadedDetails.cast.mapIndexed { index, name ->
+                CastMember(id = -(index + 1), name = name, character = null, profilePath = null)
+            }
+        }
+    }
 
     val existingProgress = remember(streamId) {
         graph.continueWatchingStore.getAll().firstOrNull { it.streamId == movie.streamId && it.mediaType == "movie" }
@@ -245,7 +260,7 @@ fun MovieDetailsScreen(
 
             if (!details?.cast.isNullOrEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(horizontal = FlixSpacing.safeHorizontal)) {
-                    CastRow(cast = details!!.cast.map { it to null })
+                    CastRow(cast = castMembers)
                 }
                 Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
             }

@@ -19,6 +19,9 @@ return [
     // Generate with: php -r "echo bin2hex(random_bytes(32));"
     'sodium_key_hex' => 'CHANGE_ME_64_HEX_CHARACTERS',
 
-    // TMDB proxy key (backend-only; never shipped to the app). Optional for this milestone.
+    // TMDB proxy key (backend-only; never shipped to the app). Used by
+    // /api/v1/tmdb/credits.php and /api/v1/tmdb/resolve.php whenever
+    // app_settings.tmdb_enabled is also turned on in the admin panel — both
+    // conditions must hold or those endpoints report {enabled: false}.
     'tmdb_api_key' => '',
 ];

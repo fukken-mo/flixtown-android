@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,7 +23,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -29,11 +33,12 @@ import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Series
 import com.flixtown.tv.ui.components.BackdropLayer
-import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
+import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SelectorButton
 import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.nav.LocalRailRevealFocusRequester
+import com.flixtown.tv.ui.theme.FlixSpacing
 
 @Composable
 fun SeriesScreen(
@@ -84,22 +89,30 @@ private fun SeriesLoaded(
     val railFocusRequester = LocalRailRevealFocusRequester.current
     val focusedBackdropState = remember { mutableStateOf<String?>(null) }
 
+    val gridState = rememberLazyGridState()
+    var pendingFocusSeriesId by rememberSaveable { mutableStateOf<Int?>(null) }
+    LaunchedEffect(pendingFocusSeriesId, visibleSeries) {
+        val targetId = pendingFocusSeriesId ?: return@LaunchedEffect
+        val index = visibleSeries.indexOfFirst { it.seriesId == targetId }
+        if (index >= 0) gridState.scrollToItem(index)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         BackdropLayer(state = focusedBackdropState)
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 40.dp, vertical = 28.dp),
+                    .padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.rowHeaderGap + 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = "Series", style = MaterialTheme.typography.headlineMedium)
-                FlixFocusSurface(onClick = onSearchClick) { Text("Search") }
+                SecondaryActionButton(text = "Search", onClick = onSearchClick)
             }
 
             Row(
-                modifier = Modifier.padding(horizontal = 40.dp),
+                modifier = Modifier.padding(horizontal = FlixSpacing.safeHorizontal),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 SelectorButton<Category?>(
@@ -114,24 +127,42 @@ private fun SeriesLoaded(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(FlixSpacing.sectionGap - 8.dp))
 
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Fixed(GRID_COLUMNS),
-                contentPadding = PaddingValues(start = 40.dp, end = 40.dp, top = 12.dp, bottom = 40.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
+                contentPadding = PaddingValues(
+                    start = FlixSpacing.safeHorizontal,
+                    end = FlixSpacing.safeHorizontal,
+                    // Same headroom reasoning as MoviesScreen's grid.
+                    top = FlixSpacing.rowHeaderGap,
+                    bottom = FlixSpacing.safeVertical
+                ),
+                horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap),
+                verticalArrangement = Arrangement.spacedBy(FlixSpacing.sectionGap),
                 modifier = Modifier.fillMaxSize()
             ) {
                 itemsIndexed(visibleSeries, key = { _, show -> show.seriesId }) { index, show ->
                     val isLeftEdge = index % GRID_COLUMNS == 0
+                    val itemFocusRequester = remember(show.seriesId) { FocusRequester() }
+                    LaunchedEffect(Unit) {
+                        if (pendingFocusSeriesId == show.seriesId) {
+                            itemFocusRequester.requestFocus()
+                            pendingFocusSeriesId = null
+                        }
+                    }
                     PosterCard(
                         title = show.name,
                         posterUrl = show.posterUrl,
                         subtitle = show.year?.toString(),
-                        onClick = { onSeriesClick(show) },
+                        onClick = {
+                            pendingFocusSeriesId = show.seriesId
+                            onSeriesClick(show)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .focusRequester(itemFocusRequester)
                             .onFocusChanged { s ->
                                 if (s.isFocused) focusedBackdropState.value = show.backdropUrl ?: show.posterUrl
                             }
@@ -148,7 +179,7 @@ private fun SeriesLoaded(
         }
 
         if (showCategoryMenu) {
-            Box(modifier = Modifier.padding(start = 40.dp, top = 96.dp)) {
+            Box(modifier = Modifier.padding(start = FlixSpacing.safeHorizontal, top = 96.dp)) {
                 SelectorMenu(
                     title = "Category",
                     options = categoryOptions,
@@ -160,7 +191,7 @@ private fun SeriesLoaded(
             }
         }
         if (showSortMenu) {
-            Box(modifier = Modifier.padding(start = 210.dp, top = 96.dp)) {
+            Box(modifier = Modifier.padding(start = FlixSpacing.safeHorizontal + 170.dp, top = 96.dp)) {
                 SelectorMenu(
                     title = "Sort",
                     options = sortOptions,

@@ -1,5 +1,6 @@
 package com.flixtown.tv.data.model
 
+import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 
 /**
@@ -58,7 +59,13 @@ data class VodInfoDto(
     @SerializedName("duration") val duration: String?,
     @SerializedName("backdrop_path") val backdropPath: List<String>?,
     @SerializedName("movie_image") val movieImage: String?,
-    @SerializedName("youtube_trailer") val youtubeTrailer: String?
+    @SerializedName("youtube_trailer") val youtubeTrailer: String?,
+    // Not part of the standard Xtream Codes spec, but some panels include it
+    // on the info object anyway; declared as JsonElement (not Int/String)
+    // because Gson would throw on a type mismatch otherwise and panels are
+    // inconsistent about whether they send a JSON number or a JSON string.
+    @SerializedName("tmdb_id") val tmdbIdRaw: JsonElement? = null,
+    @SerializedName("tmdb") val tmdbRaw: JsonElement? = null
 )
 
 data class MovieDetails(
@@ -70,7 +77,8 @@ data class MovieDetails(
     val releaseDate: String?,
     val runtimeMinutes: Int?,
     val backdropUrl: String?,
-    val trailer: String?
+    val trailer: String?,
+    val tmdbId: Int? = null
 )
 
 // ---- Series ----
@@ -90,7 +98,11 @@ data class SeriesDto(
     @SerializedName("last_modified") val lastModifiedEpochSeconds: String?,
     @SerializedName("category_id") val categoryId: String?,
     @SerializedName("backdrop_path") val backdropPath: List<String>?,
-    @SerializedName("youtube_trailer") val youtubeTrailer: String?
+    @SerializedName("youtube_trailer") val youtubeTrailer: String?,
+    // Same caveat as VodInfoDto.tmdbIdRaw — not standard Xtream, some panels
+    // include it anyway, type varies by panel.
+    @SerializedName("tmdb_id") val tmdbIdRaw: JsonElement? = null,
+    @SerializedName("tmdb") val tmdbRaw: JsonElement? = null
 )
 
 data class Series(
@@ -105,7 +117,8 @@ data class Series(
     val categoryId: String?,
     val year: Int?,
     val backdropUrl: String?,
-    val trailer: String?
+    val trailer: String?,
+    val tmdbId: Int? = null
 )
 
 data class SeriesInfoResponseDto(
@@ -139,7 +152,8 @@ data class EpisodeInfoDto(
 
 data class SeriesDetails(
     val series: Series,
-    val seasons: List<SeasonInfo>
+    val seasons: List<SeasonInfo>,
+    val tmdbId: Int? = null
 )
 
 data class SeasonInfo(

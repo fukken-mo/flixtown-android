@@ -71,6 +71,7 @@ import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.PosterSkeletonCard
 import com.flixtown.tv.ui.components.PrimaryActionButton
+import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SectionHeader
 import com.flixtown.tv.ui.details.MovieDetailsScreen
 import com.flixtown.tv.ui.details.SeriesDetailsScreen
@@ -380,6 +381,8 @@ private data class RowItem(
     val onClick: () -> Unit
 )
 
+private data class HomeRowSpec(val key: String, val title: String, val items: List<RowItem>)
+
 /**
  * Home's outer shell: one continuous LazyColumn — the cinematic hero is its
  * first item (so it scrolls away naturally, like it would on any premium
@@ -414,6 +417,15 @@ private fun HomeContent(
     val contentFocusRequester = remember { FocusRequester() }
     val homeListState = rememberLazyListState()
 
+    // Precise "focus the exact poster that launched Details" state: which
+    // row, which item within it. Saveable so it survives the dispose/
+    // recompose that happens while Details is on screen. Cleared by
+    // whichever row's effect actually finds and focuses the item (or, if the
+    // row/item no longer exists by the time we're back, by the fallback
+    // path below instead of being left dangling forever).
+    var pendingFocusRowKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingFocusItemKey by rememberSaveable { mutableStateOf<String?>(null) }
+
     when (catalogState) {
         is CatalogUiState.Loading -> HomeLoadingSkeleton()
         is CatalogUiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal)) {
@@ -423,7 +435,7 @@ private fun HomeContent(
                     style = MaterialTheme.typography.bodyLarge,
                     color = FtTextSecondary
                 )
-                FlixFocusSurface(onClick = onRetry) { Text("Retry") }
+                SecondaryActionButton(text = "Retry", onClick = onRetry)
             }
         }
         is CatalogUiState.Loaded -> {
@@ -469,14 +481,43 @@ private fun HomeContent(
 
             val onRowFocus: (RowItem) -> Unit = { focused.value = it; everFocusedContent = true }
 
-            // Re-entering Home after a details/browse visit should never
-            // leave focus unset — but on the very first-ever launch (nothing
-            // focused yet), the nav rail should keep taking initial focus as
-            // before, so this only fires on a genuine return trip. Declared
-            // here (not above the `when`) so it only ever runs alongside the
-            // LazyColumn that actually owns contentFocusRequester.
+            val rowSpecs = remember(continueWatchingItems, recentlyAdded, trending, latestMovies, latestSeries) {
+                buildList {
+                    if (continueWatchingItems.isNotEmpty()) add(HomeRowSpec("row-continue-watching", "Continue Watching", continueWatchingItems))
+                    if (recentlyAdded.isNotEmpty()) add(HomeRowSpec("row-recently-added", "Recently Added", recentlyAdded))
+                    if (trending.isNotEmpty()) add(HomeRowSpec("row-trending", "Trending", trending))
+                    if (latestMovies.isNotEmpty()) add(HomeRowSpec("row-latest-movies", "Latest Movies", latestMovies))
+                    if (latestSeries.isNotEmpty()) add(HomeRowSpec("row-latest-series", "Latest Series", latestSeries))
+                }
+            }
+
+            // Precise restoration: scroll the outer column to the row that
+            // launched Details (2 = hero + hero-spacer items before any row).
+            // If that row no longer exists by the time we're back (catalog
+            // changed under us), fall through to the generic "focus
+            // somewhere in content" fallback instead of leaving focus stuck
+            // on a target that will never resolve.
+            LaunchedEffect(pendingFocusRowKey, rowSpecs) {
+                val targetRowKey = pendingFocusRowKey ?: return@LaunchedEffect
+                val rowIndex = rowSpecs.indexOfFirst { it.key == targetRowKey }
+                if (rowIndex >= 0) {
+                    homeListState.scrollToItem(rowIndex + 2)
+                } else {
+                    pendingFocusRowKey = null
+                    pendingFocusItemKey = null
+                    if (everFocusedContent) contentFocusRequester.requestFocus()
+                }
+            }
+
+            // Generic fallback: re-entering Home after a details/browse
+            // visit should never leave focus unset — but on the very
+            // first-ever launch (nothing focused yet), the nav rail should
+            // keep taking initial focus as before, so this only fires on a
+            // genuine return trip, and only when there's no precise target
+            // (that case is handled by the row/item effects instead, so this
+            // never fights them for focus).
             LaunchedEffect(Unit) {
-                if (everFocusedContent) contentFocusRequester.requestFocus()
+                if (everFocusedContent && pendingFocusItemKey == null) contentFocusRequester.requestFocus()
             }
 
             LazyColumn(
@@ -496,30 +537,22 @@ private fun HomeContent(
                 }
                 item(key = "hero-spacer") { Spacer(modifier = Modifier.height(FlixSpacing.sectionGap)) }
 
-                if (continueWatchingItems.isNotEmpty()) {
-                    item(key = "row-continue-watching") {
-                        PosterRow("Continue Watching", continueWatchingItems, onRowFocus)
-                    }
-                }
-                if (recentlyAdded.isNotEmpty()) {
-                    item(key = "row-recently-added") {
-                        PosterRow("Recently Added", recentlyAdded, onRowFocus)
-                    }
-                }
-                if (trending.isNotEmpty()) {
-                    item(key = "row-trending") {
-                        PosterRow("Trending", trending, onRowFocus)
-                    }
-                }
-                if (latestMovies.isNotEmpty()) {
-                    item(key = "row-latest-movies") {
-                        PosterRow("Latest Movies", latestMovies, onRowFocus)
-                    }
-                }
-                if (latestSeries.isNotEmpty()) {
-                    item(key = "row-latest-series") {
-                        PosterRow("Latest Series", latestSeries, onRowFocus)
-                    }
+                items(rowSpecs, key = { it.key }) { spec ->
+                    PosterRow(
+                        rowKey = spec.key,
+                        title = spec.title,
+                        items = spec.items,
+                        pendingFocusItemKey = if (pendingFocusRowKey == spec.key) pendingFocusItemKey else null,
+                        onFocusedItemChange = onRowFocus,
+                        onItemLaunch = { rowKey, itemKey ->
+                            pendingFocusRowKey = rowKey
+                            pendingFocusItemKey = itemKey
+                        },
+                        onFocusRestored = {
+                            pendingFocusRowKey = null
+                            pendingFocusItemKey = null
+                        }
+                    )
                 }
                 item(key = "bottom-spacer") { Spacer(modifier = Modifier.height(FlixSpacing.safeVertical)) }
             }
@@ -616,11 +649,29 @@ private fun HomeLoadingSkeleton() {
 }
 
 @Composable
-private fun PosterRow(title: String, items: List<RowItem>, onFocusedItemChange: (RowItem) -> Unit) {
+private fun PosterRow(
+    rowKey: String,
+    title: String,
+    items: List<RowItem>,
+    pendingFocusItemKey: String?,
+    onFocusedItemChange: (RowItem) -> Unit,
+    onItemLaunch: (rowKey: String, itemKey: String) -> Unit,
+    onFocusRestored: () -> Unit
+) {
     val railFocusRequester = LocalRailRevealFocusRequester.current
     Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
         SectionHeader(title = title, modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
         val listState = rememberLazyListState()
+
+        // Scrolls this row's own LazyRow to the exact item that launched
+        // Details, once the outer LazyColumn has brought this row itself
+        // into view (see the matching effect in HomeContent).
+        LaunchedEffect(pendingFocusItemKey, items) {
+            val targetKey = pendingFocusItemKey ?: return@LaunchedEffect
+            val index = items.indexOfFirst { it.key == targetKey }
+            if (index >= 0) listState.scrollToItem(index) else onFocusRestored()
+        }
+
         LazyRow(
             state = listState,
             // Vertical padding isn't cosmetic here: LazyRow clips its content
@@ -631,13 +682,24 @@ private fun PosterRow(title: String, items: List<RowItem>, onFocusedItemChange: 
             horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
         ) {
             itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
+                val itemFocusRequester = remember(item.key) { FocusRequester() }
+                LaunchedEffect(Unit) {
+                    if (pendingFocusItemKey == item.key) {
+                        itemFocusRequester.requestFocus()
+                        onFocusRestored()
+                    }
+                }
                 PosterCard(
                     title = item.title,
                     posterUrl = item.posterUrl,
                     subtitle = item.subtitle,
-                    onClick = item.onClick,
+                    onClick = {
+                        onItemLaunch(rowKey, item.key)
+                        item.onClick()
+                    },
                     modifier = Modifier
                         .width(DEFAULT_POSTER_WIDTH)
+                        .focusRequester(itemFocusRequester)
                         .onFocusChanged { state -> if (state.isFocused) onFocusedItemChange(item) }
                         .let { m ->
                             if (index == 0 && railFocusRequester != null) {

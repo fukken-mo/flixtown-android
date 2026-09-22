@@ -14,8 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterSkeletonCard
+import com.flixtown.tv.ui.components.SecondaryActionButton
+import com.flixtown.tv.ui.theme.FlixSpacing
 import com.flixtown.tv.ui.theme.FtTextSecondary
 
 const val GRID_COLUMNS = 5
@@ -24,9 +25,9 @@ const val GRID_COLUMNS = 5
 fun CatalogGridSkeleton() {
     LazyVerticalGrid(
         columns = GridCells.Fixed(GRID_COLUMNS),
-        contentPadding = PaddingValues(horizontal = 40.dp, vertical = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.sectionGap - 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap),
+        verticalArrangement = Arrangement.spacedBy(FlixSpacing.sectionGap)
     ) {
         items(15) { PosterSkeletonCard() }
     }
@@ -34,14 +35,14 @@ fun CatalogGridSkeleton() {
 
 @Composable
 fun CatalogErrorRetry(message: String, onRetry: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().padding(horizontal = 40.dp, vertical = 24.dp)) {
+    Box(modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.sectionGap - 8.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(
                 text = "Couldn't load: $message",
                 style = MaterialTheme.typography.bodyLarge,
                 color = FtTextSecondary
             )
-            FlixFocusSurface(onClick = onRetry) { Text("Retry") }
+            SecondaryActionButton(text = "Retry", onClick = onRetry)
         }
     }
 }

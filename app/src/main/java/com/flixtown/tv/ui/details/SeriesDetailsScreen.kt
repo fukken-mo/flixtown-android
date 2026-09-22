@@ -44,6 +44,7 @@ import com.flixtown.tv.AppGraph
 import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.TrailerResolver
 import com.flixtown.tv.data.TrailerSource
+import com.flixtown.tv.data.model.CastMember
 import com.flixtown.tv.data.model.Episode
 import com.flixtown.tv.data.model.Series
 import com.flixtown.tv.data.model.SeriesDetails
@@ -116,6 +117,22 @@ fun SeriesDetailsScreen(
     // Same rule as Movie details: never leave focus unset when a title opens.
     val playButtonFocusRequester = remember(seriesId) { FocusRequester() }
     LaunchedEffect(seriesId) { playButtonFocusRequester.requestFocus() }
+
+    // Same non-blocking cast load as Movie details: waits for the one
+    // get_series_info fetch (already in flight above) so this only ever
+    // fires once, then prefers its tmdbId over the list-level one in case
+    // the detail payload resolved a more specific/different id.
+    var castMembers by remember(seriesId) { mutableStateOf<List<CastMember>?>(null) }
+    LaunchedEffect(details) {
+        val loadedDetails = details ?: return@LaunchedEffect
+        val tmdbId = loadedDetails.tmdbId ?: series.tmdbId
+        val tmdbCast = graph.tmdbRepository.getSeriesCast(tmdbId, series.name, series.year)
+        castMembers = tmdbCast.ifEmpty {
+            series.cast.mapIndexed { index, name ->
+                CastMember(id = -(index + 1), name = name, character = null, profilePath = null)
+            }
+        }
+    }
 
     val similarSeries = remember(seriesId, catalogState) {
         (catalogState as? CatalogUiState.Loaded)?.snapshot?.series
@@ -275,7 +292,7 @@ fun SeriesDetailsScreen(
 
             if (series.cast.isNotEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(horizontal = FlixSpacing.safeHorizontal)) {
-                    CastRow(cast = series.cast.map { it to null })
+                    CastRow(cast = castMembers)
                 }
                 Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
             }

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +37,11 @@ import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import com.flixtown.tv.data.model.CastMember
+import com.flixtown.tv.data.model.imageUrl
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextMuted
@@ -43,34 +49,56 @@ import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 
 private val PORTRAIT_SIZE = 96.dp
+private const val PLACEHOLDER_COUNT = 6
 
 /**
- * Horizontal actor row. Xtream's `cast` field is a flat list of names only —
- * no photos, no person IDs — so every card uses an initials portrait; that's
- * an honest placeholder for data that genuinely has no photo, not a bug.
- * (Real photos would need a TMDB integration this build doesn't have.)
+ * Horizontal actor row. [cast] is `null` while TMDB credits (or the plain
+ * Xtream name fallback) are still being resolved — that renders quiet
+ * placeholder portraits instead of nothing, so the section never pops in and
+ * shifts everything below it. An empty (non-null) list hides the section
+ * entirely: some titles genuinely have no cast data anywhere.
  */
 @Composable
-fun CastRow(cast: List<Pair<String, String?>>) {
-    if (cast.isEmpty()) return
+fun CastRow(cast: List<CastMember>?) {
+    if (cast != null && cast.isEmpty()) return
     Column {
         SectionHeader(title = "Cast")
         Spacer(modifier = Modifier.height(16.dp))
-        LazyRow(
-            contentPadding = PaddingValues(vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            items(cast, key = { it.first }) { (name, character) ->
-                ActorChip(name = name, character = character)
+        if (cast == null) {
+            LazyRow(
+                contentPadding = PaddingValues(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                items(PLACEHOLDER_COUNT) { PlaceholderChip() }
+            }
+        } else {
+            LazyRow(
+                contentPadding = PaddingValues(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                items(cast, key = { it.id }) { member -> ActorChip(member) }
             }
         }
     }
 }
 
 @Composable
-private fun ActorChip(name: String, character: String?) {
+private fun PlaceholderChip() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(104.dp)) {
+        Box(
+            modifier = Modifier
+                .size(PORTRAIT_SIZE)
+                .clip(CircleShape)
+                .background(FtSurfaceElevated)
+        )
+    }
+}
+
+@Composable
+private fun ActorChip(member: CastMember) {
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (isFocused) 1.06f else 1f, tween(150), label = "castScale")
+    val imageUrl = member.imageUrl
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -95,25 +123,34 @@ private fun ActorChip(name: String, character: String?) {
                 focusedBorder = Border(border = BorderStroke(2.dp, FtAccent), shape = CircleShape)
             )
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = initialsFor(name),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = FtTextMuted
-                )
+            if (imageUrl == null) {
+                InitialsBox(member.name)
+            } else {
+                SubcomposeAsyncImage(
+                    model = imageUrl,
+                    contentDescription = member.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    when (painter.state) {
+                        is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
+                        is AsyncImagePainter.State.Error -> InitialsBox(member.name)
+                        else -> Box(modifier = Modifier.fillMaxSize().background(FtSurfaceElevated))
+                    }
+                }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = name,
+            text = member.name,
             style = MaterialTheme.typography.labelMedium.copy(color = FtTextPrimary),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
         )
-        if (!character.isNullOrBlank()) {
+        if (!member.character.isNullOrBlank()) {
             Text(
-                text = character,
+                text = member.character,
                 style = MaterialTheme.typography.labelMedium,
                 color = FtTextSecondary,
                 maxLines = 1,
@@ -121,6 +158,17 @@ private fun ActorChip(name: String, character: String?) {
                 textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Composable
+private fun InitialsBox(name: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(
+            text = initialsFor(name),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = FtTextMuted
+        )
     }
 }
 

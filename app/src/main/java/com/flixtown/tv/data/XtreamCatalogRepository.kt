@@ -137,7 +137,8 @@ class XtreamCatalogRepository(
                 releaseDate = info?.releaseDate ?: info?.releaseDateAlt,
                 runtimeMinutes = parseRuntimeMinutes(info?.durationSecs, info?.duration),
                 backdropUrl = info?.backdropPath?.firstOrNull() ?: info?.movieImage ?: movie.posterUrl,
-                trailer = info?.youtubeTrailer?.takeIf { it.isNotBlank() }
+                trailer = info?.youtubeTrailer?.takeIf { it.isNotBlank() },
+                tmdbId = parseTmdbId(info?.tmdbIdRaw) ?: parseTmdbId(info?.tmdbRaw)
             )
         } catch (e: Exception) {
             SafeLog.w(TAG, "getMovieDetails failed", e)
@@ -165,7 +166,12 @@ class XtreamCatalogRepository(
                 }
                 .sortedBy { it.seasonNumber }
 
-            SeriesDetails(series = series, seasons = seasons)
+            val info = dto.info
+            SeriesDetails(
+                series = series,
+                seasons = seasons,
+                tmdbId = parseTmdbId(info?.tmdbIdRaw) ?: parseTmdbId(info?.tmdbRaw)
+            )
         } catch (e: Exception) {
             SafeLog.w(TAG, "getSeriesDetails failed", e)
             null
@@ -275,8 +281,24 @@ private fun SeriesDto.toDomain(): Series? {
         categoryId = categoryId,
         year = (releaseDate ?: releaseDateAlt)?.take(4)?.toIntOrNull() ?: extractYearFromTitle(title),
         backdropUrl = backdropPath?.firstOrNull(),
-        trailer = youtubeTrailer?.takeIf { it.isNotBlank() }
+        trailer = youtubeTrailer?.takeIf { it.isNotBlank() },
+        tmdbId = parseTmdbId(tmdbIdRaw) ?: parseTmdbId(tmdbRaw)
     )
+}
+
+/**
+ * Some Xtream panels send a JSON number, some send it as a string (possibly
+ * with surrounding whitespace, or "0"/"" meaning "no id"), some omit it
+ * entirely — [element] is untyped [com.google.gson.JsonElement] for exactly
+ * that reason. Never throws; any unparseable shape just means no id.
+ */
+private fun parseTmdbId(element: com.google.gson.JsonElement?): Int? {
+    if (element == null || element.isJsonNull) return null
+    return try {
+        element.asString.trim().filter { it.isDigit() }.takeIf { it.isNotEmpty() }?.toIntOrNull()?.takeIf { it > 0 }
+    } catch (e: Exception) {
+        null
+    }
 }
 
 private fun EpisodeDto.toDomain(fallbackImage: String?): Episode? {

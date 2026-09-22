@@ -16,4 +16,10 @@ object BackendConstants {
     const val PAIR_STATUS_ENDPOINT = "$CONTROL_HOST/api/v1/pair/status.php"
     const val PAIR_ACK_ENDPOINT = "$CONTROL_HOST/api/v1/pair/ack.php"
     const val AUTH_REGISTER_ENDPOINT = "$CONTROL_HOST/api/v1/auth/register.php"
+
+    // Both proxy through the backend, which holds the TMDB API key server-side
+    // (see backend/includes/tmdb_client.php) — the key itself is never sent
+    // to, or stored on, the app.
+    const val TMDB_CREDITS_ENDPOINT = "$CONTROL_HOST/api/v1/tmdb/credits.php"
+    const val TMDB_RESOLVE_ENDPOINT = "$CONTROL_HOST/api/v1/tmdb/resolve.php"
 }
