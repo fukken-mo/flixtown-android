@@ -3,6 +3,7 @@ package com.flixtown.tv.ui.home
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,14 +40,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.AppGraph
+import com.flixtown.tv.R
 import com.flixtown.tv.data.AccountStatusStore
 import com.flixtown.tv.data.ContinueWatchingEntry
 import com.flixtown.tv.data.model.Movie
@@ -292,15 +294,11 @@ private fun NavRail(
             .padding(vertical = 24.dp, horizontal = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Text(
-            text = "FLIX",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = FtTextPrimary
-        )
-        Text(
-            text = "TOWN",
-            style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 3.sp),
-            color = FtAccent
+        Image(
+            painter = painterResource(R.drawable.flixtown_logo),
+            contentDescription = "Flix Town",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxWidth().height(40.dp)
         )
         Spacer(modifier = Modifier.height(28.dp))
 

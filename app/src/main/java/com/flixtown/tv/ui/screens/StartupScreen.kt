@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
+import com.flixtown.tv.R
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtBackground
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
@@ -39,7 +41,12 @@ fun StartupScreen() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = "FLIX TOWN", style = MaterialTheme.typography.headlineMedium)
+            Image(
+                painter = painterResource(R.drawable.flixtown_logo),
+                contentDescription = "Flix Town",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.height(120.dp)
+            )
             Box(modifier = Modifier.height(24.dp))
             PulsingBar()
         }

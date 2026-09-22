@@ -7,9 +7,9 @@ package com.flixtown.tv.core
  * update policy, ...) is fetched from this host at runtime instead.
  */
 object BackendConstants {
-    const val CONTROL_HOST = "https://flixtown.panelsandapps.com"
+    const val CONTROL_HOST = "https://myflixtown.com"
     const val ACTIVATION_URL = "$CONTROL_HOST/pair"
-    const val ACTIVATION_HOST_LABEL = "flixtown.panelsandapps.com/pair"
+    const val ACTIVATION_HOST_LABEL = "myflixtown.com/pair"
 
     const val CONFIG_ENDPOINT = "$CONTROL_HOST/api/v1/config.php"
     const val PAIR_START_ENDPOINT = "$CONTROL_HOST/api/v1/pair/start.php"

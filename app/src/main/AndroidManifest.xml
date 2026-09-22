@@ -8,7 +8,7 @@
          so devices without it are never told the app is incompatible. -->
     <uses-feature
         android:name="android.software.leanback"
-        android:required="true" />
+        android:required="false" />
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />

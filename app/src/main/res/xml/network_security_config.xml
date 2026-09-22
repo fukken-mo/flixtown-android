@@ -8,6 +8,6 @@
     <!-- The Flix Town control/activation backend is a fixed, first-party host and
          must always be reached over HTTPS: no cleartext, no exceptions. -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">flixtown.panelsandapps.com</domain>
+        <domain includeSubdomains="true">myflixtown.com</domain>
     </domain-config>
 </network-security-config>

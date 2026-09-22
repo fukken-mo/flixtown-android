@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.AppGraph
+import com.flixtown.tv.R
 import com.flixtown.tv.core.BackendConstants
 import com.flixtown.tv.ui.components.FlixButton
 import com.flixtown.tv.ui.components.FlixFocusSurface
@@ -76,7 +79,12 @@ fun LoginScreen(
                 .padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(text = "FLIX TOWN", style = MaterialTheme.typography.headlineMedium)
+            Image(
+                painter = painterResource(R.drawable.flixtown_logo),
+                contentDescription = "Flix Town",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().height(72.dp)
+            )
             Spacer(modifier = Modifier.height(24.dp))
             LoginTab.entries.forEachIndexed { index, tab ->
                 FlixFocusSurface(
