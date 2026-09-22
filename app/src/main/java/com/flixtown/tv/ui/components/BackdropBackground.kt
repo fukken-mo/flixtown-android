@@ -20,8 +20,8 @@ import coil.compose.AsyncImage
 import com.flixtown.tv.ui.theme.FtBackground
 import kotlinx.coroutines.delay
 
-private const val CROSSFADE_MS = 220
-private const val BACKDROP_DEBOUNCE_MS = 130L
+private const val CROSSFADE_MS = 150
+private const val BACKDROP_DEBOUNCE_MS = 300L
 
 /**
  * Debounces a rapidly-changing value (e.g. the URL of whatever poster

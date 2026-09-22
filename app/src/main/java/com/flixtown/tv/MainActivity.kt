@@ -7,13 +7,18 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.flixtown.tv.core.CrashReporter
 import com.flixtown.tv.core.InstallationId
 import com.flixtown.tv.ui.Route
 import com.flixtown.tv.ui.home.HomeShellScreen
 import com.flixtown.tv.ui.intro.IntroScreen
 import com.flixtown.tv.ui.login.LoginScreen
 import com.flixtown.tv.ui.screens.ConfigUnavailableScreen
+import com.flixtown.tv.ui.screens.DebugCrashReportScreen
 import com.flixtown.tv.ui.screens.MaintenanceScreen
 import com.flixtown.tv.ui.screens.RenewalRequiredScreen
 import com.flixtown.tv.ui.screens.StartupScreen
@@ -32,6 +37,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FlixTownTheme {
+                var crashReport by remember { mutableStateOf(CrashReporter.getSavedReport(this@MainActivity)) }
+                if (crashReport != null) {
+                    DebugCrashReportScreen(
+                        report = crashReport!!,
+                        onContinue = { crashReport = null },
+                        onClear = {
+                            CrashReporter.clear(this@MainActivity)
+                            crashReport = null
+                        }
+                    )
+                    return@FlixTownTheme
+                }
+
                 val startupViewModel: StartupViewModel = viewModel(
                     factory = StartupViewModel.Factory(
                         graph.configRepository,

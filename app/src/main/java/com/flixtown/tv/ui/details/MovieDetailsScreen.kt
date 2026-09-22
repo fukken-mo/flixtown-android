@@ -57,8 +57,9 @@ fun MovieDetailsScreen(
     streamId: Int,
     onPlay: (ContentScreen.Player) -> Unit
 ) {
-    SafeLog.d("MovieDetailsScreen", "opening streamId=$streamId")
+    SafeLog.e("MovieDetailsScreen", "ENTER composition streamId=$streamId")
     val movie = (catalogState as? CatalogUiState.Loaded)?.snapshot?.movies?.firstOrNull { it.streamId == streamId }
+    SafeLog.e("MovieDetailsScreen", "movie lookup result: ${if (movie == null) "NOT FOUND" else "found name=${movie.name}"}")
 
     if (movie == null) {
         Box(modifier = Modifier.fillMaxSize().background(FtBackground), contentAlignment = Alignment.Center) {
@@ -69,13 +70,17 @@ fun MovieDetailsScreen(
 
     var details by remember(streamId) { mutableStateOf<MovieDetails?>(null) }
     LaunchedEffect(streamId) {
+        SafeLog.e("MovieDetailsScreen", "getMovieDetails START streamId=$streamId")
         details = try {
-            graph.catalogRepository.getMovieDetails(movie)
+            graph.catalogRepository.getMovieDetails(movie).also {
+                SafeLog.e("MovieDetailsScreen", "getMovieDetails SUCCESS streamId=$streamId result=${it != null}")
+            }
         } catch (e: Exception) {
-            SafeLog.e("MovieDetailsScreen", "getMovieDetails threw for streamId=$streamId", e)
+            SafeLog.e("MovieDetailsScreen", "getMovieDetails THREW for streamId=$streamId", e)
             null
         }
     }
+    SafeLog.e("MovieDetailsScreen", "composing body, name=${movie.name} posterUrl=${movie.posterUrl}")
 
     var showTrailer by remember(streamId) { mutableStateOf(false) }
     var showResumeMenu by remember(streamId) { mutableStateOf(false) }

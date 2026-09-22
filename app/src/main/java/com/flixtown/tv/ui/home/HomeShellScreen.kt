@@ -49,6 +49,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.AppGraph
 import com.flixtown.tv.R
+import com.flixtown.tv.core.CrashReporter
+import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.AccountStatusStore
 import com.flixtown.tv.data.ContinueWatchingEntry
 import com.flixtown.tv.data.model.Movie
@@ -129,6 +131,23 @@ fun HomeShellScreen(graph: AppGraph) {
     }
 
     fun push(screen: ContentScreen) {
+        SafeLog.e("Navigation", "push -> $screen")
+        CrashReporter.lastRoute = screen.javaClass.simpleName
+        when (screen) {
+            is ContentScreen.MovieDetails -> {
+                CrashReporter.lastStreamId = screen.streamId.toString()
+                CrashReporter.lastContentType = "movie"
+            }
+            is ContentScreen.SeriesDetails -> {
+                CrashReporter.lastStreamId = screen.seriesId.toString()
+                CrashReporter.lastContentType = "series"
+            }
+            is ContentScreen.Player -> {
+                CrashReporter.lastStreamId = screen.contentId.toString()
+                CrashReporter.lastContentType = screen.mediaType
+            }
+            else -> Unit
+        }
         backStack.add(screen)
     }
 

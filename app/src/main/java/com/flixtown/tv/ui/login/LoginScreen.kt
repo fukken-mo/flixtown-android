@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.AppGraph
+import com.flixtown.tv.BuildConfig
 import com.flixtown.tv.R
 import com.flixtown.tv.core.BackendConstants
 import com.flixtown.tv.ui.components.FlixButton
@@ -96,6 +97,12 @@ fun LoginScreen(
                     Text(text = tab.label, style = MaterialTheme.typography.labelLarge)
                 }
             }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "Build ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                style = MaterialTheme.typography.labelMedium,
+                color = FtTextSecondary
+            )
         }
 
         Box(

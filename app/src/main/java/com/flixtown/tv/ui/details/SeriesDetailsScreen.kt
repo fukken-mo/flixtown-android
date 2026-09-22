@@ -62,8 +62,9 @@ fun SeriesDetailsScreen(
     seriesId: Int,
     onPlay: (ContentScreen.Player) -> Unit
 ) {
-    SafeLog.d("SeriesDetailsScreen", "opening seriesId=$seriesId")
+    SafeLog.e("SeriesDetailsScreen", "ENTER composition seriesId=$seriesId")
     val series = (catalogState as? CatalogUiState.Loaded)?.snapshot?.series?.firstOrNull { it.seriesId == seriesId }
+    SafeLog.e("SeriesDetailsScreen", "series lookup result: ${if (series == null) "NOT FOUND" else "found name=${series.name}"}")
 
     if (series == null) {
         Box(modifier = Modifier.fillMaxSize().background(FtBackground), contentAlignment = Alignment.Center) {
@@ -74,13 +75,17 @@ fun SeriesDetailsScreen(
 
     var details by remember(seriesId) { mutableStateOf<SeriesDetails?>(null) }
     LaunchedEffect(seriesId) {
+        SafeLog.e("SeriesDetailsScreen", "getSeriesDetails START seriesId=$seriesId")
         details = try {
-            graph.catalogRepository.getSeriesDetails(series)
+            graph.catalogRepository.getSeriesDetails(series).also {
+                SafeLog.e("SeriesDetailsScreen", "getSeriesDetails SUCCESS seriesId=$seriesId result=${it != null}")
+            }
         } catch (e: Exception) {
-            SafeLog.e("SeriesDetailsScreen", "getSeriesDetails threw for seriesId=$seriesId", e)
+            SafeLog.e("SeriesDetailsScreen", "getSeriesDetails THREW for seriesId=$seriesId", e)
             null
         }
     }
+    SafeLog.e("SeriesDetailsScreen", "composing body, name=${series.name} posterUrl=${series.posterUrl}")
 
     var selectedSeasonNumber by remember(seriesId) { mutableStateOf<Int?>(null) }
     LaunchedEffect(details) {
