@@ -119,11 +119,11 @@ fun SearchScreen(
                     start = FlixSpacing.safeHorizontal,
                     end = FlixSpacing.safeHorizontal,
                     // Same headroom reasoning as MoviesScreen's grid.
-                    top = FlixSpacing.rowHeaderGap,
+                    top = FlixSpacing.focusReserveTop,
                     bottom = FlixSpacing.safeVertical
                 ),
                 horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap),
-                verticalArrangement = Arrangement.spacedBy(FlixSpacing.sectionGap),
+                verticalArrangement = Arrangement.spacedBy(FlixSpacing.focusReserveTop * 2),
                 modifier = Modifier.fillMaxSize()
             ) {
                 itemsIndexed(results, key = { _, result -> result.key }) { index, result ->

@@ -146,15 +146,20 @@ private fun MoviesLoaded(
                 contentPadding = PaddingValues(
                     start = FlixSpacing.safeHorizontal,
                     end = FlixSpacing.safeHorizontal,
-                    // >= the ~9-12dp a focused card's 1.07x scale needs above
-                    // its natural top edge — matches Home's proven-safe
-                    // LazyRow vertical padding so the top grid row's focused
-                    // state can never clip against the grid's own edge.
-                    top = FlixSpacing.rowHeaderGap,
+                    // Reserves room for a focused top-row card's scale+lift
+                    // growth so it can't clip against the grid's own top
+                    // edge or poke past what the grid already accounts for
+                    // as its own bounds (which is what triggers an unwanted
+                    // scroll correction on ordinary LEFT/RIGHT navigation).
+                    top = FlixSpacing.focusReserveTop,
                     bottom = FlixSpacing.safeVertical
                 ),
                 horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap),
-                verticalArrangement = Arrangement.spacedBy(FlixSpacing.sectionGap),
+                // >= 2x focusReserveTop, since spacedBy splits this evenly
+                // between each pair of adjacent grid rows — every row needs
+                // the same top-edge protection the grid's own contentPadding
+                // gives the very first one.
+                verticalArrangement = Arrangement.spacedBy(FlixSpacing.focusReserveTop * 2),
                 modifier = Modifier.fillMaxSize()
             ) {
                 itemsIndexed(visibleMovies, key = { _, movie -> movie.streamId }) { index, movie ->

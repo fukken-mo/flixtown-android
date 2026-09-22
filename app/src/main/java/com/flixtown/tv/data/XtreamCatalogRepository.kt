@@ -156,7 +156,11 @@ class XtreamCatalogRepository(
             val episodesBySeason = dto.episodes.orEmpty()
             val seasons = (dto.seasons.orEmpty())
                 .mapNotNull { seasonDto ->
-                    val seasonNumber = seasonDto.seasonNumber ?: return@mapNotNull null
+                    // Season 0 is Xtream's convention for "Specials" — filtered
+                    // out here, at the data source, so nothing downstream
+                    // (season chips, default selection, focus requesters,
+                    // episode loading) ever sees it at all.
+                    val seasonNumber = seasonDto.seasonNumber?.takeIf { it > 0 } ?: return@mapNotNull null
                     val episodeDtos = episodesBySeason[seasonNumber.toString()].orEmpty()
                     SeasonInfo(
                         seasonNumber = seasonNumber,

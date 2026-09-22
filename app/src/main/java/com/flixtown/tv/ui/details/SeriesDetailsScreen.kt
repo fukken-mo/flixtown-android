@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -61,6 +62,7 @@ import com.flixtown.tv.ui.components.PrimaryActionButton
 import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SectionHeader
 import com.flixtown.tv.ui.components.SelectorMenu
+import com.flixtown.tv.ui.components.parseRawEpisodeTitle
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.player.SimpleVideoPlayerScreen
 import com.flixtown.tv.ui.player.openYouTubeVideo
@@ -310,15 +312,40 @@ fun SeriesDetailsScreen(
             if (seasons.isNotEmpty()) {
                 SectionHeader(title = "Seasons", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
                 Spacer(modifier = Modifier.height(FlixSpacing.rowHeaderGap))
+
+                // Explicit focus routing between the season row and the
+                // episode list below it, rather than trusting default 2D
+                // spatial focus search (which was landing DOWN-from-a-season
+                // back inside the season row instead of into episodes). One
+                // stable FocusRequester per season chip, plus one requester
+                // for "the first episode currently on screen" that every
+                // chip's DOWN points at — it's re-created (via `remember`
+                // keyed on the season) whenever the episode list itself
+                // changes, since that's a genuinely different composable
+                // instance each time the selection changes.
+                val seasonFocusRequesters = remember(seasons) {
+                    seasons.associate { it.seasonNumber to FocusRequester() }
+                }
+                val firstEpisodeFocusRequester = remember(selectedSeasonNumber) { FocusRequester() }
+                val selectedSeasonFocusRequester = seasonFocusRequesters[selectedSeasonNumber]
+
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal),
+                    contentPadding = PaddingValues(
+                        start = FlixSpacing.safeHorizontal,
+                        end = FlixSpacing.safeHorizontal,
+                        top = FlixSpacing.focusReserveTop,
+                        bottom = FlixSpacing.focusReserveBottom
+                    ),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(seasons, key = { it.seasonNumber }) { season ->
                         FilterChip(
                             label = season.name,
                             isSelected = season.seasonNumber == selectedSeasonNumber,
-                            onClick = { selectedSeasonNumber = season.seasonNumber }
+                            onClick = { selectedSeasonNumber = season.seasonNumber },
+                            modifier = Modifier
+                                .focusRequester(seasonFocusRequesters.getValue(season.seasonNumber))
+                                .focusProperties { down = firstEpisodeFocusRequester }
                         )
                     }
                 }
@@ -327,10 +354,18 @@ fun SeriesDetailsScreen(
 
                 val episodes = seasons.firstOrNull { it.seasonNumber == selectedSeasonNumber }?.episodes.orEmpty()
                 Column(
-                    modifier = Modifier.padding(horizontal = FlixSpacing.safeHorizontal),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    // Not a Lazy container, but this whole screen is a single
+                    // verticalScroll Column — a focused episode card's
+                    // scale+lift growth still needs somewhere to go that
+                    // doesn't clip against a neighbor or trigger a scroll
+                    // correction, same reasoning as every Lazy row/grid.
+                    modifier = Modifier.padding(
+                        horizontal = FlixSpacing.safeHorizontal,
+                        vertical = FlixSpacing.focusReserveTop
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    episodes.forEach { episode ->
+                    episodes.forEachIndexed { index, episode ->
                         val progress = remember(episode.id, selectedSeasonNumber) {
                             graph.continueWatchingStore.getAll().firstOrNull {
                                 it.mediaType == "episode" && it.seriesId == series.seriesId &&
@@ -340,7 +375,25 @@ fun SeriesDetailsScreen(
                         val progressFraction = progress?.let {
                             if (it.durationMs > 0) (it.positionMs.toFloat() / it.durationMs.toFloat()).coerceIn(0f, 1f) else null
                         }
-                        EpisodeCard(episode, progressFraction = progressFraction, onClick = { onEpisodeClick(episode) })
+                        EpisodeCard(
+                            episode = episode,
+                            seasonNumber = selectedSeasonNumber,
+                            progressFraction = progressFraction,
+                            onClick = { onEpisodeClick(episode) },
+                            modifier = Modifier
+                                // Vertical list: LEFT/RIGHT has nothing to do
+                                // here and must never fall through to default
+                                // spatial search, which could otherwise jump
+                                // back into the season row above.
+                                .focusProperties {
+                                    left = FocusRequester.Cancel
+                                    right = FocusRequester.Cancel
+                                    if (index == 0) {
+                                        selectedSeasonFocusRequester?.let { up = it }
+                                    }
+                                }
+                                .let { m -> if (index == 0) m.focusRequester(firstEpisodeFocusRequester) else m }
+                        )
                     }
                 }
             } else if (details != null) {
@@ -354,7 +407,12 @@ fun SeriesDetailsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
                     SectionHeader(title = "More Like This", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
                     LazyRow(
-                        contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+                        contentPadding = PaddingValues(
+                            start = FlixSpacing.safeHorizontal,
+                            end = FlixSpacing.safeHorizontal,
+                            top = FlixSpacing.focusReserveTop,
+                            bottom = FlixSpacing.focusReserveBottom
+                        ),
                         horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
                     ) {
                         items(similarSeries, key = { it.seriesId }) { similar ->
@@ -404,8 +462,19 @@ fun SeriesDetailsScreen(
 }
 
 @Composable
-private fun EpisodeCard(episode: Episode, progressFraction: Float?, onClick: () -> Unit) {
-    FlixFocusSurface(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+private fun EpisodeCard(
+    episode: Episode,
+    seasonNumber: Int?,
+    progressFraction: Float?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // The Xtream API gives one raw title string per episode (no separate
+    // structured "clean name" field), so a fallback parse is the only
+    // option here — but season/episode numbers ARE already structured data
+    // (separate JSON fields), so the "S03 E01" part never needs parsing.
+    val cleanTitle = remember(episode.title) { parseRawEpisodeTitle(episode.title).episodeTitle ?: episode.title }
+    FlixFocusSurface(onClick = onClick, modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -443,9 +512,11 @@ private fun EpisodeCard(episode: Episode, progressFraction: Float?, onClick: () 
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                val header = listOfNotNull("Episode ${episode.episodeNumber}", episode.runtimeMinutes?.let { "${it}m" })
-                Text(text = header.joinToString("   •   "), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
-                Text(text = episode.title, style = MaterialTheme.typography.titleMedium, color = FtTextPrimary)
+                val seasonEpisodeCode = seasonNumber?.let { "S%02d E%02d".format(it, episode.episodeNumber) }
+                    ?: "Episode ${episode.episodeNumber}"
+                val header = listOfNotNull(seasonEpisodeCode, episode.runtimeMinutes?.let { "${it}m" })
+                Text(text = header.joinToString(" • "), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
+                Text(text = cleanTitle, style = MaterialTheme.typography.titleMedium, color = FtTextPrimary)
                 if (!episode.plot.isNullOrBlank()) {
                     Text(
                         text = episode.plot,

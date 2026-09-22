@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -453,6 +454,20 @@ private fun HomeContent(
     var pendingFocusRowKey by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingFocusItemKey by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // Debug-only shake diagnostics (SafeLog.d is a no-op in release builds):
+    // logs the outer LazyColumn's own scroll position every time it actually
+    // changes, for any reason. Correlated by time against the "focus ->"
+    // line below in logcat, this is what proves (or disproves) whether an
+    // ordinary LEFT/RIGHT focus move inside one row is causing the OUTER
+    // list to scroll on its own — the exact mechanism this screen is
+    // suspected of triggering via focus-driven bring-into-view.
+    LaunchedEffect(Unit) {
+        snapshotFlow { homeListState.firstVisibleItemIndex to homeListState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                SafeLog.d("HomeShake", "outer scroll changed -> index=$index offset=$offset")
+            }
+    }
+
     when (catalogState) {
         is CatalogUiState.Loading -> HomeLoadingSkeleton()
         is CatalogUiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal)) {
@@ -498,7 +513,14 @@ private fun HomeContent(
                 entry.toHeroRowItem { onContinueWatchingClick(entry) }
             } ?: recentlyAdded.firstOrNull()
 
-            val onRowFocus: (RowItem) -> Unit = { focused.value = it; everFocusedContent = true }
+            val onRowFocus: (RowItem) -> Unit = { item ->
+                SafeLog.d(
+                    "HomeShake",
+                    "focus -> ${item.key} outer=(${homeListState.firstVisibleItemIndex},${homeListState.firstVisibleItemScrollOffset})"
+                )
+                focused.value = item
+                everFocusedContent = true
+            }
 
             val rowSpecs = remember(continueWatching, recentlyAdded, trending, latestMovies, latestSeries) {
                 buildList {
@@ -723,6 +745,15 @@ private fun PosterRow(
         SectionHeader(title = title, modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
         val listState = rememberLazyListState()
 
+        // Same debug-only diagnostic as the outer LazyColumn in HomeContent,
+        // scoped to this row so its logcat lines can be told apart by rowKey.
+        LaunchedEffect(rowKey) {
+            snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+                .collect { (index, offset) ->
+                    SafeLog.d("HomeShake", "row=$rowKey inner scroll changed -> index=$index offset=$offset")
+                }
+        }
+
         // Scrolls this row's own LazyRow to the exact item that launched
         // Details, once the outer LazyColumn has brought this row itself
         // into view (see the matching effect in HomeContent).
@@ -734,11 +765,21 @@ private fun PosterRow(
 
         LazyRow(
             state = listState,
-            // Vertical padding isn't cosmetic here: LazyRow clips its content
-            // to its own bounds, and with zero vertical margin a focused
-            // card's scale-up had nowhere to go but into that clip edge —
-            // this is the "focused poster gets cut off" bug.
-            contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+            // LazyRow clips its content to its own bounds, and this row's
+            // own height (contributed to the outer LazyColumn) is this
+            // padding plus the tallest visible card — both fixed regardless
+            // of focus. A focused card's scale+lift growth (up to ~1.045x +
+            // 6dp lift) must land entirely inside focusReserveTop/Bottom, or
+            // it both clips against the LazyRow's edge AND can poke past
+            // space the outer LazyColumn already considers this row's own,
+            // which is what triggers an unwanted compensating vertical
+            // scroll on ordinary LEFT/RIGHT navigation.
+            contentPadding = PaddingValues(
+                start = FlixSpacing.safeHorizontal,
+                end = FlixSpacing.safeHorizontal,
+                top = FlixSpacing.focusReserveTop,
+                bottom = FlixSpacing.focusReserveBottom
+            ),
             horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
         ) {
             itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
@@ -804,7 +845,12 @@ private fun ContinueWatchingRow(
 
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+            contentPadding = PaddingValues(
+                start = FlixSpacing.safeHorizontal,
+                end = FlixSpacing.safeHorizontal,
+                top = FlixSpacing.focusReserveTop,
+                bottom = FlixSpacing.focusReserveBottom
+            ),
             horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
         ) {
             itemsIndexed(items, key = { _, entry -> continueWatchingKey(entry) }) { index, entry ->

@@ -65,6 +65,17 @@ object FlixSpacing {
     // Top breathing room above the Details hero block (backdrop + poster +
     // title), so content never sits flush against the screen's top edge.
     val heroTopGap = 56.dp
+
+    // Used as top/bottom contentPadding (and, doubled, as the gap between
+    // rows) on every Lazy row/grid of focusable cards, so a focused card's
+    // scale+lift growth (up to ~1.045x + 6dp lift, i.e. up to ~14dp for the
+    // tallest realistic card here) always lands inside space that row/grid
+    // already accounts for as its own — never inside space that suddenly
+    // needs to be "brought into view" by an ancestor scrollable. First-/
+    // last-column clipping is covered separately by the much larger
+    // safeHorizontal edge margin already in use everywhere.
+    val focusReserveTop = 24.dp
+    val focusReserveBottom = 8.dp
 }
 
 /**

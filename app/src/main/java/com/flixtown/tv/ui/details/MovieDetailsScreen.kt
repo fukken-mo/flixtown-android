@@ -276,7 +276,12 @@ fun MovieDetailsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
                     SectionHeader(title = "More Like This", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
                     LazyRow(
-                        contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+                        contentPadding = PaddingValues(
+                            start = FlixSpacing.safeHorizontal,
+                            end = FlixSpacing.safeHorizontal,
+                            top = FlixSpacing.focusReserveTop,
+                            bottom = FlixSpacing.focusReserveBottom
+                        ),
                         horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
                     ) {
                         items(similarMovies, key = { it.streamId }) { similar ->

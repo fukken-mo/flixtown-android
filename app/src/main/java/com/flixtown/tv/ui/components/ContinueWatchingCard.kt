@@ -148,21 +148,24 @@ fun continueWatchingDisplay(entry: ContinueWatchingEntry): ContinueWatchingDispl
     return ContinueWatchingDisplay(seriesName, secondary)
 }
 
-private data class ParsedEpisodeTitle(val seriesName: String?, val episodeTitle: String?)
+data class ParsedEpisodeTitle(val seriesName: String?, val episodeTitle: String?)
 
 private val SEASON_EPISODE_CODE = Regex("""^S\d{1,2}E\d{1,3}$""", RegexOption.IGNORE_CASE)
 
 /**
- * Fallback only — used when an entry predates [ContinueWatchingEntry.seriesName]
- * /[ContinueWatchingEntry.episodeTitle] (saved before this pass) and the raw
- * title is whatever Xtream sent, e.g. "MobLand - MobLand - S02E01 - I Wanna
- * Be Your Dog" (some panels already bake the series name and season/episode
- * code into the episode title itself, hence the duplicate). Splits on " - ",
- * drops immediately-repeated segments, and treats everything before the
- * first SxxExx-shaped segment as the series name and everything after as the
- * episode title.
+ * Used whenever a raw Xtream episode title needs cleaning up and there's no
+ * structured field to prefer instead — e.g. a legacy [ContinueWatchingEntry]
+ * saved before [ContinueWatchingEntry.seriesName]/[ContinueWatchingEntry.episodeTitle]
+ * existed, or the season/episode list on a Series Details screen, where the
+ * Xtream API only ever returns one raw title string per episode (there's no
+ * separate structured field to prefer there at all). Raw titles look like
+ * "MobLand - MobLand - S02E01 - I Wanna Be Your Dog" (some panels bake the
+ * series name and season/episode code into the episode title itself, hence
+ * the duplicate). Splits on " - ", drops immediately-repeated segments, and
+ * treats everything before the first SxxExx-shaped segment as the series
+ * name and everything after as the episode title.
  */
-private fun parseRawEpisodeTitle(raw: String): ParsedEpisodeTitle {
+fun parseRawEpisodeTitle(raw: String): ParsedEpisodeTitle {
     val parts = raw.split(" - ").map { it.trim() }.filter { it.isNotEmpty() }
     val deduped = parts.filterIndexed { index, part -> index == 0 || part != parts[index - 1] }
     val codeIndex = deduped.indexOfFirst { SEASON_EPISODE_CODE.matches(it) }

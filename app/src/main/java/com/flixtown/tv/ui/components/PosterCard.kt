@@ -77,14 +77,21 @@ fun PosterCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = FtTextSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            // Fixed-height box, not a conditional Text: a card with no
+            // subtitle must be exactly as tall as one with a subtitle, or
+            // every card in a row that mixes both ends up a different
+            // height — same class of bug as the Home hero's title/subtitle
+            // reflow, just at the card level instead of the hero level.
+            Box(modifier = Modifier.height(18.dp)) {
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = FtTextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
         }
