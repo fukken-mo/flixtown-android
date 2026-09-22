@@ -2,6 +2,7 @@ package com.flixtown.tv.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -63,6 +64,7 @@ private val FlixTownColorScheme = darkColorScheme(
 // generic Android system look, and ships with the full weight range this
 // Typography actually needs (400/500/600/700) from one file instead of
 // four separate static ones.
+@OptIn(ExperimentalTextApi::class)
 private val InterFontFamily = FontFamily(
     Font(R.font.inter_variable, weight = FontWeight.Normal, variationSettings = FontVariation.Settings(FontVariation.weight(400))),
     Font(R.font.inter_variable, weight = FontWeight.Medium, variationSettings = FontVariation.Settings(FontVariation.weight(500))),
