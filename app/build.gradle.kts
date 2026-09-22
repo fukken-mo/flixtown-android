@@ -12,8 +12,8 @@ android {
         applicationId = "com.flixtown.tv"
         minSdk = 23
         targetSdk = 36
-        versionCode = 19
-        versionName = "0.9.0"
+        versionCode = 20
+        versionName = "0.9.1"
     }
 
     buildFeatures {
