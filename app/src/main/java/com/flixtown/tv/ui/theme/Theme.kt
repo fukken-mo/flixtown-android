@@ -59,6 +59,42 @@ object FlixSpacing {
     val cardGap = 20.dp
 }
 
+/**
+ * One place for every motion timing/scale value in the app — nothing
+ * animation-related should hardcode its own ms/scale/dp constant elsewhere.
+ * Values are deliberately restrained (short durations, small scales, no
+ * spring overshoot): this is a movie/TV app, not a game launcher, and every
+ * focus animation here is a draw-phase transform only (scale/translation/
+ * alpha) — never a layout-affecting property — so it can never itself cause
+ * a relayout of surrounding content.
+ */
+object FlixMotion {
+    // Poster/card focus (graphicsLayer scale + translationY only).
+    const val FocusDurationMs = 160
+    const val FocusScale = 1.045f
+    val FocusLift = 6.dp
+
+    // Buttons (Play/Trailer/Secondary/etc) — a smaller, quicker version of
+    // the same language since buttons already have strong color contrast.
+    const val ButtonFocusDurationMs = 140
+    const val ButtonFocusScale = 1.025f
+
+    // Cast portraits.
+    const val CastFocusDurationMs = 150
+    const val CastFocusScale = 1.04f
+
+    // Hero: how long focus has to "settle" on one item before the backdrop
+    // swaps, and how long that swap's crossfade takes.
+    const val HeroDebounceMs = 220L
+    const val HeroCrossfadeMs = 300
+
+    // LazyRow scroll-into-view when the carousel actually needs to move.
+    const val CarouselScrollMs = 220
+
+    // Details screen entry / Home<->Details transition.
+    const val ScreenTransitionMs = 200
+}
+
 @Composable
 fun FlixTownTheme(content: @Composable () -> Unit) {
     MaterialTheme(

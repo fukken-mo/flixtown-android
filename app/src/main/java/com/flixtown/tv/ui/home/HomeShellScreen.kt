@@ -1,8 +1,14 @@
 package com.flixtown.tv.ui.home
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -66,6 +72,7 @@ import com.flixtown.tv.ui.catalog.CatalogViewModel
 import com.flixtown.tv.ui.catalog.MoviesScreen
 import com.flixtown.tv.ui.catalog.SeriesScreen
 import com.flixtown.tv.ui.components.BackdropLayer
+import com.flixtown.tv.ui.components.ContinueWatchingCard
 import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
@@ -73,6 +80,7 @@ import com.flixtown.tv.ui.components.PosterSkeletonCard
 import com.flixtown.tv.ui.components.PrimaryActionButton
 import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SectionHeader
+import com.flixtown.tv.ui.components.continueWatchingDisplay
 import com.flixtown.tv.ui.details.MovieDetailsScreen
 import com.flixtown.tv.ui.details.SeriesDetailsScreen
 import com.flixtown.tv.ui.nav.ContentScreen
@@ -81,6 +89,7 @@ import com.flixtown.tv.ui.nav.NavSection
 import com.flixtown.tv.ui.nav.sectionFor
 import com.flixtown.tv.ui.player.PlayerScreen
 import com.flixtown.tv.ui.search.SearchScreen
+import com.flixtown.tv.ui.theme.FlixMotion
 import com.flixtown.tv.ui.theme.FlixSpacing
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtBackground
@@ -204,7 +213,9 @@ fun HomeShellScreen(graph: AppGraph) {
                         seriesId = series.seriesId,
                         season = entry.season,
                         episodeNumber = entry.episode,
-                        resumePositionMs = entry.positionMs
+                        resumePositionMs = entry.positionMs,
+                        seriesName = entry.seriesName ?: series.name,
+                        episodeTitle = entry.episodeTitle ?: episode.title
                     )
                 )
             }
@@ -241,12 +252,27 @@ fun HomeShellScreen(graph: AppGraph) {
         )
 
         CompositionLocalProvider(LocalRailRevealFocusRequester provides railRevealFocusRequester) {
-            Column(
+            // A restrained fade + tiny scale between screens — never a slide,
+            // never anything that animates measured size (sizeTransform =
+            // null: every branch already fills the same weight(1f) area, so
+            // there's nothing to interpolate there anyway).
+            AnimatedContent(
+                targetState = current,
+                transitionSpec = {
+                    (fadeIn(tween(FlixMotion.ScreenTransitionMs)) +
+                        scaleIn(tween(FlixMotion.ScreenTransitionMs), initialScale = 1.015f))
+                        .togetherWith(
+                            fadeOut(tween(FlixMotion.ScreenTransitionMs)) +
+                                scaleOut(tween(FlixMotion.ScreenTransitionMs), targetScale = 0.985f)
+                        )
+                },
+                sizeTransform = null,
+                label = "screenTransition",
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-            ) {
-                when (val screen = current) {
+            ) { screen ->
+                when (screen) {
                     is ContentScreen.Home -> saveableStateHolder.SaveableStateProvider("home") {
                         HomeContent(
                             catalogState = catalogState,
@@ -381,7 +407,10 @@ private data class RowItem(
     val onClick: () -> Unit
 )
 
-private data class HomeRowSpec(val key: String, val title: String, val items: List<RowItem>)
+private sealed class HomeRowSpec(val key: String) {
+    class Posters(key: String, val title: String, val items: List<RowItem>) : HomeRowSpec(key)
+    class Continuing(key: String, val items: List<ContinueWatchingEntry>) : HomeRowSpec(key)
+}
 
 /**
  * Home's outer shell: one continuous LazyColumn — the cinematic hero is its
@@ -441,16 +470,6 @@ private fun HomeContent(
         is CatalogUiState.Loaded -> {
             val snapshot = catalogState.snapshot
 
-            val continueWatchingItems = continueWatching.map { entry ->
-                val progressLabel = if (entry.durationMs > 0) {
-                    val percent = (entry.positionMs * 100 / entry.durationMs).coerceIn(0, 100)
-                    "$percent% watched"
-                } else null
-                RowItem("cw-${entry.mediaType}-${entry.streamId}", entry.title, entry.posterUrl, progressLabel, entry.posterUrl) {
-                    onContinueWatchingClick(entry)
-                }
-            }
-
             val recentlyAdded = (snapshot.movies.map { it to it.addedEpochSeconds } + snapshot.series.map { it to it.addedEpochSeconds })
                 .sortedByDescending { it.second }
                 .take(ROW_ITEM_LIMIT)
@@ -477,31 +496,34 @@ private fun HomeContent(
             // Whatever the user last focused stays featured; before any
             // focus event, feature Continue Watching's top item, else the
             // most recently added title — never a blank hero.
-            val heroFallback = continueWatchingItems.firstOrNull() ?: recentlyAdded.firstOrNull()
+            val heroFallback = continueWatching.firstOrNull()?.let { entry ->
+                entry.toHeroRowItem { onContinueWatchingClick(entry) }
+            } ?: recentlyAdded.firstOrNull()
 
             val onRowFocus: (RowItem) -> Unit = { focused.value = it; everFocusedContent = true }
 
-            val rowSpecs = remember(continueWatchingItems, recentlyAdded, trending, latestMovies, latestSeries) {
+            val rowSpecs = remember(continueWatching, recentlyAdded, trending, latestMovies, latestSeries) {
                 buildList {
-                    if (continueWatchingItems.isNotEmpty()) add(HomeRowSpec("row-continue-watching", "Continue Watching", continueWatchingItems))
-                    if (recentlyAdded.isNotEmpty()) add(HomeRowSpec("row-recently-added", "Recently Added", recentlyAdded))
-                    if (trending.isNotEmpty()) add(HomeRowSpec("row-trending", "Trending", trending))
-                    if (latestMovies.isNotEmpty()) add(HomeRowSpec("row-latest-movies", "Latest Movies", latestMovies))
-                    if (latestSeries.isNotEmpty()) add(HomeRowSpec("row-latest-series", "Latest Series", latestSeries))
+                    if (continueWatching.isNotEmpty()) add(HomeRowSpec.Continuing("row-continue-watching", continueWatching))
+                    if (recentlyAdded.isNotEmpty()) add(HomeRowSpec.Posters("row-recently-added", "Recently Added", recentlyAdded))
+                    if (trending.isNotEmpty()) add(HomeRowSpec.Posters("row-trending", "Trending", trending))
+                    if (latestMovies.isNotEmpty()) add(HomeRowSpec.Posters("row-latest-movies", "Latest Movies", latestMovies))
+                    if (latestSeries.isNotEmpty()) add(HomeRowSpec.Posters("row-latest-series", "Latest Series", latestSeries))
                 }
             }
 
             // Precise restoration: scroll the outer column to the row that
-            // launched Details (2 = hero + hero-spacer items before any row).
-            // If that row no longer exists by the time we're back (catalog
-            // changed under us), fall through to the generic "focus
-            // somewhere in content" fallback instead of leaving focus stuck
-            // on a target that will never resolve.
+            // launched Details (1 = the hero item before any row — there's no
+            // separate hero-spacer item; the gap comes from the LazyColumn's
+            // own verticalArrangement below). If that row no longer exists by
+            // the time we're back (catalog changed under us), fall through to
+            // the generic "focus somewhere in content" fallback instead of
+            // leaving focus stuck on a target that will never resolve.
             LaunchedEffect(pendingFocusRowKey, rowSpecs) {
                 val targetRowKey = pendingFocusRowKey ?: return@LaunchedEffect
                 val rowIndex = rowSpecs.indexOfFirst { it.key == targetRowKey }
                 if (rowIndex >= 0) {
-                    homeListState.scrollToItem(rowIndex + 2)
+                    homeListState.scrollToItem(rowIndex + 1)
                 } else {
                     pendingFocusRowKey = null
                     pendingFocusItemKey = null
@@ -522,6 +544,12 @@ private fun HomeContent(
 
             LazyColumn(
                 state = homeListState,
+                // A single consistent gap after every item (hero included) —
+                // previously a one-off "hero-spacer" item handled the hero
+                // case and every row butted straight up against the next
+                // row's heading with no gap at all, which is what read as
+                // "Recently Added sitting right under Continue Watching."
+                verticalArrangement = Arrangement.spacedBy(FlixSpacing.sectionGap),
                 modifier = Modifier
                     .fillMaxSize()
                     .focusRequester(contentFocusRequester)
@@ -535,24 +563,40 @@ private fun HomeContent(
                         modifier = Modifier.fillParentMaxHeight(0.56f)
                     )
                 }
-                item(key = "hero-spacer") { Spacer(modifier = Modifier.height(FlixSpacing.sectionGap)) }
 
                 items(rowSpecs, key = { it.key }) { spec ->
-                    PosterRow(
-                        rowKey = spec.key,
-                        title = spec.title,
-                        items = spec.items,
-                        pendingFocusItemKey = if (pendingFocusRowKey == spec.key) pendingFocusItemKey else null,
-                        onFocusedItemChange = onRowFocus,
-                        onItemLaunch = { rowKey, itemKey ->
-                            pendingFocusRowKey = rowKey
-                            pendingFocusItemKey = itemKey
-                        },
-                        onFocusRestored = {
-                            pendingFocusRowKey = null
-                            pendingFocusItemKey = null
-                        }
-                    )
+                    when (spec) {
+                        is HomeRowSpec.Continuing -> ContinueWatchingRow(
+                            rowKey = spec.key,
+                            items = spec.items,
+                            pendingFocusItemKey = if (pendingFocusRowKey == spec.key) pendingFocusItemKey else null,
+                            onFocusedItemChange = onRowFocus,
+                            onItemLaunch = { rowKey, itemKey ->
+                                pendingFocusRowKey = rowKey
+                                pendingFocusItemKey = itemKey
+                            },
+                            onFocusRestored = {
+                                pendingFocusRowKey = null
+                                pendingFocusItemKey = null
+                            },
+                            onClick = onContinueWatchingClick
+                        )
+                        is HomeRowSpec.Posters -> PosterRow(
+                            rowKey = spec.key,
+                            title = spec.title,
+                            items = spec.items,
+                            pendingFocusItemKey = if (pendingFocusRowKey == spec.key) pendingFocusItemKey else null,
+                            onFocusedItemChange = onRowFocus,
+                            onItemLaunch = { rowKey, itemKey ->
+                                pendingFocusRowKey = rowKey
+                                pendingFocusItemKey = itemKey
+                            },
+                            onFocusRestored = {
+                                pendingFocusRowKey = null
+                                pendingFocusItemKey = null
+                            }
+                        )
+                    }
                 }
                 item(key = "bottom-spacer") { Spacer(modifier = Modifier.height(FlixSpacing.safeVertical)) }
             }
@@ -603,15 +647,33 @@ private fun HomeHero(
                     .padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.safeVertical),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.displayLarge,
-                    color = FtTextPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!item.subtitle.isNullOrBlank()) {
-                    Text(text = item.subtitle, style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                // Fixed-height boxes, not just maxLines: a shorter title or a
+                // missing subtitle must never shrink this Column's measured
+                // height, because it's BottomStart-anchored — a height change
+                // here shifts every line (including the button) up or down,
+                // and since HomeHero re-renders on every focus change across
+                // any row, an un-reserved height was reflowing on nearly
+                // every D-pad press. This is the actual mechanism behind the
+                // "whole screen shakes on LEFT/RIGHT" report.
+                Box(modifier = Modifier.height(112.dp), contentAlignment = Alignment.BottomStart) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.displayLarge,
+                        color = FtTextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Box(modifier = Modifier.height(20.dp), contentAlignment = Alignment.CenterStart) {
+                    if (!item.subtitle.isNullOrBlank()) {
+                        Text(
+                            text = item.subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = FtTextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 PrimaryActionButton(text = "More Info", onClick = item.onClick)
             }
@@ -712,6 +774,79 @@ private fun PosterRow(
             }
         }
     }
+}
+
+/**
+ * Continue Watching's own row — deliberately not [PosterRow]: resume cards
+ * are 16:9 landscape ([ContinueWatchingCard]), not the 2:3 poster shape, so
+ * this is a parallel implementation of the exact same focus-restoration
+ * wiring (scroll-into-view + per-item requestFocus on recomposition) rather
+ * than trying to force both card shapes through one generic row.
+ */
+@Composable
+private fun ContinueWatchingRow(
+    rowKey: String,
+    items: List<ContinueWatchingEntry>,
+    pendingFocusItemKey: String?,
+    onFocusedItemChange: (RowItem) -> Unit,
+    onItemLaunch: (rowKey: String, itemKey: String) -> Unit,
+    onFocusRestored: () -> Unit,
+    onClick: (ContinueWatchingEntry) -> Unit
+) {
+    val railFocusRequester = LocalRailRevealFocusRequester.current
+    Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
+        SectionHeader(title = "Continue Watching", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
+        val listState = rememberLazyListState()
+
+        LaunchedEffect(pendingFocusItemKey, items) {
+            val targetKey = pendingFocusItemKey ?: return@LaunchedEffect
+            val index = items.indexOfFirst { continueWatchingKey(it) == targetKey }
+            if (index >= 0) listState.scrollToItem(index) else onFocusRestored()
+        }
+
+        LazyRow(
+            state = listState,
+            contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
+        ) {
+            itemsIndexed(items, key = { _, entry -> continueWatchingKey(entry) }) { index, entry ->
+                val key = continueWatchingKey(entry)
+                val itemFocusRequester = remember(key) { FocusRequester() }
+                LaunchedEffect(Unit) {
+                    if (pendingFocusItemKey == key) {
+                        itemFocusRequester.requestFocus()
+                        onFocusRestored()
+                    }
+                }
+                ContinueWatchingCard(
+                    entry = entry,
+                    onClick = {
+                        onItemLaunch(rowKey, key)
+                        onClick(entry)
+                    },
+                    modifier = Modifier
+                        .focusRequester(itemFocusRequester)
+                        .onFocusChanged { state ->
+                            if (state.isFocused) onFocusedItemChange(entry.toHeroRowItem { onClick(entry) })
+                        }
+                        .let { m ->
+                            if (index == 0 && railFocusRequester != null) {
+                                m.focusProperties { left = railFocusRequester }
+                            } else {
+                                m
+                            }
+                        }
+                )
+            }
+        }
+    }
+}
+
+private fun continueWatchingKey(entry: ContinueWatchingEntry) = "cw-${entry.mediaType}-${entry.streamId}"
+
+private fun ContinueWatchingEntry.toHeroRowItem(onClick: () -> Unit): RowItem {
+    val display = continueWatchingDisplay(this)
+    return RowItem(continueWatchingKey(this), display.primary, posterUrl, display.secondary, posterUrl, onClick)
 }
 
 private const val ROW_ITEM_LIMIT = 15

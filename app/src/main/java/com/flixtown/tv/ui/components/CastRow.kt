@@ -42,6 +42,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import com.flixtown.tv.data.model.CastMember
 import com.flixtown.tv.data.model.imageUrl
+import com.flixtown.tv.ui.theme.FlixMotion
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextMuted
@@ -97,7 +98,11 @@ private fun PlaceholderChip() {
 @Composable
 private fun ActorChip(member: CastMember) {
     var isFocused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (isFocused) 1.06f else 1f, tween(150), label = "castScale")
+    val scale by animateFloatAsState(
+        if (isFocused) FlixMotion.CastFocusScale else 1f,
+        tween(FlixMotion.CastFocusDurationMs),
+        label = "castScale"
+    )
     val imageUrl = member.imageUrl
 
     Column(
@@ -120,7 +125,7 @@ private fun ActorChip(member: CastMember) {
             ),
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f),
             border = ClickableSurfaceDefaults.border(
-                focusedBorder = Border(border = BorderStroke(2.dp, FtAccent), shape = CircleShape)
+                focusedBorder = Border(border = BorderStroke(1.5.dp, FtAccent), shape = CircleShape)
             )
         ) {
             if (imageUrl == null) {

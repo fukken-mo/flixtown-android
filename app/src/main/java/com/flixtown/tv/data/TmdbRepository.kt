@@ -44,13 +44,21 @@ class TmdbRepository(private val configRepository: ConfigRepository) {
         getCast(type = "tv", tmdbIdFromXtream = tmdbIdFromXtream, title = title, year = year)
 
     private suspend fun getCast(type: String, tmdbIdFromXtream: Int?, title: String, year: Int?): List<CastMember> {
-        if (configRepository.getCached()?.tmdbEnabled != true) return emptyList()
+        if (configRepository.getCached()?.tmdbEnabled != true) {
+            SafeLog.d(TAG, "getCast($type, \"$title\") skipped: tmdb_enabled is false/missing in cached config")
+            return emptyList()
+        }
 
-        val tmdbId = tmdbIdFromXtream ?: resolveTmdbId(type, title, year) ?: return emptyList()
+        val tmdbId = tmdbIdFromXtream ?: resolveTmdbId(type, title, year)
+        if (tmdbId == null) {
+            SafeLog.d(TAG, "getCast($type, \"$title\") no tmdb id (neither Xtream nor /resolve produced one)")
+            return emptyList()
+        }
         val cacheKey = "$type:$tmdbId"
         creditsCache[cacheKey]?.let { return it }
 
         val fetched = fetchCredits(type, tmdbId)
+        SafeLog.d(TAG, "getCast($type, \"$title\") tmdbId=$tmdbId -> ${fetched.size} cast members")
         creditsCache[cacheKey] = fetched
         return fetched
     }
@@ -70,7 +78,10 @@ class TmdbRepository(private val configRepository: ConfigRepository) {
                 val request = Request.Builder().url(builder.build()).get().build()
                 NetworkModule.client.newCall(request).execute().use { response ->
                     val body = response.body?.string()
-                    if (!response.isSuccessful || body.isNullOrBlank()) return@withContext null
+                    if (!response.isSuccessful || body.isNullOrBlank()) {
+                        SafeLog.d(TAG, "resolve HTTP ${response.code} for \"$title\" (body ${if (body.isNullOrBlank()) "empty" else "present"})")
+                        return@withContext null
+                    }
                     NetworkModule.gson.fromJson(body, TmdbResolveResponseDto::class.java)?.tmdbId
                 }
             } catch (e: Exception) {
@@ -93,7 +104,10 @@ class TmdbRepository(private val configRepository: ConfigRepository) {
             val request = Request.Builder().url(builder.build()).get().build()
             NetworkModule.client.newCall(request).execute().use { response ->
                 val body = response.body?.string()
-                if (!response.isSuccessful || body.isNullOrBlank()) return@withContext emptyList()
+                if (!response.isSuccessful || body.isNullOrBlank()) {
+                    SafeLog.d(TAG, "credits HTTP ${response.code} for $type/$tmdbId (body ${if (body.isNullOrBlank()) "empty" else "present"})")
+                    return@withContext emptyList()
+                }
                 val dto = NetworkModule.gson.fromJson(body, TmdbCreditsResponseDto::class.java)
                 dto?.cast.orEmpty().mapNotNull { it.toDomain() }
             }

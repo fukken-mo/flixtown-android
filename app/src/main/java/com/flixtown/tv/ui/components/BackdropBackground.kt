@@ -17,25 +17,24 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
+import com.flixtown.tv.ui.theme.FlixMotion
 import com.flixtown.tv.ui.theme.FtBackground
 import kotlinx.coroutines.delay
-
-private const val CROSSFADE_MS = 150
-private const val BACKDROP_DEBOUNCE_MS = 300L
 
 /**
  * Debounces a rapidly-changing value (e.g. the URL of whatever poster
  * currently has focus) so fast D-pad navigation doesn't fire a decode/crossfade
  * per transient stop — only the value that's still current after
- * [BACKDROP_DEBOUNCE_MS] of no further change is ever handed to the caller,
- * which also means intermediate URLs are never requested at all (nothing to
- * "cancel").
+ * [FlixMotion.HeroDebounceMs] of no further change is ever handed to the
+ * caller, which also means intermediate URLs are never requested at all
+ * (nothing to "cancel"). Rapidly moving through Movie A/B/C/D never flashes
+ * four backdrops — only the one focus actually settles on.
  */
 @Composable
 fun rememberDebouncedBackdropUrl(target: String?): String? {
     var debounced by remember { mutableStateOf(target) }
     LaunchedEffect(target) {
-        delay(BACKDROP_DEBOUNCE_MS)
+        delay(FlixMotion.HeroDebounceMs)
         debounced = target
     }
     return debounced
@@ -70,7 +69,7 @@ fun BackdropBackground(imageUrl: String?, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize().background(FtBackground)) {
         Crossfade(
             targetState = imageUrl,
-            animationSpec = tween(durationMillis = CROSSFADE_MS),
+            animationSpec = tween(durationMillis = FlixMotion.HeroCrossfadeMs),
             label = "backdrop"
         ) { url ->
             if (!url.isNullOrBlank()) {

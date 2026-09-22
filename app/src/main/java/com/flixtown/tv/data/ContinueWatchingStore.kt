@@ -16,7 +16,17 @@ data class ContinueWatchingEntry(
     val positionMs: Long,
     val durationMs: Long,
     val updatedAtMillis: Long,
-    val completed: Boolean = false
+    val completed: Boolean = false,
+    // Structured display data for episodes, populated straight from the
+    // catalog at save time (never string-parsed) so a raw Xtream episode
+    // title that already embeds "Series - S02E01 - Episode Name" doesn't
+    // get concatenated with the series name a second time. Null on older
+    // cached entries saved before these fields existed and on movies (which
+    // don't need them — `title` alone is already the movie's name); the
+    // Continue Watching UI falls back to parsing `title` only when these
+    // are absent.
+    val seriesName: String? = null,
+    val episodeTitle: String? = null
 )
 
 /**

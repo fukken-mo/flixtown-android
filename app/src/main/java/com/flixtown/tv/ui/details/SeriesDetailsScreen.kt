@@ -152,12 +152,14 @@ fun SeriesDetailsScreen(
                 contentId = episode.id.toIntOrNull() ?: episode.id.hashCode(),
                 mediaType = "episode",
                 title = "${series.name} – ${episode.title}",
-                posterUrl = episode.thumbnailUrl ?: series.posterUrl,
+                posterUrl = episode.thumbnailUrl ?: series.backdropUrl ?: series.posterUrl,
                 streamUrl = url,
                 seriesId = series.seriesId,
                 season = selectedSeasonNumber,
                 episodeNumber = episode.episodeNumber,
-                resumePositionMs = resumeMs
+                resumePositionMs = resumeMs,
+                seriesName = series.name,
+                episodeTitle = episode.title
             )
         )
     }

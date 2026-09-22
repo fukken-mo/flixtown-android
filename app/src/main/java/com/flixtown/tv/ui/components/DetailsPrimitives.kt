@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +25,7 @@ import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.flixtown.tv.ui.theme.FlixMotion
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtBackground
 import com.flixtown.tv.ui.theme.FtRatingGold
@@ -32,20 +34,25 @@ import com.flixtown.tv.ui.theme.FtTextMuted
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 
-private const val ANIM_MS = 150
-private const val PRESS_SCALE = 1.04f
-
 /** The bright, high-contrast Play button — the one thing on a details screen that should stand out immediately. */
 @Composable
 fun PrimaryActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     var isFocused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (isFocused) PRESS_SCALE else 1f, tween(ANIM_MS), label = "primaryScale")
+    val anim = tween<Float>(durationMillis = FlixMotion.ButtonFocusDurationMs)
+    val scale by animateFloatAsState(if (isFocused) FlixMotion.ButtonFocusScale else 1f, anim, label = "primaryScale")
+    val shape = RoundedCornerShape(8.dp)
     Surface(
         onClick = onClick,
         modifier = modifier
+            .shadow(
+                elevation = if (isFocused) 10.dp else 0.dp,
+                shape = shape,
+                ambientColor = FtAccent,
+                spotColor = FtAccent
+            )
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .onFocusChanged { isFocused = it.isFocused },
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        shape = ClickableSurfaceDefaults.shape(shape = shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = FtTextPrimary,
             contentColor = FtBackground,
@@ -56,7 +63,7 @@ fun PrimaryActionButton(text: String, onClick: () -> Unit, modifier: Modifier = 
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f),
         border = ClickableSurfaceDefaults.border(
-            focusedBorder = Border(border = BorderStroke(2.dp, FtAccent), shape = RoundedCornerShape(8.dp))
+            focusedBorder = Border(border = BorderStroke(1.5.dp, FtAccent), shape = shape)
         )
     ) {
         Box(modifier = Modifier.padding(horizontal = 26.dp, vertical = 14.dp)) {
@@ -69,13 +76,21 @@ fun PrimaryActionButton(text: String, onClick: () -> Unit, modifier: Modifier = 
 @Composable
 fun SecondaryActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     var isFocused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (isFocused) PRESS_SCALE else 1f, tween(ANIM_MS), label = "secondaryScale")
+    val anim = tween<Float>(durationMillis = FlixMotion.ButtonFocusDurationMs)
+    val scale by animateFloatAsState(if (isFocused) FlixMotion.ButtonFocusScale else 1f, anim, label = "secondaryScale")
+    val shape = RoundedCornerShape(8.dp)
     Surface(
         onClick = onClick,
         modifier = modifier
+            .shadow(
+                elevation = if (isFocused) 10.dp else 0.dp,
+                shape = shape,
+                ambientColor = FtAccent,
+                spotColor = FtAccent
+            )
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .onFocusChanged { isFocused = it.isFocused },
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        shape = ClickableSurfaceDefaults.shape(shape = shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = FtSurfaceElevated.copy(alpha = 0.72f),
             contentColor = FtTextPrimary,
@@ -86,8 +101,8 @@ fun SecondaryActionButton(text: String, onClick: () -> Unit, modifier: Modifier 
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f),
         border = ClickableSurfaceDefaults.border(
-            border = Border(border = BorderStroke(1.dp, FtTextMuted.copy(alpha = 0.4f)), shape = RoundedCornerShape(8.dp)),
-            focusedBorder = Border(border = BorderStroke(2.dp, FtAccent), shape = RoundedCornerShape(8.dp))
+            border = Border(border = BorderStroke(1.dp, FtTextMuted.copy(alpha = 0.4f)), shape = shape),
+            focusedBorder = Border(border = BorderStroke(1.5.dp, FtAccent), shape = shape)
         )
     ) {
         Box(modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp)) {

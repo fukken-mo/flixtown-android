@@ -18,6 +18,27 @@ function ft_tmdb_api_key(): ?string
 }
 
 /**
+ * Whether the admin panel has TMDB enrichment turned on. Deliberately
+ * fail-safe: an installation whose app_settings table predates the
+ * tmdb_enabled column (added alongside this proxy) would otherwise throw an
+ * uncaught PDOException on every credits/resolve call — that's treated the
+ * same as "not enabled" rather than as a fatal error, with a log line
+ * pointing at the real cause (a pending schema migration) instead of a raw
+ * stack trace reaching the client.
+ */
+function ft_tmdb_is_enabled(PDO $pdo): bool
+{
+    try {
+        $stmt = $pdo->query('SELECT tmdb_enabled FROM app_settings WHERE id = 1');
+        $settings = $stmt->fetch();
+        return $settings !== false && (bool) $settings['tmdb_enabled'];
+    } catch (PDOException $e) {
+        error_log('[tmdb_client] tmdb_enabled check failed (is app_settings.tmdb_enabled migrated on this DB?): ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * @return array{ok: bool, data?: array, reason?: string}
  */
 function ft_tmdb_get(string $path, array $query): array

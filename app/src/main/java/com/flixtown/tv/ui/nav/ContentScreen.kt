@@ -30,7 +30,12 @@ sealed interface ContentScreen {
         val seriesId: Int? = null,
         val season: Int? = null,
         val episodeNumber: Int? = null,
-        val resumePositionMs: Long = 0L
+        val resumePositionMs: Long = 0L,
+        // Structured Continue Watching display data — see
+        // ContinueWatchingEntry.seriesName/episodeTitle for why these are
+        // threaded through rather than parsed back out of `title` later.
+        val seriesName: String? = null,
+        val episodeTitle: String? = null
     ) : ContentScreen
 }
 

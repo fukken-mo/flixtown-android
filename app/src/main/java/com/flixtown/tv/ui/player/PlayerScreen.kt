@@ -175,7 +175,9 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
                 positionMs = pos,
                 durationMs = dur,
                 updatedAtMillis = System.currentTimeMillis(),
-                completed = pos >= dur * COMPLETE_THRESHOLD
+                completed = pos >= dur * COMPLETE_THRESHOLD,
+                seriesName = screen.seriesName,
+                episodeTitle = screen.episodeTitle
             )
         )
     }
