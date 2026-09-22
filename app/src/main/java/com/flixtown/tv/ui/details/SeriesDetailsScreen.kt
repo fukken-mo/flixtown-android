@@ -210,114 +210,126 @@ fun SeriesDetailsScreen(
             // against the screen's top edge — static, not focus-dependent.
             Spacer(modifier = Modifier.height(FlixSpacing.heroTopGap))
 
-            // Pure atmosphere — no overlaid poster/title here any more. The
-            // poster and every piece of hero text now live in the plain
-            // Column below, all starting at the SAME x (safeHorizontal),
-            // same as Cast/Seasons/More Like This — previously the poster
-            // shared a Row with the title block, which pushed title/
-            // metadata/genres/description/buttons to safeHorizontal +
-            // poster width + gap (measured at 266dp against a 64dp guide on
-            // a real device), while the headings below started flush at
-            // 64dp. Stacking the poster above the text instead of beside it
-            // is what actually fixes that inconsistency.
-            Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+            // The backdrop is one continuous image behind the whole hero
+            // block (poster + title/metadata/genres/description/buttons),
+            // not a separate band above it — matchParentSize() makes the
+            // backdrop + gradient size themselves to whatever height the
+            // Column of real content ends up needing (1- vs 2-line title,
+            // genres present or not, etc.), instead of guessing a fixed
+            // height. The Column itself is what actually fixes the
+            // alignment bug: poster, title, metadata, genres, description,
+            // and buttons are now all direct children of ONE Column padded
+            // by exactly safeHorizontal — the same edge Cast/Seasons/More
+            // Like This use — so nothing needs a poster-width-plus-gap
+            // offset the way the old side-by-side Row did (that measured
+            // 266dp against a 64dp guide on a real device).
+            Box(modifier = Modifier.fillMaxWidth()) {
                 val backdropUrl = series.backdropUrl ?: series.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = backdropUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.matchParentSize()
                     )
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(FtSurfaceElevated))
+                    Box(modifier = Modifier.matchParentSize().background(FtSurfaceElevated))
                 }
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .matchParentSize()
                         .background(Brush.verticalGradient(listOf(Color.Transparent, FtBackground)))
                 )
-            }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = FlixSpacing.safeHorizontal)
-                    .widthIn(max = 620.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .width(130.dp)
-                        .aspectRatio(2f / 3f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(FtSurfaceElevated)
-                        .let { if (SHOW_SAFE_AREA_GUIDES) it.reportXPosition("poster", safeAreaMeasurements) else it }
+                        .fillMaxWidth()
+                        .padding(horizontal = FlixSpacing.safeHorizontal, vertical = 28.dp)
+                        .widthIn(max = 620.dp)
                 ) {
-                    if (!series.posterUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = series.posterUrl,
-                            contentDescription = series.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                    Box(
+                        modifier = Modifier
+                            .width(130.dp)
+                            .aspectRatio(2f / 3f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(FtSurfaceElevated)
+                            .let { if (SHOW_SAFE_AREA_GUIDES) it.reportXPosition("poster", safeAreaMeasurements) else it }
+                    ) {
+                        if (!series.posterUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = series.posterUrl,
+                                contentDescription = series.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
+                    // Deliberately more room than the 12dp used between the
+                    // text lines below — the poster is a distinct visual
+                    // block, not another line of text, so it gets its own
+                    // more generous gap before the title starts.
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = series.name,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = FtTextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("title", safeAreaMeasurements) else Modifier
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    MetadataRow(
+                        parts = listOfNotNull(series.year?.toString()),
+                        rating = series.rating,
+                        modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("metadata", safeAreaMeasurements) else Modifier
+                    )
+
+                    if (series.genres.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = series.genres.joinToString(" • "),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = FtTextSecondary,
+                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("genres", safeAreaMeasurements) else Modifier
                         )
                     }
-                }
 
-                Text(
-                    text = series.name,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = FtTextPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("title", safeAreaMeasurements) else Modifier
-                )
-
-                MetadataRow(
-                    parts = listOfNotNull(series.year?.toString()),
-                    rating = series.rating,
-                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("metadata", safeAreaMeasurements) else Modifier
-                )
-
-                if (series.genres.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = series.genres.joinToString(" • "),
+                        text = series.plot ?: "No description available.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = FtTextSecondary,
-                        modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("genres", safeAreaMeasurements) else Modifier
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("description", safeAreaMeasurements) else Modifier
                     )
-                }
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = series.plot ?: "No description available.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = FtTextSecondary,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("description", safeAreaMeasurements) else Modifier
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("buttons", safeAreaMeasurements) else Modifier
-                ) {
-                    PrimaryActionButton(
-                        text = if (inProgress != null) "Resume" else "Play",
-                        icon = Icons.Filled.PlayArrow,
-                        onClick = { playPrimary() },
-                        modifier = Modifier.focusRequester(playButtonFocusRequester)
-                    )
-                    if (trailerSource != TrailerSource.None) {
-                        SecondaryActionButton(
-                            text = "Trailer",
-                            onClick = {
-                                when (val source = trailerSource) {
-                                    is TrailerSource.DirectVideo -> showTrailer = true
-                                    is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
-                                    TrailerSource.None -> Unit
-                                }
-                            }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("buttons", safeAreaMeasurements) else Modifier
+                    ) {
+                        PrimaryActionButton(
+                            text = if (inProgress != null) "Resume" else "Play",
+                            icon = Icons.Filled.PlayArrow,
+                            onClick = { playPrimary() },
+                            modifier = Modifier.focusRequester(playButtonFocusRequester)
                         )
+                        if (trailerSource != TrailerSource.None) {
+                            SecondaryActionButton(
+                                text = "Trailer",
+                                onClick = {
+                                    when (val source = trailerSource) {
+                                        is TrailerSource.DirectVideo -> showTrailer = true
+                                        is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
+                                        TrailerSource.None -> Unit
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
