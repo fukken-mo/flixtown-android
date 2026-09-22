@@ -350,7 +350,7 @@ fun HomeShellScreen(graph: AppGraph) {
                         )
                     }
                     is ContentScreen.Settings -> Box(
-                        modifier = Modifier.fillMaxSize().padding(40.dp)
+                        modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.safeVertical)
                     ) {
                         Text(
                             text = "Settings is coming in the next milestone.",

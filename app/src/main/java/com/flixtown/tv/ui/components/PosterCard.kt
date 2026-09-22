@@ -87,7 +87,7 @@ fun PosterCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleSmall,
                 color = FtTextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

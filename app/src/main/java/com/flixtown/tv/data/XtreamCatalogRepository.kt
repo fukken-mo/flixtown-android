@@ -260,7 +260,7 @@ private fun VodStreamDto.toDomain(): Movie? {
     val title = name?.takeIf { it.isNotBlank() } ?: return null
     return Movie(
         streamId = id,
-        name = title,
+        name = stripTrailingYear(title),
         posterUrl = streamIcon?.takeIf { it.isNotBlank() },
         rating = rating?.toDoubleOrNull() ?: rating5Based,
         addedEpochSeconds = addedEpochSeconds?.toLongOrNull() ?: 0L,
@@ -275,7 +275,7 @@ private fun SeriesDto.toDomain(): Series? {
     val title = name?.takeIf { it.isNotBlank() } ?: return null
     return Series(
         seriesId = id,
-        name = title,
+        name = stripTrailingYear(title),
         posterUrl = cover?.takeIf { it.isNotBlank() },
         plot = plot?.takeIf { it.isNotBlank() },
         cast = splitCommaList(cast),
@@ -336,3 +336,16 @@ private val TRAILING_YEAR_REGEX = Regex("""\((\d{4})\)\s*$""")
 
 private fun extractYearFromTitle(title: String): Int? =
     TRAILING_YEAR_REGEX.find(title)?.groupValues?.get(1)?.toIntOrNull()
+
+/**
+ * Many Xtream panels bake the release year straight into the VOD/series
+ * title itself (e.g. "Ice Cream Man (2026)") — [Movie.year]/[Series.year]
+ * already surfaces that year as its own field for the UI to show
+ * separately, so leaving it in the display name produced "Ice Cream Man
+ * (2026)" as the title with "2026" repeated right underneath. Strips
+ * exactly the same trailing "(YYYY)" [TRAILING_YEAR_REGEX] already
+ * recognizes, never touching a year that's part of the title itself
+ * (e.g. a hypothetical "1984") since that pattern requires parentheses.
+ */
+private fun stripTrailingYear(title: String): String =
+    TRAILING_YEAR_REGEX.replace(title, "").trimEnd()
