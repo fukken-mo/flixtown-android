@@ -32,9 +32,16 @@ data class CastMember(
 
 private const val TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w185"
 
-/** null profilePath (or a load failure downstream in Coil) is the only case that falls back to initials. */
+/**
+ * null profilePath (or a load failure downstream in Coil) is the only case
+ * that falls back to initials. TMDB's own API always returns profile_path
+ * with a leading slash (e.g. "/abc123.jpg"), but this normalizes it anyway
+ * rather than trusting that contract blindly — strips any leading slash
+ * before joining, so the result always has exactly one, never zero
+ * (".../w185abc.jpg") or two (".../w185//abc.jpg").
+ */
 val CastMember.imageUrl: String?
-    get() = profilePath?.takeIf { it.isNotBlank() }?.let { "$TMDB_IMAGE_BASE$it" }
+    get() = profilePath?.trim()?.removePrefix("/")?.takeIf { it.isNotBlank() }?.let { "$TMDB_IMAGE_BASE/$it" }
 
 fun TmdbCastDto.toDomain(): CastMember? {
     val castId = id ?: return null
