@@ -1,5 +1,6 @@
 package com.flixtown.tv.ui.catalog
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,19 +27,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Series
-import com.flixtown.tv.ui.components.BackdropLayer
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SelectorButton
 import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.nav.LocalRailRevealFocusRequester
 import com.flixtown.tv.ui.theme.FlixSpacing
+import com.flixtown.tv.ui.theme.FtBackground
 
 @Composable
 fun SeriesScreen(
@@ -87,7 +87,6 @@ private fun SeriesLoaded(
     }
 
     val railFocusRequester = LocalRailRevealFocusRequester.current
-    val focusedBackdropState = remember { mutableStateOf<String?>(null) }
 
     val gridState = rememberLazyGridState()
     var pendingFocusSeriesId by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -98,7 +97,9 @@ private fun SeriesLoaded(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        BackdropLayer(state = focusedBackdropState)
+        // Static background — see MoviesScreen for why this replaced a
+        // per-focus backdrop crossfade.
+        Box(modifier = Modifier.fillMaxSize().background(FtBackground))
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -163,9 +164,6 @@ private fun SeriesLoaded(
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(itemFocusRequester)
-                            .onFocusChanged { s ->
-                                if (s.isFocused) focusedBackdropState.value = show.backdropUrl ?: show.posterUrl
-                            }
                             .let { m ->
                                 if (isLeftEdge && railFocusRequester != null) {
                                     m.focusProperties { left = railFocusRequester }

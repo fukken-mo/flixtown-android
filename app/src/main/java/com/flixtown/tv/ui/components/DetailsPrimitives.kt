@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -65,12 +64,6 @@ fun PrimaryActionButton(
     Surface(
         onClick = onClick,
         modifier = modifier
-            .shadow(
-                elevation = if (isFocused) 10.dp else 0.dp,
-                shape = shape,
-                ambientColor = FtAccent,
-                spotColor = FtAccent
-            )
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .onFocusChanged { isFocused = it.isFocused },
         shape = ClickableSurfaceDefaults.shape(shape = shape),
@@ -118,12 +111,6 @@ fun SecondaryActionButton(text: String, onClick: () -> Unit, modifier: Modifier 
     Surface(
         onClick = onClick,
         modifier = modifier
-            .shadow(
-                elevation = if (isFocused) 10.dp else 0.dp,
-                shape = shape,
-                ambientColor = FtAccent,
-                spotColor = FtAccent
-            )
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .onFocusChanged { isFocused = it.isFocused },
         shape = ClickableSurfaceDefaults.shape(shape = shape),

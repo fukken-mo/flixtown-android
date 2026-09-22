@@ -6,8 +6,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -253,18 +251,16 @@ fun HomeShellScreen(graph: AppGraph) {
         )
 
         CompositionLocalProvider(LocalRailRevealFocusRequester provides railRevealFocusRequester) {
-            // A restrained fade + tiny scale between screens — never a slide.
-            // No explicit sizeTransform: every branch already fills the same
-            // weight(1f) area, so there's nothing to interpolate there anyway.
+            // A plain, minimal fade between screens — no scale, no slide, no
+            // spring. IBO-style responsiveness matters more here than a
+            // decorative transition; sizeTransform is left at its default
+            // since every branch already fills the same weight(1f) area, so
+            // there's nothing to interpolate there anyway.
             AnimatedContent(
                 targetState = current,
                 transitionSpec = {
-                    (fadeIn(tween(FlixMotion.ScreenTransitionMs)) +
-                        scaleIn(tween(FlixMotion.ScreenTransitionMs), initialScale = 1.015f))
-                        .togetherWith(
-                            fadeOut(tween(FlixMotion.ScreenTransitionMs)) +
-                                scaleOut(tween(FlixMotion.ScreenTransitionMs), targetScale = 0.985f)
-                        )
+                    fadeIn(tween(FlixMotion.ScreenTransitionMs))
+                        .togetherWith(fadeOut(tween(FlixMotion.ScreenTransitionMs)))
                 },
                 label = "screenTransition",
                 modifier = Modifier

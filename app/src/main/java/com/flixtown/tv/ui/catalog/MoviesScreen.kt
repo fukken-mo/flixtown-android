@@ -1,5 +1,6 @@
 package com.flixtown.tv.ui.catalog
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,19 +27,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Movie
-import com.flixtown.tv.ui.components.BackdropLayer
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SelectorButton
 import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.nav.LocalRailRevealFocusRequester
 import com.flixtown.tv.ui.theme.FlixSpacing
+import com.flixtown.tv.ui.theme.FtBackground
 
 @Composable
 fun MoviesScreen(
@@ -87,14 +87,6 @@ private fun MoviesLoaded(
     }
 
     val railFocusRequester = LocalRailRevealFocusRequester.current
-    // Movies don't carry a TMDB/Xtream backdrop in list data (only the
-    // per-title details call does, and firing that on every focus change
-    // would lag remote navigation) — poster art is the practical, instant
-    // fallback per the dynamic-background spec.
-    // Held as a State object (not `by`) and only ever unwrapped inside
-    // BackdropLayer, so a focus-change write here never recomposes this
-    // whole screen (grid included) — only that leaf.
-    val focusedBackdropState = remember { mutableStateOf<String?>(null) }
 
     val gridState = rememberLazyGridState()
     // Which poster launched Details, so BACK can put focus back on it
@@ -109,7 +101,11 @@ private fun MoviesLoaded(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        BackdropLayer(state = focusedBackdropState)
+        // Static background, not a per-focus backdrop: browse screens should
+        // feel instant, and re-decoding/crossfading a full-bleed image on
+        // every LEFT/RIGHT is exactly the kind of weight that makes a
+        // browse grid feel heavier than a native TV appliance.
+        Box(modifier = Modifier.fillMaxSize().background(FtBackground))
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -182,7 +178,6 @@ private fun MoviesLoaded(
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(itemFocusRequester)
-                            .onFocusChanged { s -> if (s.isFocused) focusedBackdropState.value = movie.posterUrl }
                             .let { m ->
                                 if (isLeftEdge && railFocusRequester != null) {
                                     m.focusProperties { left = railFocusRequester }

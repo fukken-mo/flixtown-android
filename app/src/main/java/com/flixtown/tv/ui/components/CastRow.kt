@@ -1,7 +1,5 @@
 package com.flixtown.tv.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,21 +15,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
@@ -42,7 +33,6 @@ import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import com.flixtown.tv.data.model.CastMember
 import com.flixtown.tv.data.model.imageUrl
-import com.flixtown.tv.ui.theme.FlixMotion
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextMuted
@@ -97,12 +87,9 @@ private fun PlaceholderChip() {
 
 @Composable
 private fun ActorChip(member: CastMember) {
-    var isFocused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        if (isFocused) FlixMotion.CastFocusScale else 1f,
-        tween(FlixMotion.CastFocusDurationMs),
-        label = "castScale"
-    )
+    // No scale/lift/zIndex: the selected state reads entirely from the
+    // border + focusedContainerColor tv-material3 already drives natively,
+    // same IBO-restrained treatment as every other focusable card.
     val imageUrl = member.imageUrl
 
     Column(
@@ -111,11 +98,7 @@ private fun ActorChip(member: CastMember) {
     ) {
         Surface(
             onClick = {},
-            modifier = Modifier
-                .size(PORTRAIT_SIZE)
-                .zIndex(if (isFocused) 1f else 0f)
-                .graphicsLayer { scaleX = scale; scaleY = scale }
-                .onFocusChanged { isFocused = it.isFocused },
+            modifier = Modifier.size(PORTRAIT_SIZE),
             shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
             colors = ClickableSurfaceDefaults.colors(
                 containerColor = FtSurfaceElevated,

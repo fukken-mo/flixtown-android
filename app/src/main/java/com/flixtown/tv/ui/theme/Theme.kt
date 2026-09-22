@@ -81,37 +81,42 @@ object FlixSpacing {
 /**
  * One place for every motion timing/scale value in the app — nothing
  * animation-related should hardcode its own ms/scale/dp constant elsewhere.
- * Values are deliberately restrained (short durations, small scales, no
- * spring overshoot): this is a movie/TV app, not a game launcher, and every
- * focus animation here is a draw-phase transform only (scale/translation/
- * alpha) — never a layout-affecting property — so it can never itself cause
- * a relayout of surrounding content.
+ *
+ * Deliberately IBO-Player-restrained, not a "premium" motion showcase: the
+ * selected state should read from color/border, not physical growth, so
+ * that focus changes feel immediate and rapid D-pad navigation never lags
+ * or visibly bounces. Card scale is 1.0 (no scale) everywhere by default;
+ * duration values only govern the border/color transition tv-material3
+ * already does natively, not a hand-rolled scale/lift animation.
  */
 object FlixMotion {
-    // Poster/card focus (graphicsLayer scale + translationY only).
-    const val FocusDurationMs = 160
-    const val FocusScale = 1.045f
-    val FocusLift = 6.dp
+    // Poster/card focus. No scale — the selected state comes from the
+    // border + focused container color only. Row/grid scroll-into-view
+    // (LazyRow/LazyVerticalGrid's own built-in focus behavior — no custom
+    // scroll logic added here) already only moves the minimum distance
+    // needed to bring a newly-focused item into view, i.e. it's already a
+    // no-op while the next item is fully visible and only shifts once
+    // focus reaches an edge, which is the IBO-style behavior asked for
+    // without inventing a parallel, riskier hand-rolled scroll system.
+    const val FocusDurationMs = 110
+    const val FocusScale = 1f
 
-    // Buttons (Play/Trailer/Secondary/etc) — a smaller, quicker version of
-    // the same language since buttons already have strong color contrast.
-    const val ButtonFocusDurationMs = 140
-    const val ButtonFocusScale = 1.025f
-
-    // Cast portraits.
-    const val CastFocusDurationMs = 150
-    const val CastFocusScale = 1.04f
+    // Buttons (Play/Trailer/Secondary/etc) — same restraint, kept fractionally
+    // larger than posters since a button has less area for color/border alone
+    // to read clearly from across a room.
+    const val ButtonFocusDurationMs = 110
+    const val ButtonFocusScale = 1.02f
 
     // Hero: how long focus has to "settle" on one item before the backdrop
-    // swaps, and how long that swap's crossfade takes.
-    const val HeroDebounceMs = 220L
-    const val HeroCrossfadeMs = 300
+    // swaps, and how long that swap's crossfade takes. Rapidly passing
+    // through several posters must never flash through every backdrop in
+    // between — only the item focus actually settles on updates it.
+    const val HeroDebounceMs = 350L
+    const val HeroCrossfadeMs = 200
 
-    // LazyRow scroll-into-view when the carousel actually needs to move.
-    const val CarouselScrollMs = 220
-
-    // Details screen entry / Home<->Details transition.
-    const val ScreenTransitionMs = 200
+    // Home<->Movies<->Series<->Details<->Search transition: a plain fade,
+    // no scale/slide/spring — responsiveness matters more than decoration.
+    const val ScreenTransitionMs = 130
 }
 
 @Composable
