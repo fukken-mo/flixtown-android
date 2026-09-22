@@ -210,11 +210,17 @@ fun SeriesDetailsScreen(
             // against the screen's top edge — static, not focus-dependent.
             Spacer(modifier = Modifier.height(FlixSpacing.heroTopGap))
 
-            // Poster/title/meta overlaps the backdrop by being aligned
-            // BottomStart inside this same Box — never via negative padding
-            // (Modifier.padding requires non-negative values and throws
-            // IllegalArgumentException; that was the crash on every open).
-            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+            // Pure atmosphere — no overlaid poster/title here any more. The
+            // poster and every piece of hero text now live in the plain
+            // Column below, all starting at the SAME x (safeHorizontal),
+            // same as Cast/Seasons/More Like This — previously the poster
+            // shared a Row with the title block, which pushed title/
+            // metadata/genres/description/buttons to safeHorizontal +
+            // poster width + gap (measured at 266dp against a 64dp guide on
+            // a real device), while the headings below started flush at
+            // 64dp. Stacking the poster above the text instead of beside it
+            // is what actually fixes that inconsistency.
+            Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
                 val backdropUrl = series.backdropUrl ?: series.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -231,91 +237,87 @@ fun SeriesDetailsScreen(
                         .fillMaxSize()
                         .background(Brush.verticalGradient(listOf(Color.Transparent, FtBackground)))
                 )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = FlixSpacing.safeHorizontal)
+                    .widthIn(max = 620.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(130.dp)
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(FtSurfaceElevated)
+                        .let { if (SHOW_SAFE_AREA_GUIDES) it.reportXPosition("poster", safeAreaMeasurements) else it }
+                ) {
+                    if (!series.posterUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = series.posterUrl,
+                            contentDescription = series.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                Text(
+                    text = series.name,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = FtTextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("title", safeAreaMeasurements) else Modifier
+                )
+
+                MetadataRow(
+                    parts = listOfNotNull(series.year?.toString()),
+                    rating = series.rating,
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("metadata", safeAreaMeasurements) else Modifier
+                )
+
+                if (series.genres.isNotEmpty()) {
+                    Text(
+                        text = series.genres.joinToString(" • "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = FtTextSecondary,
+                        modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("genres", safeAreaMeasurements) else Modifier
+                    )
+                }
+
+                Text(
+                    text = series.plot ?: "No description available.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = FtTextSecondary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("description", safeAreaMeasurements) else Modifier
+                )
 
                 Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .padding(horizontal = FlixSpacing.safeHorizontal),
-                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("buttons", safeAreaMeasurements) else Modifier
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .width(170.dp)
-                            .aspectRatio(2f / 3f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(FtSurfaceElevated)
-                    ) {
-                        if (!series.posterUrl.isNullOrBlank()) {
-                            AsyncImage(
-                                model = series.posterUrl,
-                                contentDescription = series.name,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
-
-                    Column(
-                        modifier = Modifier.weight(1f, fill = false).widthIn(max = 620.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = series.name,
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = FtTextPrimary,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("title", safeAreaMeasurements) else Modifier
-                        )
-
-                        MetadataRow(
-                            parts = listOfNotNull(series.year?.toString()),
-                            rating = series.rating,
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("metadata", safeAreaMeasurements) else Modifier
-                        )
-
-                        if (series.genres.isNotEmpty()) {
-                            Text(
-                                text = series.genres.joinToString(" • "),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = FtTextSecondary,
-                                modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("genres", safeAreaMeasurements) else Modifier
-                            )
-                        }
-
-                        Text(
-                            text = series.plot ?: "No description available.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = FtTextSecondary,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("description", safeAreaMeasurements) else Modifier
-                        )
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("buttons", safeAreaMeasurements) else Modifier
-                        ) {
-                            PrimaryActionButton(
-                                text = if (inProgress != null) "Resume" else "Play",
-                                icon = Icons.Filled.PlayArrow,
-                                onClick = { playPrimary() },
-                                modifier = Modifier.focusRequester(playButtonFocusRequester)
-                            )
-                            if (trailerSource != TrailerSource.None) {
-                                SecondaryActionButton(
-                                    text = "Trailer",
-                                    onClick = {
-                                        when (val source = trailerSource) {
-                                            is TrailerSource.DirectVideo -> showTrailer = true
-                                            is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
-                                            TrailerSource.None -> Unit
-                                        }
-                                    }
-                                )
+                    PrimaryActionButton(
+                        text = if (inProgress != null) "Resume" else "Play",
+                        icon = Icons.Filled.PlayArrow,
+                        onClick = { playPrimary() },
+                        modifier = Modifier.focusRequester(playButtonFocusRequester)
+                    )
+                    if (trailerSource != TrailerSource.None) {
+                        SecondaryActionButton(
+                            text = "Trailer",
+                            onClick = {
+                                when (val source = trailerSource) {
+                                    is TrailerSource.DirectVideo -> showTrailer = true
+                                    is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
+                                    TrailerSource.None -> Unit
+                                }
                             }
-                        }
+                        )
                     }
                 }
             }

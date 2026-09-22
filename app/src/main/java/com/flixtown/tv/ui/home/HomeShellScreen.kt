@@ -611,7 +611,12 @@ private fun HomeContent(
                     )
                 }
 
-                items(rowSpecs, key = { it.key }) { spec ->
+                // contentType lets Compose pool/reuse layout state across
+                // recompositions the way RecyclerView pools ViewHolders by
+                // type — this list mixes two structurally different row
+                // shapes (Continuing vs Posters), so without it Compose
+                // can't assume adjacent items are interchangeable.
+                items(rowSpecs, key = { it.key }, contentType = { it::class }) { spec ->
                     when (spec) {
                         is HomeRowSpec.Continuing -> ContinueWatchingRow(
                             rowKey = spec.key,

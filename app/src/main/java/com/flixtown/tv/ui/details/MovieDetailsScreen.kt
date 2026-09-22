@@ -169,14 +169,17 @@ fun MovieDetailsScreen(
             // against the screen's top edge — static, not focus-dependent.
             Spacer(modifier = Modifier.height(FlixSpacing.heroTopGap))
 
-            // The poster/title/meta row overlaps the bottom of the backdrop
-            // by being a child of this same Box, aligned to BottomStart —
-            // not by giving it negative padding (Modifier.padding requires
-            // non-negative values and throws IllegalArgumentException; a
-            // literal `top = (-56).dp` here is what crashed every details
-            // open). This Box is sized tall enough to hold both the visible
-            // backdrop strip above and the full poster height below.
-            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+            // Pure atmosphere — no overlaid poster/title here any more. The
+            // poster and every piece of hero text now live in the plain
+            // Column below, all starting at the SAME x (safeHorizontal),
+            // same as Cast/More Like This — previously the poster shared a
+            // Row with the title block, which pushed title/metadata/genres/
+            // description/buttons to safeHorizontal + poster width + gap
+            // (measured at 266dp against a 64dp guide on a real device),
+            // while Cast/More Like This started flush at 64dp. Stacking the
+            // poster above the text instead of beside it is what actually
+            // fixes that inconsistency — no padding value alone could.
+            Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
                 val backdropUrl = details?.backdropUrl ?: movie.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -193,93 +196,89 @@ fun MovieDetailsScreen(
                         .fillMaxSize()
                         .background(Brush.verticalGradient(listOf(Color.Transparent, FtBackground)))
                 )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = FlixSpacing.safeHorizontal)
+                    .widthIn(max = 620.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(130.dp)
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(FtSurfaceElevated)
+                        .let { if (SHOW_SAFE_AREA_GUIDES) it.reportXPosition("poster", safeAreaMeasurements) else it }
+                ) {
+                    if (!movie.posterUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = movie.posterUrl,
+                            contentDescription = movie.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                Text(
+                    text = movie.name,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = FtTextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("title", safeAreaMeasurements) else Modifier
+                )
+
+                MetadataRow(
+                    parts = listOfNotNull(movie.year?.toString(), details?.runtimeMinutes?.let { "${it}m" }),
+                    rating = movie.rating,
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("metadata", safeAreaMeasurements) else Modifier
+                )
+
+                if (!details?.genres.isNullOrEmpty()) {
+                    Text(
+                        text = details!!.genres.joinToString(" • "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = FtTextSecondary,
+                        modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("genres", safeAreaMeasurements) else Modifier
+                    )
+                }
+
+                Text(
+                    text = details?.plot ?: "No description available.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = FtTextSecondary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("description", safeAreaMeasurements) else Modifier
+                )
 
                 Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .padding(horizontal = FlixSpacing.safeHorizontal),
-                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("buttons", safeAreaMeasurements) else Modifier
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .width(170.dp)
-                            .aspectRatio(2f / 3f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(FtSurfaceElevated)
-                    ) {
-                        if (!movie.posterUrl.isNullOrBlank()) {
-                            AsyncImage(
-                                model = movie.posterUrl,
-                                contentDescription = movie.name,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
-
-                    Column(
-                        modifier = Modifier.weight(1f, fill = false).widthIn(max = 620.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = movie.name,
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = FtTextPrimary,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("title", safeAreaMeasurements) else Modifier
-                        )
-
-                        MetadataRow(
-                            parts = listOfNotNull(movie.year?.toString(), details?.runtimeMinutes?.let { "${it}m" }),
-                            rating = movie.rating,
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("metadata", safeAreaMeasurements) else Modifier
-                        )
-
-                        if (!details?.genres.isNullOrEmpty()) {
-                            Text(
-                                text = details!!.genres.joinToString(" • "),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = FtTextSecondary,
-                                modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("genres", safeAreaMeasurements) else Modifier
-                            )
-                        }
-
-                        Text(
-                            text = details?.plot ?: "No description available.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = FtTextSecondary,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("description", safeAreaMeasurements) else Modifier
-                        )
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("buttons", safeAreaMeasurements) else Modifier
-                        ) {
-                            PrimaryActionButton(
-                                text = if (existingProgress != null) "Resume" else "Play",
-                                icon = Icons.Filled.PlayArrow,
-                                onClick = {
-                                    if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
-                                },
-                                modifier = Modifier.focusRequester(playButtonFocusRequester)
-                            )
-                            if (trailerSource != TrailerSource.None) {
-                                SecondaryActionButton(
-                                    text = "Trailer",
-                                    onClick = {
-                                        when (val source = trailerSource) {
-                                            is TrailerSource.DirectVideo -> showTrailer = true
-                                            is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
-                                            TrailerSource.None -> Unit
-                                        }
-                                    }
-                                )
+                    PrimaryActionButton(
+                        text = if (existingProgress != null) "Resume" else "Play",
+                        icon = Icons.Filled.PlayArrow,
+                        onClick = {
+                            if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
+                        },
+                        modifier = Modifier.focusRequester(playButtonFocusRequester)
+                    )
+                    if (trailerSource != TrailerSource.None) {
+                        SecondaryActionButton(
+                            text = "Trailer",
+                            onClick = {
+                                when (val source = trailerSource) {
+                                    is TrailerSource.DirectVideo -> showTrailer = true
+                                    is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
+                                    TrailerSource.None -> Unit
+                                }
                             }
-                        }
+                        )
                     }
                 }
             }
