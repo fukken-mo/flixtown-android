@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -402,6 +404,16 @@ private fun HomeContent(
     // reads `.value`, recomposes on focus change.
     val focused = remember { mutableStateOf<RowItem?>(null) }
 
+    // The hand-rolled back stack fully disposes Home's composition while
+    // another screen is showing (it's a different `when` branch, not just
+    // hidden), so plain `remember` state for "has this device ever focused
+    // Home's content before" wouldn't survive a details screen visit —
+    // rememberSaveable does, via the same "home" SaveableStateProvider that
+    // already restores each row's scroll position.
+    var everFocusedContent by rememberSaveable { mutableStateOf(false) }
+    val contentFocusRequester = remember { FocusRequester() }
+    val homeListState = rememberLazyListState()
+
     when (catalogState) {
         is CatalogUiState.Loading -> HomeLoadingSkeleton()
         is CatalogUiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal)) {
@@ -455,7 +467,25 @@ private fun HomeContent(
             // most recently added title — never a blank hero.
             val heroFallback = continueWatchingItems.firstOrNull() ?: recentlyAdded.firstOrNull()
 
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            val onRowFocus: (RowItem) -> Unit = { focused.value = it; everFocusedContent = true }
+
+            // Re-entering Home after a details/browse visit should never
+            // leave focus unset — but on the very first-ever launch (nothing
+            // focused yet), the nav rail should keep taking initial focus as
+            // before, so this only fires on a genuine return trip. Declared
+            // here (not above the `when`) so it only ever runs alongside the
+            // LazyColumn that actually owns contentFocusRequester.
+            LaunchedEffect(Unit) {
+                if (everFocusedContent) contentFocusRequester.requestFocus()
+            }
+
+            LazyColumn(
+                state = homeListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .focusRequester(contentFocusRequester)
+                    .focusRestorer()
+            ) {
                 item(key = "hero") {
                     HomeHero(
                         state = focused,
@@ -468,27 +498,27 @@ private fun HomeContent(
 
                 if (continueWatchingItems.isNotEmpty()) {
                     item(key = "row-continue-watching") {
-                        PosterRow("Continue Watching", continueWatchingItems) { focused.value = it }
+                        PosterRow("Continue Watching", continueWatchingItems, onRowFocus)
                     }
                 }
                 if (recentlyAdded.isNotEmpty()) {
                     item(key = "row-recently-added") {
-                        PosterRow("Recently Added", recentlyAdded) { focused.value = it }
+                        PosterRow("Recently Added", recentlyAdded, onRowFocus)
                     }
                 }
                 if (trending.isNotEmpty()) {
                     item(key = "row-trending") {
-                        PosterRow("Trending", trending) { focused.value = it }
+                        PosterRow("Trending", trending, onRowFocus)
                     }
                 }
                 if (latestMovies.isNotEmpty()) {
                     item(key = "row-latest-movies") {
-                        PosterRow("Latest Movies", latestMovies) { focused.value = it }
+                        PosterRow("Latest Movies", latestMovies, onRowFocus)
                     }
                 }
                 if (latestSeries.isNotEmpty()) {
                     item(key = "row-latest-series") {
-                        PosterRow("Latest Series", latestSeries) { focused.value = it }
+                        PosterRow("Latest Series", latestSeries, onRowFocus)
                     }
                 }
                 item(key = "bottom-spacer") { Spacer(modifier = Modifier.height(FlixSpacing.safeVertical)) }

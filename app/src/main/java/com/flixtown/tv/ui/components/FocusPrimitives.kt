@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
@@ -58,6 +59,11 @@ fun FlixFocusSurface(
     Surface(
         onClick = onClick,
         modifier = modifier
+            // A scaled-up card must paint over its unscaled neighbors, not
+            // underneath them — sibling draw order in a Row/LazyRow is by
+            // layout index, not by scale, so without this the enlarged edge
+            // of a focused card gets clipped behind the next item in line.
+            .zIndex(if (isFocused) 1f else 0f)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale

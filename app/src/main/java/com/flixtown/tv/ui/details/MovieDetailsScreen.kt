@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -98,6 +100,12 @@ fun MovieDetailsScreen(
     var showResumeMenu by remember(streamId) { mutableStateOf(false) }
     val context = LocalContext.current
     val trailerSource = TrailerResolver.resolve(details?.trailer)
+
+    // Opening a title should never leave focus unset — without this the
+    // first D-pad press after navigating in "finds" a focus target with no
+    // visible highlight beforehand, which reads as broken on a real TV.
+    val playButtonFocusRequester = remember(streamId) { FocusRequester() }
+    LaunchedEffect(streamId) { playButtonFocusRequester.requestFocus() }
 
     val existingProgress = remember(streamId) {
         graph.continueWatchingStore.getAll().firstOrNull { it.streamId == movie.streamId && it.mediaType == "movie" }
@@ -213,7 +221,8 @@ fun MovieDetailsScreen(
                                 text = "▶ Play",
                                 onClick = {
                                     if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
-                                }
+                                },
+                                modifier = Modifier.focusRequester(playButtonFocusRequester)
                             )
                             if (trailerSource != TrailerSource.None) {
                                 SecondaryActionButton(

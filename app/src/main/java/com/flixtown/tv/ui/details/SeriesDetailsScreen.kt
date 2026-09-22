@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -110,6 +112,10 @@ fun SeriesDetailsScreen(
     var pendingEpisode by remember(seriesId) { mutableStateOf<Episode?>(null) }
     val context = LocalContext.current
     val trailerSource = TrailerResolver.resolve(series.trailer)
+
+    // Same rule as Movie details: never leave focus unset when a title opens.
+    val playButtonFocusRequester = remember(seriesId) { FocusRequester() }
+    LaunchedEffect(seriesId) { playButtonFocusRequester.requestFocus() }
 
     val similarSeries = remember(seriesId, catalogState) {
         (catalogState as? CatalogUiState.Loaded)?.snapshot?.series
@@ -245,7 +251,8 @@ fun SeriesDetailsScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             PrimaryActionButton(
                                 text = "▶ Play",
-                                onClick = { playPrimary() }
+                                onClick = { playPrimary() },
+                                modifier = Modifier.focusRequester(playButtonFocusRequester)
                             )
                             if (trailerSource != TrailerSource.None) {
                                 SecondaryActionButton(

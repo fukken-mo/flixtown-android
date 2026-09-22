@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
@@ -79,6 +80,7 @@ private fun ActorChip(name: String, character: String?) {
             onClick = {},
             modifier = Modifier
                 .size(PORTRAIT_SIZE)
+                .zIndex(if (isFocused) 1f else 0f)
                 .graphicsLayer { scaleX = scale; scaleY = scale }
                 .onFocusChanged { isFocused = it.isFocused },
             shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
