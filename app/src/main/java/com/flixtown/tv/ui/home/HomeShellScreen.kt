@@ -252,10 +252,9 @@ fun HomeShellScreen(graph: AppGraph) {
         )
 
         CompositionLocalProvider(LocalRailRevealFocusRequester provides railRevealFocusRequester) {
-            // A restrained fade + tiny scale between screens — never a slide,
-            // never anything that animates measured size (sizeTransform =
-            // null: every branch already fills the same weight(1f) area, so
-            // there's nothing to interpolate there anyway).
+            // A restrained fade + tiny scale between screens — never a slide.
+            // No explicit sizeTransform: every branch already fills the same
+            // weight(1f) area, so there's nothing to interpolate there anyway.
             AnimatedContent(
                 targetState = current,
                 transitionSpec = {
@@ -266,7 +265,6 @@ fun HomeShellScreen(graph: AppGraph) {
                                 scaleOut(tween(FlixMotion.ScreenTransitionMs), targetScale = 0.985f)
                         )
                 },
-                sizeTransform = null,
                 label = "screenTransition",
                 modifier = Modifier
                     .weight(1f)
