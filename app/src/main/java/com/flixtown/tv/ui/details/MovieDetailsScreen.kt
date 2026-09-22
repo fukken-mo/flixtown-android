@@ -74,9 +74,13 @@ fun MovieDetailsScreen(
     onPlay: (ContentScreen.Player) -> Unit,
     onMovieClick: (Movie) -> Unit
 ) {
-    SafeLog.e("MovieDetailsScreen", "ENTER composition streamId=$streamId")
+    // Debug-only (SafeLog.d is a no-op in release): these run on every
+    // recomposition of this composable, not just once per screen-open, so
+    // they stay off the always-on SafeLog.e path unlike the LaunchedEffect-
+    // scoped ones below (which only fire once per actual navigation).
+    SafeLog.d("MovieDetailsScreen", "ENTER composition streamId=$streamId")
     val movie = (catalogState as? CatalogUiState.Loaded)?.snapshot?.movies?.firstOrNull { it.streamId == streamId }
-    SafeLog.e("MovieDetailsScreen", "movie lookup result: ${if (movie == null) "NOT FOUND" else "found name=${movie.name}"}")
+    SafeLog.d("MovieDetailsScreen", "movie lookup result: ${if (movie == null) "NOT FOUND" else "found name=${movie.name}"}")
 
     if (movie == null) {
         Box(modifier = Modifier.fillMaxSize().background(FtBackground), contentAlignment = Alignment.Center) {
@@ -97,7 +101,7 @@ fun MovieDetailsScreen(
             null
         }
     }
-    SafeLog.e("MovieDetailsScreen", "composing body, name=${movie.name} posterUrl=${movie.posterUrl}")
+    SafeLog.d("MovieDetailsScreen", "composing body, name=${movie.name} posterUrl=${movie.posterUrl}")
 
     var showTrailer by remember(streamId) { mutableStateOf(false) }
     var showResumeMenu by remember(streamId) { mutableStateOf(false) }
@@ -210,7 +214,7 @@ fun MovieDetailsScreen(
 
                     Column(
                         modifier = Modifier.weight(1f, fill = false).widthIn(max = 620.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
                             text = movie.name,

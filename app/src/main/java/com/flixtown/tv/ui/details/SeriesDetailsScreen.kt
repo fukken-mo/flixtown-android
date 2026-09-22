@@ -81,9 +81,13 @@ fun SeriesDetailsScreen(
     onPlay: (ContentScreen.Player) -> Unit,
     onSeriesClick: (Series) -> Unit
 ) {
-    SafeLog.e("SeriesDetailsScreen", "ENTER composition seriesId=$seriesId")
+    // Debug-only (SafeLog.d is a no-op in release): these run on every
+    // recomposition of this composable, not just once per screen-open, so
+    // they stay off the always-on SafeLog.e path unlike the LaunchedEffect-
+    // scoped ones below (which only fire once per actual navigation).
+    SafeLog.d("SeriesDetailsScreen", "ENTER composition seriesId=$seriesId")
     val series = (catalogState as? CatalogUiState.Loaded)?.snapshot?.series?.firstOrNull { it.seriesId == seriesId }
-    SafeLog.e("SeriesDetailsScreen", "series lookup result: ${if (series == null) "NOT FOUND" else "found name=${series.name}"}")
+    SafeLog.d("SeriesDetailsScreen", "series lookup result: ${if (series == null) "NOT FOUND" else "found name=${series.name}"}")
 
     if (series == null) {
         Box(modifier = Modifier.fillMaxSize().background(FtBackground), contentAlignment = Alignment.Center) {
@@ -104,7 +108,7 @@ fun SeriesDetailsScreen(
             null
         }
     }
-    SafeLog.e("SeriesDetailsScreen", "composing body, name=${series.name} posterUrl=${series.posterUrl}")
+    SafeLog.d("SeriesDetailsScreen", "composing body, name=${series.name} posterUrl=${series.posterUrl}")
 
     var selectedSeasonNumber by remember(seriesId) { mutableStateOf<Int?>(null) }
     LaunchedEffect(details) {
@@ -248,7 +252,7 @@ fun SeriesDetailsScreen(
 
                     Column(
                         modifier = Modifier.weight(1f, fill = false).widthIn(max = 620.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
                             text = series.name,

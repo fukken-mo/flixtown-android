@@ -85,10 +85,16 @@ fun SearchScreen(
 
         Spacer(modifier = Modifier.height(FlixSpacing.sectionGap - 8.dp))
 
-        val results = if (catalogState is CatalogUiState.Loaded && debouncedQuery.isNotBlank()) {
-            buildResults(catalogState, debouncedQuery, onMovieClick, onSeriesClick)
-        } else {
-            emptyList()
+        // buildResults does a full filter+map+sort over the whole catalog —
+        // was previously a plain statement re-run on every recomposition of
+        // this composable (e.g. every pendingFocusKey change after a
+        // result click), not just when the query or catalog actually change.
+        val results = remember(catalogState, debouncedQuery) {
+            if (catalogState is CatalogUiState.Loaded && debouncedQuery.isNotBlank()) {
+                buildResults(catalogState, debouncedQuery, onMovieClick, onSeriesClick)
+            } else {
+                emptyList()
+            }
         }
 
         LaunchedEffect(pendingFocusKey, results) {

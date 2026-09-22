@@ -63,7 +63,11 @@ private val FlixTownTypography = Typography(
 
 /** Shared spacing scale so every screen uses the same TV-safe margins and gaps. */
 object FlixSpacing {
-    val safeHorizontal = 56.dp
+    // TV safe-area left/right margin — every screen's outermost content
+    // (titles, metadata, descriptions, buttons, row headers, grid/row
+    // edges) insets from the physical screen edge by exactly this amount,
+    // never less, so nothing ever sits flush against or near it.
+    val safeHorizontal = 64.dp
     val safeVertical = 40.dp
     val sectionGap = 32.dp
     val rowHeaderGap = 16.dp

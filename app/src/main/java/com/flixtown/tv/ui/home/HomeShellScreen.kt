@@ -504,28 +504,41 @@ private fun HomeContent(
         is CatalogUiState.Loaded -> {
             val snapshot = catalogState.snapshot
 
-            val recentlyAdded = (snapshot.movies.map { it to it.addedEpochSeconds } + snapshot.series.map { it to it.addedEpochSeconds })
-                .sortedByDescending { it.second }
-                .take(ROW_ITEM_LIMIT)
-                .map { (item, _) -> item.toRowItem(onMovieClick, onSeriesClick) }
+            // All four were previously plain `val`s evaluated eagerly on
+            // every recomposition of this whole branch (e.g. whenever
+            // catalogState's identity changes upstream) — the
+            // remember(...) further down only memoized the small
+            // buildList wrapper around them, not the actual sort/map
+            // passes over the full catalog feeding it. Keyed on snapshot
+            // alone (not the click lambdas, which are cheap to recreate
+            // and don't affect what these lists contain).
+            val (recentlyAdded, trending, latestMovies, latestSeries) = remember(snapshot) {
+                val recentlyAddedList = (snapshot.movies.map { it to it.addedEpochSeconds } + snapshot.series.map { it to it.addedEpochSeconds })
+                    .sortedByDescending { it.second }
+                    .take(ROW_ITEM_LIMIT)
+                    .map { (item, _) -> item.toRowItem(onMovieClick, onSeriesClick) }
 
-            // Deterministic trending: rating (60%) + recency over a 90-day
-            // falloff (40%). Not TMDB-backed this pass — see project notes.
-            val trending = (snapshot.movies.map { it to trendingScore(it.rating, it.addedEpochSeconds) } +
-                snapshot.series.map { it to trendingScore(it.rating, it.addedEpochSeconds) })
-                .sortedByDescending { it.second }
-                .take(ROW_ITEM_LIMIT)
-                .map { (item, _) -> item.toRowItem(onMovieClick, onSeriesClick) }
+                // Deterministic trending: rating (60%) + recency over a
+                // 90-day falloff (40%). Not TMDB-backed this pass — see
+                // project notes.
+                val trendingList = (snapshot.movies.map { it to trendingScore(it.rating, it.addedEpochSeconds) } +
+                    snapshot.series.map { it to trendingScore(it.rating, it.addedEpochSeconds) })
+                    .sortedByDescending { it.second }
+                    .take(ROW_ITEM_LIMIT)
+                    .map { (item, _) -> item.toRowItem(onMovieClick, onSeriesClick) }
 
-            val latestMovies = snapshot.movies
-                .sortedByDescending { it.addedEpochSeconds }
-                .take(ROW_ITEM_LIMIT)
-                .map { it.toRowItem(onMovieClick) }
+                val latestMoviesList = snapshot.movies
+                    .sortedByDescending { it.addedEpochSeconds }
+                    .take(ROW_ITEM_LIMIT)
+                    .map { it.toRowItem(onMovieClick) }
 
-            val latestSeries = snapshot.series
-                .sortedByDescending { it.addedEpochSeconds }
-                .take(ROW_ITEM_LIMIT)
-                .map { it.toRowItem(onSeriesClick) }
+                val latestSeriesList = snapshot.series
+                    .sortedByDescending { it.addedEpochSeconds }
+                    .take(ROW_ITEM_LIMIT)
+                    .map { it.toRowItem(onSeriesClick) }
+
+                HomeCatalogRows(recentlyAddedList, trendingList, latestMoviesList, latestSeriesList)
+            }
 
             // Whatever the user last focused stays featured; before any
             // focus event, feature Continue Watching's top item, else the
@@ -899,6 +912,13 @@ private fun ContinueWatchingEntry.toHeroRowItem(onClick: () -> Unit): RowItem {
 }
 
 private const val ROW_ITEM_LIMIT = 15
+
+private data class HomeCatalogRows(
+    val recentlyAdded: List<RowItem>,
+    val trending: List<RowItem>,
+    val latestMovies: List<RowItem>,
+    val latestSeries: List<RowItem>
+)
 
 private fun trendingScore(rating: Double?, addedEpochSeconds: Long): Double {
     val normalizedRating = ((rating ?: 0.0) / 10.0).coerceIn(0.0, 1.0)

@@ -39,30 +39,35 @@ class ContinueWatchingStore(context: Context) {
 
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    // getAll() is called once per Continue Watching card on Home, once per
+    // Details screen's own resume state, AND once per episode card in a
+    // season list — each of those, independently, used to re-read
+    // SharedPreferences and re-parse+re-sort the full JSON blob. Cached in
+    // memory instead, invalidated only by save() (the only writer), so a
+    // season with 20 episodes does one parse instead of 20.
+    @Volatile private var cachedAll: List<ContinueWatchingEntry>? = null
+
     fun getAll(): List<ContinueWatchingEntry> {
-        val json = prefs.getString(KEY_ENTRIES, null) ?: return emptyList()
-        return try {
-            val type = TypeToken.getParameterized(List::class.java, ContinueWatchingEntry::class.java).type
-            val entries = NetworkModule.gson.fromJson<List<ContinueWatchingEntry>>(json, type) ?: emptyList()
-            entries.filterNot { it.completed }.sortedByDescending { it.updatedAtMillis }
-        } catch (e: Exception) {
-            SafeLog.w(TAG, "Continue-watching cache was corrupt, ignoring", e)
-            emptyList()
-        }
+        cachedAll?.let { return it }
+        val result = parseAll().filterNot { it.completed }.sortedByDescending { it.updatedAtMillis }
+        cachedAll = result
+        return result
     }
 
     fun save(entry: ContinueWatchingEntry) {
-        val existing = getAllIncludingCompleted().filterNot { it.streamId == entry.streamId && it.mediaType == entry.mediaType }
+        val existing = parseAll().filterNot { it.streamId == entry.streamId && it.mediaType == entry.mediaType }
         val updated = (existing + entry).sortedByDescending { it.updatedAtMillis }.take(MAX_ENTRIES)
         prefs.edit().putString(KEY_ENTRIES, NetworkModule.gson.toJson(updated)).apply()
+        cachedAll = null
     }
 
-    private fun getAllIncludingCompleted(): List<ContinueWatchingEntry> {
+    private fun parseAll(): List<ContinueWatchingEntry> {
         val json = prefs.getString(KEY_ENTRIES, null) ?: return emptyList()
         return try {
             val type = TypeToken.getParameterized(List::class.java, ContinueWatchingEntry::class.java).type
             NetworkModule.gson.fromJson<List<ContinueWatchingEntry>>(json, type) ?: emptyList()
         } catch (e: Exception) {
+            SafeLog.w(TAG, "Continue-watching cache was corrupt, ignoring", e)
             emptyList()
         }
     }
