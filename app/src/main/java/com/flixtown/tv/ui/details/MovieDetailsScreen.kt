@@ -188,24 +188,20 @@ fun MovieDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
-            // Fixed, deterministic vertical layout — no percentage-of-
-            // screen-height math. Three real-device test rounds showed
-            // that reproducing IBO's guideline percentages (which are
-            // relative to IBO's own ConstraintLayout coordinate system)
-            // did not land the hero in the right place in this Compose
-            // layout on the actual TV, so the real screenshot is now the
-            // source of truth instead: a fixed 120dp top margin, a fixed
-            // poster size, and a fixed gap before Cast.
-            Spacer(modifier = Modifier.height(120.dp))
-
             // Poster-beside-title hero: title/metadata/genres/description
             // column sits beside the poster, vertically centered against
-            // it as one group. Backdrop is one continuous image behind the
-            // whole group (matchParentSize sizes it to the Row's own
-            // height), with a horizontal dark-from-the-left gradient plus
-            // a vertical dark-toward-bottom gradient so text stays readable
-            // while backdrop stays visible on the right, rather than a
-            // flat near-black panel.
+            // it as one group. The backdrop/scrim now wraps this ENTIRE
+            // Box, including the 120dp top breathing room below — the
+            // Spacer no longer sits outside the Box (which used to leave
+            // that 120dp rendering as a flat FtBackground band above the
+            // backdrop, since the backdrop was only ever as tall as the
+            // Row beneath it). Backdrop starts at the physical top of the
+            // screen; the 120dp Spacer only pushes the poster/info content
+            // down within the same layer, matching the fixed, deterministic
+            // vertical layout established after IBO's percentage-of-
+            // screen-height guideline math failed to land correctly on a
+            // real TV — a fixed 120dp top margin, fixed poster size, fixed
+            // gap before Cast.
             Box(modifier = Modifier.fillMaxWidth()) {
                 val backdropUrl = details?.backdropUrl ?: movie.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
@@ -229,6 +225,12 @@ fun MovieDetailsScreen(
                             )
                         )
                 )
+                // Fades the backdrop into FtBackground by the bottom of the
+                // hero (now including the top breathing room in its span),
+                // so it reads as one continuous cinematic image behind the
+                // whole top section rather than a hard-edged rectangle,
+                // and blends smoothly into the plain dark background before
+                // Cast.
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -238,7 +240,8 @@ fun MovieDetailsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = FlixSpacing.safeHorizontal),
+                        .padding(horizontal = FlixSpacing.safeHorizontal)
+                        .padding(top = 120.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
