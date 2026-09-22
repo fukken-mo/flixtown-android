@@ -289,9 +289,12 @@ fun MovieDetailsScreen(
                 }
             }
 
-            // Fixed 32dp gap between hero and Cast — enough to read as a
-            // new section without leaving a large blank area.
-            Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
+            // Wider fixed gap between hero and Cast (80dp, up from 32dp) so
+            // the poster/title/metadata/description/buttons group gets real
+            // breathing room and doesn't read as squeezed against Cast —
+            // this is a separate, larger value from FlixSpacing.sectionGap,
+            // which every other inter-section gap on this screen still uses.
+            Spacer(modifier = Modifier.height(80.dp))
 
             if (!details?.cast.isNullOrEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(horizontal = FlixSpacing.safeHorizontal)) {
