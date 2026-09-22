@@ -1,23 +1,27 @@
 package com.flixtown.tv.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.MaterialTheme
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 
 /**
@@ -74,22 +78,41 @@ fun SafeAreaDebugOverlay(
                 strokeWidth = 3f
             )
         }
+        // Large, high-contrast, and boxed on its own opaque dark panel —
+        // small light-green labelMedium text directly over a backdrop image
+        // is not legible from normal TV viewing distance. This panel is
+        // deliberately readable from across a room, same bar as everything
+        // else on this screen.
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = 8.dp, start = 8.dp)
+                .padding(24.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.85f))
+                .padding(16.dp)
         ) {
             Text(
-                text = "safeHorizontal=$safeHorizontal (guide lines)",
+                text = "safeHorizontal = $safeHorizontal",
                 color = Color(0xFF39FF14),
-                style = MaterialTheme.typography.labelMedium
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
             )
-            measurements.entries.sortedBy { it.key }.forEach { (label, xDp) ->
-                Text(
-                    text = "$label.x = %.1fdp".format(xDp),
-                    color = Color(0xFF39FF14),
-                    style = MaterialTheme.typography.labelMedium
-                )
+            Text(
+                text = "(green lines = guide at safeHorizontal from each edge)",
+                color = Color(0xFF39FF14),
+                fontSize = 16.sp
+            )
+            Box(modifier = Modifier.padding(top = 8.dp)) {
+                Column {
+                    measurements.entries.sortedBy { it.key }.forEach { (label, xDp) ->
+                        Text(
+                            text = "%-16s x = %.1fdp".format(label, xDp),
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
     }
