@@ -47,11 +47,42 @@ class XtreamCatalogRepository(
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun getCachedSnapshot(): CatalogSnapshot? {
+        // A cache written by an older build (before a field like
+        // containerExtension existed) deserializes via Gson with that field
+        // silently left as a real null despite the Kotlin type saying
+        // non-null — Gson builds objects via reflection and doesn't enforce
+        // Kotlin null-safety. That "impossible" null then throws deep inside
+        // details/player code the moment something dereferences it. A
+        // version bump invalidates any cache from before this fix instead of
+        // ever handing out a snapshot built from a mismatched schema.
+        if (prefs.getInt(KEY_CACHE_VERSION, 0) != CACHE_VERSION) {
+            prefs.edit().remove(KEY_SNAPSHOT).remove(KEY_CACHE_VERSION).apply()
+            return null
+        }
         val json = prefs.getString(KEY_SNAPSHOT, null) ?: return null
         return try {
-            NetworkModule.gson.fromJson(json, CatalogSnapshot::class.java)
+            sanitize(NetworkModule.gson.fromJson(json, CatalogSnapshot::class.java))
         } catch (e: Exception) {
             SafeLog.w(TAG, "Cached catalog was corrupt, ignoring", e)
+            null
+        }
+    }
+
+    /**
+     * Drops any entry whose fields the type system calls non-null but are
+     * actually null at runtime (see [getCachedSnapshot]) — belt-and-braces
+     * on top of the version check above, and also covers a live API
+     * response that's missing a field our DTO mapping didn't anticipate.
+     */
+    private fun sanitize(snapshot: CatalogSnapshot?): CatalogSnapshot? {
+        if (snapshot == null) return null
+        return try {
+            snapshot.copy(
+                movies = snapshot.movies.filter { it.name != null && it.containerExtension != null },
+                series = snapshot.series.filter { it.name != null }
+            )
+        } catch (e: Exception) {
+            SafeLog.w(TAG, "Catalog sanitize failed, dropping cache", e)
             null
         }
     }
@@ -77,7 +108,10 @@ class XtreamCatalogRepository(
                     fetchedAtMillis = System.currentTimeMillis()
                 )
 
-                prefs.edit().putString(KEY_SNAPSHOT, NetworkModule.gson.toJson(snapshot)).apply()
+                prefs.edit()
+                    .putString(KEY_SNAPSHOT, NetworkModule.gson.toJson(snapshot))
+                    .putInt(KEY_CACHE_VERSION, CACHE_VERSION)
+                    .apply()
                 Result.success(snapshot)
             }
         } catch (e: Exception) {
@@ -200,6 +234,8 @@ class XtreamCatalogRepository(
         private const val TAG = "XtreamCatalogRepository"
         private const val PREFS_NAME = "flixtown_catalog_cache"
         private const val KEY_SNAPSHOT = "catalog_snapshot"
+        private const val KEY_CACHE_VERSION = "catalog_snapshot_version"
+        private const val CACHE_VERSION = 2
         private const val CACHE_TTL_MILLIS = 30L * 60L * 1000L
     }
 }

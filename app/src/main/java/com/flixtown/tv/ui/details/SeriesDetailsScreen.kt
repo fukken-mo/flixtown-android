@@ -37,6 +37,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import com.flixtown.tv.AppGraph
+import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.TrailerResolver
 import com.flixtown.tv.data.TrailerSource
 import com.flixtown.tv.data.model.Episode
@@ -61,6 +62,7 @@ fun SeriesDetailsScreen(
     seriesId: Int,
     onPlay: (ContentScreen.Player) -> Unit
 ) {
+    SafeLog.d("SeriesDetailsScreen", "opening seriesId=$seriesId")
     val series = (catalogState as? CatalogUiState.Loaded)?.snapshot?.series?.firstOrNull { it.seriesId == seriesId }
 
     if (series == null) {
@@ -71,7 +73,14 @@ fun SeriesDetailsScreen(
     }
 
     var details by remember(seriesId) { mutableStateOf<SeriesDetails?>(null) }
-    LaunchedEffect(seriesId) { details = graph.catalogRepository.getSeriesDetails(series) }
+    LaunchedEffect(seriesId) {
+        details = try {
+            graph.catalogRepository.getSeriesDetails(series)
+        } catch (e: Exception) {
+            SafeLog.e("SeriesDetailsScreen", "getSeriesDetails threw for seriesId=$seriesId", e)
+            null
+        }
+    }
 
     var selectedSeasonNumber by remember(seriesId) { mutableStateOf<Int?>(null) }
     LaunchedEffect(details) {

@@ -581,8 +581,12 @@ private fun PosterRow(title: String, items: List<RowItem>, onFocusedItemChange: 
         val listState = rememberLazyListState()
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(horizontal = 40.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            // Vertical padding isn't cosmetic here: LazyRow clips its content
+            // to its own bounds, and with zero vertical margin a focused
+            // card's scale-up had nowhere to go but into that clip edge —
+            // this is the "focused poster gets cut off" bug.
+            contentPadding = PaddingValues(horizontal = 40.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
                 PosterCard(

@@ -33,6 +33,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import com.flixtown.tv.AppGraph
+import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.TrailerResolver
 import com.flixtown.tv.data.TrailerSource
 import com.flixtown.tv.data.model.Movie
@@ -56,6 +57,7 @@ fun MovieDetailsScreen(
     streamId: Int,
     onPlay: (ContentScreen.Player) -> Unit
 ) {
+    SafeLog.d("MovieDetailsScreen", "opening streamId=$streamId")
     val movie = (catalogState as? CatalogUiState.Loaded)?.snapshot?.movies?.firstOrNull { it.streamId == streamId }
 
     if (movie == null) {
@@ -67,7 +69,12 @@ fun MovieDetailsScreen(
 
     var details by remember(streamId) { mutableStateOf<MovieDetails?>(null) }
     LaunchedEffect(streamId) {
-        details = graph.catalogRepository.getMovieDetails(movie)
+        details = try {
+            graph.catalogRepository.getMovieDetails(movie)
+        } catch (e: Exception) {
+            SafeLog.e("MovieDetailsScreen", "getMovieDetails threw for streamId=$streamId", e)
+            null
+        }
     }
 
     var showTrailer by remember(streamId) { mutableStateOf(false) }

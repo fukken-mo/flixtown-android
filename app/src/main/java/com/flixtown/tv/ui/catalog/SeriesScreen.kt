@@ -118,7 +118,7 @@ private fun SeriesLoaded(
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(GRID_COLUMNS),
-                contentPadding = PaddingValues(start = 40.dp, end = 40.dp, bottom = 40.dp),
+                contentPadding = PaddingValues(start = 40.dp, end = 40.dp, top = 12.dp, bottom = 40.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 modifier = Modifier.fillMaxSize()
