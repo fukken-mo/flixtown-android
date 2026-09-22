@@ -19,6 +19,11 @@ val FtSurfaceElevated = Color(0xFF212228)
 val FtAccent = Color(0xFFF01423)
 val FtAccentDim = Color(0xFF7A1620)
 val FtTextPrimary = Color(0xFFF5F5F5)
+// Dark text/icon color for content drawn on a light surface (e.g. the Play
+// button's white container) — every FlixTypography TextStyle below bakes in
+// its own `color`, so it must be set explicitly per-Text, never assumed from
+// a Surface's contentColor.
+val FtOnLightSurface = Color(0xFF111111)
 val FtTextSecondary = Color(0xFFC2C2C6)
 val FtTextMuted = Color(0xFF8A8A92)
 val FtRatingGold = Color(0xFFE8B93A)
@@ -57,6 +62,9 @@ object FlixSpacing {
     val sectionGap = 32.dp
     val rowHeaderGap = 16.dp
     val cardGap = 20.dp
+    // Top breathing room above the Details hero block (backdrop + poster +
+    // title), so content never sits flush against the screen's top edge.
+    val heroTopGap = 56.dp
 }
 
 /**

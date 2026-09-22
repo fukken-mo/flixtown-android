@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -153,6 +155,10 @@ fun MovieDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
+            // Breathing room above the hero block so it never sits flush
+            // against the screen's top edge — static, not focus-dependent.
+            Spacer(modifier = Modifier.height(FlixSpacing.heroTopGap))
+
             // The poster/title/meta row overlaps the bottom of the backdrop
             // by being a child of this same Box, aligned to BottomStart —
             // not by giving it negative padding (Modifier.padding requires
@@ -233,7 +239,8 @@ fun MovieDetailsScreen(
 
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             PrimaryActionButton(
-                                text = "▶ Play",
+                                text = if (existingProgress != null) "Resume" else "Play",
+                                icon = Icons.Filled.PlayArrow,
                                 onClick = {
                                     if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
                                 },

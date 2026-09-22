@@ -12,8 +12,8 @@ android {
         applicationId = "com.flixtown.tv"
         minSdk = 23
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.6.1"
+        versionCode = 8
+        versionName = "0.6.2"
     }
 
     buildFeatures {
@@ -52,6 +52,9 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    // Vector icon set (Play, etc.) — just the ImageVector definitions, no
+    // Material2/3 theming dependency; rendered via foundation's Image.
+    implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 

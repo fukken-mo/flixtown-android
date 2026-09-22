@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -192,6 +194,10 @@ fun SeriesDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
+            // Breathing room above the hero block so it never sits flush
+            // against the screen's top edge — static, not focus-dependent.
+            Spacer(modifier = Modifier.height(FlixSpacing.heroTopGap))
+
             // Poster/title/meta overlaps the backdrop by being aligned
             // BottomStart inside this same Box — never via negative padding
             // (Modifier.padding requires non-negative values and throws
@@ -269,7 +275,8 @@ fun SeriesDetailsScreen(
 
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             PrimaryActionButton(
-                                text = "▶ Play",
+                                text = if (inProgress != null) "Resume" else "Play",
+                                icon = Icons.Filled.PlayArrow,
                                 onClick = { playPrimary() },
                                 modifier = Modifier.focusRequester(playButtonFocusRequester)
                             )
