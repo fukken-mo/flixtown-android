@@ -36,7 +36,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -200,40 +199,24 @@ fun SeriesDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Real IBO geometry, decoded from activity_series_info.xml's
-            // ConstraintLayout (root is match_parent, i.e. the guidelines
-            // below are percentages of the actual screen, not some taller
-            // scrollable canvas): a vertical guideline at 27% of screen
-            // WIDTH is the poster/text boundary; a horizontal guideline at
-            // 38% of screen HEIGHT is where the poster's top AND bottom are
-            // both pinned — ConstraintLayout's way of centering the poster
-            // on that line. The poster itself resolves to 324x504dp at
-            // IBO's own TV density bucket, where screen height is 1080dp —
-            // i.e. the poster is ~46.7% of screen height. Both numbers are
-            // computed here from the real runtime screen height/width
-            // (LocalConfiguration), not hardcoded dp guesses, so the same
-            // proportion holds regardless of this device's actual density.
-            val configuration = LocalConfiguration.current
-            val screenHeightDp = configuration.screenHeightDp.dp
-            val posterHeight = (screenHeightDp * 0.467f).coerceIn(260.dp, 420.dp)
-            val posterWidth = posterHeight * (324f / 504f)
-            // Poster's vertical CENTER should land at 38% of screen height;
-            // top padding is however much space that leaves above the
-            // poster given its own (now percentage-derived) height.
-            val heroTopPadding = (screenHeightDp * 0.38f - posterHeight / 2f).coerceAtLeast(FlixSpacing.heroTopGap)
+            // Fixed, deterministic vertical layout — no percentage-of-
+            // screen-height math. Three real-device test rounds showed
+            // that reproducing IBO's guideline percentages (which are
+            // relative to IBO's own ConstraintLayout coordinate system)
+            // did not land the hero in the right place in this Compose
+            // layout on the actual TV, so the real screenshot is now the
+            // source of truth instead: a fixed 120dp top margin, a fixed
+            // poster size, and a fixed gap before Cast.
+            Spacer(modifier = Modifier.height(120.dp))
 
-            // Poster-beside-title hero, modeled on the actual IBO series
-            // info layout (structurally identical to its movie info
-            // layout): title/metadata/genres/description column starts at
-            // the same 27%-width guideline as the poster's right edge and
-            // runs almost to the screen's right edge — not a narrow capped
-            // column. Backdrop is one continuous image behind the whole
-            // group (matchParentSize sizes it to the content's real height,
-            // which now reaches down to where IBO's own guideline math puts
-            // it), with a horizontal dark-from-the-left gradient plus a
-            // vertical dark-toward-bottom gradient so text stays readable
-            // while backdrop stays visible on the right, rather than a flat
-            // near-black panel.
+            // Poster-beside-title hero: title/metadata/genres/description
+            // column sits beside the poster, vertically centered against
+            // it as one group. Backdrop is one continuous image behind the
+            // whole group (matchParentSize sizes it to the Row's own
+            // height), with a horizontal dark-from-the-left gradient plus
+            // a vertical dark-toward-bottom gradient so text stays readable
+            // while backdrop stays visible on the right, rather than a
+            // flat near-black panel.
             Box(modifier = Modifier.fillMaxWidth()) {
                 val backdropUrl = series.backdropUrl ?: series.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
@@ -266,15 +249,14 @@ fun SeriesDetailsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = FlixSpacing.safeHorizontal)
-                        .padding(top = heroTopPadding, bottom = FlixSpacing.sectionGap),
+                        .padding(horizontal = FlixSpacing.safeHorizontal),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .width(posterWidth)
-                            .height(posterHeight)
+                            .width(240.dp)
+                            .aspectRatio(2f / 3f)
                             .clip(RoundedCornerShape(10.dp))
                             .background(FtSurfaceElevated)
                     ) {
@@ -346,11 +328,8 @@ fun SeriesDetailsScreen(
                 }
             }
 
-            // Explicit clear gap so Cast never visually reads as part of
-            // the hero — the IBO reference itself puts real distance (its
-            // own Cast heading sits well below the info block, back at the
-            // screen's own left edge rather than the hero's indented
-            // guideline) between the two.
+            // Fixed 32dp gap between hero and Cast — enough to read as a
+            // new section without leaving a large blank area.
             Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
 
             if (series.cast.isNotEmpty()) {
