@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -121,9 +122,38 @@ fun SeriesDetailsScreen(
     val context = LocalContext.current
     val trailerSource = TrailerResolver.resolve(series.trailer)
 
+    // NOT keyed to seriesId — remember() is positional, so without an
+    // explicit reset below the same ScrollState instance (and its scroll
+    // offset) would otherwise carry over from whatever title was open
+    // previously.
+    val scrollState = rememberScrollState()
+
     // Same rule as Movie details: never leave focus unset when a title opens.
     val playButtonFocusRequester = remember(seriesId) { FocusRequester() }
-    LaunchedEffect(seriesId) { playButtonFocusRequester.requestFocus() }
+    LaunchedEffect(seriesId) {
+        SafeLog.d("SeriesDetailsScreen", "scroll debug: value at open (pre-reset)=${scrollState.value} maxValue=${scrollState.maxValue}")
+        scrollState.scrollTo(0)
+        SafeLog.d("SeriesDetailsScreen", "scroll debug: value before Play focus=${scrollState.value}")
+        playButtonFocusRequester.requestFocus()
+        SafeLog.d("SeriesDetailsScreen", "scroll debug: value immediately after requestFocus()=${scrollState.value}")
+        withFrameNanos { }
+        SafeLog.d("SeriesDetailsScreen", "scroll debug: value after next frame=${scrollState.value} maxValue=${scrollState.maxValue}")
+        // Compose's default focus behavior scrolls an ancestor
+        // verticalScroll to bring a newly focused descendant into view.
+        // Play sits below the poster/title/metadata/genres/description
+        // inside this same scrollable Column, so that auto-scroll was
+        // dragging the whole hero — including the 120dp top spacer and
+        // the title — out of view every time Details opened. Counter it
+        // for a short settle window right after requesting focus by
+        // forcing the scroll position back to 0 on each frame; Play stays
+        // logically focused throughout even while its bring-into-view
+        // target is being overridden.
+        repeat(14) {
+            withFrameNanos { }
+            if (scrollState.value != 0) scrollState.scrollTo(0)
+        }
+        SafeLog.d("SeriesDetailsScreen", "scroll debug: final settled value=${scrollState.value}")
+    }
 
     // Same non-blocking cast load as Movie details: waits for the one
     // get_series_info fetch (already in flight above) so this only ever
@@ -197,7 +227,7 @@ fun SeriesDetailsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
             // Fixed, deterministic vertical layout — no percentage-of-
             // screen-height math. Three real-device test rounds showed
