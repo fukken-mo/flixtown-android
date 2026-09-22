@@ -39,7 +39,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.widthIn
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
@@ -204,19 +203,20 @@ fun SeriesDetailsScreen(
             // against the screen's top edge — static, not focus-dependent.
             Spacer(modifier = Modifier.height(FlixSpacing.heroTopGap))
 
-            // The backdrop is one continuous image behind the whole hero
-            // block (poster + title/metadata/genres/description/buttons),
-            // not a separate band above it — matchParentSize() makes the
-            // backdrop + gradient size themselves to whatever height the
-            // Column of real content ends up needing (1- vs 2-line title,
-            // genres present or not, etc.), instead of guessing a fixed
-            // height. The Column itself is what actually fixes the
-            // alignment bug: poster, title, metadata, genres, description,
-            // and buttons are now all direct children of ONE Column padded
-            // by exactly safeHorizontal — the same edge Cast/Seasons/More
-            // Like This use — so nothing needs a poster-width-plus-gap
-            // offset the way the old side-by-side Row did (that measured
-            // 266dp against a 64dp guide on a real device).
+            // Poster-beside-title hero, modeled on the actual IBO series
+            // info layout (activity_series_info.xml, decoded from the
+            // reference APK — structurally identical to its movie info
+            // layout): a ConstraintLayout there right-anchors a 324x504dp
+            // poster to a fixed guideline, vertically CENTERS it (top and
+            // bottom both pinned to the same guideline), and lets the
+            // title/metadata/genres/description column start at that same
+            // guideline and run almost to the screen's right edge — not a
+            // narrow capped column. Backdrop is one continuous image behind
+            // the whole group (matchParentSize sizes it to the content's
+            // real height), with a horizontal dark-from-the-left gradient
+            // plus a vertical dark-toward-bottom gradient so text stays
+            // readable while backdrop stays visible on the right, rather
+            // than a flat near-black panel.
             Box(modifier = Modifier.fillMaxWidth()) {
                 val backdropUrl = series.backdropUrl ?: series.posterUrl
                 if (!backdropUrl.isNullOrBlank()) {
@@ -232,18 +232,30 @@ fun SeriesDetailsScreen(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                0f to FtBackground,
+                                0.6f to FtBackground.copy(alpha = 0.75f),
+                                1f to Color.Transparent
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
                         .background(Brush.verticalGradient(listOf(Color.Transparent, FtBackground)))
                 )
 
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = FlixSpacing.safeHorizontal, vertical = 28.dp)
-                        .widthIn(max = 620.dp)
+                        .padding(horizontal = FlixSpacing.safeHorizontal, vertical = 64.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .width(130.dp)
+                            .width(200.dp)
                             .aspectRatio(2f / 3f)
                             .clip(RoundedCornerShape(10.dp))
                             .background(FtSurfaceElevated)
@@ -258,68 +270,69 @@ fun SeriesDetailsScreen(
                         }
                     }
 
-                    // Deliberately more room than the 12dp used between the
-                    // text lines below — the poster is a distinct visual
-                    // block, not another line of text, so it gets its own
-                    // more generous gap before the title starts.
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = series.name,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = FtTextPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(
-                        text = series.name,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = FtTextPrimary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                        MetadataRow(
+                            parts = listOfNotNull(series.year?.toString()),
+                            rating = series.rating
+                        )
 
-                    MetadataRow(
-                        parts = listOfNotNull(series.year?.toString()),
-                        rating = series.rating
-                    )
+                        if (series.genres.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = series.genres.joinToString(" • "),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = FtTextSecondary
+                            )
+                        }
 
-                    if (series.genres.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = series.genres.joinToString(" • "),
+                            text = series.plot ?: "No description available.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = FtTextSecondary
+                            color = FtTextSecondary,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
                         )
-                    }
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = series.plot ?: "No description available.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = FtTextSecondary,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PrimaryActionButton(
-                            text = if (inProgress != null) "Resume" else "Play",
-                            icon = Icons.Filled.PlayArrow,
-                            onClick = { playPrimary() },
-                            modifier = Modifier.focusRequester(playButtonFocusRequester)
-                        )
-                        if (trailerSource != TrailerSource.None) {
-                            SecondaryActionButton(
-                                text = "Trailer",
-                                onClick = {
-                                    when (val source = trailerSource) {
-                                        is TrailerSource.DirectVideo -> showTrailer = true
-                                        is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
-                                        TrailerSource.None -> Unit
-                                    }
-                                }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PrimaryActionButton(
+                                text = if (inProgress != null) "Resume" else "Play",
+                                icon = Icons.Filled.PlayArrow,
+                                onClick = { playPrimary() },
+                                modifier = Modifier.focusRequester(playButtonFocusRequester)
                             )
+                            if (trailerSource != TrailerSource.None) {
+                                SecondaryActionButton(
+                                    text = "Trailer",
+                                    onClick = {
+                                        when (val source = trailerSource) {
+                                            is TrailerSource.DirectVideo -> showTrailer = true
+                                            is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
+                                            TrailerSource.None -> Unit
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
 
+            // Explicit clear gap so Cast never visually reads as part of
+            // the hero — the IBO reference itself puts real distance (its
+            // own Cast heading sits well below the info block, back at the
+            // screen's own left edge rather than the hero's indented
+            // guideline) between the two.
             Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
 
             if (series.cast.isNotEmpty()) {
