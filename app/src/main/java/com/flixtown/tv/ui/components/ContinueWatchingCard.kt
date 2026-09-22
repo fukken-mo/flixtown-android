@@ -13,10 +13,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,6 +31,7 @@ import coil.compose.AsyncImage
 import com.flixtown.tv.data.ContinueWatchingEntry
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtBackground
+import com.flixtown.tv.ui.theme.FtFocusSurfaceDeep
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
@@ -39,8 +45,13 @@ data class ContinueWatchingDisplay(val primary: String, val secondary: String?)
 /**
  * A dedicated 16:9 resume card — never the tall 2:3 [PosterCard] shape, and
  * never the raw Xtream episode title verbatim. Same [FlixFocusSurface] focus
- * language as every other card (scale/lift/border/glow), just a different
- * silhouette and its own bottom-gradient text overlay + thin progress bar.
+ * language as every other card (red border, no scale), plus its own
+ * bottom-gradient text overlay + thin progress bar. The thumbnail image
+ * fills the whole card, so — same reasoning as PosterCard — a focused-only
+ * brightness/red wash is drawn directly over it, and the bottom gradient's
+ * own end color shifts from near-black to deep red, since FlixFocusSurface's
+ * own focused container color would otherwise be entirely hidden behind
+ * this opaque image.
  */
 @Composable
 fun ContinueWatchingCard(
@@ -52,10 +63,14 @@ fun ContinueWatchingCard(
     val progress = remember(entry) {
         if (entry.durationMs > 0) (entry.positionMs.toFloat() / entry.durationMs.toFloat()).coerceIn(0f, 1f) else 0f
     }
+    var isFocused by remember { mutableStateOf(false) }
 
     FlixFocusSurface(
         onClick = onClick,
-        modifier = modifier.width(CONTINUE_WATCHING_CARD_WIDTH).height(CONTINUE_WATCHING_CARD_HEIGHT),
+        modifier = modifier
+            .width(CONTINUE_WATCHING_CARD_WIDTH)
+            .height(CONTINUE_WATCHING_CARD_HEIGHT)
+            .onFocusChanged { isFocused = it.isFocused },
         shape = RoundedCornerShape(10.dp),
         contentPadding = PaddingValues(0.dp)
     ) {
@@ -71,16 +86,22 @@ fun ContinueWatchingCard(
                 Box(modifier = Modifier.fillMaxSize().background(FtSurfaceElevated))
             }
 
+            if (isFocused) {
+                Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.06f)))
+                Box(modifier = Modifier.fillMaxSize().background(FtAccent.copy(alpha = 0.10f)))
+            }
+
             // Bottom ~40% darkens for the text overlay, top stays clear so the
             // thumbnail/backdrop actually reads as the card's main content.
+            // The end color itself shifts to deep red on focus.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            0f to androidx.compose.ui.graphics.Color.Transparent,
-                            0.6f to androidx.compose.ui.graphics.Color.Transparent,
-                            1f to FtBackground.copy(alpha = 0.92f)
+                            0f to Color.Transparent,
+                            0.6f to Color.Transparent,
+                            1f to (if (isFocused) FtFocusSurfaceDeep.copy(alpha = 0.95f) else FtBackground.copy(alpha = 0.92f))
                         )
                     )
             )

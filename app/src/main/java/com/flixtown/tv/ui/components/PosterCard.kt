@@ -11,9 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -21,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
+import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtSurface
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
@@ -32,11 +39,14 @@ val DEFAULT_POSTER_WIDTH: Dp = 190.dp
  * A real poster card: Coil-loaded image over a gradient tile (which also
  * doubles as the loading/no-image state, so there's never a blank flash),
  * title, and an optional subtitle (year, episode info, etc). Same
- * FlixFocusSurface red-glow/scale focus treatment used everywhere else.
- *
- * Sizing is entirely up to [modifier] — pass `Modifier.width(DEFAULT_POSTER_WIDTH)`
- * for a fixed-width card in a horizontal row, or `Modifier.fillMaxWidth()`
- * to let a grid cell (e.g. `LazyVerticalGrid(GridCells.Fixed(5))`) size it.
+ * FlixFocusSurface red focus treatment used everywhere else — plus, since
+ * the poster image is opaque and would otherwise fully hide
+ * FlixFocusSurface's own focused-container red fill, two flat-color
+ * overlays drawn directly on top of the already-loaded image when this
+ * card has focus: a faint white wash (brightness) and a faint red wash
+ * (the "red-selected" read over the artwork itself). Both are plain solid-
+ * color fills — no blur, no new image request, no re-decode — so they're
+ * effectively free to draw and never touch the already-loaded image.
  */
 @Composable
 fun PosterCard(
@@ -46,9 +56,10 @@ fun PosterCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null
 ) {
+    var isFocused by remember { mutableStateOf(false) }
     FlixFocusSurface(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.onFocusChanged { isFocused = it.isFocused },
         shape = RoundedCornerShape(10.dp),
         contentPadding = PaddingValues(0.dp)
     ) {
@@ -67,6 +78,10 @@ fun PosterCard(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
+                }
+                if (isFocused) {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.06f)))
+                    Box(modifier = Modifier.fillMaxSize().background(FtAccent.copy(alpha = 0.14f)))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))

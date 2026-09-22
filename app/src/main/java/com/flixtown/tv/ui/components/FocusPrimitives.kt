@@ -25,21 +25,25 @@ import androidx.tv.material3.Text
 import com.flixtown.tv.ui.theme.FlixMotion
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtAccentDim
+import com.flixtown.tv.ui.theme.FtFocusSurfaceDeep
 import com.flixtown.tv.ui.theme.FtSurface
-import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 
 /**
  * The one focus treatment used across every interactive element in the app —
- * deliberately IBO-Player-restrained: the selected state reads from a thin
- * red border and a brighter container color (focusedContainerColor vs
- * containerColor), not physical growth. [focusScale] defaults to 1.0 (no
- * scale at all); pass a value up to ~1.02 only where color/border alone
- * can't read clearly (this is what buttons/chips use, via
- * [FlixMotion.ButtonFocusScale]). No shadow/glow layer, no vertical lift,
- * no zIndex reordering — those were real per-frame rendering cost and are
- * unnecessary once nothing actually grows past its own bounds: a focused
- * poster/card never paints over a neighbor if it never exceeds its slot.
+ * deliberately IBO-Player-restrained on motion (no scale/lift/glow layer),
+ * but a genuinely RED focused state, not a thin outline: a 2dp red border
+ * plus [FtFocusSurfaceDeep] as the focused container color, so a focused
+ * item reads as red-selected from across a room without physically growing.
+ * Behind an opaque image (a poster/thumbnail) this container color only
+ * shows through wherever that image doesn't cover it (e.g. the title strip
+ * below a poster) — image-covered regions need their own overlay if they
+ * also need to look focused, which PosterCard/ContinueWatchingCard add
+ * themselves. [focusScale] defaults to 1.0 (no scale at all); pass a value
+ * up to ~1.02 only where color/border alone can't read clearly (buttons/
+ * chips, via [FlixMotion.ButtonFocusScale]). No shadow/glow layer, no
+ * vertical lift, no zIndex reordering — those were real per-frame rendering
+ * cost and are unnecessary once nothing actually grows past its own bounds.
  */
 @Composable
 fun FlixFocusSurface(
@@ -68,14 +72,18 @@ fun FlixFocusSurface(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (selected) FtAccentDim.copy(alpha = 0.4f) else FtSurface,
             contentColor = FtTextPrimary,
-            focusedContainerColor = FtSurfaceElevated,
+            focusedContainerColor = FtFocusSurfaceDeep,
             focusedContentColor = FtTextPrimary,
-            pressedContainerColor = FtSurfaceElevated,
+            pressedContainerColor = FtFocusSurfaceDeep,
             pressedContentColor = FtTextPrimary
         ),
         // We drive scale ourselves above; leave tv-material3's own
-        // scale/glow at identity/none so there's no double animation and no
-        // elevation-shadow recomposition.
+        // scale/glow at identity/none/default so there's no double
+        // animation stacked on top of ours — ClickableSurfaceDefaults.glow()
+        // (left untouched below, since Surface's own default parameter
+        // value is what's in effect) draws nothing unless a non-default
+        // Glow is explicitly requested, so there is no separate glow/shadow
+        // animation running here either.
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f),
         border = ClickableSurfaceDefaults.border(
             border = if (selected) {
@@ -84,7 +92,7 @@ fun FlixFocusSurface(
                 Border(border = BorderStroke(0.dp, Color.Transparent), shape = shape)
             },
             focusedBorder = Border(
-                border = BorderStroke(1.5.dp, FtAccent),
+                border = BorderStroke(2.dp, FtAccent),
                 shape = shape
             )
         )

@@ -27,6 +27,12 @@ val FtOnLightSurface = Color(0xFF111111)
 val FtTextSecondary = Color(0xFFC2C2C6)
 val FtTextMuted = Color(0xFF8A8A92)
 val FtRatingGold = Color(0xFFE8B93A)
+// Deep red focused-surface fill — every FlixFocusSurface uses this as its
+// focusedContainerColor so the selected state reads as genuinely red from
+// across a room, not just a thin border. Behind an opaque poster image this
+// only shows through in the title/metadata strip below it; behind plain
+// text content (buttons, chips, dialogs) it fills the whole surface.
+val FtFocusSurfaceDeep = Color(0xFF4A1015)
 
 private val FlixTownColorScheme = darkColorScheme(
     primary = FtAccent,
@@ -98,13 +104,13 @@ object FlixMotion {
     // no-op while the next item is fully visible and only shifts once
     // focus reaches an edge, which is the IBO-style behavior asked for
     // without inventing a parallel, riskier hand-rolled scroll system.
-    const val FocusDurationMs = 110
+    const val FocusDurationMs = 60
     const val FocusScale = 1f
 
     // Buttons (Play/Trailer/Secondary/etc) — same restraint, kept fractionally
     // larger than posters since a button has less area for color/border alone
     // to read clearly from across a room.
-    const val ButtonFocusDurationMs = 110
+    const val ButtonFocusDurationMs = 60
     const val ButtonFocusScale = 1.02f
 
     // Hero: how long focus has to "settle" on one item before the backdrop
@@ -116,7 +122,7 @@ object FlixMotion {
 
     // Home<->Movies<->Series<->Details<->Search transition: a plain fade,
     // no scale/slide/spring — responsiveness matters more than decoration.
-    const val ScreenTransitionMs = 130
+    const val ScreenTransitionMs = 90
 }
 
 @Composable

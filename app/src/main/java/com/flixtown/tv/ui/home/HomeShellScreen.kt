@@ -1,5 +1,6 @@
 package com.flixtown.tv.ui.home
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
@@ -42,7 +43,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +52,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,6 +74,7 @@ import com.flixtown.tv.ui.catalog.SeriesScreen
 import com.flixtown.tv.ui.components.BackdropLayer
 import com.flixtown.tv.ui.components.ContinueWatchingCard
 import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
+import com.flixtown.tv.ui.components.ExitConfirmationDialog
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.PosterSkeletonCard
@@ -146,8 +148,34 @@ fun HomeShellScreen(graph: AppGraph) {
         label = "railWidth"
     )
 
-    BackHandler(enabled = backStack.size > 1 && current !is ContentScreen.Player) {
+    // Three mutually exclusive levels, so exactly one BackHandler is ever
+    // enabled for a given BACK press (never a "which one fires first"
+    // ambiguity, and never more than one popping/navigating per press):
+    //   1. Truly at the app root (Home, nothing else on the stack) -> ask
+    //      before exiting, instead of silently falling through to the
+    //      system default (which finishes the Activity with no warning).
+    //   2. Stack has more than one entry -> pop exactly one level, same as
+    //      before.
+    //   3. Stack has exactly one entry but it's NOT Home (Movies/Series/
+    //      Search/Settings reached directly via the nav rail, which always
+    //      replaces the whole stack via popToRoot) -> there is no "previous
+    //      screen" to return to, so BACK goes to Home rather than exiting
+    //      the app from what the user doesn't perceive as the root.
+    // All three are disabled while the exit dialog itself is showing, so
+    // its own BackHandler (registered only while it's composed) is the
+    // only one that can act on that BACK press.
+    var showExitDialog by remember { mutableStateOf(false) }
+    val isAtAppRoot = current is ContentScreen.Home && backStack.size == 1
+
+    BackHandler(enabled = isAtAppRoot && !showExitDialog) {
+        showExitDialog = true
+    }
+    BackHandler(enabled = backStack.size > 1 && current !is ContentScreen.Player && !showExitDialog) {
         backStack.removeAt(backStack.lastIndex)
+    }
+    BackHandler(enabled = backStack.size == 1 && current !is ContentScreen.Home && current !is ContentScreen.Player && !showExitDialog) {
+        backStack.clear()
+        backStack.add(ContentScreen.Home)
     }
 
     fun push(screen: ContentScreen) {
@@ -226,6 +254,9 @@ fun HomeShellScreen(graph: AppGraph) {
         return
     }
 
+    val activity = LocalContext.current as? Activity
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -331,6 +362,14 @@ fun HomeShellScreen(graph: AppGraph) {
                 }
             }
         }
+    }
+
+    if (showExitDialog) {
+        ExitConfirmationDialog(
+            onCancel = { showExitDialog = false },
+            onExit = { activity?.finish() }
+        )
+    }
     }
 }
 
@@ -450,20 +489,6 @@ private fun HomeContent(
     var pendingFocusRowKey by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingFocusItemKey by rememberSaveable { mutableStateOf<String?>(null) }
 
-    // Debug-only shake diagnostics (SafeLog.d is a no-op in release builds):
-    // logs the outer LazyColumn's own scroll position every time it actually
-    // changes, for any reason. Correlated by time against the "focus ->"
-    // line below in logcat, this is what proves (or disproves) whether an
-    // ordinary LEFT/RIGHT focus move inside one row is causing the OUTER
-    // list to scroll on its own — the exact mechanism this screen is
-    // suspected of triggering via focus-driven bring-into-view.
-    LaunchedEffect(Unit) {
-        snapshotFlow { homeListState.firstVisibleItemIndex to homeListState.firstVisibleItemScrollOffset }
-            .collect { (index, offset) ->
-                SafeLog.d("HomeShake", "outer scroll changed -> index=$index offset=$offset")
-            }
-    }
-
     when (catalogState) {
         is CatalogUiState.Loading -> HomeLoadingSkeleton()
         is CatalogUiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal)) {
@@ -509,14 +534,7 @@ private fun HomeContent(
                 entry.toHeroRowItem { onContinueWatchingClick(entry) }
             } ?: recentlyAdded.firstOrNull()
 
-            val onRowFocus: (RowItem) -> Unit = { item ->
-                SafeLog.d(
-                    "HomeShake",
-                    "focus -> ${item.key} outer=(${homeListState.firstVisibleItemIndex},${homeListState.firstVisibleItemScrollOffset})"
-                )
-                focused.value = item
-                everFocusedContent = true
-            }
+            val onRowFocus: (RowItem) -> Unit = { item -> focused.value = item; everFocusedContent = true }
 
             val rowSpecs = remember(continueWatching, recentlyAdded, trending, latestMovies, latestSeries) {
                 buildList {
@@ -740,15 +758,6 @@ private fun PosterRow(
     Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
         SectionHeader(title = title, modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
         val listState = rememberLazyListState()
-
-        // Same debug-only diagnostic as the outer LazyColumn in HomeContent,
-        // scoped to this row so its logcat lines can be told apart by rowKey.
-        LaunchedEffect(rowKey) {
-            snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-                .collect { (index, offset) ->
-                    SafeLog.d("HomeShake", "row=$rowKey inner scroll changed -> index=$index offset=$offset")
-                }
-        }
 
         // Scrolls this row's own LazyRow to the exact item that launched
         // Details, once the outer LazyColumn has brought this row itself
