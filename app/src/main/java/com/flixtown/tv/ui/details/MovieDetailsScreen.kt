@@ -54,9 +54,13 @@ import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
 import com.flixtown.tv.ui.components.MetadataRow
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.PrimaryActionButton
+import com.flixtown.tv.ui.components.SHOW_SAFE_AREA_GUIDES
+import com.flixtown.tv.ui.components.SafeAreaDebugOverlay
 import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SectionHeader
 import com.flixtown.tv.ui.components.SelectorMenu
+import com.flixtown.tv.ui.components.reportXPosition
+import com.flixtown.tv.ui.components.rememberSafeAreaMeasurements
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.player.SimpleVideoPlayerScreen
 import com.flixtown.tv.ui.player.openYouTubeVideo
@@ -153,6 +157,8 @@ fun MovieDetailsScreen(
         )
     }
 
+    val safeAreaMeasurements = rememberSafeAreaMeasurements()
+
     Box(modifier = Modifier.fillMaxSize().background(FtBackground)) {
         Column(
             modifier = Modifier
@@ -221,16 +227,23 @@ fun MovieDetailsScreen(
                             style = MaterialTheme.typography.headlineLarge,
                             color = FtTextPrimary,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("title", safeAreaMeasurements) else Modifier
                         )
 
                         MetadataRow(
                             parts = listOfNotNull(movie.year?.toString(), details?.runtimeMinutes?.let { "${it}m" }),
-                            rating = movie.rating
+                            rating = movie.rating,
+                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("metadata", safeAreaMeasurements) else Modifier
                         )
 
                         if (!details?.genres.isNullOrEmpty()) {
-                            Text(text = details!!.genres.joinToString(" • "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                            Text(
+                                text = details!!.genres.joinToString(" • "),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = FtTextSecondary,
+                                modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("genres", safeAreaMeasurements) else Modifier
+                            )
                         }
 
                         Text(
@@ -238,10 +251,14 @@ fun MovieDetailsScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = FtTextSecondary,
                             maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("description", safeAreaMeasurements) else Modifier
                         )
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = if (SHOW_SAFE_AREA_GUIDES) Modifier.reportXPosition("buttons", safeAreaMeasurements) else Modifier
+                        ) {
                             PrimaryActionButton(
                                 text = if (existingProgress != null) "Resume" else "Play",
                                 icon = Icons.Filled.PlayArrow,
@@ -270,7 +287,12 @@ fun MovieDetailsScreen(
             Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
 
             if (!details?.cast.isNullOrEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = FlixSpacing.safeHorizontal)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = FlixSpacing.safeHorizontal)
+                        .let { if (SHOW_SAFE_AREA_GUIDES) it.reportXPosition("cast_heading", safeAreaMeasurements) else it }
+                ) {
                     CastRow(cast = castMembers)
                 }
                 Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
@@ -278,7 +300,12 @@ fun MovieDetailsScreen(
 
             if (similarMovies.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
-                    SectionHeader(title = "More Like This", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
+                    SectionHeader(
+                        title = "More Like This",
+                        modifier = Modifier
+                            .padding(start = FlixSpacing.safeHorizontal)
+                            .let { if (SHOW_SAFE_AREA_GUIDES) it.reportXPosition("more_like_this", safeAreaMeasurements) else it }
+                    )
                     LazyRow(
                         contentPadding = PaddingValues(
                             start = FlixSpacing.safeHorizontal,
@@ -302,6 +329,10 @@ fun MovieDetailsScreen(
             }
 
             Spacer(modifier = Modifier.height(FlixSpacing.safeVertical))
+        }
+
+        if (SHOW_SAFE_AREA_GUIDES) {
+            SafeAreaDebugOverlay(safeHorizontal = FlixSpacing.safeHorizontal, measurements = safeAreaMeasurements)
         }
 
         if (showTrailer) {

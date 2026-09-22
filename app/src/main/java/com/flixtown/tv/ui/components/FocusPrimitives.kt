@@ -56,18 +56,37 @@ fun FlixFocusSurface(
     focusDurationMs: Int = FlixMotion.FocusDurationMs,
     content: @Composable () -> Unit
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) focusScale else 1f,
-        animationSpec = tween(durationMillis = focusDurationMs),
-        label = "focusScale"
-    )
+    // Every poster/episode/skeleton/button call site currently uses the
+    // default focusScale (1.0 — no scale), which used to still pay for a
+    // per-instance Animatable (animateFloatAsState) AND its own composited
+    // render layer (graphicsLayer always creates one, even at scaleX/Y=1)
+    // on every single one of them, for zero visual effect: the target value
+    // is 1f whether focused or not, so nothing ever actually animated.
+    // Skipping this whole block whenever focusScale==1f removes that
+    // machinery from ~10 focusable elements app-wide (PosterCard, episode
+    // cards, Continue Watching cards, the skeleton loader, nav rail items,
+    // player control buttons); only a caller that explicitly opts into a
+    // real scale (FilterChip, via FlixMotion.ButtonFocusScale) still pays
+    // for it, unchanged. The red/border focused look everywhere else comes
+    // entirely from Surface's own native color+border handling below, which
+    // costs nothing extra from us either way.
+    val surfaceModifier = if (focusScale == 1f) {
+        modifier
+    } else {
+        var isFocused by remember { mutableStateOf(false) }
+        val scale by animateFloatAsState(
+            targetValue = if (isFocused) focusScale else 1f,
+            animationSpec = tween(durationMillis = focusDurationMs),
+            label = "focusScale"
+        )
+        modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .onFocusChanged { isFocused = it.isFocused }
+    }
 
     Surface(
         onClick = onClick,
-        modifier = modifier
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .onFocusChanged { isFocused = it.isFocused },
+        modifier = surfaceModifier,
         shape = ClickableSurfaceDefaults.shape(shape = shape, focusedShape = shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (selected) FtAccentDim.copy(alpha = 0.4f) else FtSurface,
