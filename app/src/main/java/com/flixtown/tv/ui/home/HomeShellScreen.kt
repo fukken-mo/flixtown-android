@@ -17,10 +17,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.fillParentMaxHeight
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -64,6 +69,8 @@ import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.PosterCard
 import com.flixtown.tv.ui.components.PosterSkeletonCard
+import com.flixtown.tv.ui.components.PrimaryActionButton
+import com.flixtown.tv.ui.components.SectionHeader
 import com.flixtown.tv.ui.details.MovieDetailsScreen
 import com.flixtown.tv.ui.details.SeriesDetailsScreen
 import com.flixtown.tv.ui.nav.ContentScreen
@@ -72,9 +79,12 @@ import com.flixtown.tv.ui.nav.NavSection
 import com.flixtown.tv.ui.nav.sectionFor
 import com.flixtown.tv.ui.player.PlayerScreen
 import com.flixtown.tv.ui.search.SearchScreen
+import com.flixtown.tv.ui.theme.FlixSpacing
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtBackground
 import com.flixtown.tv.ui.theme.FtSurface
+import com.flixtown.tv.ui.theme.FtSurfaceElevated
+import com.flixtown.tv.ui.theme.FtTextMuted
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 import java.text.SimpleDateFormat
@@ -268,13 +278,15 @@ fun HomeShellScreen(graph: AppGraph) {
                         graph = graph,
                         catalogState = catalogState,
                         streamId = screen.streamId,
-                        onPlay = { push(it) }
+                        onPlay = { push(it) },
+                        onMovieClick = { push(ContentScreen.MovieDetails(it.streamId)) }
                     )
                     is ContentScreen.SeriesDetails -> SeriesDetailsScreen(
                         graph = graph,
                         catalogState = catalogState,
                         seriesId = screen.seriesId,
-                        onPlay = { push(it) }
+                        onPlay = { push(it) },
+                        onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) }
                     )
                     is ContentScreen.Search -> saveableStateHolder.SaveableStateProvider("search") {
                         SearchScreen(
@@ -356,32 +368,6 @@ private fun NavRailItem(
     }
 }
 
-@Composable
-private fun HomeHeader(sectionLabel: String, accountStatusStore: AccountStatusStore) {
-    val expiresAtEpochSeconds by accountStatusStore.expiresAtEpochSeconds.collectAsState()
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = sectionLabel, style = MaterialTheme.typography.headlineMedium)
-        val expires = expiresAtEpochSeconds
-        if (expires != null) {
-            val formatted = remember(expires) {
-                SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(expires * 1000))
-            }
-            Text(
-                text = "Subscription active until $formatted",
-                style = MaterialTheme.typography.bodyMedium,
-                color = FtTextSecondary
-            )
-        }
-    }
-}
-
 // ---- Home content rows -----------------------------------------------------
 
 private data class RowItem(
@@ -394,10 +380,12 @@ private data class RowItem(
 )
 
 /**
- * Home's outer shell: a dynamic backdrop behind everything (whatever the
- * currently focused row item resolves to — see [RowItem.backdropUrl]), the
- * header, a small fixed-height hero line so text appearing/disappearing
- * never shifts the rows below it, then the scrollable rows themselves.
+ * Home's outer shell: one continuous LazyColumn — the cinematic hero is its
+ * first item (so it scrolls away naturally, like it would on any premium
+ * streaming app), followed by each carousel as its own item. Nothing here
+ * overlaps: LazyColumn lays items out strictly sequentially, each measured
+ * with unbounded height, so a row can never be squeezed or bleed into its
+ * neighbor the way a fixed-height Column could.
  */
 @Composable
 private fun HomeContent(
@@ -411,78 +399,13 @@ private fun HomeContent(
 ) {
     // A State object, not `by` — HomeContent itself never unwraps `.value`,
     // so a focus-change write (from deep inside the rows below) never
-    // recomposes this function/the rows. Only the two leaf composables that
-    // actually read `.value` (hero text instantly, backdrop debounced) do.
+    // recomposes this function or the rows. Only HomeHero, which actually
+    // reads `.value`, recomposes on focus change.
     val focused = remember { mutableStateOf<RowItem?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        BackdropLayer(state = remember { derivedStateOf { focused.value?.backdropUrl } })
-
-        Column(modifier = Modifier.fillMaxSize()) {
-            HomeHeader(sectionLabel = "Home", accountStatusStore = accountStatusStore)
-            HeroLayer(state = focused)
-            HomeRows(
-                catalogState = catalogState,
-                continueWatching = continueWatching,
-                onRetry = onRetry,
-                onMovieClick = onMovieClick,
-                onSeriesClick = onSeriesClick,
-                onContinueWatchingClick = onContinueWatchingClick,
-                onFocusedItemChange = { focused.value = it }
-            )
-        }
-    }
-}
-
-@Composable
-private fun HeroLayer(state: State<RowItem?>) {
-    FocusedHero(item = state.value)
-}
-
-@Composable
-private fun FocusedHero(item: RowItem?) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .padding(horizontal = 40.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        if (item != null) {
-            Column {
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = FtTextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!item.subtitle.isNullOrBlank()) {
-                    Text(
-                        text = item.subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = FtTextSecondary,
-                        maxLines = 1
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeRows(
-    catalogState: CatalogUiState,
-    continueWatching: List<ContinueWatchingEntry>,
-    onRetry: () -> Unit,
-    onMovieClick: (Movie) -> Unit,
-    onSeriesClick: (Series) -> Unit,
-    onContinueWatchingClick: (ContinueWatchingEntry) -> Unit,
-    onFocusedItemChange: (RowItem) -> Unit
-) {
     when (catalogState) {
-        is CatalogUiState.Loading -> HomeRowsSkeleton()
-        is CatalogUiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(horizontal = 40.dp)) {
+        is CatalogUiState.Loading -> HomeLoadingSkeleton()
+        is CatalogUiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal)) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     text = "Couldn't load your catalog: ${catalogState.message}",
@@ -528,63 +451,136 @@ private fun HomeRows(
                 .take(ROW_ITEM_LIMIT)
                 .map { it.toRowItem(onSeriesClick) }
 
-            // A LazyColumn: every row is measured with an unbounded main-axis
-            // constraint (that's how lazy layouts work), so a poster row can
-            // never be squeezed by "not enough remaining height" the way a
-            // plain fillMaxSize() Column would squeeze it. If everything
-            // doesn't fit on screen at once, it scrolls instead of shrinking.
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 40.dp),
-                verticalArrangement = Arrangement.spacedBy(28.dp)
-            ) {
+            // Whatever the user last focused stays featured; before any
+            // focus event, feature Continue Watching's top item, else the
+            // most recently added title — never a blank hero.
+            val heroFallback = continueWatchingItems.firstOrNull() ?: recentlyAdded.firstOrNull()
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item(key = "hero") {
+                    HomeHero(
+                        state = focused,
+                        fallback = heroFallback,
+                        accountStatusStore = accountStatusStore,
+                        modifier = Modifier.fillParentMaxHeight(0.56f)
+                    )
+                }
+                item(key = "hero-spacer") { Spacer(modifier = Modifier.height(FlixSpacing.sectionGap)) }
+
                 if (continueWatchingItems.isNotEmpty()) {
                     item(key = "row-continue-watching") {
-                        PosterRow("Continue Watching", continueWatchingItems, onFocusedItemChange)
+                        PosterRow("Continue Watching", continueWatchingItems) { focused.value = it }
                     }
                 }
                 if (recentlyAdded.isNotEmpty()) {
                     item(key = "row-recently-added") {
-                        PosterRow("Recently Added", recentlyAdded, onFocusedItemChange)
+                        PosterRow("Recently Added", recentlyAdded) { focused.value = it }
                     }
                 }
                 if (trending.isNotEmpty()) {
                     item(key = "row-trending") {
-                        PosterRow("Trending", trending, onFocusedItemChange)
+                        PosterRow("Trending", trending) { focused.value = it }
                     }
                 }
                 if (latestMovies.isNotEmpty()) {
                     item(key = "row-latest-movies") {
-                        PosterRow("Latest Movies", latestMovies, onFocusedItemChange)
+                        PosterRow("Latest Movies", latestMovies) { focused.value = it }
                     }
                 }
                 if (latestSeries.isNotEmpty()) {
                     item(key = "row-latest-series") {
-                        PosterRow("Latest Series", latestSeries, onFocusedItemChange)
+                        PosterRow("Latest Series", latestSeries) { focused.value = it }
                     }
                 }
+                item(key = "bottom-spacer") { Spacer(modifier = Modifier.height(FlixSpacing.safeVertical)) }
+            }
+        }
+    }
+}
+
+/**
+ * The cinematic hero: full-bleed backdrop of whichever item currently has
+ * D-pad focus (falling back to a sensible default), a compact subscription
+ * label in the corner, and title/metadata/action over a readable gradient.
+ * Reads `state.value` itself so a focus change only recomposes this one
+ * composable, never the rows below it.
+ */
+@Composable
+private fun HomeHero(
+    state: State<RowItem?>,
+    fallback: RowItem?,
+    accountStatusStore: AccountStatusStore,
+    modifier: Modifier = Modifier
+) {
+    val item = state.value ?: fallback
+    val expiresAtEpochSeconds by accountStatusStore.expiresAtEpochSeconds.collectAsState()
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        BackdropLayer(state = remember(item) { derivedStateOf { item?.backdropUrl } }, modifier = Modifier.fillMaxSize())
+
+        val expires = expiresAtEpochSeconds
+        if (expires != null) {
+            val formatted = remember(expires) {
+                SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(expires * 1000))
+            }
+            Text(
+                text = "Active until $formatted",
+                style = MaterialTheme.typography.labelMedium,
+                color = FtTextMuted,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.safeVertical)
+            )
+        }
+
+        if (item != null) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .widthIn(max = 760.dp)
+                    .padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.safeVertical),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.displayLarge,
+                    color = FtTextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!item.subtitle.isNullOrBlank()) {
+                    Text(text = item.subtitle, style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                }
+                PrimaryActionButton(text = "More Info", onClick = item.onClick)
             }
         }
     }
 }
 
 @Composable
-private fun HomeRowsSkeleton() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(28.dp)
-    ) {
+private fun HomeLoadingSkeleton() {
+    Column(modifier = Modifier.fillMaxSize().padding(top = FlixSpacing.safeVertical)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp)
+                .padding(horizontal = FlixSpacing.safeHorizontal)
+                .clip(RoundedCornerShape(16.dp))
+                .background(FtSurfaceElevated)
+        )
+        Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
         repeat(3) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.padding(start = 40.dp)) {
+                Box(modifier = Modifier.padding(start = FlixSpacing.safeHorizontal)) {
                     Text(text = "Loading…", style = MaterialTheme.typography.titleMedium, color = FtTextSecondary)
                 }
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 40.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal),
+                    horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
                 ) {
                     items(6) { PosterSkeletonCard() }
                 }
+                Spacer(modifier = Modifier.height(FlixSpacing.sectionGap - 12.dp))
             }
         }
     }
@@ -593,10 +589,8 @@ private fun HomeRowsSkeleton() {
 @Composable
 private fun PosterRow(title: String, items: List<RowItem>, onFocusedItemChange: (RowItem) -> Unit) {
     val railFocusRequester = LocalRailRevealFocusRequester.current
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(modifier = Modifier.padding(start = 40.dp)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium, color = FtTextPrimary)
-        }
+    Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
+        SectionHeader(title = title, modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
         val listState = rememberLazyListState()
         LazyRow(
             state = listState,
@@ -604,8 +598,8 @@ private fun PosterRow(title: String, items: List<RowItem>, onFocusedItemChange: 
             // to its own bounds, and with zero vertical margin a focused
             // card's scale-up had nowhere to go but into that clip edge —
             // this is the "focused poster gets cut off" bug.
-            contentPadding = PaddingValues(horizontal = 40.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
+            contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
         ) {
             itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
                 PosterCard(

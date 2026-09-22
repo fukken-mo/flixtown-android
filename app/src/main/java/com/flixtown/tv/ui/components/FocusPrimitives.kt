@@ -26,8 +26,8 @@ import com.flixtown.tv.ui.theme.FtSurface
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 
-private const val FOCUS_ANIM_MS = 90
-private const val FOCUSED_SCALE = 1.015f
+private const val FOCUS_ANIM_MS = 160
+private const val FOCUSED_SCALE = 1.07f
 
 /**
  * The one focus treatment used across every interactive element in the app:
@@ -78,7 +78,7 @@ fun FlixFocusSurface(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(3.dp, FtAccent),
+                border = BorderStroke(2.dp, FtAccent),
                 shape = shape
             )
         )

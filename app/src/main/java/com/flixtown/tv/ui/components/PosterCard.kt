@@ -26,7 +26,7 @@ import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 
-val DEFAULT_POSTER_WIDTH: Dp = 168.dp
+val DEFAULT_POSTER_WIDTH: Dp = 190.dp
 
 /**
  * A real poster card: Coil-loaded image over a gradient tile (which also

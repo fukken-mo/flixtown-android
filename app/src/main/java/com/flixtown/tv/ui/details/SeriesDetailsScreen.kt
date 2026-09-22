@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.widthIn
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
@@ -41,15 +43,24 @@ import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.TrailerResolver
 import com.flixtown.tv.data.TrailerSource
 import com.flixtown.tv.data.model.Episode
+import com.flixtown.tv.data.model.Series
 import com.flixtown.tv.data.model.SeriesDetails
 import com.flixtown.tv.ui.catalog.CatalogUiState
 import com.flixtown.tv.ui.components.CastRow
+import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
 import com.flixtown.tv.ui.components.FilterChip
 import com.flixtown.tv.ui.components.FlixFocusSurface
+import com.flixtown.tv.ui.components.MetadataRow
+import com.flixtown.tv.ui.components.PosterCard
+import com.flixtown.tv.ui.components.PrimaryActionButton
+import com.flixtown.tv.ui.components.SecondaryActionButton
+import com.flixtown.tv.ui.components.SectionHeader
 import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.player.SimpleVideoPlayerScreen
 import com.flixtown.tv.ui.player.openYouTubeVideo
+import com.flixtown.tv.ui.theme.FlixSpacing
+import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtBackground
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
@@ -60,7 +71,8 @@ fun SeriesDetailsScreen(
     graph: AppGraph,
     catalogState: CatalogUiState,
     seriesId: Int,
-    onPlay: (ContentScreen.Player) -> Unit
+    onPlay: (ContentScreen.Player) -> Unit,
+    onSeriesClick: (Series) -> Unit
 ) {
     SafeLog.e("SeriesDetailsScreen", "ENTER composition seriesId=$seriesId")
     val series = (catalogState as? CatalogUiState.Loaded)?.snapshot?.series?.firstOrNull { it.seriesId == seriesId }
@@ -99,6 +111,17 @@ fun SeriesDetailsScreen(
     val context = LocalContext.current
     val trailerSource = TrailerResolver.resolve(series.trailer)
 
+    val similarSeries = remember(seriesId, catalogState) {
+        (catalogState as? CatalogUiState.Loaded)?.snapshot?.series
+            ?.filter { it.seriesId != series.seriesId && it.categoryId != null && it.categoryId == series.categoryId }
+            ?.take(15)
+            .orEmpty()
+    }
+
+    val inProgress = remember(seriesId) {
+        graph.continueWatchingStore.getAll().firstOrNull { it.mediaType == "episode" && it.seriesId == series.seriesId }
+    }
+
     fun launchEpisode(episode: Episode, resumeMs: Long) {
         val url = graph.catalogRepository.buildEpisodeStreamUrl(episode) ?: return
         onPlay(
@@ -122,6 +145,20 @@ fun SeriesDetailsScreen(
                 it.episode == episode.episodeNumber && it.season == selectedSeasonNumber
         }
         if (existing != null) pendingEpisode = episode else launchEpisode(episode, 0L)
+    }
+
+    fun playPrimary() {
+        val progress = inProgress
+        if (progress != null) {
+            val episode = details?.seasons
+                ?.firstOrNull { it.seasonNumber == progress.season }
+                ?.episodes?.firstOrNull { it.episodeNumber == progress.episode }
+            if (episode != null) {
+                launchEpisode(episode, progress.positionMs)
+                return
+            }
+        }
+        details?.seasons?.firstOrNull()?.episodes?.firstOrNull()?.let { launchEpisode(it, 0L) }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(FtBackground)) {
@@ -156,7 +193,7 @@ fun SeriesDetailsScreen(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
-                        .padding(horizontal = 40.dp),
+                        .padding(horizontal = FlixSpacing.safeHorizontal),
                     horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     Box(
@@ -177,64 +214,71 @@ fun SeriesDetailsScreen(
                     }
 
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f, fill = false).widthIn(max = 620.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(text = series.name, style = MaterialTheme.typography.headlineLarge, color = FtTextPrimary)
-
-                        val metaParts = listOfNotNull(
-                            series.year?.toString(),
-                            series.rating?.let { "★ ${"%.1f".format(it)}" }
+                        Text(
+                            text = series.name,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = FtTextPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        if (metaParts.isNotEmpty()) {
-                            Text(text = metaParts.joinToString("   •   "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
-                        }
+
+                        MetadataRow(
+                            parts = listOfNotNull(series.year?.toString()),
+                            rating = series.rating
+                        )
 
                         if (series.genres.isNotEmpty()) {
-                            Text(text = series.genres.joinToString(", "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                            Text(text = series.genres.joinToString(" • "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
                         }
 
                         Text(
                             text = series.plot ?: "No description available.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = FtTextSecondary,
-                            maxLines = 3
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
                         )
 
-                        if (trailerSource != TrailerSource.None) {
-                            FlixFocusSurface(
-                                onClick = {
-                                    when (val source = trailerSource) {
-                                        is TrailerSource.DirectVideo -> showTrailer = true
-                                        is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
-                                        TrailerSource.None -> Unit
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PrimaryActionButton(
+                                text = "▶ Play",
+                                onClick = { playPrimary() }
+                            )
+                            if (trailerSource != TrailerSource.None) {
+                                SecondaryActionButton(
+                                    text = "Trailer",
+                                    onClick = {
+                                        when (val source = trailerSource) {
+                                            is TrailerSource.DirectVideo -> showTrailer = true
+                                            is TrailerSource.YouTube -> openYouTubeVideo(context, source.videoId)
+                                            TrailerSource.None -> Unit
+                                        }
                                     }
-                                }
-                            ) {
-                                Text("Trailer")
+                                )
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
 
             if (series.cast.isNotEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = FlixSpacing.safeHorizontal)) {
                     CastRow(cast = series.cast.map { it to null })
                 }
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
             }
 
             val seasons = details?.seasons.orEmpty()
             if (seasons.isNotEmpty()) {
-                Box(modifier = Modifier.padding(start = 40.dp)) {
-                    Text(text = "Seasons", style = MaterialTheme.typography.titleMedium, color = FtTextPrimary)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
+                SectionHeader(title = "Seasons", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
+                Spacer(modifier = Modifier.height(FlixSpacing.rowHeaderGap))
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 40.dp),
+                    contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(seasons, key = { it.seasonNumber }) { season ->
@@ -246,22 +290,54 @@ fun SeriesDetailsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(FlixSpacing.rowHeaderGap))
 
                 val episodes = seasons.firstOrNull { it.seasonNumber == selectedSeasonNumber }?.episodes.orEmpty()
                 Column(
-                    modifier = Modifier.padding(horizontal = 40.dp),
+                    modifier = Modifier.padding(horizontal = FlixSpacing.safeHorizontal),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    episodes.forEach { episode -> EpisodeCard(episode, onClick = { onEpisodeClick(episode) }) }
+                    episodes.forEach { episode ->
+                        val progress = remember(episode.id, selectedSeasonNumber) {
+                            graph.continueWatchingStore.getAll().firstOrNull {
+                                it.mediaType == "episode" && it.seriesId == series.seriesId &&
+                                    it.episode == episode.episodeNumber && it.season == selectedSeasonNumber
+                            }
+                        }
+                        val progressFraction = progress?.let {
+                            if (it.durationMs > 0) (it.positionMs.toFloat() / it.durationMs.toFloat()).coerceIn(0f, 1f) else null
+                        }
+                        EpisodeCard(episode, progressFraction = progressFraction, onClick = { onEpisodeClick(episode) })
+                    }
                 }
             } else if (details != null) {
-                Box(modifier = Modifier.padding(horizontal = 40.dp)) {
+                Box(modifier = Modifier.padding(horizontal = FlixSpacing.safeHorizontal)) {
                     Text(text = "No episode data available.", style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            if (similarSeries.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
+                Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
+                    SectionHeader(title = "More Like This", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
+                    ) {
+                        items(similarSeries, key = { it.seriesId }) { similar ->
+                            PosterCard(
+                                title = similar.name,
+                                posterUrl = similar.posterUrl,
+                                subtitle = similar.year?.toString(),
+                                onClick = { onSeriesClick(similar) },
+                                modifier = Modifier.width(DEFAULT_POSTER_WIDTH)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(FlixSpacing.safeVertical))
         }
 
         if (showTrailer) {
@@ -295,7 +371,7 @@ fun SeriesDetailsScreen(
 }
 
 @Composable
-private fun EpisodeCard(episode: Episode, onClick: () -> Unit) {
+private fun EpisodeCard(episode: Episode, progressFraction: Float?, onClick: () -> Unit) {
     FlixFocusSurface(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -315,6 +391,22 @@ private fun EpisodeCard(episode: Episode, onClick: () -> Unit) {
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
+                }
+                if (progressFraction != null && progressFraction > 0.02f) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(FtBackground.copy(alpha = 0.6f))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progressFraction)
+                                .fillMaxHeight()
+                                .background(FtAccent)
+                        )
+                    }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

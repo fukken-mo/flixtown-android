@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -12,6 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +32,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -40,11 +45,17 @@ import com.flixtown.tv.data.model.Movie
 import com.flixtown.tv.data.model.MovieDetails
 import com.flixtown.tv.ui.catalog.CatalogUiState
 import com.flixtown.tv.ui.components.CastRow
-import com.flixtown.tv.ui.components.FlixFocusSurface
+import com.flixtown.tv.ui.components.DEFAULT_POSTER_WIDTH
+import com.flixtown.tv.ui.components.MetadataRow
+import com.flixtown.tv.ui.components.PosterCard
+import com.flixtown.tv.ui.components.PrimaryActionButton
+import com.flixtown.tv.ui.components.SecondaryActionButton
+import com.flixtown.tv.ui.components.SectionHeader
 import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.player.SimpleVideoPlayerScreen
 import com.flixtown.tv.ui.player.openYouTubeVideo
+import com.flixtown.tv.ui.theme.FlixSpacing
 import com.flixtown.tv.ui.theme.FtBackground
 import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
@@ -55,7 +66,8 @@ fun MovieDetailsScreen(
     graph: AppGraph,
     catalogState: CatalogUiState,
     streamId: Int,
-    onPlay: (ContentScreen.Player) -> Unit
+    onPlay: (ContentScreen.Player) -> Unit,
+    onMovieClick: (Movie) -> Unit
 ) {
     SafeLog.e("MovieDetailsScreen", "ENTER composition streamId=$streamId")
     val movie = (catalogState as? CatalogUiState.Loaded)?.snapshot?.movies?.firstOrNull { it.streamId == streamId }
@@ -89,6 +101,13 @@ fun MovieDetailsScreen(
 
     val existingProgress = remember(streamId) {
         graph.continueWatchingStore.getAll().firstOrNull { it.streamId == movie.streamId && it.mediaType == "movie" }
+    }
+
+    val similarMovies = remember(streamId, catalogState) {
+        (catalogState as? CatalogUiState.Loaded)?.snapshot?.movies
+            ?.filter { it.streamId != movie.streamId && it.categoryId != null && it.categoryId == movie.categoryId }
+            ?.take(15)
+            .orEmpty()
     }
 
     fun launchPlayer(resumeMs: Long) {
@@ -140,7 +159,7 @@ fun MovieDetailsScreen(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .fillMaxWidth()
-                        .padding(horizontal = 40.dp),
+                        .padding(horizontal = FlixSpacing.safeHorizontal),
                     horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     Box(
@@ -161,41 +180,44 @@ fun MovieDetailsScreen(
                     }
 
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f, fill = false).widthIn(max = 620.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(text = movie.name, style = MaterialTheme.typography.headlineLarge, color = FtTextPrimary)
-
-                        val metaParts = listOfNotNull(
-                            movie.year?.toString(),
-                            details?.runtimeMinutes?.let { "${it}m" },
-                            movie.rating?.let { "★ ${"%.1f".format(it)}" }
+                        Text(
+                            text = movie.name,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = FtTextPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        if (metaParts.isNotEmpty()) {
-                            Text(text = metaParts.joinToString("   •   "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
-                        }
+
+                        MetadataRow(
+                            parts = listOfNotNull(movie.year?.toString(), details?.runtimeMinutes?.let { "${it}m" }),
+                            rating = movie.rating
+                        )
 
                         if (!details?.genres.isNullOrEmpty()) {
-                            Text(text = details!!.genres.joinToString(", "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
+                            Text(text = details!!.genres.joinToString(" • "), style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
                         }
 
                         Text(
                             text = details?.plot ?: "No description available.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = FtTextSecondary,
-                            maxLines = 3
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
                         )
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            FlixFocusSurface(
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PrimaryActionButton(
+                                text = "▶ Play",
                                 onClick = {
                                     if (existingProgress != null) showResumeMenu = true else launchPlayer(0L)
                                 }
-                            ) {
-                                Text("Play")
-                            }
+                            )
                             if (trailerSource != TrailerSource.None) {
-                                FlixFocusSurface(
+                                SecondaryActionButton(
+                                    text = "Trailer",
                                     onClick = {
                                         when (val source = trailerSource) {
                                             is TrailerSource.DirectVideo -> showTrailer = true
@@ -203,22 +225,43 @@ fun MovieDetailsScreen(
                                             TrailerSource.None -> Unit
                                         }
                                     }
-                                ) {
-                                    Text("Trailer")
-                                }
+                                )
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
 
-            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)) {
-                CastRow(cast = (details?.cast ?: emptyList()).map { it to null })
+            if (!details?.cast.isNullOrEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = FlixSpacing.safeHorizontal)) {
+                    CastRow(cast = details!!.cast.map { it to null })
+                }
+                Spacer(modifier = Modifier.height(FlixSpacing.sectionGap))
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            if (similarMovies.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)) {
+                    SectionHeader(title = "More Like This", modifier = Modifier.padding(start = FlixSpacing.safeHorizontal))
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = FlixSpacing.safeHorizontal, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap)
+                    ) {
+                        items(similarMovies, key = { it.streamId }) { similar ->
+                            PosterCard(
+                                title = similar.name,
+                                posterUrl = similar.posterUrl,
+                                subtitle = similar.year?.toString(),
+                                onClick = { onMovieClick(similar) },
+                                modifier = Modifier.width(DEFAULT_POSTER_WIDTH)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(FlixSpacing.safeVertical))
         }
 
         if (showTrailer) {
