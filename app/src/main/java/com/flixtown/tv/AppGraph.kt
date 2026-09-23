@@ -9,6 +9,7 @@ import com.flixtown.tv.data.ConfigRepository
 import com.flixtown.tv.data.ContinueWatchingStore
 import com.flixtown.tv.data.PairingRepository
 import com.flixtown.tv.data.TmdbRepository
+import com.flixtown.tv.data.TrickPlayRepository
 import com.flixtown.tv.data.XtreamCatalogRepository
 import com.flixtown.tv.data.XtreamRepository
 import com.flixtown.tv.security.SecureCredentialStore
@@ -30,4 +31,5 @@ class AppGraph(context: Context) {
     val catalogRepository = XtreamCatalogRepository(context, configRepository, secureCredentialStore)
     val continueWatchingStore = ContinueWatchingStore(context)
     val tmdbRepository = TmdbRepository(configRepository)
+    val trickPlayRepository = TrickPlayRepository()
 }

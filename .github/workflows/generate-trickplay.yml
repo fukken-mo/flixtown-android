@@ -1,0 +1,120 @@
+name: Generate Trick-Play Thumbnails
+
+# Manual, per-title generation: an admin runs this once for a movie or
+# episode (via Actions -> Generate Trick-Play Thumbnails -> Run workflow)
+# after adding it to the catalog. It never runs automatically and never
+# regenerates a title that hasn't changed. Extracted frames + a manifest
+# are published to the `trickplay-assets` branch (not this app's default
+# branch) and served to the app through jsDelivr's GitHub CDN — see
+# SEEK-PREVIEW-FUTURE.md at the repo root for why this exists: neither
+# Xtream nor this app's own backend host expose real seek-frame data, and
+# this session couldn't confirm the backend host even has FFmpeg/shell
+# access, so generation runs on GitHub's own runners instead, which are
+# infrastructure already proven to work for this repo (see build-apk.yml).
+on:
+  workflow_dispatch:
+    inputs:
+      content_id:
+        description: 'Content id, e.g. "movie_12345" or "series_54321_s01e04" (must match TrickPlayRepository/trickPlayContentId in the app)'
+        required: true
+      source_url:
+        description: "Xtream VOD stream URL to extract preview frames from"
+        required: true
+      interval_seconds:
+        description: "Seconds between preview frames"
+        required: false
+        default: "10"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verify ffmpeg/ffprobe are available
+        run: |
+          ffmpeg -version
+          ffprobe -version
+
+      - name: Extract preview frames and build manifest.json
+        env:
+          CONTENT_ID: ${{ inputs.content_id }}
+          SOURCE_URL: ${{ inputs.source_url }}
+          INTERVAL: ${{ inputs.interval_seconds }}
+          BASE_URL: https://cdn.jsdelivr.net/gh/${{ github.repository }}@trickplay-assets/trickplay/${{ inputs.content_id }}
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+
+          duration_s=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$SOURCE_URL")
+
+          # One small (240x135) WebP frame every $INTERVAL seconds, starting
+          # at t=0. Deliberately not full video resolution — these are seek
+          # previews, not a re-encode.
+          ffmpeg -y -i "$SOURCE_URL" -vf "fps=1/${INTERVAL},scale=240:135" -f image2 \
+            "$work/frame_%06d.webp"
+
+          python3 - "$work" "$CONTENT_ID" "$INTERVAL" "$duration_s" "$BASE_URL" <<'PY'
+          import json
+          import os
+          import sys
+
+          work, content_id, interval, duration_s, base_url = sys.argv[1:6]
+          interval = int(interval)
+          duration_ms = int(float(duration_s) * 1000)
+
+          files = sorted(f for f in os.listdir(work) if f.endswith(".webp"))
+          frames = {}
+          for index, name in enumerate(files):
+              ts_seconds = index * interval
+              new_name = f"{ts_seconds:06d}.webp"
+              os.rename(os.path.join(work, name), os.path.join(work, new_name))
+              frames[str(ts_seconds)] = f"{base_url}/{new_name}"
+
+          manifest = {
+              "contentId": content_id,
+              "interval": interval,
+              "width": 240,
+              "height": 135,
+              "durationMs": duration_ms,
+              "frames": frames,
+          }
+          with open(os.path.join(work, "manifest.json"), "w") as fh:
+              json.dump(manifest, fh, indent=2, sort_keys=True)
+
+          print(f"Generated {len(frames)} frames for {content_id} (duration {duration_ms}ms)")
+          PY
+
+          echo "TRICKPLAY_WORK=$work" >> "$GITHUB_ENV"
+
+      - name: Publish to trickplay-assets branch
+        env:
+          CONTENT_ID: ${{ inputs.content_id }}
+        run: |
+          set -euo pipefail
+          git config user.name "flixtown-trickplay-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin trickplay-assets > /dev/null 2>&1; then
+            git fetch origin trickplay-assets
+            git checkout -B trickplay-assets origin/trickplay-assets
+          else
+            git checkout --orphan trickplay-assets
+            git rm -rf . > /dev/null 2>&1 || true
+          fi
+
+          mkdir -p trickplay
+          rm -rf "trickplay/${CONTENT_ID:?}"
+          mkdir -p "trickplay/$CONTENT_ID"
+          cp -r "$TRICKPLAY_WORK"/. "trickplay/$CONTENT_ID"/
+
+          git add "trickplay/$CONTENT_ID"
+          if git diff --cached --quiet; then
+            echo "No changes to publish (identical output already present)."
+          else
+            git commit -m "Generate trick-play thumbnails for $CONTENT_ID"
+            git push origin trickplay-assets
+          fi

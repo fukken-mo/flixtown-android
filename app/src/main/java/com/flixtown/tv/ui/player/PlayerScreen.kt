@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -42,6 +44,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -57,9 +60,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import coil.compose.AsyncImage
 import com.flixtown.tv.AppGraph
 import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.ContinueWatchingEntry
+import com.flixtown.tv.data.TrickPlayManifest
 import com.flixtown.tv.data.model.Episode
 import com.flixtown.tv.data.model.SeriesDetails
 import com.flixtown.tv.ui.components.FlixFocusSurface
@@ -67,6 +72,7 @@ import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.components.UpNextOverlay
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.theme.FtAccent
+import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 import java.util.Locale
@@ -84,6 +90,11 @@ private const val SCRUB_MAX_STREAK = 4
 private const val UP_NEXT_TRIGGER_MS = 25_000L
 private const val UP_NEXT_COUNTDOWN_SECONDS = 15
 private const val SCRUB_PREVIEW_IDLE_COMMIT_MS = 2_000L
+// Fallback spacing between preview slots when no trick-play manifest is
+// available yet (or ever) for this item — purely cosmetic in that case,
+// since there are no real frames to align to.
+private const val SCRUB_PREVIEW_FALLBACK_SPACING_MS = 30_000L
+private const val SCRUB_PREVIEW_WINDOW_COUNT = 2
 
 private data class TrackChoice(val label: String, val groupIndex: Int, val trackIndex: Int)
 
@@ -155,6 +166,18 @@ fun PlayerScreen(
     var previewScrubStreak by remember { mutableStateOf(0) }
     var previewScrubLastDirection by remember { mutableStateOf(0) }
     var previewScrubLastAtMs by remember { mutableStateOf(0L) }
+
+    // Server-generated trick-play preview frames (see TrickPlayRepository /
+    // SEEK-PREVIEW-FUTURE.md). Fetched once per item — a single small JSON
+    // request, never blocking playback start — and simply stays null when
+    // nothing has been generated for this title yet, which is exactly the
+    // signal the overlay needs to fall back to the timestamp-only look.
+    var trickPlayManifest by remember(screen.contentId) { mutableStateOf<TrickPlayManifest?>(null) }
+    LaunchedEffect(screen.contentId) {
+        trickPlayManifest = null
+        val id = trickPlayContentId(screen) ?: return@LaunchedEffect
+        trickPlayManifest = graph.trickPlayRepository.fetchManifest(id)
+    }
 
     val surfaceFocusRequester = remember { FocusRequester() }
     val playPauseFocusRequester = remember { FocusRequester() }
@@ -714,6 +737,7 @@ fun PlayerScreen(
             SeekPreviewOverlay(
                 targetMs = scrubTargetMs,
                 durationMs = durationMs,
+                manifest = trickPlayManifest,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -771,31 +795,48 @@ private fun PlaybackProgressSection(
 }
 
 /**
- * Netflix-style seek preview, without decoded video frames: a large target/
- * duration timestamp readout and the same [SeekBar] used by the normal
- * controls (its red thumb doubling as the "selected position" marker), in
- * one compact bottom-anchored panel. Deliberately just text + the existing
- * bar — no per-card image loading, no placeholders, nothing that can lag
- * behind a fast LEFT/RIGHT streak. Real frame thumbnails were tried
- * (0.9.9, on-device MediaMetadataRetriever extraction) and reverted: on
- * real Android TV hardware the boxes sat visibly empty for too long before
- * a frame ever appeared. Real Netflix-style previews are deferred until
- * server-generated trick-play thumbnails exist (see SEEK-PREVIEW-FUTURE.md
- * at the repo root), which avoids on-device decoding entirely.
+ * Netflix-style seek preview. When a server-generated trick-play [manifest]
+ * exists for this item (see TrickPlayRepository / SEEK-PREVIEW-FUTURE.md —
+ * frames are extracted once, offline, by a GitHub Actions job running
+ * FFmpeg, never on-device), shows a filmstrip of real preview frames around
+ * the selected position via Coil's [AsyncImage] — the same image-loading
+ * path already used for posters/cast photos elsewhere in this app, so
+ * "don't reload the same URL repeatedly" and "don't do decode work on the
+ * main thread" come for free from Coil's own disk/memory cache and
+ * background dispatcher, no bespoke caching code needed. No manifest yet
+ * (title not generated), or a specific slot missing from it, falls back
+ * per-card to the plain timestamp-only look — seeking itself never depends
+ * on any of this succeeding. On-device frame decoding (MediaMetadataRetriever,
+ * tried in 0.9.9) is deliberately not used again: it was too slow on real TV
+ * hardware.
  */
 @Composable
-private fun SeekPreviewOverlay(targetMs: Long, durationMs: Long, modifier: Modifier = Modifier) {
+private fun SeekPreviewOverlay(
+    targetMs: Long,
+    durationMs: Long,
+    manifest: TrickPlayManifest?,
+    modifier: Modifier = Modifier
+) {
+    val cappedDuration = if (durationMs > 0) durationMs else Long.MAX_VALUE
+    val spacingMs = manifest?.intervalMs?.takeIf { it > 0 } ?: SCRUB_PREVIEW_FALLBACK_SPACING_MS
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))))
-            .padding(horizontal = 48.dp, vertical = 28.dp),
+            .padding(horizontal = 48.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
+            for (offset in -SCRUB_PREVIEW_WINDOW_COUNT..SCRUB_PREVIEW_WINDOW_COUNT) {
+                val slotMs = (targetMs + offset * spacingMs).coerceIn(0L, cappedDuration)
+                PreviewCard(slotMs = slotMs, isSelected = offset == 0, manifest = manifest)
+            }
+        }
+
         Text(
             text = "${formatTime(targetMs)} / ${formatTime(durationMs)}",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleMedium,
             color = FtTextPrimary
         )
 
@@ -803,6 +844,70 @@ private fun SeekPreviewOverlay(targetMs: Long, durationMs: Long, modifier: Modif
             progress = if (durationMs > 0) targetMs.toFloat() / durationMs.toFloat() else 0f,
             isFocused = true
         )
+    }
+}
+
+/**
+ * One card in the seek-preview filmstrip. [slotMs] is snapped to the
+ * manifest's own bucket grid so it maps to a real generated frame's key;
+ * a slot the manifest simply doesn't have (e.g. past the last generated
+ * bucket) falls back to the timestamp-only look for that card alone,
+ * matching the required real-frame -> loading -> timestamp fallback
+ * hierarchy. The surrounding [FtSurfaceElevated] box background already
+ * reads as a "subtle dark placeholder" while Coil loads the image, so no
+ * separate placeholder state is needed.
+ */
+@Composable
+private fun PreviewCard(slotMs: Long, isSelected: Boolean, manifest: TrickPlayManifest?) {
+    val frameUrl = remember(slotMs, manifest) {
+        manifest?.let { m -> m.frames[(slotMs / m.intervalMs) * m.intervalMs] }
+    }
+
+    Box(
+        modifier = Modifier
+            .width(if (isSelected) 148.dp else 108.dp)
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(8.dp))
+            .background(FtSurfaceElevated)
+            .let { m -> if (isSelected) m.border(3.dp, FtAccent, RoundedCornerShape(8.dp)) else m },
+        contentAlignment = Alignment.Center
+    ) {
+        if (frameUrl != null) {
+            AsyncImage(
+                model = frameUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp))
+                    .let { m -> if (isSelected) m else m.alpha(0.7f) }
+            )
+            // Timestamp as a small overlay pill so it stays readable over an
+            // arbitrary bright/dark video frame, instead of the standalone
+            // centered text used when no frame is available.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 4.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = formatTime(slotMs),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isSelected) FtAccent else FtTextSecondary
+                )
+            }
+        } else {
+            // No manifest yet, or this specific bucket isn't in it — the
+            // 0.9.10 timestamp-only look, unchanged.
+            Text(
+                text = formatTime(slotMs),
+                style = if (isSelected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
+                color = if (isSelected) FtAccent else FtTextSecondary
+            )
+        }
     }
 }
 
@@ -868,6 +973,28 @@ private fun formatTime(ms: Long): String {
     } else {
         "%d:%02d".format(minutes, seconds)
     }
+}
+
+/**
+ * The trick-play content id this item's preview thumbnails are published
+ * under (see .github/workflows/generate-trickplay.yml, which an admin runs
+ * manually per title with this exact naming scheme). Null when the item
+ * can't be identified this way (e.g. a movie/episode missing the ids it
+ * needs) — the caller treats that exactly like "no manifest available yet".
+ */
+private fun trickPlayContentId(screen: ContentScreen.Player): String? = when (screen.mediaType) {
+    "movie" -> "movie_${screen.contentId}"
+    "episode" -> {
+        val seriesId = screen.seriesId
+        val season = screen.season
+        val episode = screen.episodeNumber
+        if (seriesId == null || season == null || episode == null) {
+            null
+        } else {
+            "series_${seriesId}_s%02de%02d".format(season, episode)
+        }
+    }
+    else -> null
 }
 
 /**
