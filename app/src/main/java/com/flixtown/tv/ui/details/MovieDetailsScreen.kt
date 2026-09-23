@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -116,21 +117,27 @@ fun MovieDetailsScreen(
     // Opening a title should never leave focus unset — without this the
     // first D-pad press after navigating in "finds" a focus target with no
     // visible highlight beforehand, which reads as broken on a real TV.
-    // Resetting scroll to 0 BEFORE requesting focus (in that order, in the
-    // same coroutine) is what actually matters here: Compose's default
-    // focus behavior only scrolls an ancestor verticalScroll far enough to
-    // bring the newly focused descendant into the CURRENT viewport, and
-    // with the hero pinned to its fixed 120dp/240x360dp layout, Play
-    // already sits inside that viewport once scroll is at 0 — so that
-    // bring-into-view computes zero extra distance and nothing needs
-    // correcting afterward. (An earlier version fought a residual scroll
-    // drift with a per-frame settle loop; that drift was actually the
-    // stale, un-keyed ScrollState carrying over between titles, which this
-    // explicit reset already fixes at the source.)
+    //
+    // Compose's default focus behavior scrolls an ancestor verticalScroll to
+    // bring a newly focused descendant into view. Play sits below the
+    // poster/title/metadata/genres/description inside this same scrollable
+    // Column, so that auto-scroll drags the whole hero — including the
+    // 120dp top spacer and the title — out of view every time Details opens
+    // on real TV hardware (a single scrollTo(0)-before-requestFocus() is not
+    // enough: the bring-into-view correction still runs after focus lands
+    // and re-scrolls away from the top). Counter it for a short settle
+    // window right after requesting focus by forcing the scroll position
+    // back to 0 on each frame; Play stays logically focused throughout even
+    // while its bring-into-view target is being overridden. This is the
+    // known-good 0.9.5 behavior, verified on a real TV.
     val playButtonFocusRequester = remember(streamId) { FocusRequester() }
     LaunchedEffect(streamId) {
         scrollState.scrollTo(0)
         playButtonFocusRequester.requestFocus()
+        repeat(14) {
+            withFrameNanos { }
+            if (scrollState.value != 0) scrollState.scrollTo(0)
+        }
     }
 
     // Cast never blocks the rest of the screen: details (and everything that

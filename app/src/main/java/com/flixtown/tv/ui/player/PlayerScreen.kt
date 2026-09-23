@@ -1,9 +1,7 @@
 package com.flixtown.tv.ui.player
 
-import android.graphics.Bitmap
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -12,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,20 +31,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -73,7 +67,6 @@ import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.components.UpNextOverlay
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.theme.FtAccent
-import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 import java.util.Locale
@@ -91,12 +84,6 @@ private const val SCRUB_MAX_STREAK = 4
 private const val UP_NEXT_TRIGGER_MS = 25_000L
 private const val UP_NEXT_COUNTDOWN_SECONDS = 15
 private const val SCRUB_PREVIEW_IDLE_COMMIT_MS = 2_000L
-// Visual spacing between adjacent preview cards — deliberately independent
-// of the actual per-press seek increment (which accelerates the same way
-// scrubSeek() does below) so the row always reads as a calm, evenly spaced
-// filmstrip regardless of how fast the user is moving through it.
-private const val SCRUB_PREVIEW_SPACING_MS = 30_000L
-private const val SCRUB_PREVIEW_WINDOW_COUNT = 2
 
 private data class TrackChoice(val label: String, val groupIndex: Int, val trackIndex: Int)
 
@@ -168,22 +155,6 @@ fun PlayerScreen(
     var previewScrubStreak by remember { mutableStateOf(0) }
     var previewScrubLastDirection by remember { mutableStateOf(0) }
     var previewScrubLastAtMs by remember { mutableStateOf(0L) }
-
-    // Real seek-preview frames (see SeekPreviewThumbnailProvider) — VOD only
-    // (movies/episodes), never constructed for anything else. One instance
-    // per playing item; released below when this item's composition tears
-    // down, so switching titles never leaks a retriever or carries stale
-    // cached frames into the next item.
-    val thumbnailProvider = remember(screen.contentId) {
-        if (screen.mediaType == "movie" || screen.mediaType == "episode") {
-            SeekPreviewThumbnailProvider(screen.streamUrl)
-        } else {
-            null
-        }
-    }
-    DisposableEffect(screen.contentId) {
-        onDispose { thumbnailProvider?.release() }
-    }
 
     val surfaceFocusRequester = remember { FocusRequester() }
     val playPauseFocusRequester = remember { FocusRequester() }
@@ -743,7 +714,6 @@ fun PlayerScreen(
             SeekPreviewOverlay(
                 targetMs = scrubTargetMs,
                 durationMs = durationMs,
-                thumbnailProvider = thumbnailProvider,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -801,48 +771,31 @@ private fun PlaybackProgressSection(
 }
 
 /**
- * Netflix-style seek preview: a filmstrip of evenly spaced preview cards (the
- * selected one enlarged and red-bordered), the target/duration timestamp,
- * and the same [SeekBar] used by the normal controls, all in one compact
- * bottom-anchored panel.
- *
- * Each card follows a strict fallback hierarchy (see [PreviewCard]): a real
- * decoded video frame when one is available, a lightweight placeholder while
- * one is being extracted, or the original timestamp-only card when no
- * provider is attached (live-type content) or extraction has been marked
- * unavailable for this item (e.g. a DRM'd or non-seekable stream) — seeking
- * itself never depends on a frame actually loading.
+ * Netflix-style seek preview, without decoded video frames: a large target/
+ * duration timestamp readout and the same [SeekBar] used by the normal
+ * controls (its red thumb doubling as the "selected position" marker), in
+ * one compact bottom-anchored panel. Deliberately just text + the existing
+ * bar — no per-card image loading, no placeholders, nothing that can lag
+ * behind a fast LEFT/RIGHT streak. Real frame thumbnails were tried
+ * (0.9.9, on-device MediaMetadataRetriever extraction) and reverted: on
+ * real Android TV hardware the boxes sat visibly empty for too long before
+ * a frame ever appeared. Real Netflix-style previews are deferred until
+ * server-generated trick-play thumbnails exist (see SEEK-PREVIEW-FUTURE.md
+ * at the repo root), which avoids on-device decoding entirely.
  */
 @Composable
-private fun SeekPreviewOverlay(
-    targetMs: Long,
-    durationMs: Long,
-    thumbnailProvider: SeekPreviewThumbnailProvider?,
-    modifier: Modifier = Modifier
-) {
-    val cappedDuration = if (durationMs > 0) durationMs else Long.MAX_VALUE
+private fun SeekPreviewOverlay(targetMs: Long, durationMs: Long, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))))
-            .padding(horizontal = 48.dp, vertical = 24.dp),
+            .padding(horizontal = 48.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
-            for (offset in -SCRUB_PREVIEW_WINDOW_COUNT..SCRUB_PREVIEW_WINDOW_COUNT) {
-                val slotMs = (targetMs + offset * SCRUB_PREVIEW_SPACING_MS).coerceIn(0L, cappedDuration)
-                PreviewCard(
-                    slotMs = slotMs,
-                    isSelected = offset == 0,
-                    thumbnailProvider = thumbnailProvider
-                )
-            }
-        }
-
         Text(
             text = "${formatTime(targetMs)} / ${formatTime(durationMs)}",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = FtTextPrimary
         )
 
@@ -850,75 +803,6 @@ private fun SeekPreviewOverlay(
             progress = if (durationMs > 0) targetMs.toFloat() / durationMs.toFloat() else 0f,
             isFocused = true
         )
-    }
-}
-
-/**
- * One card in the seek-preview filmstrip. Requests its frame from
- * [thumbnailProvider] (if any) keyed on [slotMs] — the same timestamp
- * bucketing the seek increments already use — so scrubbing back and forth
- * across already-visited buckets reuses cached frames instead of
- * re-extracting them, and only the single newly exposed edge slot per press
- * ever triggers new work. [LaunchedEffect] being keyed on `(slotMs,
- * thumbnailProvider)` means Compose itself cancels a still-pending extraction
- * for a slot the user has already scrubbed past.
- */
-@Composable
-private fun PreviewCard(slotMs: Long, isSelected: Boolean, thumbnailProvider: SeekPreviewThumbnailProvider?) {
-    var bitmap by remember(slotMs, thumbnailProvider) { mutableStateOf(thumbnailProvider?.cached(slotMs)) }
-    LaunchedEffect(slotMs, thumbnailProvider) {
-        if (bitmap == null && thumbnailProvider != null) {
-            bitmap = thumbnailProvider.frameAt(slotMs)
-        }
-    }
-    val resolvedBitmap: Bitmap? = bitmap
-
-    Box(
-        modifier = Modifier
-            .width(if (isSelected) 148.dp else 108.dp)
-            .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(8.dp))
-            .background(FtSurfaceElevated)
-            .let { m -> if (isSelected) m.border(3.dp, FtAccent, RoundedCornerShape(8.dp)) else m },
-        contentAlignment = Alignment.Center
-    ) {
-        if (resolvedBitmap != null) {
-            Image(
-                bitmap = resolvedBitmap.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp))
-                    .let { m -> if (isSelected) m else m.alpha(0.7f) }
-            )
-            // Timestamp as a small overlay pill so it stays readable over an
-            // arbitrary bright/dark video frame, instead of the standalone
-            // centered text used when no frame is available.
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 4.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black.copy(alpha = 0.55f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = formatTime(slotMs),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) FtAccent else FtTextSecondary
-                )
-            }
-        } else {
-            // No real frame yet (or ever, for this item) — the original
-            // 0.9.8 timestamp-only look, which doubles as both the
-            // "loading" and the permanent-unavailable state.
-            Text(
-                text = formatTime(slotMs),
-                style = if (isSelected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
-                color = if (isSelected) FtAccent else FtTextSecondary
-            )
-        }
     }
 }
 
