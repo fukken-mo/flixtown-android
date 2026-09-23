@@ -1,7 +1,9 @@
 package com.flixtown.tv.ui.player
 
+import android.graphics.Bitmap
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -32,17 +34,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -163,6 +168,22 @@ fun PlayerScreen(
     var previewScrubStreak by remember { mutableStateOf(0) }
     var previewScrubLastDirection by remember { mutableStateOf(0) }
     var previewScrubLastAtMs by remember { mutableStateOf(0L) }
+
+    // Real seek-preview frames (see SeekPreviewThumbnailProvider) — VOD only
+    // (movies/episodes), never constructed for anything else. One instance
+    // per playing item; released below when this item's composition tears
+    // down, so switching titles never leaks a retriever or carries stale
+    // cached frames into the next item.
+    val thumbnailProvider = remember(screen.contentId) {
+        if (screen.mediaType == "movie" || screen.mediaType == "episode") {
+            SeekPreviewThumbnailProvider(screen.streamUrl)
+        } else {
+            null
+        }
+    }
+    DisposableEffect(screen.contentId) {
+        onDispose { thumbnailProvider?.release() }
+    }
 
     val surfaceFocusRequester = remember { FocusRequester() }
     val playPauseFocusRequester = remember { FocusRequester() }
@@ -722,6 +743,7 @@ fun PlayerScreen(
             SeekPreviewOverlay(
                 targetMs = scrubTargetMs,
                 durationMs = durationMs,
+                thumbnailProvider = thumbnailProvider,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -779,20 +801,25 @@ private fun PlaybackProgressSection(
 }
 
 /**
- * Netflix-style seek preview: a filmstrip of evenly spaced timestamp cards
- * (the selected one enlarged and red-bordered), the target/duration
- * timestamp, and the same [SeekBar] used by the normal controls, all in one
- * compact bottom-anchored panel.
+ * Netflix-style seek preview: a filmstrip of evenly spaced preview cards (the
+ * selected one enlarged and red-bordered), the target/duration timestamp,
+ * and the same [SeekBar] used by the normal controls, all in one compact
+ * bottom-anchored panel.
  *
- * No decoded video frames — see the comment inside each card below for why:
- * this app plays arbitrary remote Xtream stream URLs with no server-provided
- * sprite sheet, and real frame extraction from a live network stream carries
- * real risk (stutter/ANR/decoder contention on the single hardware decoder
- * most Android TV boxes have) that the feature must never introduce. This is
- * the deliberate lightweight fallback instead of faking frames.
+ * Each card follows a strict fallback hierarchy (see [PreviewCard]): a real
+ * decoded video frame when one is available, a lightweight placeholder while
+ * one is being extracted, or the original timestamp-only card when no
+ * provider is attached (live-type content) or extraction has been marked
+ * unavailable for this item (e.g. a DRM'd or non-seekable stream) — seeking
+ * itself never depends on a frame actually loading.
  */
 @Composable
-private fun SeekPreviewOverlay(targetMs: Long, durationMs: Long, modifier: Modifier = Modifier) {
+private fun SeekPreviewOverlay(
+    targetMs: Long,
+    durationMs: Long,
+    thumbnailProvider: SeekPreviewThumbnailProvider?,
+    modifier: Modifier = Modifier
+) {
     val cappedDuration = if (durationMs > 0) durationMs else Long.MAX_VALUE
     Column(
         modifier = modifier
@@ -805,24 +832,11 @@ private fun SeekPreviewOverlay(targetMs: Long, durationMs: Long, modifier: Modif
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
             for (offset in -SCRUB_PREVIEW_WINDOW_COUNT..SCRUB_PREVIEW_WINDOW_COUNT) {
                 val slotMs = (targetMs + offset * SCRUB_PREVIEW_SPACING_MS).coerceIn(0L, cappedDuration)
-                val isSelected = offset == 0
-                Box(
-                    modifier = Modifier
-                        .width(if (isSelected) 148.dp else 108.dp)
-                        .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(FtSurfaceElevated)
-                        .let { m -> if (isSelected) m.border(3.dp, FtAccent, RoundedCornerShape(8.dp)) else m },
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Deliberately not a decoded video frame — see this
-                    // function's doc comment.
-                    Text(
-                        text = formatTime(slotMs),
-                        style = if (isSelected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
-                        color = if (isSelected) FtAccent else FtTextSecondary
-                    )
-                }
+                PreviewCard(
+                    slotMs = slotMs,
+                    isSelected = offset == 0,
+                    thumbnailProvider = thumbnailProvider
+                )
             }
         }
 
@@ -836,6 +850,75 @@ private fun SeekPreviewOverlay(targetMs: Long, durationMs: Long, modifier: Modif
             progress = if (durationMs > 0) targetMs.toFloat() / durationMs.toFloat() else 0f,
             isFocused = true
         )
+    }
+}
+
+/**
+ * One card in the seek-preview filmstrip. Requests its frame from
+ * [thumbnailProvider] (if any) keyed on [slotMs] — the same timestamp
+ * bucketing the seek increments already use — so scrubbing back and forth
+ * across already-visited buckets reuses cached frames instead of
+ * re-extracting them, and only the single newly exposed edge slot per press
+ * ever triggers new work. [LaunchedEffect] being keyed on `(slotMs,
+ * thumbnailProvider)` means Compose itself cancels a still-pending extraction
+ * for a slot the user has already scrubbed past.
+ */
+@Composable
+private fun PreviewCard(slotMs: Long, isSelected: Boolean, thumbnailProvider: SeekPreviewThumbnailProvider?) {
+    var bitmap by remember(slotMs, thumbnailProvider) { mutableStateOf(thumbnailProvider?.cached(slotMs)) }
+    LaunchedEffect(slotMs, thumbnailProvider) {
+        if (bitmap == null && thumbnailProvider != null) {
+            bitmap = thumbnailProvider.frameAt(slotMs)
+        }
+    }
+    val resolvedBitmap: Bitmap? = bitmap
+
+    Box(
+        modifier = Modifier
+            .width(if (isSelected) 148.dp else 108.dp)
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(8.dp))
+            .background(FtSurfaceElevated)
+            .let { m -> if (isSelected) m.border(3.dp, FtAccent, RoundedCornerShape(8.dp)) else m },
+        contentAlignment = Alignment.Center
+    ) {
+        if (resolvedBitmap != null) {
+            Image(
+                bitmap = resolvedBitmap.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp))
+                    .let { m -> if (isSelected) m else m.alpha(0.7f) }
+            )
+            // Timestamp as a small overlay pill so it stays readable over an
+            // arbitrary bright/dark video frame, instead of the standalone
+            // centered text used when no frame is available.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 4.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = formatTime(slotMs),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isSelected) FtAccent else FtTextSecondary
+                )
+            }
+        } else {
+            // No real frame yet (or ever, for this item) — the original
+            // 0.9.8 timestamp-only look, which doubles as both the
+            // "loading" and the permanent-unavailable state.
+            Text(
+                text = formatTime(slotMs),
+                style = if (isSelected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
+                color = if (isSelected) FtAccent else FtTextSecondary
+            )
+        }
     }
 }
 
