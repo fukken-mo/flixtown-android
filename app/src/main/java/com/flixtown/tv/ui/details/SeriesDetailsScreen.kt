@@ -27,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -128,31 +127,22 @@ fun SeriesDetailsScreen(
     // previously.
     val scrollState = rememberScrollState()
 
-    // Same rule as Movie details: never leave focus unset when a title opens.
+    // Same rule as Movie details: never leave focus unset when a title
+    // opens. Resetting scroll to 0 BEFORE requesting focus (in that order,
+    // in the same coroutine) is what actually matters here: Compose's
+    // default focus behavior only scrolls an ancestor verticalScroll far
+    // enough to bring the newly focused descendant into the CURRENT
+    // viewport, and with the hero pinned to its fixed 120dp/240x360dp
+    // layout, Play already sits inside that viewport once scroll is at 0
+    // — so that bring-into-view computes zero extra distance and nothing
+    // needs correcting afterward. (An earlier version fought a residual
+    // scroll drift with a per-frame settle loop; that drift was actually
+    // the stale, un-keyed ScrollState carrying over between titles, which
+    // this explicit reset already fixes at the source.)
     val playButtonFocusRequester = remember(seriesId) { FocusRequester() }
     LaunchedEffect(seriesId) {
-        SafeLog.d("SeriesDetailsScreen", "scroll debug: value at open (pre-reset)=${scrollState.value} maxValue=${scrollState.maxValue}")
         scrollState.scrollTo(0)
-        SafeLog.d("SeriesDetailsScreen", "scroll debug: value before Play focus=${scrollState.value}")
         playButtonFocusRequester.requestFocus()
-        SafeLog.d("SeriesDetailsScreen", "scroll debug: value immediately after requestFocus()=${scrollState.value}")
-        withFrameNanos { }
-        SafeLog.d("SeriesDetailsScreen", "scroll debug: value after next frame=${scrollState.value} maxValue=${scrollState.maxValue}")
-        // Compose's default focus behavior scrolls an ancestor
-        // verticalScroll to bring a newly focused descendant into view.
-        // Play sits below the poster/title/metadata/genres/description
-        // inside this same scrollable Column, so that auto-scroll was
-        // dragging the whole hero — including the 120dp top spacer and
-        // the title — out of view every time Details opened. Counter it
-        // for a short settle window right after requesting focus by
-        // forcing the scroll position back to 0 on each frame; Play stays
-        // logically focused throughout even while its bring-into-view
-        // target is being overridden.
-        repeat(14) {
-            withFrameNanos { }
-            if (scrollState.value != 0) scrollState.scrollTo(0)
-        }
-        SafeLog.d("SeriesDetailsScreen", "scroll debug: final settled value=${scrollState.value}")
     }
 
     // Same non-blocking cast load as Movie details: waits for the one
