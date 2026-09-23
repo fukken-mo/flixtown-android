@@ -3,6 +3,7 @@ package com.flixtown.tv
 import android.content.Context
 import com.flixtown.tv.data.AccountStatusStore
 import com.flixtown.tv.data.AuthRepository
+import com.flixtown.tv.data.AutoplaySettingsStore
 import com.flixtown.tv.data.BackendApi
 import com.flixtown.tv.data.ConfigRepository
 import com.flixtown.tv.data.ContinueWatchingStore
@@ -23,6 +24,7 @@ class AppGraph(context: Context) {
     val backendApi = BackendApi()
     val secureCredentialStore = SecureCredentialStore(context)
     val accountStatusStore = AccountStatusStore(context)
+    val autoplaySettingsStore = AutoplaySettingsStore(context)
     val authRepository = AuthRepository(configRepository, xtreamRepository, backendApi, secureCredentialStore)
     val pairingRepository = PairingRepository(backendApi, secureCredentialStore)
     val catalogRepository = XtreamCatalogRepository(context, configRepository, secureCredentialStore)

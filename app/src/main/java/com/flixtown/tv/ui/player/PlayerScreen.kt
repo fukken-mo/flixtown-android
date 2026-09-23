@@ -21,10 +21,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,8 +59,11 @@ import androidx.tv.material3.Text
 import com.flixtown.tv.AppGraph
 import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.ContinueWatchingEntry
+import com.flixtown.tv.data.model.Episode
+import com.flixtown.tv.data.model.SeriesDetails
 import com.flixtown.tv.ui.components.FlixFocusSurface
 import com.flixtown.tv.ui.components.SelectorMenu
+import com.flixtown.tv.ui.components.UpNextOverlay
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.theme.FtAccent
 import com.flixtown.tv.ui.theme.FtTextPrimary
@@ -74,6 +80,8 @@ private const val COMPLETE_THRESHOLD = 0.92
 private const val SCRUB_BASE_MIN_MS = 30_000L
 private const val SCRUB_STREAK_WINDOW_MS = 900L
 private const val SCRUB_MAX_STREAK = 4
+private const val UP_NEXT_TRIGGER_MS = 25_000L
+private const val UP_NEXT_COUNTDOWN_SECONDS = 15
 
 private data class TrackChoice(val label: String, val groupIndex: Int, val trackIndex: Int)
 
@@ -86,7 +94,12 @@ private data class TrackChoice(val label: String, val groupIndex: Int, val track
  * saves.
  */
 @Composable
-fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Unit) {
+fun PlayerScreen(
+    graph: AppGraph,
+    screen: ContentScreen.Player,
+    onExit: () -> Unit,
+    onNextEpisode: (ContentScreen.Player) -> Unit
+) {
     val context = LocalContext.current
 
     val player = remember {
@@ -106,8 +119,17 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
 
     var isPlaying by remember { mutableStateOf(true) }
     var tracks by remember { mutableStateOf(Tracks.EMPTY) }
-    var positionMs by remember { mutableStateOf(screen.resumePositionMs) }
-    var durationMs by remember { mutableStateOf(0L) }
+    // Kept as named State objects (not just `by`-delegated locals) so the
+    // seek bar and time labels — the only things that need to redraw on
+    // every 500ms poll tick — can read `.value` themselves inside their own
+    // narrow composable scope (see PlaybackProgressSection below) instead of
+    // PlayerScreen's own top-level body reading it directly, which used to
+    // put the whole screen (buttons, subtitle/audio menus, everything) in
+    // the same recomposition scope as the position poll.
+    val positionMsState = remember { mutableStateOf(screen.resumePositionMs) }
+    val durationMsState = remember { mutableStateOf(0L) }
+    var positionMs by positionMsState
+    var durationMs by durationMsState
     var controlsVisible by remember { mutableStateOf(true) }
     var showSubtitleMenu by remember { mutableStateOf(false) }
     var showAudioMenu by remember { mutableStateOf(false) }
@@ -182,6 +204,60 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
         )
     }
 
+    // Resolved once per episode (see the LaunchedEffect below), never
+    // re-searched/re-sorted on every poll tick. Movies never populate this
+    // (mediaType check inside that effect), so Up Next can never appear for
+    // a movie.
+    var nextEpisodeInfo by remember(screen.contentId) { mutableStateOf<Pair<Int, Episode>?>(null) }
+
+    // Set right before handing off to the next episode so the DisposableEffect
+    // below (which runs afterward, on teardown) doesn't overwrite the
+    // definitive "completed" Continue Watching save made in startNextEpisode()
+    // with a stale in-progress one computed from the raw player position.
+    val autoplayTransitionInProgress = remember(screen.contentId) { mutableStateOf(false) }
+
+    fun startNextEpisode() {
+        val (nextSeason, nextEpisode) = nextEpisodeInfo ?: return
+        val streamUrl = graph.catalogRepository.buildEpisodeStreamUrl(nextEpisode) ?: return
+        autoplayTransitionInProgress.value = true
+        // The outgoing episode is done as far as the user's watch history is
+        // concerned (whether they pressed Play Now early or the countdown
+        // ran out near the real end) — mark it completed outright rather
+        // than leaving it sitting in Continue Watching at ~99% forever.
+        graph.continueWatchingStore.save(
+            ContinueWatchingEntry(
+                streamId = screen.contentId,
+                mediaType = screen.mediaType,
+                seriesId = screen.seriesId,
+                season = screen.season,
+                episode = screen.episodeNumber,
+                title = screen.title,
+                posterUrl = screen.posterUrl,
+                positionMs = durationMsState.value,
+                durationMs = durationMsState.value,
+                updatedAtMillis = System.currentTimeMillis(),
+                completed = true,
+                seriesName = screen.seriesName,
+                episodeTitle = screen.episodeTitle
+            )
+        )
+        onNextEpisode(
+            ContentScreen.Player(
+                contentId = nextEpisode.id.toIntOrNull() ?: nextEpisode.id.hashCode(),
+                mediaType = "episode",
+                title = screen.seriesName ?: screen.title,
+                posterUrl = nextEpisode.thumbnailUrl ?: screen.posterUrl,
+                streamUrl = streamUrl,
+                seriesId = screen.seriesId,
+                season = nextSeason,
+                episodeNumber = nextEpisode.episodeNumber,
+                resumePositionMs = 0L,
+                seriesName = screen.seriesName,
+                episodeTitle = nextEpisode.title
+            )
+        )
+    }
+
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
@@ -199,7 +275,9 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
         player.addListener(listener)
         onDispose {
             player.removeListener(listener)
-            saveProgress(player.currentPosition.coerceAtLeast(0), player.duration.let { if (it > 0) it else 0L })
+            if (!autoplayTransitionInProgress.value) {
+                saveProgress(player.currentPosition.coerceAtLeast(0), player.duration.let { if (it > 0) it else 0L })
+            }
             player.release()
         }
     }
@@ -217,6 +295,61 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
             delay(SAVE_INTERVAL_MS)
             saveProgress(player.currentPosition.coerceAtLeast(0), player.duration.let { if (it > 0) it else 0L })
         }
+    }
+
+    // Runs exactly once per episode (keyed on contentId, not on any
+    // position/duration state), a single get_series_info fetch plus one
+    // sort/search pass over that season's episode list — never repeated on
+    // every poll tick. Movies (mediaType != "episode") never reach the
+    // network call at all.
+    LaunchedEffect(screen.contentId) {
+        nextEpisodeInfo = null
+        if (screen.mediaType != "episode" || screen.seriesId == null || screen.season == null || screen.episodeNumber == null) {
+            return@LaunchedEffect
+        }
+        val series = graph.catalogRepository.getCachedSnapshot()?.series?.firstOrNull { it.seriesId == screen.seriesId }
+            ?: return@LaunchedEffect
+        val details = graph.catalogRepository.getSeriesDetails(series) ?: return@LaunchedEffect
+        nextEpisodeInfo = findNextEpisode(details, screen.season, screen.episodeNumber)
+    }
+
+    val autoPlayEnabled by graph.autoplaySettingsStore.autoPlayEnabled.collectAsState()
+    var showUpNext by remember(screen.contentId) { mutableStateOf(false) }
+    var upNextDismissedForThisEpisode by remember(screen.contentId) { mutableStateOf(false) }
+    var upNextSecondsRemaining by remember(screen.contentId) { mutableStateOf(UP_NEXT_COUNTDOWN_SECONDS) }
+
+    fun cancelUpNext() {
+        showUpNext = false
+        upNextDismissedForThisEpisode = true
+    }
+
+    // Zero recomposition cost: snapshotFlow reacts to positionMsState/
+    // durationMsState changes inside a coroutine, not during composition, so
+    // this near-end check running every 500ms poll tick never touches
+    // PlayerScreen's own recomposition scope the way a direct top-level read
+    // of positionMs/durationMs would.
+    LaunchedEffect(screen.contentId, nextEpisodeInfo, autoPlayEnabled) {
+        if (nextEpisodeInfo == null || !autoPlayEnabled) return@LaunchedEffect
+        snapshotFlow { positionMsState.value to durationMsState.value }.collect { (pos, dur) ->
+            if (!showUpNext && !upNextDismissedForThisEpisode && dur > 0 && (dur - pos) in 0..UP_NEXT_TRIGGER_MS) {
+                showUpNext = true
+            }
+        }
+    }
+
+    // The countdown is its own fixed-length timer once the overlay appears
+    // (not tied to real remaining playback time past that point) — reaching
+    // 0 is what actually triggers the switch, matching how most streaming
+    // apps auto-advance over the outgoing episode's end credits.
+    LaunchedEffect(showUpNext) {
+        if (!showUpNext) return@LaunchedEffect
+        controlsVisible = false
+        upNextSecondsRemaining = UP_NEXT_COUNTDOWN_SECONDS
+        while (upNextSecondsRemaining > 0) {
+            delay(1_000L)
+            upNextSecondsRemaining--
+        }
+        startNextEpisode()
     }
 
     LaunchedEffect(controlsVisible) {
@@ -319,6 +452,11 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
         playPauseFocusRequester.requestFocus()
     }
 
+    // Composed last, so it wins over both handlers above while the Up Next
+    // overlay is open: Back cancels the overlay (same behavior as the
+    // Cancel button) instead of hiding controls, un-scrubbing, or exiting.
+    BackHandler(enabled = showUpNext) { cancelUpNext() }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -378,32 +516,15 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
                     Text(text = episodeLabel, style = MaterialTheme.typography.bodyMedium, color = FtTextSecondary)
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(seekBarFocusRequester)
-                        .onFocusChanged { state -> seekBarHasFocus = state.isFocused }
-                        .focusable()
-                        .onKeyEvent { event ->
-                            if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
-                            when (event.key) {
-                                Key.DirectionLeft -> { scrubSeek(-1); true }
-                                Key.DirectionRight -> { scrubSeek(1); true }
-                                else -> false
-                            }
-                        }
-                        .padding(vertical = 8.dp)
-                ) {
-                    SeekBar(
-                        progress = if (durationMs > 0) positionMs.toFloat() / durationMs.toFloat() else 0f,
-                        isFocused = seekBarHasFocus
-                    )
-                }
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(text = formatTime(positionMs), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
-                    Text(text = formatTime(durationMs), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
-                }
+                PlaybackProgressSection(
+                    positionMsState = positionMsState,
+                    durationMsState = durationMsState,
+                    seekBarFocusRequester = seekBarFocusRequester,
+                    seekBarHasFocus = seekBarHasFocus,
+                    onSeekBarFocusChanged = { seekBarHasFocus = it },
+                    onScrubLeft = { scrubSeek(-1) },
+                    onScrubRight = { scrubSeek(1) }
+                )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     FlixFocusSurface(
@@ -474,6 +595,74 @@ fun PlayerScreen(graph: AppGraph, screen: ContentScreen.Player, onExit: () -> Un
                 )
             }
         }
+
+        // Series-only (nextEpisodeInfo is never populated for a movie),
+        // bottom-right so it never competes with the subtitle/audio menus'
+        // bottom-start position. Controls are hidden the moment this shows
+        // (see the LaunchedEffect(showUpNext) above), so there's no
+        // possibility of it overlapping the normal controls bar either.
+        val currentNextEpisodeInfo = nextEpisodeInfo
+        if (showUpNext && currentNextEpisodeInfo != null) {
+            val (nextSeason, nextEpisode) = currentNextEpisodeInfo
+            UpNextOverlay(
+                seasonNumber = nextSeason,
+                episode = nextEpisode,
+                secondsRemaining = upNextSecondsRemaining,
+                onPlayNow = { startNextEpisode() },
+                onCancel = { cancelUpNext() },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 48.dp, bottom = 48.dp)
+            )
+        }
+    }
+}
+
+/**
+ * The seek bar plus its elapsed/duration time labels — the only part of the
+ * controls bar that changes every [PROGRESS_POLL_MS] tick. Reading
+ * `positionMsState.value`/`durationMsState.value` HERE, inside this small
+ * composable's own body, rather than in [PlayerScreen]'s top-level body,
+ * scopes the recomposition caused by each poll tick to just this function —
+ * the buttons, subtitle/audio rows, and everything else in the controls
+ * Column are passed none of this state and never recompose because of it.
+ */
+@Composable
+private fun PlaybackProgressSection(
+    positionMsState: State<Long>,
+    durationMsState: State<Long>,
+    seekBarFocusRequester: FocusRequester,
+    seekBarHasFocus: Boolean,
+    onSeekBarFocusChanged: (Boolean) -> Unit,
+    onScrubLeft: () -> Unit,
+    onScrubRight: () -> Unit
+) {
+    val positionMs = positionMsState.value
+    val durationMs = durationMsState.value
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(seekBarFocusRequester)
+            .onFocusChanged { state -> onSeekBarFocusChanged(state.isFocused) }
+            .focusable()
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
+                when (event.key) {
+                    Key.DirectionLeft -> { onScrubLeft(); true }
+                    Key.DirectionRight -> { onScrubRight(); true }
+                    else -> false
+                }
+            }
+            .padding(vertical = 8.dp)
+    ) {
+        SeekBar(
+            progress = if (durationMs > 0) positionMs.toFloat() / durationMs.toFloat() else 0f,
+            isFocused = seekBarHasFocus
+        )
+    }
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(text = formatTime(positionMs), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
+        Text(text = formatTime(durationMs), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
     }
 }
 
@@ -539,4 +728,31 @@ private fun formatTime(ms: Long): String {
     } else {
         "%d:%02d".format(minutes, seconds)
     }
+}
+
+/**
+ * The episode immediately after [currentEpisodeNumber] within
+ * [currentSeasonNumber] — or, if that was the season's last episode, the
+ * first episode of the next-numbered season that actually has one. Returns
+ * null when there's nothing to play next (series finale, or a season with no
+ * episodes), which is exactly when Up Next must never appear. Episodes
+ * within a season are sorted defensively by number rather than trusting
+ * Xtream's array order, since the API doesn't guarantee it.
+ */
+private fun findNextEpisode(
+    details: SeriesDetails,
+    currentSeasonNumber: Int,
+    currentEpisodeNumber: Int
+): Pair<Int, Episode>? {
+    val currentSeason = details.seasons.firstOrNull { it.seasonNumber == currentSeasonNumber } ?: return null
+    val sortedEpisodes = currentSeason.episodes.sortedBy { it.episodeNumber }
+    val currentIndex = sortedEpisodes.indexOfFirst { it.episodeNumber == currentEpisodeNumber }
+    if (currentIndex == -1) return null
+
+    sortedEpisodes.getOrNull(currentIndex + 1)?.let { return currentSeasonNumber to it }
+
+    val nextSeason = details.seasons.filter { it.seasonNumber > currentSeasonNumber }.minByOrNull { it.seasonNumber }
+        ?: return null
+    val nextSeasonFirstEpisode = nextSeason.episodes.sortedBy { it.episodeNumber }.firstOrNull() ?: return null
+    return nextSeason.seasonNumber to nextSeasonFirstEpisode
 }

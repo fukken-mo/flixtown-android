@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -81,6 +82,7 @@ import com.flixtown.tv.ui.components.PosterSkeletonCard
 import com.flixtown.tv.ui.components.PrimaryActionButton
 import com.flixtown.tv.ui.components.SecondaryActionButton
 import com.flixtown.tv.ui.components.SectionHeader
+import com.flixtown.tv.ui.components.SettingsToggleRow
 import com.flixtown.tv.ui.components.continueWatchingDisplay
 import com.flixtown.tv.ui.details.MovieDetailsScreen
 import com.flixtown.tv.ui.details.SeriesDetailsScreen
@@ -208,6 +210,17 @@ fun HomeShellScreen(graph: AppGraph) {
         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
     }
 
+    // Autoplay's "next episode" transition swaps the top of the stack
+    // in-place (no intervening non-Player screen), unlike every other path
+    // into the player, which always pops back to a non-Player screen first.
+    // The `key(current.contentId)` wrapper below is what actually forces a
+    // full teardown/rebuild of PlayerScreen's composition (fresh ExoPlayer,
+    // fresh position/duration state, etc.) across that in-place swap.
+    fun playNextEpisode(next: ContentScreen.Player) {
+        if (backStack.isNotEmpty()) backStack.removeAt(backStack.lastIndex)
+        push(next)
+    }
+
     fun playContinueWatching(entry: ContinueWatchingEntry) {
         val snapshot = (catalogState as? CatalogUiState.Loaded)?.snapshot ?: return
         if (entry.mediaType == "movie") {
@@ -250,7 +263,14 @@ fun HomeShellScreen(graph: AppGraph) {
     }
 
     if (current is ContentScreen.Player) {
-        PlayerScreen(graph = graph, screen = current, onExit = { exitPlayer() })
+        key(current.contentId) {
+            PlayerScreen(
+                graph = graph,
+                screen = current,
+                onExit = { exitPlayer() },
+                onNextEpisode = { playNextEpisode(it) }
+            )
+        }
         return
     }
 
@@ -349,14 +369,22 @@ fun HomeShellScreen(graph: AppGraph) {
                             onSeriesClick = { push(ContentScreen.SeriesDetails(it.seriesId)) }
                         )
                     }
-                    is ContentScreen.Settings -> Box(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.safeVertical)
-                    ) {
-                        Text(
-                            text = "Settings is coming in the next milestone.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = FtTextSecondary
-                        )
+                    is ContentScreen.Settings -> {
+                        val autoPlayEnabled by graph.autoplaySettingsStore.autoPlayEnabled.collectAsState()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.safeVertical),
+                            verticalArrangement = Arrangement.spacedBy(FlixSpacing.rowHeaderGap)
+                        ) {
+                            SectionHeader(title = "Playback")
+                            SettingsToggleRow(
+                                title = "Auto Play Next Episode",
+                                description = "Automatically play the next episode when one is available.",
+                                checked = autoPlayEnabled,
+                                onCheckedChange = { graph.autoplaySettingsStore.setAutoPlayEnabled(it) }
+                            )
+                        }
                     }
                     is ContentScreen.Player -> Unit // handled by the fullscreen branch above
                 }
