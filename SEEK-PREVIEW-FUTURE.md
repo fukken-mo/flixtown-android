@@ -1,11 +1,11 @@
 # Real seek-preview thumbnails
 
-Status as of 0.9.12: implemented as a **proof of concept**, scoped to one
-title at a time, using **pre-generated sprite sheets + preloading** (not
-one network request per frame). This is not the permanent hosting
-architecture — see "What's still temporary" below before generating
-anything beyond a single test item. This file records the investigation
-and design decisions so they aren't re-litigated later.
+Status as of 0.9.13: **fully implemented but DORMANT.** The manifest
+model, sprite cache, preloading, and sprite-crop rendering all exist and
+work, but the app makes **zero** preview-related network requests right
+now — see "Why this is dormant" and "How to turn it on" below. This file
+records the investigation and design decisions so they aren't
+re-litigated later.
 
 ## What was tried and rejected
 
@@ -21,6 +21,20 @@ and design decisions so they aren't re-litigated later.
   and one network request per visible card. Kept the server-side-generation
   and host-agnostic-client principles, replaced the per-frame fetch model
   with sprite sheets + continuous preloading.
+- **0.9.12 — sprite sheets + preloading, defaulting to a jsDelivr/GitHub
+  Actions proof-of-concept host.** The architecture itself (see "The fix"
+  below) is sound, but the "proof of concept" never actually worked: the
+  generation workflow (`generate-trickplay.yml`) only ever existed on a
+  feature branch, never merged to `main` — and GitHub Actions only lists
+  `workflow_dispatch` workflows that exist on the default branch, so it was
+  **never runnable from the Actions UI at all**. No manifest was ever
+  generated for any title. Every scrub session was therefore still making
+  a real network request to a URL guaranteed to 404, which read as
+  lag/dysfunction even though the sprite/preload code itself was never
+  actually exercised end-to-end. Fixed in 0.9.13 by removing the built-in
+  default entirely (see below) rather than trying to fix the POC's
+  reachability — the feature now does nothing at all until the backend
+  explicitly configures a real host.
 
 ## Why the source has to be server-side
 
@@ -75,53 +89,41 @@ conditions, exactly as reported.
   and swaps to the real frame the instant the preload/on-demand load
   resolves. Scrub input (LEFT/RIGHT/OK/BACK) is never gated on image state.
 
-## The Android app is still host-agnostic by design
+## Why this is dormant, and how to turn it on
 
-`TrickPlayRepository.fetchManifest(manifestUrl)` takes a plain URL and
-knows nothing about who's serving it. Where the URL comes from:
+`trickPlayManifestUrl()` in `PlayerScreen.kt` returns `null` unless
+`RemoteConfig.trickplayBaseUrl` (an optional field on the existing
+backend-config response) is set to a non-blank value. There is no built-in
+default anymore. When it returns `null`:
 
-- `RemoteConfig.trickplayBaseUrl` (optional field on the existing
-  backend-config response) — when the backend sets this, it wins.
-- Otherwise, `PlayerScreen.kt`'s `TRICKPLAY_POC_BASE_URL` — a single,
-  clearly-labeled constant pointing at the temporary GitHub Actions/
-  jsDelivr proof of concept. It exists in exactly one place in the app.
+- No manifest HTTP request is ever constructed (not even a doomed one).
+- No sprite is ever preloaded.
+- No sprite is ever fetched on demand.
+- The seek overlay renders the plain timestamp-only look immediately —
+  the same one from 0.9.10, unchanged.
 
-Moving to real hosting later is a **backend config change, not an Android
-code change.**
+`TrickPlayRepository.fetchManifest(manifestUrl)` itself takes a plain URL
+and knows nothing about who's serving it — no jsDelivr/GitHub-specific
+assumptions anywhere in that class, so nothing about it needs to change
+either. **Turning real thumbnails on for a title is purely a backend
+config change:** set `trickplay_base_url` in the config response to a real
+host, and the whole pipeline (manifest fetch → preload → sprite crop
+rendering) activates with zero Android code changes.
 
-## Where generation runs today (proof of concept only)
+## Generation tooling (exists, but not wired to anything reachable)
 
-Running FFmpeg directly on Flix Town's own panel host
-(flixtown.panelsandapps.com) could not be verified — no shell/SSH access,
-no confirmed hosting tier, no git repo for its PHP source to inspect.
-Instead, generation runs on **GitHub Actions**
-(`.github/workflows/generate-trickplay.yml`) — infrastructure already
-proven to work for this repo. An admin runs it **one title at a time**
-with a content id and the Xtream VOD URL:
-
-1. `ffprobe` reads the source duration.
-2. `ffmpeg -vf "fps=1/10,scale=160:90,tile=10x5"` extracts one frame every
-   10 seconds and tiles every 50 of them directly into one sprite sheet —
-   no separate stitching step, no full download/re-encode of the source.
-3. A Python step builds `manifest.json`, computing each real frame's
-   `{time, sprite, x, y}` from the interval/duration (independent of
-   however ffmpeg padded a final partial sprite — padding cells simply
-   never get a manifest entry).
-4. Both are committed to this repo's own `trickplay-assets` branch (never
-   the app's default branch) under `trickplay/<content_id>/`, served
-   through jsDelivr's free GitHub CDN.
-
-## What's still temporary — read before generating more than one title
-
-Committing binary images to a git branch does not scale to a real catalog.
-**Do not run the generation workflow for more than the single
-proof-of-concept item until this is replaced.** Nothing on the Android
-side needs to change when it is (see above) — only:
-
-1. Stand up real asset hosting (object storage / VPS / CDN).
-2. Point the generation workflow's publish step at it (or replace it with
-   generation that runs wherever that hosting lives).
-3. Set `trickplay_base_url` in the backend's config response.
+`.github/workflows/generate-trickplay.yml` still exists on this branch and
+still does what it always did — reads a source duration with `ffprobe`,
+tiles frames into 160×90 sprite sheets (10×5 grid) with ffmpeg's `tile`
+filter, builds a `manifest.json`, and would publish both to a
+`trickplay-assets` branch served through jsDelivr. **It has never actually
+run**: it was never merged to `main`, and GitHub Actions only lists
+`workflow_dispatch` workflows that exist on the default branch, so it was
+never selectable from the Actions UI. It's left in place as working
+generation tooling for whenever real hosting is stood up, not as an active
+proof of concept. Do not expect it to do anything until it's merged to
+`main` (or otherwise made runnable) AND real hosting exists for it to
+publish to.
 
 ## Manifest format (portable — independent of hosting, sprite layout)
 

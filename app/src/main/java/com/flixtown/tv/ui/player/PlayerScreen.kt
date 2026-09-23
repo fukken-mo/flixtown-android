@@ -169,13 +169,15 @@ fun PlayerScreen(
     var previewScrubLastAtMs by remember { mutableStateOf(0L) }
 
     // Server-generated trick-play preview frames (see TrickPlayRepository /
-    // SEEK-PREVIEW-FUTURE.md). Fetched once per item — a single small JSON
-    // request, never blocking playback start — and simply stays null when
-    // nothing has been generated for this title yet, which is exactly the
-    // signal the overlay needs to fall back to the timestamp-only look.
-    // trickPlayManifestUrl() resolves where to ask, honoring a
-    // backend-configured host over the temporary proof-of-concept default —
-    // TrickPlayRepository itself never knows or cares which one it got.
+    // SEEK-PREVIEW-FUTURE.md) — DORMANT by default. trickPlayManifestUrl()
+    // returns null unless the backend has actually configured a real
+    // trickplay_base_url, in which case this whole block is a no-op: no
+    // manifest request is ever constructed, trickPlayManifest simply stays
+    // null, and the seek overlay renders its plain timestamp-only look
+    // immediately, with zero preview-related network activity. The moment a
+    // real trickplay_base_url IS configured, this starts working with no
+    // app changes — a single small JSON GET per item, never blocking
+    // playback start.
     var trickPlayManifest by remember(screen.contentId) { mutableStateOf<TrickPlayManifest?>(null) }
     LaunchedEffect(screen.contentId) {
         trickPlayManifest = null
@@ -1052,26 +1054,22 @@ private fun trickPlayContentId(screen: ContentScreen.Player): String? = when (sc
     else -> null
 }
 
-// Temporary proof-of-concept default: the generate-trickplay.yml workflow
-// publishes to this repo's own `trickplay-assets` branch, served through
-// jsDelivr's free GitHub CDN. This is the ONLY place that default is
-// referenced — [configuredBaseUrl] (RemoteConfig.trickplayBaseUrl, set by
-// the backend) always wins once real preview hosting exists, and neither
-// TrickPlayRepository nor this file's Compose UI code know or care which
-// one is actually in use. See SEEK-PREVIEW-FUTURE.md.
-private const val TRICKPLAY_POC_BASE_URL =
-    "https://cdn.jsdelivr.net/gh/fukken-mo/flixtown-android@trickplay-assets/trickplay"
-
 /**
- * Resolves the full manifest URL for this item: [configuredBaseUrl] (from
- * the backend, when set) or the POC default, plus this item's trick-play
- * content id, plus the fixed `manifest.json` filename every generated
- * folder uses. Null whenever the item itself can't be identified — same
- * "no manifest available" signal as [trickPlayContentId] returning null.
+ * Resolves the full manifest URL for this item, or null when the feature is
+ * effectively dormant. There is deliberately NO built-in default host
+ * anymore (an earlier jsDelivr/GitHub Actions proof-of-concept default was
+ * removed): [configuredBaseUrl] must come from the backend
+ * (RemoteConfig.trickplayBaseUrl) and be non-blank, or this returns null —
+ * which is the caller's signal to skip the manifest fetch entirely, never
+ * construct a request, never preload a sprite, and render the plain
+ * timestamp-only seek UI immediately. The trick-play code path (manifest
+ * parsing, sprite cache, sprite-crop rendering) stays fully implemented and
+ * activates automatically — no app changes needed — the moment a real
+ * `trickplay_base_url` is configured server-side. See SEEK-PREVIEW-FUTURE.md.
  */
 private fun trickPlayManifestUrl(screen: ContentScreen.Player, configuredBaseUrl: String?): String? {
+    val baseUrl = configuredBaseUrl?.trim()?.takeIf { it.isNotBlank() } ?: return null
     val contentId = trickPlayContentId(screen) ?: return null
-    val baseUrl = configuredBaseUrl?.takeIf { it.isNotBlank() } ?: TRICKPLAY_POC_BASE_URL
     return "${baseUrl.trimEnd('/')}/$contentId/manifest.json"
 }
 
