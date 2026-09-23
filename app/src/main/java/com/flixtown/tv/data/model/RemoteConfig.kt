@@ -19,7 +19,12 @@ data class RemoteConfigDto(
     @SerializedName("cashapp_url") val cashAppUrl: String?,
     @SerializedName("renewal_prices") val renewalPrices: Map<String, Double>?,
     @SerializedName("announcements") val announcements: List<String>?,
-    @SerializedName("tmdb_enabled") val tmdbEnabled: Boolean?
+    @SerializedName("tmdb_enabled") val tmdbEnabled: Boolean?,
+    // Optional: base URL trick-play preview manifests are served from (see
+    // TrickPlayRepository). Absent/blank means the backend hasn't been set
+    // up with real preview hosting yet — the app falls back to its
+    // temporary GitHub Actions/jsDelivr proof-of-concept default.
+    @SerializedName("trickplay_base_url") val trickplayBaseUrl: String?
 )
 
 /** Validated, app-facing config. Only ever built from a [RemoteConfigDto] that passed validation. */
@@ -40,6 +45,7 @@ data class RemoteConfig(
     val renewalPrices: Map<String, Double>,
     val announcements: List<String>,
     val tmdbEnabled: Boolean,
+    val trickplayBaseUrl: String?,
     val fetchedAtMillis: Long
 ) {
     companion object {
@@ -70,6 +76,7 @@ data class RemoteConfig(
                 renewalPrices = dto.renewalPrices ?: emptyMap(),
                 announcements = dto.announcements ?: emptyList(),
                 tmdbEnabled = dto.tmdbEnabled ?: false,
+                trickplayBaseUrl = dto.trickplayBaseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotBlank() },
                 fetchedAtMillis = fetchedAtMillis
             )
         }

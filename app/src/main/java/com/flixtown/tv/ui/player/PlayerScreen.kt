@@ -2,6 +2,7 @@ package com.flixtown.tv.ui.player
 
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -44,8 +45,9 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.C
@@ -60,7 +62,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import coil.compose.AsyncImage
 import com.flixtown.tv.AppGraph
 import com.flixtown.tv.core.SafeLog
 import com.flixtown.tv.data.ContinueWatchingEntry
@@ -172,11 +173,40 @@ fun PlayerScreen(
     // request, never blocking playback start — and simply stays null when
     // nothing has been generated for this title yet, which is exactly the
     // signal the overlay needs to fall back to the timestamp-only look.
+    // trickPlayManifestUrl() resolves where to ask, honoring a
+    // backend-configured host over the temporary proof-of-concept default —
+    // TrickPlayRepository itself never knows or cares which one it got.
     var trickPlayManifest by remember(screen.contentId) { mutableStateOf<TrickPlayManifest?>(null) }
     LaunchedEffect(screen.contentId) {
         trickPlayManifest = null
-        val id = trickPlayContentId(screen) ?: return@LaunchedEffect
-        trickPlayManifest = graph.trickPlayRepository.fetchManifest(id)
+        val url = trickPlayManifestUrl(screen, graph.configRepository.getCached()?.trickplayBaseUrl) ?: return@LaunchedEffect
+        trickPlayManifest = graph.trickPlayRepository.fetchManifest(url)
+    }
+
+    // Decoded-sprite cache for this item (see TrickPlaySpriteCache) — one
+    // instance per playing item, released below on teardown. Preloading
+    // (not waiting for the first LEFT/RIGHT press) is what actually makes
+    // the overlay feel instant: as soon as the manifest resolves, and again
+    // every time playback crosses into a new sprite's time range, this
+    // quietly warms the sprite covering the CURRENT position plus the next
+    // one in sequence, entirely off the UI thread and without touching
+    // PlayerScreen's own recomposition scope (snapshotFlow, same zero-cost
+    // pattern as the Up Next near-end check below).
+    val trickPlaySpriteCache = remember(screen.contentId) { TrickPlaySpriteCache(context) }
+    DisposableEffect(screen.contentId) {
+        onDispose { trickPlaySpriteCache.release() }
+    }
+    LaunchedEffect(trickPlayManifest) {
+        val manifest = trickPlayManifest ?: return@LaunchedEffect
+        var lastSpriteFile: String? = null
+        snapshotFlow { positionMsState.value }.collect { pos ->
+            val bucket = (pos / manifest.intervalMs) * manifest.intervalMs
+            val spriteFile = manifest.frames[bucket]?.spriteFile ?: return@collect
+            if (spriteFile == lastSpriteFile) return@collect
+            lastSpriteFile = spriteFile
+            trickPlaySpriteCache.preload(manifest.spriteUrl(spriteFile))
+            manifest.nextSpriteFile(spriteFile)?.let { trickPlaySpriteCache.preload(manifest.spriteUrl(it)) }
+        }
     }
 
     val surfaceFocusRequester = remember { FocusRequester() }
@@ -738,6 +768,7 @@ fun PlayerScreen(
                 targetMs = scrubTargetMs,
                 durationMs = durationMs,
                 manifest = trickPlayManifest,
+                spriteCache = trickPlaySpriteCache,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -798,23 +829,23 @@ private fun PlaybackProgressSection(
  * Netflix-style seek preview. When a server-generated trick-play [manifest]
  * exists for this item (see TrickPlayRepository / SEEK-PREVIEW-FUTURE.md —
  * frames are extracted once, offline, by a GitHub Actions job running
- * FFmpeg, never on-device), shows a filmstrip of real preview frames around
- * the selected position via Coil's [AsyncImage] — the same image-loading
- * path already used for posters/cast photos elsewhere in this app, so
- * "don't reload the same URL repeatedly" and "don't do decode work on the
- * main thread" come for free from Coil's own disk/memory cache and
- * background dispatcher, no bespoke caching code needed. No manifest yet
- * (title not generated), or a specific slot missing from it, falls back
- * per-card to the plain timestamp-only look — seeking itself never depends
- * on any of this succeeding. On-device frame decoding (MediaMetadataRetriever,
- * tried in 0.9.9) is deliberately not used again: it was too slow on real TV
- * hardware.
+ * FFmpeg, never on-device) shows a filmstrip of real preview frames around
+ * the selected position, cropped client-side out of whatever sprite sheet
+ * [spriteCache] already has decoded (see [PreviewCard]) — usually already
+ * true by the time the user first presses LEFT/RIGHT, since [PlayerScreen]
+ * preloads the sprite covering the current playback position continuously,
+ * not on demand. No manifest yet (title not generated), or a sprite not yet
+ * loaded for a given slot, falls back per-card to the plain timestamp-only
+ * look — seeking itself never depends on any of this succeeding. On-device
+ * frame decoding (MediaMetadataRetriever, tried in 0.9.9) is deliberately
+ * not used again: it was too slow on real TV hardware.
  */
 @Composable
 private fun SeekPreviewOverlay(
     targetMs: Long,
     durationMs: Long,
     manifest: TrickPlayManifest?,
+    spriteCache: TrickPlaySpriteCache?,
     modifier: Modifier = Modifier
 ) {
     val cappedDuration = if (durationMs > 0) durationMs else Long.MAX_VALUE
@@ -830,7 +861,7 @@ private fun SeekPreviewOverlay(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
             for (offset in -SCRUB_PREVIEW_WINDOW_COUNT..SCRUB_PREVIEW_WINDOW_COUNT) {
                 val slotMs = (targetMs + offset * spacingMs).coerceIn(0L, cappedDuration)
-                PreviewCard(slotMs = slotMs, isSelected = offset == 0, manifest = manifest)
+                PreviewCard(slotMs = slotMs, isSelected = offset == 0, manifest = manifest, spriteCache = spriteCache)
             }
         }
 
@@ -849,19 +880,39 @@ private fun SeekPreviewOverlay(
 
 /**
  * One card in the seek-preview filmstrip. [slotMs] is snapped to the
- * manifest's own bucket grid so it maps to a real generated frame's key;
- * a slot the manifest simply doesn't have (e.g. past the last generated
- * bucket) falls back to the timestamp-only look for that card alone,
- * matching the required real-frame -> loading -> timestamp fallback
- * hierarchy. The surrounding [FtSurfaceElevated] box background already
- * reads as a "subtle dark placeholder" while Coil loads the image, so no
- * separate placeholder state is needed.
+ * manifest's own bucket grid so it maps to a real generated frame's sprite
+ * location; a slot whose sprite isn't decoded yet (or no manifest at all)
+ * falls back to the timestamp-only look for that card alone, matching the
+ * required real-frame -> loading -> timestamp fallback hierarchy — and
+ * transitions to the real frame automatically once [TrickPlaySpriteCache.
+ * getSprite] resolves, without ever blocking D-pad input. The frame itself
+ * is drawn as a cropped region of the already-decoded sprite sheet via
+ * [Canvas]/[androidx.compose.ui.graphics.drawscope.DrawScope.drawImage] —
+ * no per-frame Bitmap allocation, no extra network request: up to all 5
+ * visible cards commonly share one already-cached sprite.
  */
 @Composable
-private fun PreviewCard(slotMs: Long, isSelected: Boolean, manifest: TrickPlayManifest?) {
-    val frameUrl = remember(slotMs, manifest) {
+private fun PreviewCard(
+    slotMs: Long,
+    isSelected: Boolean,
+    manifest: TrickPlayManifest?,
+    spriteCache: TrickPlaySpriteCache?
+) {
+    val frame = remember(slotMs, manifest) {
         manifest?.let { m -> m.frames[(slotMs / m.intervalMs) * m.intervalMs] }
     }
+    val spriteUrl = remember(frame, manifest) {
+        if (frame != null && manifest != null) manifest.spriteUrl(frame.spriteFile) else null
+    }
+    var sprite by remember(spriteUrl, spriteCache) {
+        mutableStateOf(spriteUrl?.let { spriteCache?.cached(it) })
+    }
+    LaunchedEffect(spriteUrl, spriteCache) {
+        if (sprite == null && spriteUrl != null && spriteCache != null) {
+            sprite = spriteCache.getSprite(spriteUrl)
+        }
+    }
+    val resolvedSprite = sprite
 
     Box(
         modifier = Modifier
@@ -872,16 +923,20 @@ private fun PreviewCard(slotMs: Long, isSelected: Boolean, manifest: TrickPlayMa
             .let { m -> if (isSelected) m.border(3.dp, FtAccent, RoundedCornerShape(8.dp)) else m },
         contentAlignment = Alignment.Center
     ) {
-        if (frameUrl != null) {
-            AsyncImage(
-                model = frameUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+        if (resolvedSprite != null && frame != null && manifest != null) {
+            Canvas(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(8.dp))
                     .let { m -> if (isSelected) m else m.alpha(0.7f) }
-            )
+            ) {
+                drawImage(
+                    image = resolvedSprite,
+                    srcOffset = IntOffset(frame.x, frame.y),
+                    srcSize = IntSize(manifest.frameWidth, manifest.frameHeight),
+                    dstSize = IntSize(size.width.toInt(), size.height.toInt())
+                )
+            }
             // Timestamp as a small overlay pill so it stays readable over an
             // arbitrary bright/dark video frame, instead of the standalone
             // centered text used when no frame is available.
@@ -900,8 +955,8 @@ private fun PreviewCard(slotMs: Long, isSelected: Boolean, manifest: TrickPlayMa
                 )
             }
         } else {
-            // No manifest yet, or this specific bucket isn't in it — the
-            // 0.9.10 timestamp-only look, unchanged.
+            // No manifest yet, or this slot's sprite isn't decoded yet — the
+            // 0.9.10 timestamp-only look, unchanged. Never an empty box.
             Text(
                 text = formatTime(slotMs),
                 style = if (isSelected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
@@ -995,6 +1050,29 @@ private fun trickPlayContentId(screen: ContentScreen.Player): String? = when (sc
         }
     }
     else -> null
+}
+
+// Temporary proof-of-concept default: the generate-trickplay.yml workflow
+// publishes to this repo's own `trickplay-assets` branch, served through
+// jsDelivr's free GitHub CDN. This is the ONLY place that default is
+// referenced — [configuredBaseUrl] (RemoteConfig.trickplayBaseUrl, set by
+// the backend) always wins once real preview hosting exists, and neither
+// TrickPlayRepository nor this file's Compose UI code know or care which
+// one is actually in use. See SEEK-PREVIEW-FUTURE.md.
+private const val TRICKPLAY_POC_BASE_URL =
+    "https://cdn.jsdelivr.net/gh/fukken-mo/flixtown-android@trickplay-assets/trickplay"
+
+/**
+ * Resolves the full manifest URL for this item: [configuredBaseUrl] (from
+ * the backend, when set) or the POC default, plus this item's trick-play
+ * content id, plus the fixed `manifest.json` filename every generated
+ * folder uses. Null whenever the item itself can't be identified — same
+ * "no manifest available" signal as [trickPlayContentId] returning null.
+ */
+private fun trickPlayManifestUrl(screen: ContentScreen.Player, configuredBaseUrl: String?): String? {
+    val contentId = trickPlayContentId(screen) ?: return null
+    val baseUrl = configuredBaseUrl?.takeIf { it.isNotBlank() } ?: TRICKPLAY_POC_BASE_URL
+    return "${baseUrl.trimEnd('/')}/$contentId/manifest.json"
 }
 
 /**

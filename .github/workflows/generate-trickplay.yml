@@ -1,16 +1,30 @@
 name: Generate Trick-Play Thumbnails
 
-# Manual, per-title generation: an admin runs this once for a movie or
-# episode (via Actions -> Generate Trick-Play Thumbnails -> Run workflow)
-# after adding it to the catalog. It never runs automatically and never
-# regenerates a title that hasn't changed. Extracted frames + a manifest
-# are published to the `trickplay-assets` branch (not this app's default
-# branch) and served to the app through jsDelivr's GitHub CDN — see
-# SEEK-PREVIEW-FUTURE.md at the repo root for why this exists: neither
-# Xtream nor this app's own backend host expose real seek-frame data, and
-# this session couldn't confirm the backend host even has FFmpeg/shell
-# access, so generation runs on GitHub's own runners instead, which are
-# infrastructure already proven to work for this repo (see build-apk.yml).
+# PROOF OF CONCEPT ONLY — do not run this for the whole catalog. Manual,
+# per-title generation: an admin runs this for ONE movie or episode at a
+# time (via Actions -> Generate Trick-Play Thumbnails -> Run workflow) to
+# prove the Android app can display real server-generated seek previews.
+# It never runs automatically and never regenerates a title that hasn't
+# changed.
+#
+# Extracted frames + a manifest are published to this repo's own
+# `trickplay-assets` branch (never the app's default branch) and served
+# through jsDelivr's free GitHub CDN. This is a deliberate stopgap, not the
+# permanent architecture: committing a whole content library's worth of
+# generated images into this git repo doesn't scale, and the Android app
+# does NOT hard-depend on this — see SEEK-PREVIEW-FUTURE.md at the repo
+# root. Once real preview hosting exists (object storage / a VPS / a CDN
+# in front of Flix Town's own infrastructure), only this workflow's publish
+# step and the backend's `trickplay_base_url` config value need to change;
+# the app already treats the manifest's own `base_url` as the source of
+# truth and never assumes jsDelivr/GitHub.
+#
+# Why generation runs here at all rather than on Flix Town's own backend
+# host: this session had no way to confirm that host has FFmpeg/shell
+# access (no SSH, no git repo for its PHP source to inspect), so it
+# deliberately does not assume anything about it. GitHub Actions is
+# infrastructure already proven to work for this exact repo (see
+# build-apk.yml).
 on:
   workflow_dispatch:
     inputs:
@@ -39,53 +53,86 @@ jobs:
           ffmpeg -version
           ffprobe -version
 
-      - name: Extract preview frames and build manifest.json
+      - name: Extract preview frames as sprite sheets and build manifest.json
         env:
           CONTENT_ID: ${{ inputs.content_id }}
           SOURCE_URL: ${{ inputs.source_url }}
           INTERVAL: ${{ inputs.interval_seconds }}
           BASE_URL: https://cdn.jsdelivr.net/gh/${{ github.repository }}@trickplay-assets/trickplay/${{ inputs.content_id }}
+          # Frame size + sprite grid. Chosen so one decoded sprite is small
+          # enough for the app's ~5-10MB seek-preview memory budget (a
+          # 1600x450 ARGB_8888 bitmap is ~2.9MB) while covering 50 frames
+          # (500s at a 10s interval, ~8 minutes of scrubbing) per network
+          # request instead of one request per frame.
+          FRAME_WIDTH: "160"
+          FRAME_HEIGHT: "90"
+          SPRITE_COLUMNS: "10"
+          SPRITE_ROWS: "5"
         run: |
           set -euo pipefail
           work="$(mktemp -d)"
 
           duration_s=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$SOURCE_URL")
 
-          # One small (240x135) WebP frame every $INTERVAL seconds, starting
-          # at t=0. Deliberately not full video resolution — these are seek
-          # previews, not a re-encode.
-          ffmpeg -y -i "$SOURCE_URL" -vf "fps=1/${INTERVAL},scale=240:135" -f image2 \
-            "$work/frame_%06d.webp"
+          # One frame every $INTERVAL seconds, tiled directly into sprite
+          # sheets by ffmpeg's own `tile` filter (SPRITE_COLUMNS x
+          # SPRITE_ROWS frames per output image) — no separate stitching
+          # step, and no full download/re-encode of the source file.
+          ffmpeg -y -i "$SOURCE_URL" \
+            -vf "fps=1/${INTERVAL},scale=${FRAME_WIDTH}:${FRAME_HEIGHT},tile=${SPRITE_COLUMNS}x${SPRITE_ROWS}" \
+            -f image2 "$work/sprite_%03d.webp"
 
-          python3 - "$work" "$CONTENT_ID" "$INTERVAL" "$duration_s" "$BASE_URL" <<'PY'
+          # Manifest schema is deliberately host-agnostic and grid-agnostic:
+          # base_url plus each frame's explicit sprite/x/y are the only
+          # things the app reads, so it never has to assume a particular
+          # sprite layout, resolution, or hosting provider.
+          python3 - "$work" "$CONTENT_ID" "$INTERVAL" "$duration_s" "$BASE_URL" \
+            "$FRAME_WIDTH" "$FRAME_HEIGHT" "$SPRITE_COLUMNS" "$SPRITE_ROWS" <<'PY'
           import json
+          import math
           import os
           import sys
 
-          work, content_id, interval, duration_s, base_url = sys.argv[1:6]
+          (work, content_id, interval, duration_s, base_url,
+           frame_w, frame_h, cols, rows) = sys.argv[1:10]
           interval = int(interval)
-          duration_ms = int(float(duration_s) * 1000)
+          duration_seconds = int(float(duration_s))
+          frame_w, frame_h, cols, rows = int(frame_w), int(frame_h), int(cols), int(rows)
+          frames_per_sprite = cols * rows
 
-          files = sorted(f for f in os.listdir(work) if f.endswith(".webp"))
-          frames = {}
-          for index, name in enumerate(files):
-              ts_seconds = index * interval
-              new_name = f"{ts_seconds:06d}.webp"
-              os.rename(os.path.join(work, name), os.path.join(work, new_name))
-              frames[str(ts_seconds)] = f"{base_url}/{new_name}"
+          sprites = sorted(f for f in os.listdir(work) if f.endswith(".webp"))
+          # Real frame count derived from duration/interval, independent of
+          # how ffmpeg's tile filter padded the final (possibly partial)
+          # sprite — padding cells simply never get a manifest entry.
+          total_frames = (duration_seconds // interval) + 1
+          total_frames = min(total_frames, frames_per_sprite * len(sprites))
+
+          frames = []
+          for index in range(total_frames):
+              sprite_index = index // frames_per_sprite
+              pos_in_sprite = index % frames_per_sprite
+              row = pos_in_sprite // cols
+              col = pos_in_sprite % cols
+              frames.append({
+                  "time": index * interval,
+                  "sprite": sprites[sprite_index],
+                  "x": col * frame_w,
+                  "y": row * frame_h,
+              })
 
           manifest = {
-              "contentId": content_id,
-              "interval": interval,
-              "width": 240,
-              "height": 135,
-              "durationMs": duration_ms,
+              "content_id": content_id,
+              "interval_seconds": interval,
+              "width": frame_w,
+              "height": frame_h,
+              "duration_seconds": duration_seconds,
+              "base_url": base_url,
               "frames": frames,
           }
           with open(os.path.join(work, "manifest.json"), "w") as fh:
               json.dump(manifest, fh, indent=2, sort_keys=True)
 
-          print(f"Generated {len(frames)} frames for {content_id} (duration {duration_ms}ms)")
+          print(f"Generated {len(frames)} frames across {len(sprites)} sprite(s) for {content_id} (duration {duration_seconds}s)")
           PY
 
           echo "TRICKPLAY_WORK=$work" >> "$GITHUB_ENV"
