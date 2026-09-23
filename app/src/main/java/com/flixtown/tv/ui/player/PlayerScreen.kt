@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -66,6 +68,7 @@ import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.components.UpNextOverlay
 import com.flixtown.tv.ui.nav.ContentScreen
 import com.flixtown.tv.ui.theme.FtAccent
+import com.flixtown.tv.ui.theme.FtSurfaceElevated
 import com.flixtown.tv.ui.theme.FtTextPrimary
 import com.flixtown.tv.ui.theme.FtTextSecondary
 import java.util.Locale
@@ -82,6 +85,13 @@ private const val SCRUB_STREAK_WINDOW_MS = 900L
 private const val SCRUB_MAX_STREAK = 4
 private const val UP_NEXT_TRIGGER_MS = 25_000L
 private const val UP_NEXT_COUNTDOWN_SECONDS = 15
+private const val SCRUB_PREVIEW_IDLE_COMMIT_MS = 2_000L
+// Visual spacing between adjacent preview cards — deliberately independent
+// of the actual per-press seek increment (which accelerates the same way
+// scrubSeek() does below) so the row always reads as a calm, evenly spaced
+// filmstrip regardless of how fast the user is moving through it.
+private const val SCRUB_PREVIEW_SPACING_MS = 30_000L
+private const val SCRUB_PREVIEW_WINDOW_COUNT = 2
 
 private data class TrackChoice(val label: String, val groupIndex: Int, val trackIndex: Int)
 
@@ -139,6 +149,21 @@ fun PlayerScreen(
     var lastScrubDirection by remember { mutableStateOf(0) }
     var lastScrubAtMs by remember { mutableStateOf(0L) }
 
+    // Netflix-style seek preview: separate state from the seek-bar-focused
+    // scrubSeek() above (different trigger — general playback area LEFT/
+    // RIGHT, not the visible seek bar gaining D-pad focus) and deliberately
+    // NOT committed to the player on every press. scrubTargetMs is the
+    // pending, uncommitted position; the player itself stays paused at its
+    // real position until commitScrub() (OK/center or the idle timeout)
+    // actually calls seekTo — cancelScrub() (BACK) then needs no seek at
+    // all, since playback position never actually moved.
+    var isScrubbing by remember { mutableStateOf(false) }
+    var scrubTargetMs by remember { mutableStateOf(0L) }
+    var scrubWasPlaying by remember { mutableStateOf(true) }
+    var previewScrubStreak by remember { mutableStateOf(0) }
+    var previewScrubLastDirection by remember { mutableStateOf(0) }
+    var previewScrubLastAtMs by remember { mutableStateOf(0L) }
+
     val surfaceFocusRequester = remember { FocusRequester() }
     val playPauseFocusRequester = remember { FocusRequester() }
     val seekBarFocusRequester = remember { FocusRequester() }
@@ -181,6 +206,59 @@ fun PlayerScreen(
         player.seekTo(target)
         positionMs = target
         bump()
+    }
+
+    // Entering scrub PAUSES the player rather than seeking — the actual
+    // playback position never moves until commitScrub(), so cancelScrub()
+    // (BACK) needs no seek at all to "return to the original position": it
+    // never left. Same 10s-base/accelerating-streak feel as scrubSeek()
+    // above (reuses SCRUB_STREAK_WINDOW_MS/SCRUB_MAX_STREAK), just starting
+    // from SEEK_STEP_MS (10s) per the "as it does now" base increment.
+    fun beginOrContinueScrub(direction: Int) {
+        val now = System.currentTimeMillis()
+        if (!isScrubbing) {
+            isScrubbing = true
+            controlsVisible = false
+            scrubTargetMs = positionMs
+            scrubWasPlaying = isPlaying
+            if (isPlaying) player.pause()
+            previewScrubStreak = 0
+        } else {
+            previewScrubStreak = if (direction == previewScrubLastDirection && (now - previewScrubLastAtMs) < SCRUB_STREAK_WINDOW_MS) {
+                (previewScrubStreak + 1).coerceAtMost(SCRUB_MAX_STREAK)
+            } else {
+                0
+            }
+        }
+        previewScrubLastDirection = direction
+        previewScrubLastAtMs = now
+
+        val raw = when (previewScrubStreak) {
+            0 -> SEEK_STEP_MS
+            1 -> SEEK_STEP_MS * 2
+            else -> SEEK_STEP_MS * (1L shl previewScrubStreak.coerceAtMost(SCRUB_MAX_STREAK))
+        }
+        val increment = if (durationMs > 0) raw.coerceAtMost(durationMs / 5) else raw
+        val cap = if (durationMs > 0) durationMs else Long.MAX_VALUE
+        scrubTargetMs = if (direction > 0) {
+            (scrubTargetMs + increment).coerceAtMost(cap)
+        } else {
+            (scrubTargetMs - increment).coerceAtLeast(0)
+        }
+    }
+
+    fun commitScrub() {
+        if (!isScrubbing) return
+        player.seekTo(scrubTargetMs)
+        positionMs = scrubTargetMs
+        if (scrubWasPlaying) player.play()
+        isScrubbing = false
+    }
+
+    fun cancelScrub() {
+        if (!isScrubbing) return
+        if (scrubWasPlaying) player.play()
+        isScrubbing = false
     }
 
     fun saveProgress(pos: Long, dur: Long) {
@@ -352,6 +430,18 @@ fun PlayerScreen(
         startNextEpisode()
     }
 
+    // Auto-commit after a short idle period. Keyed on (isScrubbing,
+    // scrubTargetMs), so every new LEFT/RIGHT press (which changes
+    // scrubTargetMs) cancels the previous instance of this effect and starts
+    // a fresh one — Compose's own LaunchedEffect key-change semantics handle
+    // the "cancel the old timer, start a new one" job bookkeeping, so rapid
+    // repeated presses never accumulate pending commit jobs.
+    LaunchedEffect(isScrubbing, scrubTargetMs) {
+        if (!isScrubbing) return@LaunchedEffect
+        delay(SCRUB_PREVIEW_IDLE_COMMIT_MS)
+        commitScrub()
+    }
+
     LaunchedEffect(controlsVisible) {
         if (controlsVisible) {
             playPauseFocusRequester.requestFocus()
@@ -452,7 +542,11 @@ fun PlayerScreen(
         playPauseFocusRequester.requestFocus()
     }
 
-    // Composed last, so it wins over both handlers above while the Up Next
+    // Netflix-style seek preview: Back cancels the pending seek and resumes
+    // from the real (unchanged) position — see cancelScrub().
+    BackHandler(enabled = isScrubbing) { cancelScrub() }
+
+    // Composed last, so it wins over every handler above while the Up Next
     // overlay is open: Back cancels the overlay (same behavior as the
     // Cancel button) instead of hiding controls, un-scrubbing, or exiting.
     BackHandler(enabled = showUpNext) { cancelUpNext() }
@@ -469,6 +563,19 @@ fun PlayerScreen(
                     this.player = player
                     useController = false
                 }
+            },
+            update = { view ->
+                // Push subtitles up out from under whichever bottom overlay
+                // is currently showing, using Media3's own SubtitleView
+                // padding API (its documented mechanism for exactly this)
+                // rather than trying to reposition/clip subtitle rendering
+                // ourselves. 0.08f is SubtitleView's own unpadded default.
+                val bottomPaddingFraction = when {
+                    isScrubbing -> 0.34f
+                    controlsVisible -> 0.22f
+                    else -> 0.08f
+                }
+                view.subtitleView?.setBottomPaddingFraction(bottomPaddingFraction)
             }
         )
 
@@ -479,22 +586,15 @@ fun PlayerScreen(
                 .focusable()
                 .onKeyEvent { event ->
                     if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
+                    // Up Next owns focus/input while its own card is up —
+                    // never let the general surface start a seek preview or
+                    // hijack OK underneath it.
+                    if (showUpNext) return@onKeyEvent false
                     when (event.key) {
-                        Key.DirectionLeft -> {
-                            val target = (positionMs - SEEK_STEP_MS).coerceAtLeast(0)
-                            player.seekTo(target)
-                            positionMs = target
-                            true
-                        }
-                        Key.DirectionRight -> {
-                            val cap = if (durationMs > 0) durationMs else Long.MAX_VALUE
-                            val target = (positionMs + SEEK_STEP_MS).coerceAtMost(cap)
-                            player.seekTo(target)
-                            positionMs = target
-                            true
-                        }
+                        Key.DirectionLeft -> { beginOrContinueScrub(-1); true }
+                        Key.DirectionRight -> { beginOrContinueScrub(1); true }
                         Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
-                            controlsVisible = true
+                            if (isScrubbing) commitScrub() else controlsVisible = true
                             true
                         }
                         else -> false
@@ -613,6 +713,18 @@ fun PlayerScreen(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 48.dp, bottom = 48.dp)
             )
         }
+
+        // Anchored to the very bottom edge only (same as the normal controls
+        // bar it replaces while active) — subtitles render higher up, in the
+        // lower-middle of the frame, so this compact bottom strip never
+        // covers them.
+        if (isScrubbing) {
+            SeekPreviewOverlay(
+                targetMs = scrubTargetMs,
+                durationMs = durationMs,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 
@@ -663,6 +775,67 @@ private fun PlaybackProgressSection(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(text = formatTime(positionMs), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
         Text(text = formatTime(durationMs), style = MaterialTheme.typography.labelMedium, color = FtTextSecondary)
+    }
+}
+
+/**
+ * Netflix-style seek preview: a filmstrip of evenly spaced timestamp cards
+ * (the selected one enlarged and red-bordered), the target/duration
+ * timestamp, and the same [SeekBar] used by the normal controls, all in one
+ * compact bottom-anchored panel.
+ *
+ * No decoded video frames — see the comment inside each card below for why:
+ * this app plays arbitrary remote Xtream stream URLs with no server-provided
+ * sprite sheet, and real frame extraction from a live network stream carries
+ * real risk (stutter/ANR/decoder contention on the single hardware decoder
+ * most Android TV boxes have) that the feature must never introduce. This is
+ * the deliberate lightweight fallback instead of faking frames.
+ */
+@Composable
+private fun SeekPreviewOverlay(targetMs: Long, durationMs: Long, modifier: Modifier = Modifier) {
+    val cappedDuration = if (durationMs > 0) durationMs else Long.MAX_VALUE
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))))
+            .padding(horizontal = 48.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
+            for (offset in -SCRUB_PREVIEW_WINDOW_COUNT..SCRUB_PREVIEW_WINDOW_COUNT) {
+                val slotMs = (targetMs + offset * SCRUB_PREVIEW_SPACING_MS).coerceIn(0L, cappedDuration)
+                val isSelected = offset == 0
+                Box(
+                    modifier = Modifier
+                        .width(if (isSelected) 148.dp else 108.dp)
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(FtSurfaceElevated)
+                        .let { m -> if (isSelected) m.border(3.dp, FtAccent, RoundedCornerShape(8.dp)) else m },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Deliberately not a decoded video frame — see this
+                    // function's doc comment.
+                    Text(
+                        text = formatTime(slotMs),
+                        style = if (isSelected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
+                        color = if (isSelected) FtAccent else FtTextSecondary
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = "${formatTime(targetMs)} / ${formatTime(durationMs)}",
+            style = MaterialTheme.typography.titleMedium,
+            color = FtTextPrimary
+        )
+
+        SeekBar(
+            progress = if (durationMs > 0) targetMs.toFloat() / durationMs.toFloat() else 0f,
+            isFocused = true
+        )
     }
 }
 
