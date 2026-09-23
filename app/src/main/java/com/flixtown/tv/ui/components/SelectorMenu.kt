@@ -39,23 +39,6 @@ private val MENU_ROW_HEIGHT = 48.dp
 private const val MENU_VISIBLE_ROWS = 5
 
 /**
- * A compact "Label: value" trigger that opens a focused, D-pad navigable
- * option list on OK — used for Category and Sort instead of exposing every
- * option across the top of the screen.
- */
-@Composable
-fun <T> SelectorButton(
-    label: String,
-    valueLabel: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    FlixFocusSurface(onClick = onClick, modifier = modifier) {
-        Text(text = "$label: $valueLabel", style = MaterialTheme.typography.labelLarge, color = FtTextPrimary)
-    }
-}
-
-/**
  * The floating option panel itself. Focuses the currently selected option on
  * open (so OK immediately re-confirms the current choice), Up/Down moves
  * through options, OK selects and closes, Back closes without changing

@@ -3,6 +3,8 @@ package com.flixtown.tv.ui.home
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -109,6 +111,13 @@ import kotlinx.coroutines.launch
 private val NAV_RAIL_WIDTH = 148.dp
 private val NAV_RAIL_COLLAPSED_WIDTH = 0.dp
 
+/** Every screen reachable directly from the nav rail via popToRoot. */
+private fun ContentScreen.isRailTopLevel(): Boolean = this is ContentScreen.Home ||
+    this is ContentScreen.Movies ||
+    this is ContentScreen.SeriesBrowse ||
+    this is ContentScreen.Search ||
+    this is ContentScreen.Settings
+
 /**
  * The authenticated app shell: a slim original left nav rail plus a
  * hand-rolled screen stack (see [ContentScreen]) for Home/Movies/Series/
@@ -144,9 +153,19 @@ fun HomeShellScreen(graph: AppGraph) {
     // railRevealFocusRequester — regains focus. Driven purely by focus state
     // so it works the same on Home's rows as on the Movies/Series grids.
     var railHasFocus by remember { mutableStateOf(true) }
+    // The rail's width is a Row sibling of the content pane (Movies/Series/
+    // Home/etc, which fills the remaining weight(1f) space) — every frame
+    // this animates, that content pane's available width changes too,
+    // forcing a real re-measure/re-layout of whatever's on screen (a
+    // LazyVerticalGrid grid in particular) for the full duration, not just
+    // a repaint. Shortened from 220ms so that concurrent relayout window is
+    // roughly half as long on every rail<->content focus change; a full fix
+    // (decoupling the rail's collapse from the content pane's measured
+    // width entirely) would need a larger nav-shell restructuring than this
+    // pass's targeted audit scope.
     val railWidth by animateDpAsState(
         targetValue = if (railHasFocus) NAV_RAIL_WIDTH else NAV_RAIL_COLLAPSED_WIDTH,
-        animationSpec = tween(durationMillis = 220),
+        animationSpec = tween(durationMillis = 120),
         label = "railWidth"
     )
 
@@ -307,11 +326,28 @@ fun HomeShellScreen(graph: AppGraph) {
             // decorative transition; sizeTransform is left at its default
             // since every branch already fills the same weight(1f) area, so
             // there's nothing to interpolate there anyway.
+            //
+            // Rail-driven top-level switches (Home/Movies/Series/Search/
+            // Settings, all reached via popToRoot from NavRail) skip the
+            // fade entirely instead: AnimatedContent composes BOTH the
+            // outgoing and incoming screen for the duration of any
+            // transition, even a fast one, and doing that at the exact
+            // moment a freshly-entered Movies/Series grid is also doing its
+            // own first composition/layout/image-request burst was a real,
+            // avoidable source of the "Menu -> Movies" lag — not just a
+            // repaint cost. Details/Player/Search-result navigation (pushed
+            // onto the stack, not a rail switch) keeps the fade, where a
+            // "drilling into a new page" transition still reads as
+            // intentional rather than as a bug.
             AnimatedContent(
                 targetState = current,
                 transitionSpec = {
-                    fadeIn(tween(FlixMotion.ScreenTransitionMs))
-                        .togetherWith(fadeOut(tween(FlixMotion.ScreenTransitionMs)))
+                    if (initialState.isRailTopLevel() && targetState.isRailTopLevel()) {
+                        EnterTransition.None togetherWith ExitTransition.None
+                    } else {
+                        fadeIn(tween(FlixMotion.ScreenTransitionMs))
+                            .togetherWith(fadeOut(tween(FlixMotion.ScreenTransitionMs)))
+                    }
                 },
                 label = "screenTransition",
                 modifier = Modifier

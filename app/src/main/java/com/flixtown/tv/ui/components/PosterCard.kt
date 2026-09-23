@@ -1,6 +1,7 @@
 package com.flixtown.tv.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,12 +42,16 @@ val DEFAULT_POSTER_WIDTH: Dp = 190.dp
  * title, and an optional subtitle (year, episode info, etc). Same
  * FlixFocusSurface red focus treatment used everywhere else — plus, since
  * the poster image is opaque and would otherwise fully hide
- * FlixFocusSurface's own focused-container red fill, two flat-color
- * overlays drawn directly on top of the already-loaded image when this
- * card has focus: a faint white wash (brightness) and a faint red wash
- * (the "red-selected" read over the artwork itself). Both are plain solid-
- * color fills — no blur, no new image request, no re-decode — so they're
- * effectively free to draw and never touch the already-loaded image.
+ * FlixFocusSurface's own focused-container red fill, a flat-color overlay
+ * (or two, in the default treatment) drawn directly on top of the already-
+ * loaded image when this card has focus. Solid-color fills only — no blur,
+ * no new image request, no re-decode — so they're effectively free to draw.
+ *
+ * [premiumFocusTreatment] is opt-in and changes ONLY the focused-state
+ * overlay (a red border + a single red wash, no white wash) — used by the
+ * Movies/Series browse grids for a more "selected" read against their
+ * cinematic background; every other caller (Home rows, Details' cast/
+ * similar rows, Search) omits it and renders exactly as before, unchanged.
  */
 @Composable
 fun PosterCard(
@@ -54,13 +59,19 @@ fun PosterCard(
     posterUrl: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    subtitle: String? = null
+    subtitle: String? = null,
+    onFocusChanged: (Boolean) -> Unit = {},
+    premiumFocusTreatment: Boolean = false
 ) {
     var isFocused by remember { mutableStateOf(false) }
+    val posterShape = RoundedCornerShape(10.dp)
     FlixFocusSurface(
         onClick = onClick,
-        modifier = modifier.onFocusChanged { isFocused = it.isFocused },
-        shape = RoundedCornerShape(10.dp),
+        modifier = modifier.onFocusChanged {
+            isFocused = it.isFocused
+            onFocusChanged(it.isFocused)
+        },
+        shape = posterShape,
         contentPadding = PaddingValues(0.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -68,8 +79,11 @@ fun PosterCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(posterShape)
                     .background(Brush.verticalGradient(listOf(FtSurfaceElevated, FtSurface)))
+                    .let { m ->
+                        if (premiumFocusTreatment && isFocused) m.border(2.5.dp, FtAccent, posterShape) else m
+                    }
             ) {
                 if (!posterUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -80,8 +94,12 @@ fun PosterCard(
                     )
                 }
                 if (isFocused) {
-                    Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.06f)))
-                    Box(modifier = Modifier.fillMaxSize().background(FtAccent.copy(alpha = 0.14f)))
+                    if (premiumFocusTreatment) {
+                        Box(modifier = Modifier.fillMaxSize().background(FtAccent.copy(alpha = 0.18f)))
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.06f)))
+                        Box(modifier = Modifier.fillMaxSize().background(FtAccent.copy(alpha = 0.14f)))
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))

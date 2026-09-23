@@ -1,6 +1,5 @@
 package com.flixtown.tv.ui.catalog
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -27,18 +28,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.flixtown.tv.data.model.Category
 import com.flixtown.tv.data.model.Series
 import com.flixtown.tv.ui.components.PosterCard
-import com.flixtown.tv.ui.components.SecondaryActionButton
-import com.flixtown.tv.ui.components.SelectorButton
 import com.flixtown.tv.ui.components.SelectorMenu
 import com.flixtown.tv.ui.nav.LocalRailRevealFocusRequester
 import com.flixtown.tv.ui.theme.FlixSpacing
-import com.flixtown.tv.ui.theme.FtBackground
+import kotlin.math.roundToInt
 
 @Composable
 fun SeriesScreen(
@@ -96,39 +100,69 @@ private fun SeriesLoaded(
         if (index >= 0) gridState.scrollToItem(index)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Static background — see MoviesScreen for why this replaced a
-        // per-focus backdrop crossfade.
-        Box(modifier = Modifier.fillMaxSize().background(FtBackground))
+    // Ambient backdrop: whichever poster currently has focus, debounced and
+    // crossfaded by CatalogBrowseBackground/BackdropLayer exactly like
+    // Home's hero — a State object, read only inside that leaf composable,
+    // so a focus-change write here never recomposes this function or the
+    // grid itself. Series' list-level model already carries a real
+    // backdropUrl (unlike Movie), so that's preferred, falling back to
+    // posterUrl when a title has none — same convention Home's own Series
+    // row already uses.
+    val focusedBackdropUrl = remember { mutableStateOf<String?>(null) }
+
+    val density = LocalDensity.current
+    // Root-window coordinates, not coordinates relative to this screen's own
+    // Box — the content pane sits to the right of the nav rail, whose width
+    // itself animates (see HomeShellScreen), so every position captured via
+    // onGloballyPositioned below is relative to the whole window and must be
+    // offset back by this container's own root position before use.
+    var containerOrigin by remember { mutableStateOf(Offset.Zero) }
+    var categoryButtonPosition by remember { mutableStateOf(Offset.Zero) }
+    var categoryButtonHeight by remember { mutableStateOf(0) }
+    var sortButtonPosition by remember { mutableStateOf(Offset.Zero) }
+    var sortButtonHeight by remember { mutableStateOf(0) }
+    val menuGapPx = remember(density) { with(density) { 8.dp.roundToPx() } }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { containerOrigin = it.positionInRoot() }
+    ) {
+        CatalogBrowseBackground(backdropUrlState = focusedBackdropUrl, modifier = Modifier.fillMaxSize())
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.rowHeaderGap + 12.dp),
+                    .padding(horizontal = FlixSpacing.safeHorizontal, vertical = FlixSpacing.rowHeaderGap + 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = "Series", style = MaterialTheme.typography.headlineMedium)
-                SecondaryActionButton(text = "Search", onClick = onSearchClick)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CatalogFilterButton(
+                        label = "Category",
+                        valueLabel = selectedCategory?.name ?: "All",
+                        onClick = { showCategoryMenu = true },
+                        modifier = Modifier.onGloballyPositioned { coords ->
+                            categoryButtonPosition = coords.positionInRoot()
+                            categoryButtonHeight = coords.size.height
+                        }
+                    )
+                    CatalogFilterButton(
+                        label = "Sort",
+                        valueLabel = sort.label,
+                        onClick = { showSortMenu = true },
+                        modifier = Modifier.onGloballyPositioned { coords ->
+                            sortButtonPosition = coords.positionInRoot()
+                            sortButtonHeight = coords.size.height
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    CatalogSearchButton(onClick = onSearchClick)
+                }
             }
 
-            Row(
-                modifier = Modifier.padding(horizontal = FlixSpacing.safeHorizontal),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                SelectorButton<Category?>(
-                    label = "Category",
-                    valueLabel = selectedCategory?.name ?: "All",
-                    onClick = { showCategoryMenu = true }
-                )
-                SelectorButton<SortOption>(
-                    label = "Sort",
-                    valueLabel = sort.label,
-                    onClick = { showSortMenu = true }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(FlixSpacing.sectionGap - 8.dp))
+            Spacer(modifier = Modifier.height(FlixSpacing.rowHeaderGap))
 
             LazyVerticalGrid(
                 state = gridState,
@@ -140,11 +174,17 @@ private fun SeriesLoaded(
                     top = FlixSpacing.focusReserveTop,
                     bottom = FlixSpacing.safeVertical
                 ),
-                horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap),
+                // Local-only +4dp over the shared cardGap token — see
+                // MoviesScreen's matching comment.
+                horizontalArrangement = Arrangement.spacedBy(FlixSpacing.cardGap + 4.dp),
                 verticalArrangement = Arrangement.spacedBy(FlixSpacing.focusReserveTop * 2),
                 modifier = Modifier.fillMaxSize()
             ) {
-                itemsIndexed(visibleSeries, key = { _, show -> show.seriesId }) { index, show ->
+                itemsIndexed(
+                    visibleSeries,
+                    key = { _, show -> show.seriesId },
+                    contentType = { _, _ -> "poster" }
+                ) { index, show ->
                     val isLeftEdge = index % GRID_COLUMNS == 0
                     val itemFocusRequester = remember(show.seriesId) { FocusRequester() }
                     LaunchedEffect(Unit) {
@@ -161,6 +201,10 @@ private fun SeriesLoaded(
                             pendingFocusSeriesId = show.seriesId
                             onSeriesClick(show)
                         },
+                        onFocusChanged = { focused ->
+                            if (focused) focusedBackdropUrl.value = show.backdropUrl ?: show.posterUrl
+                        },
+                        premiumFocusTreatment = true,
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(itemFocusRequester)
@@ -177,7 +221,13 @@ private fun SeriesLoaded(
         }
 
         if (showCategoryMenu) {
-            Box(modifier = Modifier.padding(start = FlixSpacing.safeHorizontal, top = 96.dp)) {
+            Box(
+                modifier = Modifier.offset {
+                    val x = categoryButtonPosition.x - containerOrigin.x
+                    val y = categoryButtonPosition.y - containerOrigin.y + categoryButtonHeight
+                    IntOffset(x.roundToInt(), y.roundToInt() + menuGapPx)
+                }
+            ) {
                 SelectorMenu(
                     title = "Category",
                     options = categoryOptions,
@@ -189,7 +239,13 @@ private fun SeriesLoaded(
             }
         }
         if (showSortMenu) {
-            Box(modifier = Modifier.padding(start = FlixSpacing.safeHorizontal + 170.dp, top = 96.dp)) {
+            Box(
+                modifier = Modifier.offset {
+                    val x = sortButtonPosition.x - containerOrigin.x
+                    val y = sortButtonPosition.y - containerOrigin.y + sortButtonHeight
+                    IntOffset(x.roundToInt(), y.roundToInt() + menuGapPx)
+                }
+            ) {
                 SelectorMenu(
                     title = "Sort",
                     options = sortOptions,
