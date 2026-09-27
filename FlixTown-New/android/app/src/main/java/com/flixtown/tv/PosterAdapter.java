@@ -15,9 +15,9 @@ import java.util.List;
 final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     static int cardWidth(Activity a) {
         int screenDp=Math.round(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-        return Math.max(148,Math.min(214,(screenDp-76-55)/5-16));
+        return Math.max(130,Math.min(206,(screenDp-182-64)/5-18));
     }
-    static int rowHeight(Activity a) { return Math.round(cardWidth(a)*1.39f)+36; }
+    static int rowHeight(Activity a) { return Math.round(cardWidth(a)*1.39f)+58; }
     interface Focus { void onFocus(Catalog.Item item); }
     private final Activity activity; private final List<Catalog.Item> items; private final Focus focus;
     PosterAdapter(Activity a,List<Catalog.Item> items,Focus focus) { this.activity=a;this.items=items;this.focus=focus;setHasStableIds(true); }

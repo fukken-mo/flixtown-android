@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.EditText;
 import android.text.TextWatcher;
 import android.text.Editable;
+import android.graphics.drawable.GradientDrawable;
 import androidx.leanback.widget.HorizontalGridView;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,29 +28,44 @@ public class HomeActivity extends Activity {
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
     private void renderShell() {
         LinearLayout shell=Ui.row(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
-        rail=Ui.column(this);rail.setBackgroundColor(0xFF11151D);Ui.pad(rail,this,12,25,12,0);
-        shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,76),-1));
+        rail=Ui.column(this);rail.setBackgroundColor(0xFF11131B);Ui.pad(rail,this,12,20,12,0);
+        shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,182),-1));
+        ImageView railLogo=new ImageView(this);
+        railLogo.setImageResource(R.drawable.flix_logo);
+        railLogo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams logoParams=new LinearLayout.LayoutParams(-1,Ui.dp(this,95));
+        logoParams.bottomMargin=Ui.dp(this,20);rail.addView(railLogo,logoParams);
         LinearLayout content=Ui.column(this);shell.addView(content,new LinearLayout.LayoutParams(0,-1,1));
         int screenDp=Math.round(getResources().getDisplayMetrics().heightPixels/getResources().getDisplayMetrics().density);
-        int heroHeight=Math.max(175,Math.min(222,Math.round(screenDp*.28f)));
+        int heroHeight=Math.max(175,Math.min(220,Math.round(screenDp*.27f)));
         FrameLayout top=new FrameLayout(this); content.addView(top,new LinearLayout.LayoutParams(-1,Ui.dp(this,heroHeight)));
-        backdrop=new ImageView(this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.52f);top.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
-        LinearLayout info=Ui.column(this);Ui.pad(info,this,35,32,30,12);top.addView(info,new FrameLayout.LayoutParams(-1,-1));
-        ImageView brand = new ImageView(this);
-        brand.setImageResource(R.drawable.flix_logo);
-        brand.setScaleType(ImageView.ScaleType.FIT_START);
-        info.addView(brand,new LinearLayout.LayoutParams(Ui.dp(this,165),Ui.dp(this,83)));
-        hero=Ui.heading(this,"Flix Town",27);info.addView(hero);
-        expiry=Ui.text(this,"",15);info.addView(expiry);
-        notice=Ui.text(this,"",16); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,12);info.addView(notice,np);
+        backdrop=new ImageView(this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.38f);top.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
+        View scrim=new View(this);
+        scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[]{0xF808090D,0xD408090D,0x8008090D}));
+        top.addView(scrim,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout info=Ui.column(this);Ui.pad(info,this,35,0,30,21);
+        FrameLayout.LayoutParams infoParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
+        top.addView(info,infoParams);
+        TextView featured=Ui.text(this,"FEATURED",12);featured.setTextColor(0xFFFF5965);info.addView(featured);
+        hero=Ui.heading(this,"Flix Town",30);hero.setMaxLines(2);hero.setEllipsize(android.text.TextUtils.TruncateAt.END);info.addView(hero);
+        expiry=Ui.text(this,"",14);info.addView(expiry);
+        notice=Ui.text(this,"",15);notice.setMaxLines(2); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,7);info.addView(notice,np);
         scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,24,0,18,20);scroll.addView(rows);
+        rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,24,12,24,24);scroll.addView(rows);
         for(String name:new String[]{"Home","Search","Movies","Series","Favorites","Settings"}) {
-            TextView button=Ui.text(this,name.equals("Home")?"⌂":name.substring(0,1),21);button.setGravity(Gravity.CENTER);button.setFocusable(true);
-            LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,Ui.dp(this,54));rail.addView(button,bp);
+            TextView button=Ui.text(this,name,17);button.setGravity(Gravity.CENTER_VERTICAL);button.setTypeface(null,android.graphics.Typeface.BOLD);
+            Ui.pad(button,this,19,0,0,0);button.setFocusable(true);
+            LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,Ui.dp(this,52));bp.bottomMargin=Ui.dp(this,7);rail.addView(button,bp);
             button.setContentDescription(name);
-            button.setOnFocusChangeListener((v,f)->v.setBackground(Ui.rounded(f?Ui.RED:0xFF11151D,7,this)));
-            button.setOnClickListener(v->{tab=name;drawRows();});
+            button.setBackground(Ui.rounded(name.equals(tab)?0xFF351B29:0xFF11131B,11,this));
+            button.setOnFocusChangeListener((v,f)->{
+                v.setBackground(Ui.rounded(f?Ui.RED:(name.equals(tab)?0xFF351B29:0xFF11131B),11,this));
+                button.setTextColor(f?0xFFFFFFFF:0xFFE1E1E8);
+            });
+            button.setOnClickListener(v->{tab=name;for(int i=1;i<rail.getChildCount();i++){
+                View entry=rail.getChildAt(i);if(entry!=v && !entry.hasFocus())entry.setBackground(Ui.rounded(0xFF11131B,11,this));
+            }drawRows();});
         }
     }
     private void loadCache() {
@@ -122,7 +138,7 @@ public class HomeActivity extends Activity {
     }
     private void addRow(String title,List<Catalog.Item> items) {
         if(items.isEmpty())return;
-        TextView heading=Ui.heading(this,title,20);Ui.pad(heading,this,4,12,0,0);rows.addView(heading);
+        TextView heading=Ui.heading(this,title,21);Ui.pad(heading,this,4,19,0,12);rows.addView(heading);
         HorizontalGridView grid=new HorizontalGridView(this);grid.setNumRows(1);grid.setClipChildren(false);grid.setClipToPadding(false);
         grid.setItemAnimator(null);grid.setHasFixedSize(true);
         grid.setAdapter(new PosterAdapter(this,items,item->{
@@ -131,7 +147,8 @@ public class HomeActivity extends Activity {
             handler.removeCallbacksAndMessages(null);
             handler.postDelayed(()->Images.load(backdrop,item.backdrop,800),180);
         }));
-        rows.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(this,PosterAdapter.rowHeight(this))));
+        LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,Ui.dp(this,PosterAdapter.rowHeight(this)));
+        gp.bottomMargin=Ui.dp(this,15);rows.addView(grid,gp);
         for(int i=0;i<items.size()&&!avoidFocusSteal;i++)if((items.get(i).kind+":"+items.get(i).id).equals(lastFocused)){
             final int position=i;focusQueued=true;grid.post(()->{grid.setSelectedPosition(position);grid.requestFocus();});break;
         }
