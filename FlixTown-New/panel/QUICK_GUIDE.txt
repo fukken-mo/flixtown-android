@@ -1,0 +1,12 @@
+FLIX TOWN PANEL: panelsandapps.com
+
+Target folder: public_html/panels/flixtown2027/
+
+1. In cPanel, make a new MySQL database and database user. Grant the user all privileges on that database.
+2. In phpMyAdmin, open the new database and import schema.sql.
+3. Copy private/config.example.php to private/config.php. Fill in the database name, user and password. Generate a random app_key and a password_hash for the admin login as explained in the root README.
+4. Upload the api, admin and private folders into public_html/panels/flixtown2027/. Keep schema.sql and this guide off the public site.
+5. Block public web access to private/ and confirm HTTPS works. Open https://panelsandapps.com/panels/flixtown2027/admin/ and sign in.
+6. Set the Xtream server URL and other settings. The public QR page on myflixtown.com is a separate upload.
+
+STATUS: Development checkpoint. Do not upload until PHP lint, cPanel database, QR integration and TV app tests have passed.

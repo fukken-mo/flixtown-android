@@ -23,7 +23,7 @@ public class HomeActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
     private LinearLayout rows,rail; private ImageView backdrop; private TextView hero,notice;
-    private String tab="Home",lastFocused=""; private int generation;
+    private String tab="Home",lastFocused=""; private int generation; private boolean focusQueued;
     @Override public void onCreate(Bundle b) { super.onCreate(b); renderShell(); loadCache(); }
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
     private void renderShell() {
@@ -70,6 +70,7 @@ public class HomeActivity extends Activity {
         android.view.View focused=getCurrentFocus();
         if(focused!=null && focused.getTag() instanceof String)lastFocused=(String)focused.getTag();
         rows.removeAllViews();
+        focusQueued=false;
         if(tab.equals("Settings")){settingButtons();return;}
         if(tab.equals("Search")){searchUi();return;}
         if(tab.equals("Favorites")){addRow("Favorites",favorites());return;}
@@ -94,7 +95,10 @@ public class HomeActivity extends Activity {
         }));
         rows.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(this,260)));
         for(int i=0;i<items.size();i++)if((items.get(i).kind+":"+items.get(i).id).equals(lastFocused)){
-            final int position=i;grid.post(()->{grid.setSelectedPosition(position);grid.requestFocus();});break;
+            final int position=i;focusQueued=true;grid.post(()->{grid.setSelectedPosition(position);grid.requestFocus();});break;
+        }
+        if(!focusQueued && rows.getChildCount()==2 && (tab.equals("Home")||tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites"))){
+            focusQueued=true;grid.post(()->{grid.setSelectedPosition(0);grid.requestFocus();});
         }
     }
     private void searchUi(){

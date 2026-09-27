@@ -1,0 +1,9 @@
+FLIX TOWN QR PAGE: myflixtown.com
+
+Target folder: myflixtown.com document root, often public_html/ for that domain.
+
+1. Upload activate.php to the document root.
+2. Open https://myflixtown.com/activate.php. The page should show a code, username and password form.
+3. Test the full TV pairing flow after the panel files and APK are installed. The QR page sends credentials only to the Flix Town panel URL over HTTPS.
+
+STATUS: Development checkpoint. Do not upload until the matching panel and app have been verified together.

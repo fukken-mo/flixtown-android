@@ -1,0 +1,27 @@
+<?php
+require __DIR__ . '/bootstrap.php';
+if (($_SERVER['HTTP_ORIGIN'] ?? '') !== $config['qr_origin']) response(['error' => 'Origin denied'], 403);
+$input = postData();
+$code = $input['code'] ?? '';
+$username = trim((string)($input['username'] ?? ''));
+$password = (string)($input['password'] ?? '');
+if (!preg_match('/^[0-9]{8}$/D', $code) || $username === '' || $password === '' || strlen($username) > 128 || strlen($password) > 256) response(['error' => 'Check the code and credentials'], 400);
+$q = $db->prepare("SELECT id,attempts FROM pairings WHERE code=? AND status='pending' AND expires_at > UTC_TIMESTAMP()");
+$q->execute([$code]);
+$pairing = $q->fetch();
+if (!$pairing) response(['error' => 'Pairing code expired'], 404);
+if ((int)$pairing['attempts'] >= 5) response(['error' => 'Too many attempts. Request a new TV code'], 429);
+$db->prepare('UPDATE pairings SET attempts=attempts+1 WHERE id=?')->execute([$pairing['id']]);
+$url = rtrim(setting($db, 'xtream_url'), '/') . '/player_api.php?' . http_build_query(['username' => $username, 'password' => $password]);
+$ch = curl_init($url);
+curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 12, CURLOPT_FOLLOWLOCATION => false, CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS]);
+$body = curl_exec($ch);
+$status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+curl_close($ch);
+$account = is_string($body) && $status === 200 ? json_decode($body, true) : null;
+if (($account['user_info']['auth'] ?? 0) != 1 || ($account['user_info']['status'] ?? '') !== 'Active') response(['error' => 'Account could not be verified'], 401);
+$encrypted = encryptCredentials(['username' => $username, 'password' => $password], $config['app_key']);
+$q = $db->prepare("UPDATE pairings SET status='approved',credentials=? WHERE code=? AND status='pending' AND expires_at > UTC_TIMESTAMP()");
+$q->execute([$encrypted, $code]);
+if ($q->rowCount() !== 1) response(['error' => 'Pairing code expired'], 409);
+response(['status' => 'approved']);
