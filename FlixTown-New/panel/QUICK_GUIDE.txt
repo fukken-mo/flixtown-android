@@ -4,9 +4,9 @@ Target folder: the panelsandapps.com document root /panels/flixtown2027/
 Required: PHP 8.1+ with PDO MySQL, cURL and OpenSSL; HTTPS for both domains.
 
 1. In cPanel, make a new MySQL database and database user. Grant the user all privileges on that database.
-2. In phpMyAdmin, open the new database and import schema.sql.
+2. In phpMyAdmin, open the new database and import 02_IMPORT_SCHEMA.sql from this ZIP.
 3. Copy private/config.example.php to private/config.php. Fill in the database name, user and password. Generate a random app_key with `php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'` and an admin_password_hash with `php -r 'echo password_hash("YOUR_UNIQUE_PASSWORD", PASSWORD_DEFAULT), PHP_EOL;'` in cPanel Terminal. Replace the sample values in config.php.
-4. In cPanel > Domains, find the document root for panelsandapps.com. Make its panels/flixtown2027/ folder. Upload the api, admin and private folders there. Keep schema.sql and this guide off the public site.
+4. In cPanel > Domains, find the document root for panelsandapps.com. Make its panels/flixtown2027/ folder. Upload only the api, admin and private folders from UPLOAD_TO_panelsandapps.com_panels_flixtown2027/. Keep the SQL file and this guide off the public site.
 5. Block public web access to private/ and confirm HTTPS works. Open https://panelsandapps.com/panels/flixtown2027/admin/ and sign in.
 6. Set the Xtream server URL and other settings. The public QR page on myflixtown.com is a separate upload.
 

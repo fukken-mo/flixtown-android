@@ -35,7 +35,7 @@ if ($authorized) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
             if (!hash_equals((string)$_SESSION['csrf'], (string)($_POST['csrf'] ?? ''))) { http_response_code(403); exit('Invalid request'); }
             $values = [
-                'app_name' => mb_substr(trim((string)($_POST['app_name'] ?? 'Flix Town')),0,60),
+                'app_name' => clipText(trim((string)($_POST['app_name'] ?? 'Flix Town')),60),
                 'xtream_url' => trim((string)($_POST['xtream_url'] ?? '')),
                 'intro_url' => trim((string)($_POST['intro_url'] ?? '')),
                 'intro_enabled' => isset($_POST['intro_enabled']) ? '1' : '0',
@@ -46,7 +46,7 @@ if ($authorized) {
                 'price_3m' => trim((string)($_POST['price_3m'] ?? '')),
                 'price_6m' => trim((string)($_POST['price_6m'] ?? '')),
                 'price_12m' => trim((string)($_POST['price_12m'] ?? '')),
-                'announcement' => mb_substr(trim((string)($_POST['announcement'] ?? '')), 0, 500),
+                'announcement' => clipText(trim((string)($_POST['announcement'] ?? '')),500),
                 'maintenance' => isset($_POST['maintenance']) ? '1' : '0',
             ];
             foreach (['xtream_url', 'intro_url', 'logo_url', 'cashapp_url'] as $key) {
@@ -66,6 +66,11 @@ if ($authorized) {
     } catch (Throwable $e) { $error = 'Database is unavailable'; $values = []; }
 }
 function h(string $value): string { return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+function clipText(string $value,int $limit): string {
+    if (function_exists('mb_substr')) return mb_substr($value,0,$limit);
+    if (preg_match_all('/./us',$value,$parts) !== false) return implode('',array_slice($parts[0],0,$limit));
+    return substr($value,0,$limit);
+}
 ?><!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flix Town Panel</title>
 <style>body{font:16px system-ui;background:#090b10;color:#f5f5f5;margin:0}main{max-width:760px;margin:7vh auto;padding:30px;background:#171a21;border-radius:18px}h1{color:#e83342;margin-top:0}label{display:block;margin:18px 0 6px}input:not([type=checkbox]),textarea{box-sizing:border-box;width:100%;background:#252a35;border:1px solid #596070;color:#fff;padding:12px;font:inherit;border-radius:8px}textarea{height:90px}button{background:#d72536;color:white;border:0;border-radius:8px;padding:12px 22px;font:inherit;margin-top:20px;cursor:pointer}.notice{color:#eec479}a{color:#eaa7ac}small{color:#adb1b9}</style>
 <main><h1>Flix Town Panel</h1>
