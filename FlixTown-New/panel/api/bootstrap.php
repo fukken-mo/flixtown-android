@@ -2,7 +2,7 @@
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
-$configFile = dirname(__DIR__) . '/private/config.php';
+$configFile = getenv('FLIXTOWN_CONFIG') ?: dirname(__DIR__) . '/private/config.php';
 if (!is_file($configFile)) {
     http_response_code(503);
     exit(json_encode(['error' => 'Panel setup incomplete']));

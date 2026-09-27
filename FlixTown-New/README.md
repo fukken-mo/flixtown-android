@@ -8,7 +8,7 @@ Development status: Android source has not been compiled or tested on a TV. This
 
 1. Back up the current host folders and database before replacing files.
 2. Create a MySQL database and import `panel/schema.sql` through phpMyAdmin.
-3. Copy `panel/private/config.example.php` to `panel/private/config.php` and set database values. Generate the app key with `php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'`. Generate an admin hash with `php -r 'echo password_hash("YOUR_UNIQUE_PASSWORD", PASSWORD_DEFAULT), PHP_EOL;'`. Prefer placing `private` outside the document root; the included `.htaccess` is only a fallback.
+3. Copy `panel/private/config.example.php` to `panel/private/config.php` and set database values. Generate the app key with `php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'`. Generate an admin hash with `php -r 'echo password_hash("YOUR_UNIQUE_PASSWORD", PASSWORD_DEFAULT), PHP_EOL;'`. To keep the config outside the document root, set the `FLIXTOWN_CONFIG` server environment variable to its absolute path. The packaged cPanel layout instead protects `private` with `.htaccess`.
 4. Upload `panel/api`, `panel/admin` and `panel/private` to the chosen panel folder. Upload `qr-site/activate.php` to the myflixtown.com document root. Both domains need HTTPS.
 5. Configure the Xtream URL and intro settings at `/panels/flixtown2027/admin/`. Do not deploy this foundation until the TV app and end-to-end pairing have been tested.
 

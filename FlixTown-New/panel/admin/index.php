@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-$config = require dirname(__DIR__) . '/private/config.php';
+$config = require (getenv('FLIXTOWN_CONFIG') ?: dirname(__DIR__) . '/private/config.php');
 session_name('flixtown_admin');
 session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Strict', 'path' => '/panels/flixtown2027/admin/']);
 session_start();

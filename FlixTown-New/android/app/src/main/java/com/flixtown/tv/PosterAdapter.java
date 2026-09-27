@@ -29,7 +29,10 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     }
     @Override public void onBindViewHolder(Holder holder,int position) {
         Catalog.Item item=items.get(position);holder.title.setText(item.title);holder.itemView.setTag(item.kind+":"+item.id);Images.load(holder.poster,item.poster,240);
+        if(!holder.itemView.hasFocus()){holder.itemView.setScaleX(1f);holder.itemView.setScaleY(1f);holder.itemView.setElevation(0f);holder.itemView.setPadding(0,0,0,0);holder.poster.clearColorFilter();}
         holder.itemView.setOnFocusChangeListener((v,focused)->{
+            if(focused)holder.poster.setColorFilter(0x55D72536,android.graphics.PorterDuff.Mode.SRC_ATOP);
+            else holder.poster.clearColorFilter();
             v.setBackground(Ui.rounded(focused?Ui.RED:Color.TRANSPARENT,7,activity));
             v.setPadding(Ui.dp(activity,focused?4:0),Ui.dp(activity,focused?4:0),Ui.dp(activity,focused?4:0),Ui.dp(activity,focused?4:0));
             v.setElevation(Ui.dp(activity,focused?18:0));

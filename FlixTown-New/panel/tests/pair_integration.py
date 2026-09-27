@@ -42,3 +42,7 @@ print('Pairing integration passed')
 renewal = post('renewal-request', {'username': 'testuser', 'phone': '505-555-0123', 'plan': '3m'})
 assert renewal['status'] == 'pending'
 print('Renewal request integration passed')
+with urllib.request.urlopen(BASE + 'tmdb.php?kind=movie&title=Test') as response:
+    metadata = json.load(response)
+assert metadata == {'cast': [], 'trailer': ''}
+print('TMDB proxy without key passed')
