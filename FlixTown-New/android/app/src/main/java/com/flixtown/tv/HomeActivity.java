@@ -28,7 +28,7 @@ public class HomeActivity extends Activity {
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
     private List<Category> movieCategories=new ArrayList<>(),seriesCategories=new ArrayList<>();
     private String movieCategory="",seriesCategory="";
-    private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop,ambient; private TextView hero,notice,expiry; private RecyclerView firstGrid; private int visibleCount=60;
+    private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop,ambient; private TextView hero,heroMeta,notice,expiry; private RecyclerView firstGrid; private int visibleCount=60;
     private final List<TextView> railLabels=new ArrayList<>(); private ImageView railLogo; private boolean railExpanded=true;
     private final android.view.ViewTreeObserver.OnGlobalFocusChangeListener railFocus=(oldFocus,newFocus)->{
         if(newFocus!=null)setRailExpanded(isInRail(newFocus));
@@ -63,6 +63,7 @@ public class HomeActivity extends Activity {
         top.addView(info,infoParams);
         TextView featured=Ui.text(this,"FEATURED",12);featured.setTextColor(0xFFFF5965);info.addView(featured);
         hero=Ui.heading(this,"Flix Town",30);hero.setMaxLines(2);hero.setEllipsize(android.text.TextUtils.TruncateAt.END);info.addView(hero);
+        heroMeta=Ui.text(this,"Movies & Series",15);heroMeta.setTextColor(0xFFD4D0D5);info.addView(heroMeta);
         expiry=Ui.text(this,"",14);info.addView(expiry);
         notice=Ui.text(this,"",15);notice.setMaxLines(2); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,7);info.addView(notice,np);
         scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
@@ -155,8 +156,8 @@ public class HomeActivity extends Activity {
         if(tab.equals("Settings")){settingButtons();return;}
         if(tab.equals("Search")){searchUi();return;}
         if(tab.equals("Favorites")){addRow("Favorites",favorites());return;}
-        if(tab.equals("Movies")){categoryButtons(movieCategories,true);sortButton();List<Catalog.Item> filtered=filter(movies,movieCategory);if(filtered.isEmpty())emptyCategory();else addGrid("Movies",sorted(filtered));}
-        else if(tab.equals("Series")){categoryButtons(seriesCategories,false);sortButton();List<Catalog.Item> filtered=filter(series,seriesCategory);if(filtered.isEmpty())emptyCategory();else addGrid("Series",sorted(filtered));}
+        if(tab.equals("Movies")){categoryButtons(movieCategories,true);List<Catalog.Item> filtered=filter(movies,movieCategory);if(filtered.isEmpty())emptyCategory();else addGrid("Movies",sorted(filtered));}
+        else if(tab.equals("Series")){categoryButtons(seriesCategories,false);List<Catalog.Item> filtered=filter(series,seriesCategory);if(filtered.isEmpty())emptyCategory();else addGrid("Series",sorted(filtered));}
         else {
             List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);
             if(!continued.isEmpty())addRow("Continue Watching",continued);
@@ -200,7 +201,12 @@ public class HomeActivity extends Activity {
         List<Catalog.Item> out=new ArrayList<>();for(Catalog.Item item:items)if(category.equals(item.categoryId))out.add(item);return out;}
     private void emptyCategory(){TextView empty=Ui.text(this,"No titles in this category yet",19);Ui.pad(empty,this,8,35,0,0);rows.addView(empty);}
     private void categoryButtons(List<Category> categories,boolean isMovie){
-        TextView title=Ui.heading(this,isMovie?"Movie categories":"Series categories",20);Ui.pad(title,this,3,4,0,10);rows.addView(title);
+        LinearLayout headingRow=Ui.row(this);headingRow.setGravity(Gravity.CENTER_VERTICAL);rows.addView(headingRow);
+        TextView title=Ui.heading(this,isMovie?"Browse Movies":"Browse Series",27);Ui.pad(title,this,3,4,0,10);
+        headingRow.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+        sortButton(headingRow);
+        TextView categoryLabel=Ui.text(this,"CATEGORIES",12);categoryLabel.setTextColor(0xFFFF6773);
+        Ui.pad(categoryLabel,this,3,12,0,9);rows.addView(categoryLabel);
         android.widget.HorizontalScrollView scroller=new android.widget.HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
         LinearLayout chips=Ui.row(this);scroller.addView(chips);rows.addView(scroller);
         List<Category> options=new ArrayList<>();options.add(new Category("","All"));options.addAll(categories);
@@ -216,9 +222,9 @@ public class HomeActivity extends Activity {
         if(sortMode==2)return Catalog.topRated(items,items.size());
         return Catalog.recent(items,items.size());
     }
-    private void sortButton(){
-        android.widget.Button sort=Ui.button(this,"Sort: "+new String[]{"Recently Added","Title A-Z","Rating"}[sortMode]);
-        rows.addView(sort,new LinearLayout.LayoutParams(Ui.dp(this,220),Ui.dp(this,52)));
+    private void sortButton(LinearLayout parent){
+        android.widget.Button sort=Ui.button(this,"Sort: "+new String[]{"Newest","Title A–Z","Rating"}[sortMode]+"  ▾");
+        parent.addView(sort,new LinearLayout.LayoutParams(Ui.dp(this,210),Ui.dp(this,48)));
         sort.setOnClickListener(v->Ui.options(this,"Sort titles",new String[]{"Recently Added","Title A-Z","Rating"},which->{sortMode=which;drawRows();}));
     }
     private void addGrid(String title,List<Catalog.Item> items){
@@ -243,6 +249,7 @@ public class HomeActivity extends Activity {
         grid.setItemAnimator(null);grid.setHasFixedSize(true);
         grid.setAdapter(new PosterAdapter(this,items,item->{
             hero.setText(item.title);
+            heroMeta.setText((item.year>1900?item.year+"   ·   ":"")+(item.rating>0?String.format(java.util.Locale.US,"★ %.1f",item.rating):""));
             lastFocused=item.kind+":"+item.id;
             handler.removeCallbacksAndMessages(null);
             handler.postDelayed(()->{Images.load(backdrop,item.backdrop,800);Images.load(ambient,item.backdrop,800);},180);
