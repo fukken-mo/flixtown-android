@@ -18,7 +18,8 @@ Development status: Android source has not been compiled or tested on a TV. This
 - Phone opens the activation URL and submits code plus Xtream credentials to `/api/pair-activate.php`. The panel validates against Xtream and encrypts the credentials temporarily.
 - TV POSTs `{code,verifier}` to `/api/pair-poll.php` every few seconds. It receives the account once, then the panel clears the temporary ciphertext. Codes expire after ten minutes.
 - App GETs `/api/config.php` on each open. It renders cached catalog immediately and updates catalog in the background. The admin UI is a first pass; both domains and the Android app need integration and device testing.
-- Android source in `android/` uses native TV focus views, Leanback grids, Media3 playback, encrypted local account storage and a cached catalog. Search and Favorites are implemented, but remote navigation, subtitle focus, trailer handling, expiration/renewal, update flow and performance require device testing and further work.
+- Android source in `android/` uses native TV focus views, Leanback grids, Media3 playback, encrypted local account storage and a cached catalog. Search, Favorites, expiration/renewal, cast, trailer lookup and a first Up Next prompt are implemented. Remote navigation, subtitle focus, decoder compatibility, playback progress, update flow and performance require device testing and further work.
+- Renewal requests are manual. The panel records the request and phone number; an admin must verify payment and extend the same account in Xtream before marking it handled. Automatic Xtream extension requires the server's admin API details and credentials.
 
 ## Deployment notes
 

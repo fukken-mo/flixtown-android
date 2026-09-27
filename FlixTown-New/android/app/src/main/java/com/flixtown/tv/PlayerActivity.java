@@ -2,18 +2,25 @@ package com.flixtown.tv;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.KeyEvent;
 import android.widget.FrameLayout;
+import android.app.AlertDialog;
+import androidx.media3.common.C;
+import androidx.media3.common.Player;
 import androidx.media3.common.MediaItem;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.ui.PlayerView;
 
 public class PlayerActivity extends Activity {
-    private ExoPlayer player;private PlayerView playerView;private String url;private long position;
+    private ExoPlayer player;private PlayerView playerView;private String url,nextUrl;private long position;
+    private final Handler handler=new Handler(Looper.getMainLooper());
+    private AlertDialog nextDialog;private boolean promptShown,nextCanceled;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        url=getIntent().getStringExtra("url");if(url==null||url.isEmpty()){finish();return;}
+        url=getIntent().getStringExtra("url");nextUrl=getIntent().getStringExtra("next_url");if(url==null||url.isEmpty()){finish();return;}
         playerView=new PlayerView(this);playerView.setUseController(true);playerView.setControllerShowTimeoutMs(5000);
         FrameLayout root=new FrameLayout(this);root.addView(playerView,new FrameLayout.LayoutParams(-1,-1));setContentView(root);
     }
@@ -21,6 +28,10 @@ public class PlayerActivity extends Activity {
         DefaultRenderersFactory renderers=new DefaultRenderersFactory(this).setEnableDecoderFallback(true);
         player=new ExoPlayer.Builder(this,renderers).build();playerView.setPlayer(player);
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();if(position>0)player.seekTo(position);player.play();
+        player.addListener(new Player.Listener(){@Override public void onPlaybackStateChanged(int state){
+            if(state==Player.STATE_ENDED&&!nextCanceled&&nextUrl!=null&&!nextUrl.isEmpty())playNext();
+        }});
+        handler.post(progress);
     }
     @Override public boolean dispatchKeyEvent(KeyEvent e) {
         if(player!=null && e.getAction()==KeyEvent.ACTION_DOWN && !playerView.isControllerFullyVisible()) {
@@ -29,5 +40,29 @@ public class PlayerActivity extends Activity {
         }
         return super.dispatchKeyEvent(e);
     }
-    @Override protected void onStop(){if(player!=null){position=player.getCurrentPosition();playerView.setPlayer(null);player.release();player=null;}super.onStop();}
+    private final Runnable progress=new Runnable(){@Override public void run(){
+        if(player==null)return;
+        long duration=player.getDuration();long remaining=duration-player.getCurrentPosition();
+        if(nextUrl!=null&&!nextUrl.isEmpty()&&!nextCanceled&&duration!=C.TIME_UNSET&&remaining>0){
+            if(remaining<=25000&&!promptShown){
+                promptShown=true;
+                nextDialog=new AlertDialog.Builder(PlayerActivity.this).setTitle("Up next")
+                    .setMessage("Next episode starts soon")
+                    .setPositiveButton("Play now",(dialog,which)->playNext())
+                    .setNegativeButton("Cancel",(dialog,which)->nextCanceled=true)
+                    .setOnCancelListener(dialog->nextCanceled=true).create();
+                nextDialog.show();
+            }
+            if(nextDialog!=null&&nextDialog.isShowing())nextDialog.setMessage("Next episode in "+Math.max(1,remaining/1000)+" seconds");
+        }
+        handler.postDelayed(this,1000);
+    }};
+    private void playNext(){
+        if(nextUrl==null||nextUrl.isEmpty()||player==null)return;
+        if(nextDialog!=null)nextDialog.dismiss();
+        url=nextUrl;nextUrl="";promptShown=false;position=0;
+        player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
+    }
+    @Override protected void onStop(){handler.removeCallbacks(progress);if(nextDialog!=null)nextDialog.dismiss();nextDialog=null;promptShown=false;
+        if(player!=null){position=player.getCurrentPosition();playerView.setPlayer(null);player.release();player=null;}super.onStop();}
 }

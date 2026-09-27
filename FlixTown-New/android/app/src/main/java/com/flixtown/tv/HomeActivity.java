@@ -57,6 +57,11 @@ public class HomeActivity extends Activity {
             try {
                 org.json.JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");
                 Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
+                if(config.optBoolean("maintenance")){
+                    runOnUiThread(()->{rows.removeAllViews();rail.setVisibility(View.GONE);hero.setText("Flix Town is temporarily unavailable");notice.setText(config.optString("announcement","Please try again later."));});
+                    return;
+                }
+                runOnUiThread(()->rail.setVisibility(View.VISIBLE));
                 org.json.JSONObject account=Api.get(Api.accountUrl(this));
                 org.json.JSONObject user=account.optJSONObject("user_info");
                 if(user!=null){

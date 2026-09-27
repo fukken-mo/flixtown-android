@@ -13,14 +13,18 @@ if (!is_array($config) || !preg_match('/^[a-f0-9]{64}$/i', $config['app_key'] ??
     exit(json_encode(['error' => 'Invalid panel configuration']));
 }
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin !== '' && $origin === $config['qr_origin']) {
+function allowedQrOrigin(string $origin, array $config): bool {
+    $base = rtrim((string)$config['qr_origin'], '/');
+    return $origin !== '' && ($origin === $base || $origin === preg_replace('~^https://~', 'https://www.', $base));
+}
+if (allowedQrOrigin($origin, $config)) {
     header('Access-Control-Allow-Origin: ' . $origin);
     header('Vary: Origin');
     header('Access-Control-Allow-Methods: POST, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type');
 }
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code($origin === $config['qr_origin'] ? 204 : 403);
+    http_response_code(allowedQrOrigin($origin, $config) ? 204 : 403);
     exit;
 }
 try {

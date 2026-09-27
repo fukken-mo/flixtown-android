@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-if (($_SERVER['HTTP_ORIGIN'] ?? '') !== $config['qr_origin']) response(['error' => 'Origin denied'], 403);
+if (!allowedQrOrigin((string)($_SERVER['HTTP_ORIGIN'] ?? ''), $config)) response(['error' => 'Origin denied'], 403);
 $input = postData();
 $code = $input['code'] ?? '';
 $username = trim((string)($input['username'] ?? ''));

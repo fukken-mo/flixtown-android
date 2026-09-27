@@ -82,8 +82,17 @@ public class DetailsActivity extends Activity {
             if(movie!=null)extension=movie.optString("container_extension",extension);
         } else {
             JSONObject episodes=data.optJSONObject("episodes");
-            if(episodes!=null)for(java.util.Iterator<String> seasons=episodes.keys();seasons.hasNext();) {
-                String season=seasons.next();if("0".equals(season))continue;
+            if(episodes!=null){
+                java.util.List<String> seasons=new java.util.ArrayList<>();
+                for(java.util.Iterator<String> keys=episodes.keys();keys.hasNext();) {
+                    String value=keys.next();if(!"0".equals(value))seasons.add(value);
+                }
+                seasons.sort((a,b)->Integer.compare(parseSeason(a),parseSeason(b)));
+                java.util.List<JSONObject> ordered=new java.util.ArrayList<>();
+                for(String season:seasons){JSONArray list=episodes.optJSONArray(season);if(list!=null)for(int i=0;i<list.length();i++){
+                    JSONObject episode=list.optJSONObject(i);if(episode!=null)ordered.add(episode);
+                }}
+                for(String season:seasons){
                 JSONArray list=episodes.optJSONArray(season);if(list==null)continue;
                 TextView label=Ui.heading(this,"Season "+season,19);Ui.pad(label,this,0,15,0,8);episodeArea.addView(label);
                 HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
@@ -91,13 +100,17 @@ public class DetailsActivity extends Activity {
                 for(int i=0;i<Math.min(30,list.length());i++) {
                     JSONObject ep=list.optJSONObject(i);if(ep==null)continue;
                     String episodeId=ep.optString("id");String ext=ep.optJSONObject("info")!=null?ep.optJSONObject("info").optString("container_extension","mp4"):"mp4";
+                    int index=ordered.indexOf(ep);JSONObject next=index>=0&&index+1<ordered.size()?ordered.get(index+1):null;
+                    String nextId=next==null?"":next.optString("id");String nextExt=next!=null&&next.optJSONObject("info")!=null?next.optJSONObject("info").optString("container_extension","mp4"):"mp4";
                     Button button=Ui.button(this,(i+1)+"  "+ep.optString("title","Episode "+(i+1)));
                     LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,185),Ui.dp(this,72));bp.setMargins(0,0,Ui.dp(this,12),Ui.dp(this,14));row.addView(button,bp);
-                    button.setOnClickListener(v->play(episodeId,ext));
+                    button.setOnClickListener(v->playEpisode(episodeId,ext,nextId,nextExt));
+                }
                 }
             }
         }
     }
+    private static int parseSeason(String value){try{return Integer.parseInt(value);}catch(Exception e){return Integer.MAX_VALUE;}}
     private void cast(){Api.IO.execute(()->{try{
         int year=getIntent().getIntExtra("year",0);
         String endpoint=BuildConfig.PANEL_URL+"tmdb.php?kind="+Api.enc(kind)+"&title="+Api.enc(title)
@@ -120,6 +133,12 @@ public class DetailsActivity extends Activity {
         }
     }
     private void play(String streamId,String ext) { playUrl(Api.stream(this,"movie".equals(kind)?"movie":"series",streamId,ext==null||ext.isEmpty()?"mp4":ext)); }
+    private void playEpisode(String streamId,String ext,String nextId,String nextExt){
+        String url=Api.stream(this,"series",streamId,ext==null||ext.isEmpty()?"mp4":ext);
+        String next=nextId.isEmpty()?"":Api.stream(this,"series",nextId,nextExt);
+        Catalog.remember(this,new Catalog.Item(itemJson(),kind));
+        Intent intent=new Intent(this,PlayerActivity.class);intent.putExtra("url",url);intent.putExtra("title",title);intent.putExtra("next_url",next);startActivity(intent);
+    }
     private void playUrl(String url) { Catalog.remember(this,new Catalog.Item(itemJson(),kind));Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",url);i.putExtra("title",title);startActivity(i); }
     private JSONObject itemJson() { JSONObject j=new JSONObject();try {j.put("name",title).put("stream_id",id).put("series_id",id);}catch(Exception ignored){}return j; }
     private boolean isFavorite(){return Api.prefs(this).getString("favorites","").contains("|"+kind+":"+id+"|");}
