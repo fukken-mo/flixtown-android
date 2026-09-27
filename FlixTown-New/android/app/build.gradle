@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 
 android {
     namespace 'com.flixtown.tv'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'com.flixtown.tv'
         minSdk 23

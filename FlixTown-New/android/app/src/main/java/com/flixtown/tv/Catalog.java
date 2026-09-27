@@ -11,7 +11,7 @@ import java.util.List;
 final class Catalog {
     static final class Item {
         final String id,title,poster,backdrop,kind,extension;
-        final int year,added;
+        final int year,added; final double rating;
         Item(JSONObject j,String kind) {
             this.kind=kind; id=j.optString("stream_id",j.optString("series_id",""));
             title=j.optString("name",j.optString("title","Untitled"));
@@ -21,6 +21,7 @@ final class Catalog {
             backdrop=bg.isEmpty()?poster:bg;
             extension=j.optString("container_extension","mp4");
             year=j.optInt("year",0); added=j.optInt("added",j.optInt("last_modified",0));
+            double parsed;try{parsed=Double.parseDouble(j.optString("rating","0"));}catch(Exception e){parsed=0;}rating=parsed;
         }
     }
     static List<Item> parse(String json,String kind) {
@@ -31,6 +32,10 @@ final class Catalog {
     }
     static List<Item> recent(List<Item> original,int limit) {
         ArrayList<Item> sorted=new ArrayList<>(original); sorted.sort((a,b)->Integer.compare(b.added,a.added));
+        return sorted.subList(0,Math.min(limit,sorted.size()));
+    }
+    static List<Item> topRated(List<Item> original,int limit) {
+        ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->Double.compare(b.rating,a.rating));
         return sorted.subList(0,Math.min(limit,sorted.size()));
     }
     static List<Item> continueWatching(Context c,List<Item> movies,List<Item> series) {

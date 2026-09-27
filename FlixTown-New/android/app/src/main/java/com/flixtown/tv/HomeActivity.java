@@ -79,6 +79,7 @@ public class HomeActivity extends Activity {
         else {
             List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);
             if(!continued.isEmpty())addRow("Continue Watching",continued);
+            addRow("Trending Movies",Catalog.topRated(movies,20));
             addRow("Latest Movies",Catalog.recent(movies,25));addRow("Latest Series",Catalog.recent(series,25));
         }
     }

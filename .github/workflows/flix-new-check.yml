@@ -14,7 +14,11 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: '8.13'
+      - run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
       - run: find FlixTown-New/panel FlixTown-New/qr-site -name '*.php' -exec php -l {} \;
       - run: gradle assembleDebug --stacktrace
         working-directory: FlixTown-New/android
