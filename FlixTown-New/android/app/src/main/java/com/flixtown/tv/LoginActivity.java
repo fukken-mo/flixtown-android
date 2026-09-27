@@ -32,7 +32,10 @@ public class LoginActivity extends Activity {
     }
     private void render() {
         LinearLayout root = Ui.column(this); root.setBackgroundColor(Ui.BG); Ui.pad(root,this,96,55,96,35);
-        root.addView(Ui.heading(this,"FLIX TOWN",34));
+        ImageView brand = new ImageView(this);
+        brand.setImageResource(R.drawable.flix_logo);
+        brand.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        root.addView(brand,new LinearLayout.LayoutParams(Ui.dp(this,210),Ui.dp(this,104)));
         LinearLayout body = Ui.row(this); body.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout direct = Ui.column(this); Ui.pad(direct,this,0,20,50,0);
         direct.addView(Ui.heading(this,"Sign in",26));

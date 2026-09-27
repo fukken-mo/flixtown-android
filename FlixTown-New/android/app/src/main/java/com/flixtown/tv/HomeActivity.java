@@ -34,6 +34,10 @@ public class HomeActivity extends Activity {
         FrameLayout top=new FrameLayout(this); content.addView(top,new LinearLayout.LayoutParams(-1,Ui.dp(this,265)));
         backdrop=new ImageView(this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.52f);top.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout info=Ui.column(this);Ui.pad(info,this,35,32,30,12);top.addView(info,new FrameLayout.LayoutParams(-1,-1));
+        ImageView brand = new ImageView(this);
+        brand.setImageResource(R.drawable.flix_logo);
+        brand.setScaleType(ImageView.ScaleType.FIT_START);
+        info.addView(brand,new LinearLayout.LayoutParams(Ui.dp(this,165),Ui.dp(this,83)));
         hero=Ui.heading(this,"Flix Town",27);info.addView(hero);
         expiry=Ui.text(this,"",15);info.addView(expiry);
         notice=Ui.text(this,"",16); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,12);info.addView(notice,np);
