@@ -40,6 +40,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
             Intent intent=new Intent(activity,DetailsActivity.class);
             intent.putExtra("id",item.id);intent.putExtra("kind",item.kind);intent.putExtra("title",item.title);
             intent.putExtra("poster",item.poster);intent.putExtra("backdrop",item.backdrop);intent.putExtra("extension",item.extension);
+            intent.putExtra("year",item.year);
             activity.startActivity(intent);
         });
     }

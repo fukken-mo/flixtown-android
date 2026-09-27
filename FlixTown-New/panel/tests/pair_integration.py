@@ -39,3 +39,6 @@ try:
 except urllib.error.HTTPError as error:
     assert error.code == 404
 print('Pairing integration passed')
+renewal = post('renewal-request', {'username': 'testuser', 'phone': '505-555-0123', 'plan': '3m'})
+assert renewal['status'] == 'pending'
+print('Renewal request integration passed')

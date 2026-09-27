@@ -22,7 +22,7 @@ import java.util.List;
 public class HomeActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
-    private LinearLayout rows,rail; private ImageView backdrop; private TextView hero,notice;
+    private LinearLayout rows,rail; private ImageView backdrop; private TextView hero,notice,expiry;
     private String tab="Home",lastFocused=""; private int generation; private boolean focusQueued;
     @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache(); }
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
@@ -35,6 +35,7 @@ public class HomeActivity extends Activity {
         backdrop=new ImageView(this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.52f);top.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout info=Ui.column(this);Ui.pad(info,this,35,32,30,12);top.addView(info,new FrameLayout.LayoutParams(-1,-1));
         hero=Ui.heading(this,"Flix Town",27);info.addView(hero);
+        expiry=Ui.text(this,"",15);info.addView(expiry);
         notice=Ui.text(this,"",16); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,12);info.addView(notice,np);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,24,0,18,20);scroll.addView(rows);
@@ -65,7 +66,7 @@ public class HomeActivity extends Activity {
                     String date=user.optString("exp_date","");
                     if(date.matches("[0-9]{9,12}")){
                         String expires=new java.text.SimpleDateFormat("MMM d, yyyy",java.util.Locale.US).format(new java.util.Date(Long.parseLong(date)*1000));
-                        runOnUiThread(()->notice.setText("Expires " + expires));
+                        runOnUiThread(()->expiry.setText("Expires " + expires));
                     }
                 }
                 String movieJson=Api.request(Api.xtream(this,"get_vod_streams",""),null);

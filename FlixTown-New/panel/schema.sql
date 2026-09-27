@@ -30,6 +30,13 @@ CREATE TABLE IF NOT EXISTS renewal_requests (
   INDEX (status,created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS tmdb_cache (
+  cache_key CHAR(64) PRIMARY KEY,
+  payload MEDIUMTEXT NOT NULL,
+  expires_at DATETIME NOT NULL,
+  INDEX (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT IGNORE INTO settings (name,value) VALUES
 ('app_name','Flix Town'),
 ('xtream_url','http://streamtown.live:8080'),

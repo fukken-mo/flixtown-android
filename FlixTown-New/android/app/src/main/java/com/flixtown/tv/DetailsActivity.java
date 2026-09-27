@@ -16,11 +16,11 @@ import org.json.JSONObject;
 
 public class DetailsActivity extends Activity {
     private String id,kind,title,extension;
-    private LinearLayout episodeArea; private TextView summary; private Button trailerButton;
+    private LinearLayout episodeArea,castArea; private TextView summary; private Button trailerButton;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         id=getIntent().getStringExtra("id");kind=getIntent().getStringExtra("kind");title=getIntent().getStringExtra("title");extension=getIntent().getStringExtra("extension");
-        if(id==null||kind==null){finish();return;} draw();details();
+        if(id==null||kind==null){finish();return;} draw();details();cast();
     }
     private void draw() {
         FrameLayout shell=new FrameLayout(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
@@ -49,12 +49,13 @@ public class DetailsActivity extends Activity {
         trailerButton=Ui.button(this,"Trailer");LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(this,12);actions.addView(trailerButton,tp);
         trailerButton.setEnabled(false);
         trailerButton.setOnClickListener(v->{String url=trailerButton.getTag() instanceof String?(String)trailerButton.getTag():"";
-            if(url.startsWith("http"))playUrl(url);
-            else if(!url.isEmpty())startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://www.youtube.com/watch?v="+url)));
+            if(url.startsWith("http") && !url.contains("youtube.com/") && !url.contains("youtu.be/"))playUrl(url);
+            else if(!url.isEmpty())startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url.startsWith("http")?url:"https://www.youtube.com/watch?v="+url)));
         });
         Button favorite=Ui.button(this,isFavorite()?"Remove Favorite":"Add Favorite");
         LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(-2,-2);fp.leftMargin=Ui.dp(this,12);actions.addView(favorite,fp);
         favorite.setOnClickListener(v->{toggleFavorite();favorite.setText(isFavorite()?"Remove Favorite":"Add Favorite");});
+        castArea=Ui.column(this);content.addView(castArea);
         if("series".equals(kind)) {
             TextView heading=Ui.heading(this,"Episodes",23);Ui.pad(heading,this,0,55,0,16);content.addView(heading);
             episodeArea=Ui.column(this);content.addView(episodeArea);
@@ -95,6 +96,27 @@ public class DetailsActivity extends Activity {
                     button.setOnClickListener(v->play(episodeId,ext));
                 }
             }
+        }
+    }
+    private void cast(){Api.IO.execute(()->{try{
+        int year=getIntent().getIntExtra("year",0);
+        String endpoint=BuildConfig.PANEL_URL+"tmdb.php?kind="+Api.enc(kind)+"&title="+Api.enc(title)
+            +(year>1900?"&year="+year:"");
+        JSONObject tmdb=Api.get(endpoint);
+        runOnUiThread(()->showCast(tmdb));
+    }catch(Exception ignored){}});}
+    private void showCast(JSONObject data){
+        String trailer=data.optString("trailer","");if(!trailer.isEmpty() && (trailerButton.getTag()==null || "".equals(trailerButton.getTag()))){trailerButton.setTag(trailer);trailerButton.setEnabled(true);}
+        JSONArray cast=data.optJSONArray("cast");if(cast==null||cast.length()==0)return;
+        TextView heading=Ui.heading(this,"Cast",23);Ui.pad(heading,this,0,55,0,16);castArea.addView(heading);
+        HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);castArea.addView(scroller);
+        LinearLayout row=Ui.row(this);scroller.addView(row);
+        for(int i=0;i<Math.min(15,cast.length());i++){
+            JSONObject actor=cast.optJSONObject(i);if(actor==null)continue;
+            LinearLayout card=Ui.column(this);LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,120),Ui.dp(this,175));cp.rightMargin=Ui.dp(this,12);row.addView(card,cp);
+            ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setBackgroundColor(Ui.CARD);
+            card.addView(image,new LinearLayout.LayoutParams(-1,Ui.dp(this,125)));Images.load(image,actor.optString("image"),185);
+            TextView name=Ui.text(this,actor.optString("name"),14);card.addView(name);
         }
     }
     private void play(String streamId,String ext) { playUrl(Api.stream(this,"movie".equals(kind)?"movie":"series",streamId,ext==null||ext.isEmpty()?"mp4":ext)); }
