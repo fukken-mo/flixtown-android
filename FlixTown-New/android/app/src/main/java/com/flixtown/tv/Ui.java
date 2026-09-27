@@ -22,6 +22,11 @@ final class Ui {
     static LinearLayout row(Context c) { LinearLayout v = new LinearLayout(c); v.setOrientation(0); return v; }
     static TextView text(Context c, String text, int sp) { TextView v = new TextView(c); v.setText(text); v.setTextSize(sp); v.setTextColor(Color.WHITE); return v; }
     static GradientDrawable rounded(int color, int radius, Context c) { GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(c,radius)); return d; }
+    static GradientDrawable panel(Context c,int radius) {
+        GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+            new int[]{0xFF202029,0xFF14151B,0xFF0D0E13});
+        d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),0xFF38313B);return d;
+    }
     static Button button(Context c, String label) {
         Button b = new Button(c); b.setText(label); b.setTextColor(Color.WHITE); b.setTextSize(17);
         b.setAllCaps(false); b.setBackground(rounded(CARD, 8, c));
@@ -32,18 +37,20 @@ final class Ui {
     }
     static void options(Activity activity,String title,String[] labels,Choice action) {
         Dialog dialog=new Dialog(activity);
-        LinearLayout body=column(activity);pad(body,activity,28,25,28,26);
-        body.setBackground(rounded(0xFF191B23,19,activity));
+        LinearLayout body=column(activity);pad(body,activity,34,29,34,27);
+        body.setBackground(panel(activity,20));
+        View accent=new View(activity);accent.setBackground(rounded(RED,3,activity));
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(activity,45),dp(activity,3));ap.bottomMargin=dp(activity,18);body.addView(accent,ap);
         TextView heading=heading(activity,title,24);body.addView(heading);
         TextView hint=text(activity,"Select with your remote",14);hint.setTextColor(0xFFA9ABB5);
-        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.bottomMargin=dp(activity,16);body.addView(hint,hp);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,5);hp.bottomMargin=dp(activity,22);body.addView(hint,hp);
         for(int i=0;i<labels.length;i++){
             final int index=i;
             TextView option=text(activity,labels[i],17);option.setGravity(Gravity.CENTER_VERTICAL);
             option.setFocusable(true);pad(option,activity,18,0,12,0);
-            option.setBackground(rounded(0xFF282A34,9,activity));
-            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(activity,52));p.bottomMargin=dp(activity,6);body.addView(option,p);
-            option.setOnFocusChangeListener((v,focused)->v.setBackground(rounded(focused?RED:0xFF282A34,9,activity)));
+            option.setBackground(rounded(0xFF28252B,10,activity));
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(activity,54));p.bottomMargin=dp(activity,9);body.addView(option,p);
+            option.setOnFocusChangeListener((v,focused)->{v.setBackground(rounded(focused?RED:0xFF28252B,10,activity));v.animate().scaleX(focused?1.025f:1f).scaleY(focused?1.025f:1f).setDuration(110).start();});
             option.setOnClickListener(v->{dialog.dismiss();action.select(index);});
             if(i==0)option.post(option::requestFocus);
         }

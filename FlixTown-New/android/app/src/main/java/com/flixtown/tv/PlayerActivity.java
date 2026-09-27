@@ -234,13 +234,15 @@ public class PlayerActivity extends Activity {
         handler.removeCallbacks(hideControls);
         dialog=new Dialog(this);
         LinearLayout box=Ui.column(this);
-        Ui.pad(box,this,27,25,27,26);
-        box.setBackground(Ui.rounded(0xFF191B23,18,this));
+        Ui.pad(box,this,32,29,32,27);
+        box.setBackground(Ui.panel(this,19));
+        View accent=new View(this);accent.setBackground(Ui.rounded(Ui.RED,3,this));
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(Ui.dp(this,45),Ui.dp(this,3));ap.bottomMargin=Ui.dp(this,18);box.addView(accent,ap);
         TextView heading=Ui.heading(this,title,23);box.addView(heading);
         TextView hint=Ui.text(this,title.equals("Up next")?"Next episode starts automatically":"Choose with your remote",14);
         if(title.equals("Up next"))nextCountdown=hint;
         hint.setTextColor(0xFFACACB6);
-        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.bottomMargin=Ui.dp(this,14);box.addView(hint,hp);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=Ui.dp(this,5);hp.bottomMargin=Ui.dp(this,19);box.addView(hint,hp);
         int count=Math.min(options.size(),12);
         for(int i=0;i<count;i++){
             final int selected=i;
@@ -248,9 +250,9 @@ public class PlayerActivity extends Activity {
             Ui.pad(option,this,18,12,18,12);
             option.setFocusable(true);
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,Ui.dp(this,51));
-            p.bottomMargin=Ui.dp(this,4);box.addView(option,p);
-            option.setBackground(Ui.rounded(0xFF282A34,9,this));
-            option.setOnFocusChangeListener((v,focused)->v.setBackground(Ui.rounded(focused?Ui.RED:0xFF282A34,9,this)));
+            p.bottomMargin=Ui.dp(this,7);box.addView(option,p);
+            option.setBackground(Ui.rounded(0xFF28252B,10,this));
+            option.setOnFocusChangeListener((v,focused)->v.setBackground(Ui.rounded(focused?Ui.RED:0xFF28252B,10,this)));
             option.setOnClickListener(v->{Dialog active=dialog;choice.select(selected);if(active!=null && active.isShowing())active.dismiss();});
             if(i==0)option.post(option::requestFocus);
         }

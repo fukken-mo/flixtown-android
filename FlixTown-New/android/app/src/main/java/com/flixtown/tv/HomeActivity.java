@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.text.TextWatcher;
 import android.text.Editable;
 import android.graphics.drawable.GradientDrawable;
+import android.animation.ValueAnimator;
 import androidx.leanback.widget.HorizontalGridView;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,14 +26,22 @@ public class HomeActivity extends Activity {
     private List<Category> movieCategories=new ArrayList<>(),seriesCategories=new ArrayList<>();
     private String movieCategory="",seriesCategory="";
     private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop; private TextView hero,notice,expiry;
+    private final List<TextView> railLabels=new ArrayList<>(); private ImageView railLogo; private boolean railExpanded=true;
+    private final android.view.ViewTreeObserver.OnGlobalFocusChangeListener railFocus=(oldFocus,newFocus)->{
+        if(newFocus!=null)setRailExpanded(isInRail(newFocus));
+    };
     private String tab="Home",lastFocused=""; private int generation,sortMode; private boolean focusQueued,avoidFocusSteal;
-    @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache(); }
+    @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache();getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener(railFocus);rail.post(()->{if(rail.getChildCount()>1)rail.getChildAt(1).requestFocus();}); }
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
     private void renderShell() {
-        LinearLayout shell=Ui.row(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
-        rail=Ui.column(this);rail.setBackgroundColor(0xFF11131B);Ui.pad(rail,this,12,20,12,0);
-        shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,182),-1));
-        ImageView railLogo=new ImageView(this);
+        FrameLayout scene=new FrameLayout(this);scene.setBackgroundColor(Ui.BG);
+        ImageView ambient=new ImageView(this);ambient.setScaleType(ImageView.ScaleType.CENTER_CROP);ambient.setAlpha(.13f);
+        scene.addView(ambient,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout shell=Ui.row(this);scene.addView(shell,new FrameLayout.LayoutParams(-1,-1));setContentView(scene);
+        rail=Ui.column(this);rail.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+            new int[]{0xFF23131B,0xFF11131B,0xFF090A10}));Ui.pad(rail,this,12,20,12,0);
+        shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,194),-1));
+        railLogo=new ImageView(this);
         railLogo.setImageResource(R.drawable.flix_logo);
         railLogo.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams logoParams=new LinearLayout.LayoutParams(-1,Ui.dp(this,95));
@@ -54,7 +63,7 @@ public class HomeActivity extends Activity {
         expiry=Ui.text(this,"",14);info.addView(expiry);
         notice=Ui.text(this,"",15);notice.setMaxLines(2); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,7);info.addView(notice,np);
         scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,24,12,24,24);scroll.addView(rows);
+        rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,30,12,30,24);scroll.addView(rows);
         String[] names={"Home","Search","Movies","Series","Favorites","Settings"};
         int[] icons={android.R.drawable.ic_menu_view,android.R.drawable.ic_menu_search,
             android.R.drawable.ic_media_play,android.R.drawable.ic_menu_slideshow,
@@ -66,11 +75,13 @@ public class HomeActivity extends Activity {
             ImageView icon=new ImageView(this);icon.setImageResource(icons[n]);icon.setColorFilter(0xFFE6E6EC);
             button.addView(icon,new LinearLayout.LayoutParams(Ui.dp(this,23),Ui.dp(this,23)));
             TextView label=Ui.text(this,name,17);label.setTypeface(null,android.graphics.Typeface.BOLD);
+            railLabels.add(label);
             LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.leftMargin=Ui.dp(this,15);button.addView(label,lp);
             LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,Ui.dp(this,52));bp.bottomMargin=Ui.dp(this,7);rail.addView(button,bp);
             button.setContentDescription(name);
             button.setBackground(Ui.rounded(name.equals(tab)?0xFF351B29:0xFF11131B,11,this));
             button.setOnFocusChangeListener((v,f)->{
+                if(f) setRailExpanded(true);
                 v.setBackground(Ui.rounded(f?Ui.RED:(name.equals(tab)?0xFF351B29:0xFF11131B),11,this));
                 icon.setColorFilter(0xFFFFFFFF);label.setTextColor(f?0xFFFFFFFF:0xFFE1E1E8);
             });
@@ -78,6 +89,16 @@ public class HomeActivity extends Activity {
                 View entry=rail.getChildAt(i);if(entry!=v && !entry.hasFocus())entry.setBackground(Ui.rounded(0xFF11131B,11,this));
             }drawRows();});
         }
+    }
+    private void setRailExpanded(boolean expanded){
+        if(railExpanded==expanded || rail==null)return;
+        railExpanded=expanded;
+        int from=rail.getLayoutParams().width,to=Ui.dp(this,expanded?194:70);
+        for(TextView label:railLabels)label.setVisibility(expanded?View.VISIBLE:View.GONE);
+        railLogo.setVisibility(expanded?View.VISIBLE:View.GONE);
+        ValueAnimator animator=ValueAnimator.ofInt(from,to);animator.setDuration(170);
+        animator.addUpdateListener(a->{android.view.ViewGroup.LayoutParams lp=rail.getLayoutParams();lp.width=(int)a.getAnimatedValue();rail.setLayoutParams(lp);});
+        animator.start();
     }
     private void loadCache() {
         movies=Catalog.parse(Api.prefs(this).getString("movies","[]"),"movie");
@@ -184,7 +205,7 @@ public class HomeActivity extends Activity {
             hero.setText(item.title);
             lastFocused=item.kind+":"+item.id;
             handler.removeCallbacksAndMessages(null);
-            handler.postDelayed(()->Images.load(backdrop,item.backdrop,800),180);
+            handler.postDelayed(()->{Images.load(backdrop,item.backdrop,800);Images.load(ambient,item.backdrop,800);},180);
         }));
         LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,Ui.dp(this,PosterAdapter.rowHeight(this)));
         gp.bottomMargin=Ui.dp(this,15);rows.addView(grid,gp);
@@ -223,5 +244,5 @@ public class HomeActivity extends Activity {
         logout.setOnClickListener(v->{AccountStore.clear(this);startActivity(new android.content.Intent(this,LoginActivity.class));finish();});
     }
     @Override public void onBackPressed() { if(!tab.equals("Home")){tab="Home";drawRows();return;}Ui.options(this,"Exit Flix Town?",new String[]{"Stay","Exit"},which->{if(which==1)finish();}); }
-    @Override protected void onDestroy(){generation++;handler.removeCallbacksAndMessages(null);super.onDestroy();}
+    @Override protected void onDestroy(){generation++;handler.removeCallbacksAndMessages(null);getWindow().getDecorView().getViewTreeObserver().removeOnGlobalFocusChangeListener(railFocus);super.onDestroy();}
 }

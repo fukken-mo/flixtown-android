@@ -15,7 +15,7 @@ import java.util.List;
 final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     static int cardWidth(Activity a) {
         int screenDp=Math.round(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-        return Math.max(130,Math.min(206,(screenDp-182-64)/5-18));
+        return Math.max(130,Math.min(206,(screenDp-70-60)/5-34));
     }
     static int rowHeight(Activity a) { return Math.round(cardWidth(a)*1.39f)+58; }
     interface Focus { void onFocus(Catalog.Item item); }
@@ -27,7 +27,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         FrameLayout frame=new FrameLayout(activity); frame.setFocusable(true);frame.setClipChildren(false);frame.setClipToPadding(false);
         int width=cardWidth(activity);
         RecyclerView.LayoutParams fp=new RecyclerView.LayoutParams(Ui.dp(activity,width),Ui.dp(activity,Math.round(width*1.39f)));
-        fp.setMargins(Ui.dp(activity,8),Ui.dp(activity,13),Ui.dp(activity,8),Ui.dp(activity,13)); frame.setLayoutParams(fp);
+        fp.setMargins(Ui.dp(activity,17),Ui.dp(activity,15),Ui.dp(activity,17),Ui.dp(activity,15)); frame.setLayoutParams(fp);
         ImageView poster=new ImageView(activity); poster.setScaleType(ImageView.ScaleType.CENTER_CROP); poster.setBackgroundColor(Ui.CARD);
         frame.addView(poster,new FrameLayout.LayoutParams(-1,-1));
         TextView title=Ui.text(activity,"",14);title.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);title.setBackgroundColor(0x99000000); Ui.pad(title,activity,4,6,4,6);
