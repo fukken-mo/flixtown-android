@@ -39,7 +39,7 @@ public class HomeActivity extends Activity {
         scene.addView(ambient,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout shell=Ui.row(this);scene.addView(shell,new FrameLayout.LayoutParams(-1,-1));setContentView(scene);
         rail=Ui.column(this);rail.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-            new int[]{0xFF23131B,0xFF11131B,0xFF090A10}));Ui.pad(rail,this,12,20,12,0);
+            new int[]{0xEE30202A,0xEC15151E,0xF2080910}));Ui.pad(rail,this,12,20,12,0);
         shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,194),-1));
         railLogo=new ImageView(this);
         railLogo.setImageResource(R.drawable.flix_logo);
@@ -79,14 +79,14 @@ public class HomeActivity extends Activity {
             LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.leftMargin=Ui.dp(this,15);button.addView(label,lp);
             LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,Ui.dp(this,52));bp.bottomMargin=Ui.dp(this,7);rail.addView(button,bp);
             button.setContentDescription(name);
-            button.setBackground(Ui.rounded(name.equals(tab)?0xFF351B29:0xFF11131B,11,this));
+            button.setBackground(name.equals(tab)?Ui.rounded(0xCC542633,11,this):Ui.glass(this,11));
             button.setOnFocusChangeListener((v,f)->{
                 if(f) setRailExpanded(true);
-                v.setBackground(Ui.rounded(f?Ui.RED:(name.equals(tab)?0xFF351B29:0xFF11131B),11,this));
+                v.setBackground(f?Ui.rounded(Ui.RED,11,this):name.equals(tab)?Ui.rounded(0xCC542633,11,this):Ui.glass(this,11));
                 icon.setColorFilter(0xFFFFFFFF);label.setTextColor(f?0xFFFFFFFF:0xFFE1E1E8);
             });
             button.setOnClickListener(v->{tab=name;for(int i=1;i<rail.getChildCount();i++){
-                View entry=rail.getChildAt(i);if(entry!=v && !entry.hasFocus())entry.setBackground(Ui.rounded(0xFF11131B,11,this));
+                View entry=rail.getChildAt(i);if(entry!=v && !entry.hasFocus())entry.setBackground(Ui.glass(this,11));
             }drawRows();});
         }
     }

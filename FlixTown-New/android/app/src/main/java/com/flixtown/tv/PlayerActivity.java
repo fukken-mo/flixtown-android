@@ -131,13 +131,13 @@ public class PlayerActivity extends Activity {
         button.setTypeface(null,Typeface.BOLD);
         button.setGravity(Gravity.CENTER);
         button.setFocusable(true);
-        button.setBackground(Ui.rounded(0xCC242630,11,this));
+        button.setBackground(Ui.glass(this,11));
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,Ui.dp(this,49),1);
         bp.setMargins(Ui.dp(this,5),0,Ui.dp(this,5),0);
         parent.addView(button,bp);
         button.setOnClickListener(v->{click.run();showControls();});
         button.setOnFocusChangeListener((v,focused)->{
-            button.setBackground(Ui.rounded(focused?Ui.RED:0xCC242630,11,this));
+            button.setBackground(focused?Ui.rounded(Ui.RED,11,this):Ui.glass(this,11));
             v.animate().scaleX(focused?1.06f:1f).scaleY(focused?1.06f:1f).setDuration(100).start();
             if(focused)showControls();
         });
@@ -251,8 +251,8 @@ public class PlayerActivity extends Activity {
             option.setFocusable(true);
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,Ui.dp(this,51));
             p.bottomMargin=Ui.dp(this,7);box.addView(option,p);
-            option.setBackground(Ui.rounded(0xFF28252B,10,this));
-            option.setOnFocusChangeListener((v,focused)->v.setBackground(Ui.rounded(focused?Ui.RED:0xFF28252B,10,this)));
+            option.setBackground(Ui.glass(this,10));
+            option.setOnFocusChangeListener((v,focused)->v.setBackground(focused?Ui.rounded(Ui.RED,10,this):Ui.glass(this,10)));
             option.setOnClickListener(v->{Dialog active=dialog;choice.select(selected);if(active!=null && active.isShowing())active.dismiss();});
             if(i==0)option.post(option::requestFocus);
         }

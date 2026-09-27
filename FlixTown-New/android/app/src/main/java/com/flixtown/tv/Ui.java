@@ -22,16 +22,21 @@ final class Ui {
     static LinearLayout row(Context c) { LinearLayout v = new LinearLayout(c); v.setOrientation(0); return v; }
     static TextView text(Context c, String text, int sp) { TextView v = new TextView(c); v.setText(text); v.setTextSize(sp); v.setTextColor(Color.WHITE); return v; }
     static GradientDrawable rounded(int color, int radius, Context c) { GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(c,radius)); return d; }
+    static GradientDrawable glass(Context c,int radius) {
+        GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+            new int[]{0xB23A3944,0xA61C1D27,0xB00F1018});
+        d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),0x66C6BBC5);return d;
+    }
     static GradientDrawable panel(Context c,int radius) {
         GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-            new int[]{0xFF202029,0xFF14151B,0xFF0D0E13});
-        d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),0xFF38313B);return d;
+            new int[]{0xF12C2932,0xF0181922,0xF20C0E14});
+        d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),0x888B727B);return d;
     }
     static Button button(Context c, String label) {
         Button b = new Button(c); b.setText(label); b.setTextColor(Color.WHITE); b.setTextSize(17);
-        b.setAllCaps(false); b.setBackground(rounded(CARD, 8, c));
+        b.setAllCaps(false); b.setBackground(glass(c, 10));
         b.setOnFocusChangeListener((v,focused) -> {
-            v.setBackground(rounded(focused ? RED : CARD, 8, c));
+            v.setBackground(focused ? rounded(RED, 10, c) : glass(c, 10));
             v.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f).setDuration(100).start();
         }); return b;
     }
@@ -48,9 +53,9 @@ final class Ui {
             final int index=i;
             TextView option=text(activity,labels[i],17);option.setGravity(Gravity.CENTER_VERTICAL);
             option.setFocusable(true);pad(option,activity,18,0,12,0);
-            option.setBackground(rounded(0xFF28252B,10,activity));
+            option.setBackground(glass(activity,10));
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(activity,54));p.bottomMargin=dp(activity,9);body.addView(option,p);
-            option.setOnFocusChangeListener((v,focused)->{v.setBackground(rounded(focused?RED:0xFF28252B,10,activity));v.animate().scaleX(focused?1.025f:1f).scaleY(focused?1.025f:1f).setDuration(110).start();});
+            option.setOnFocusChangeListener((v,focused)->{v.setBackground(focused?rounded(RED,10,activity):glass(activity,10));v.animate().scaleX(focused?1.025f:1f).scaleY(focused?1.025f:1f).setDuration(110).start();});
             option.setOnClickListener(v->{dialog.dismiss();action.select(index);});
             if(i==0)option.post(option::requestFocus);
         }

@@ -120,7 +120,7 @@ public class DetailsActivity extends Activity {
     }
     private static int parseSeason(String value){try{return Integer.parseInt(value);}catch(Exception e){return Integer.MAX_VALUE;}}
     private FrameLayout episodeCard(JSONObject ep,int number){
-        FrameLayout frame=new FrameLayout(this);frame.setFocusable(true);frame.setBackgroundColor(Ui.CARD);
+        FrameLayout frame=new FrameLayout(this);frame.setFocusable(true);frame.setBackground(Ui.glass(this,10));
         ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setAlpha(.7f);
         frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
         JSONObject info=ep.optJSONObject("info");String art=info==null?"":info.optString("movie_image","");
@@ -131,7 +131,7 @@ public class DetailsActivity extends Activity {
         label.setBackgroundColor(0xB9000000);Ui.pad(label,this,8,6,8,6);
         frame.addView(label,new FrameLayout.LayoutParams(-1,Ui.dp(this,47),Gravity.BOTTOM));
         frame.setOnFocusChangeListener((v,focused)->{
-            v.setBackground(Ui.rounded(focused?Ui.RED:Ui.CARD,6,this));
+            v.setBackground(focused?Ui.rounded(Ui.RED,6,this):Ui.glass(this,10));
             v.setPadding(Ui.dp(this,focused?4:0),Ui.dp(this,focused?4:0),Ui.dp(this,focused?4:0),Ui.dp(this,focused?4:0));
             v.animate().scaleX(focused?1.05f:1f).scaleY(focused?1.05f:1f).setDuration(110).start();
         });
@@ -160,7 +160,7 @@ public class DetailsActivity extends Activity {
             card.addView(image,new LinearLayout.LayoutParams(Ui.dp(this,115),Ui.dp(this,115)));Images.load(image,actor.optString("image"),185);
             String actorName=actor.optString("name");int actorId=actor.optInt("id",0);
             TextView name=Ui.text(this,actorName,14);name.setGravity(Gravity.CENTER);name.setMaxLines(2);card.addView(name);
-            card.setOnFocusChangeListener((v,f)->{v.setBackground(Ui.rounded(f?Ui.RED:0x00000000,12,this));v.animate().scaleX(f?1.05f:1f).scaleY(f?1.05f:1f).setDuration(110).start();});
+            card.setOnFocusChangeListener((v,f)->{v.setBackground(f?Ui.rounded(Ui.RED,12,this):Ui.glass(this,12));v.animate().scaleX(f?1.05f:1f).scaleY(f?1.05f:1f).setDuration(110).start();});
             card.setOnClickListener(v->{Intent intent=new Intent(this,ActorActivity.class);intent.putExtra("actor_id",actorId);intent.putExtra("actor_name",actorName);startActivity(intent);});
         }
     }
