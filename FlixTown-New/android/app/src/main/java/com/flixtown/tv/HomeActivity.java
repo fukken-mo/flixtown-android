@@ -1,7 +1,6 @@
 package com.flixtown.tv;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -31,7 +30,9 @@ public class HomeActivity extends Activity {
         rail=Ui.column(this);rail.setBackgroundColor(0xFF11151D);Ui.pad(rail,this,12,25,12,0);
         shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,76),-1));
         LinearLayout content=Ui.column(this);shell.addView(content,new LinearLayout.LayoutParams(0,-1,1));
-        FrameLayout top=new FrameLayout(this); content.addView(top,new LinearLayout.LayoutParams(-1,Ui.dp(this,265)));
+        int screenDp=Math.round(getResources().getDisplayMetrics().heightPixels/getResources().getDisplayMetrics().density);
+        int heroHeight=Math.max(175,Math.min(222,Math.round(screenDp*.28f)));
+        FrameLayout top=new FrameLayout(this); content.addView(top,new LinearLayout.LayoutParams(-1,Ui.dp(this,heroHeight)));
         backdrop=new ImageView(this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.52f);top.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout info=Ui.column(this);Ui.pad(info,this,35,32,30,12);top.addView(info,new FrameLayout.LayoutParams(-1,-1));
         ImageView brand = new ImageView(this);
@@ -117,8 +118,7 @@ public class HomeActivity extends Activity {
     private void sortButton(){
         android.widget.Button sort=Ui.button(this,"Sort: "+new String[]{"Recently Added","Title A-Z","Rating"}[sortMode]);
         rows.addView(sort,new LinearLayout.LayoutParams(Ui.dp(this,220),Ui.dp(this,52)));
-        sort.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Sort titles")
-            .setItems(new String[]{"Recently Added","Title A-Z","Rating"},(dialog,which)->{sortMode=which;drawRows();}).show());
+        sort.setOnClickListener(v->Ui.options(this,"Sort titles",new String[]{"Recently Added","Title A-Z","Rating"},which->{sortMode=which;drawRows();}));
     }
     private void addRow(String title,List<Catalog.Item> items) {
         if(items.isEmpty())return;
@@ -131,7 +131,7 @@ public class HomeActivity extends Activity {
             handler.removeCallbacksAndMessages(null);
             handler.postDelayed(()->Images.load(backdrop,item.backdrop,800),180);
         }));
-        rows.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(this,260)));
+        rows.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(this,PosterAdapter.rowHeight(this))));
         for(int i=0;i<items.size()&&!avoidFocusSteal;i++)if((items.get(i).kind+":"+items.get(i).id).equals(lastFocused)){
             final int position=i;focusQueued=true;grid.post(()->{grid.setSelectedPosition(position);grid.requestFocus();});break;
         }
@@ -152,7 +152,7 @@ public class HomeActivity extends Activity {
                 if(found.isEmpty())return;
                 TextView heading=Ui.heading(HomeActivity.this,"Results",20);matches.addView(heading);
                 HorizontalGridView grid=new HorizontalGridView(HomeActivity.this);grid.setNumRows(1);grid.setClipChildren(false);grid.setAdapter(new PosterAdapter(HomeActivity.this,found,item->hero.setText(item.title)));
-                matches.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(HomeActivity.this,260)));
+                matches.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(HomeActivity.this,PosterAdapter.rowHeight(HomeActivity.this))));
             }
             public void afterTextChanged(Editable s){}
         });
@@ -166,6 +166,6 @@ public class HomeActivity extends Activity {
         android.widget.Button logout=Ui.button(this,"Sign out");rows.addView(logout);
         logout.setOnClickListener(v->{AccountStore.clear(this);startActivity(new android.content.Intent(this,LoginActivity.class));finish();});
     }
-    @Override public void onBackPressed() { if(!tab.equals("Home")){tab="Home";drawRows();return;}new AlertDialog.Builder(this).setMessage("Exit Flix Town?").setPositiveButton("Exit",(d,w)->finish()).setNegativeButton("Stay",null).show(); }
+    @Override public void onBackPressed() { if(!tab.equals("Home")){tab="Home";drawRows();return;}Ui.options(this,"Exit Flix Town?",new String[]{"Stay","Exit"},which->{if(which==1)finish();}); }
     @Override protected void onDestroy(){generation++;handler.removeCallbacksAndMessages(null);super.onDestroy();}
 }

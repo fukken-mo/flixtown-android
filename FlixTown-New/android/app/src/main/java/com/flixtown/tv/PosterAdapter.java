@@ -13,6 +13,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
+    static int cardWidth(Activity a) {
+        int screenDp=Math.round(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
+        return Math.max(148,Math.min(214,(screenDp-76-55)/5-16));
+    }
+    static int rowHeight(Activity a) { return Math.round(cardWidth(a)*1.39f)+36; }
     interface Focus { void onFocus(Catalog.Item item); }
     private final Activity activity; private final List<Catalog.Item> items; private final Focus focus;
     PosterAdapter(Activity a,List<Catalog.Item> items,Focus focus) { this.activity=a;this.items=items;this.focus=focus;setHasStableIds(true); }
@@ -20,7 +25,9 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     static final class Holder extends RecyclerView.ViewHolder { final ImageView poster; final TextView title; Holder(View v,ImageView poster,TextView title) { super(v);this.poster=poster;this.title=title; } }
     @Override public Holder onCreateViewHolder(ViewGroup parent,int viewType) {
         FrameLayout frame=new FrameLayout(activity); frame.setFocusable(true);frame.setClipChildren(false);frame.setClipToPadding(false);
-        RecyclerView.LayoutParams fp=new RecyclerView.LayoutParams(Ui.dp(activity,170),Ui.dp(activity,235)); fp.setMargins(Ui.dp(activity,8),Ui.dp(activity,12),Ui.dp(activity,8),Ui.dp(activity,12)); frame.setLayoutParams(fp);
+        int width=cardWidth(activity);
+        RecyclerView.LayoutParams fp=new RecyclerView.LayoutParams(Ui.dp(activity,width),Ui.dp(activity,Math.round(width*1.39f)));
+        fp.setMargins(Ui.dp(activity,8),Ui.dp(activity,13),Ui.dp(activity,8),Ui.dp(activity,13)); frame.setLayoutParams(fp);
         ImageView poster=new ImageView(activity); poster.setScaleType(ImageView.ScaleType.CENTER_CROP); poster.setBackgroundColor(Ui.CARD);
         frame.addView(poster,new FrameLayout.LayoutParams(-1,-1));
         TextView title=Ui.text(activity,"",14);title.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);title.setBackgroundColor(0x99000000); Ui.pad(title,activity,4,6,4,6);
