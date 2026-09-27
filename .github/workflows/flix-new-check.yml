@@ -45,6 +45,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: flix-town-preview-debug-key-v1
       - run: |
           SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
           yes | "$SDKMANAGER" --licenses >/dev/null || true
