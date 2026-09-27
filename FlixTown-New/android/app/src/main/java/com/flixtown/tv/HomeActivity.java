@@ -25,7 +25,7 @@ public class HomeActivity extends Activity {
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
     private List<Category> movieCategories=new ArrayList<>(),seriesCategories=new ArrayList<>();
     private String movieCategory="",seriesCategory="";
-    private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop; private TextView hero,notice,expiry;
+    private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop,ambient; private TextView hero,notice,expiry;
     private final List<TextView> railLabels=new ArrayList<>(); private ImageView railLogo; private boolean railExpanded=true;
     private final android.view.ViewTreeObserver.OnGlobalFocusChangeListener railFocus=(oldFocus,newFocus)->{
         if(newFocus!=null)setRailExpanded(isInRail(newFocus));
@@ -35,7 +35,7 @@ public class HomeActivity extends Activity {
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
     private void renderShell() {
         FrameLayout scene=new FrameLayout(this);scene.setBackgroundColor(Ui.BG);
-        ImageView ambient=new ImageView(this);ambient.setScaleType(ImageView.ScaleType.CENTER_CROP);ambient.setAlpha(.13f);
+        ambient=new ImageView(this);ambient.setScaleType(ImageView.ScaleType.CENTER_CROP);ambient.setAlpha(.13f);
         scene.addView(ambient,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout shell=Ui.row(this);scene.addView(shell,new FrameLayout.LayoutParams(-1,-1));setContentView(scene);
         rail=Ui.column(this);rail.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
