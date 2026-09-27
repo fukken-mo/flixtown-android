@@ -8,10 +8,12 @@ if (!in_array($kind, ['movie','series'], true) || $title === '' || strlen($title
 $key = setting($db, 'tmdb_key');
 if ($key === '') response(['cast' => [], 'trailer' => '']);
 $cacheKey = hash('sha256', $kind . '|' . strtolower($title) . '|' . $year);
-$q = $db->prepare('SELECT payload FROM tmdb_cache WHERE cache_key=? AND expires_at > UTC_TIMESTAMP()');
-$q->execute([$cacheKey]);
-$cached = $q->fetchColumn();
-if ($cached !== false) { echo $cached; exit; }
+try {
+    $q = $db->prepare('SELECT payload FROM tmdb_cache WHERE cache_key=? AND expires_at > UTC_TIMESTAMP()');
+    $q->execute([$cacheKey]);
+    $cached = $q->fetchColumn();
+    if ($cached !== false) { echo $cached; exit; }
+} catch (PDOException $e) { /* A missing optional cache table must not hide the cast. */ }
 function tmdbGet(string $path, array $query): array {
     $url = 'https://api.themoviedb.org/3/' . $path . '?' . http_build_query($query);
     $ch = curl_init($url);
@@ -40,6 +42,8 @@ if (is_array($result) && !empty($result['id'])) {
     }
 }
 $payload = json_encode(['cast' => $cast, 'trailer' => $trailer], JSON_UNESCAPED_SLASHES);
-$save = $db->prepare('INSERT INTO tmdb_cache (cache_key,payload,expires_at) VALUES (?,?,UTC_TIMESTAMP() + INTERVAL 7 DAY) ON DUPLICATE KEY UPDATE payload=VALUES(payload),expires_at=VALUES(expires_at)');
-$save->execute([$cacheKey,$payload]);
+try {
+    $save = $db->prepare('INSERT INTO tmdb_cache (cache_key,payload,expires_at) VALUES (?,?,UTC_TIMESTAMP() + INTERVAL 7 DAY) ON DUPLICATE KEY UPDATE payload=VALUES(payload),expires_at=VALUES(expires_at)');
+    $save->execute([$cacheKey,$payload]);
+} catch (PDOException $e) { /* Continue serving the live response. */ }
 echo $payload;

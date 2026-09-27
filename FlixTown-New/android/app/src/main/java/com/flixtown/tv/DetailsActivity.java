@@ -85,6 +85,16 @@ public class DetailsActivity extends Activity {
         if(!trailer.isEmpty()){trailerButton.setTag(trailer);trailerButton.setEnabled(true);}
         String plot=info.optString("plot",info.optString("description",""));
         summary.setText(plot.length()>300?plot.substring(0,300)+"…":plot);
+        if(castArea.getChildCount()==0){
+            String actorNames=info.optString("cast",info.optString("actors",""));
+            if(!actorNames.isEmpty()){
+                JSONArray fallback=new JSONArray();
+                for(String actorName:actorNames.split(","))if(!actorName.trim().isEmpty()){
+                    JSONObject actor=new JSONObject();try{actor.put("name",actorName.trim());}catch(Exception ignored){}fallback.put(actor);
+                }
+                JSONObject payload=new JSONObject();try{payload.put("cast",fallback);}catch(Exception ignored){}showCast(payload);
+            }
+        }
         if("movie".equals(kind)) {
             JSONObject movie=data.optJSONObject("movie_data");
             if(movie!=null)extension=movie.optString("container_extension",extension);
@@ -143,10 +153,11 @@ public class DetailsActivity extends Activity {
             +(year>1900?"&year="+year:"");
         JSONObject tmdb=Api.get(endpoint);
         runOnUiThread(()->showCast(tmdb));
-    }catch(Exception ignored){}});}
+    }catch(Exception e){android.util.Log.w("FlixTownCast","Cast lookup failed",e);}});}
     private void showCast(JSONObject data){
         String trailer=data.optString("trailer","");if(!trailer.isEmpty() && (trailerButton.getTag()==null || "".equals(trailerButton.getTag()))){trailerButton.setTag(trailer);trailerButton.setEnabled(true);}
         JSONArray cast=data.optJSONArray("cast");if(cast==null||cast.length()==0)return;
+        castArea.removeAllViews();
         TextView heading=Ui.heading(this,"Cast",23);Ui.pad(heading,this,0,55,0,16);castArea.addView(heading);
         HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);castArea.addView(scroller);
         LinearLayout row=Ui.row(this);scroller.addView(row);
