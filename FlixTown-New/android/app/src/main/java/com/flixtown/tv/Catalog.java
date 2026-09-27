@@ -10,7 +10,7 @@ import java.util.List;
 
 final class Catalog {
     static final class Item {
-        final String id,title,poster,backdrop,kind,extension;
+        final String id,title,poster,backdrop,kind,extension,categoryId;
         final int year,added; final double rating;
         Item(JSONObject j,String kind) {
             this.kind=kind; id=j.optString("stream_id",j.optString("series_id",""));
@@ -20,6 +20,7 @@ final class Catalog {
             if (bg.startsWith("[")) { JSONArray a=j.optJSONArray("backdrop_path"); bg=a!=null ? a.optString(0,"") : ""; }
             backdrop=bg.isEmpty()?poster:bg;
             extension=j.optString("container_extension","mp4");
+            categoryId=j.optString("category_id","");
             year=j.optInt("year",0); added=j.optInt("added",j.optInt("last_modified",0));
             double parsed;try{parsed=Double.parseDouble(j.optString("rating","0"));}catch(Exception e){parsed=0;}rating=parsed;
         }

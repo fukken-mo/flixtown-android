@@ -22,6 +22,8 @@ import java.util.List;
 public class HomeActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
+    private List<Category> movieCategories=new ArrayList<>(),seriesCategories=new ArrayList<>();
+    private String movieCategory="",seriesCategory="";
     private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop; private TextView hero,notice,expiry;
     private String tab="Home",lastFocused=""; private int generation,sortMode; private boolean focusQueued,avoidFocusSteal;
     @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache(); }
@@ -53,15 +55,24 @@ public class HomeActivity extends Activity {
         notice=Ui.text(this,"",15);notice.setMaxLines(2); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,7);info.addView(notice,np);
         scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,24,12,24,24);scroll.addView(rows);
-        for(String name:new String[]{"Home","Search","Movies","Series","Favorites","Settings"}) {
-            TextView button=Ui.text(this,name,17);button.setGravity(Gravity.CENTER_VERTICAL);button.setTypeface(null,android.graphics.Typeface.BOLD);
-            Ui.pad(button,this,19,0,0,0);button.setFocusable(true);
+        String[] names={"Home","Search","Movies","Series","Favorites","Settings"};
+        int[] icons={android.R.drawable.ic_menu_view,android.R.drawable.ic_menu_search,
+            android.R.drawable.ic_media_play,android.R.drawable.ic_menu_slideshow,
+            android.R.drawable.btn_star_big_on,android.R.drawable.ic_menu_manage};
+        for(int n=0;n<names.length;n++) {
+            String name=names[n];
+            LinearLayout button=Ui.row(this);button.setGravity(Gravity.CENTER_VERTICAL);button.setFocusable(true);
+            Ui.pad(button,this,16,0,9,0);
+            ImageView icon=new ImageView(this);icon.setImageResource(icons[n]);icon.setColorFilter(0xFFE6E6EC);
+            button.addView(icon,new LinearLayout.LayoutParams(Ui.dp(this,23),Ui.dp(this,23)));
+            TextView label=Ui.text(this,name,17);label.setTypeface(null,android.graphics.Typeface.BOLD);
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.leftMargin=Ui.dp(this,15);button.addView(label,lp);
             LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,Ui.dp(this,52));bp.bottomMargin=Ui.dp(this,7);rail.addView(button,bp);
             button.setContentDescription(name);
             button.setBackground(Ui.rounded(name.equals(tab)?0xFF351B29:0xFF11131B,11,this));
             button.setOnFocusChangeListener((v,f)->{
                 v.setBackground(Ui.rounded(f?Ui.RED:(name.equals(tab)?0xFF351B29:0xFF11131B),11,this));
-                button.setTextColor(f?0xFFFFFFFF:0xFFE1E1E8);
+                icon.setColorFilter(0xFFFFFFFF);label.setTextColor(f?0xFFFFFFFF:0xFFE1E1E8);
             });
             button.setOnClickListener(v->{tab=name;for(int i=1;i<rail.getChildCount();i++){
                 View entry=rail.getChildAt(i);if(entry!=v && !entry.hasFocus())entry.setBackground(Ui.rounded(0xFF11131B,11,this));
@@ -71,6 +82,8 @@ public class HomeActivity extends Activity {
     private void loadCache() {
         movies=Catalog.parse(Api.prefs(this).getString("movies","[]"),"movie");
         series=Catalog.parse(Api.prefs(this).getString("series","[]"),"series");drawRows();
+        movieCategories=parseCategories(Api.prefs(this).getString("movie_categories","[]"));
+        seriesCategories=parseCategories(Api.prefs(this).getString("series_categories","[]"));
     }
     private void refresh() {
         int token=++generation;
@@ -97,10 +110,15 @@ public class HomeActivity extends Activity {
                 }
                 String movieJson=Api.request(Api.xtream(this,"get_vod_streams",""),null);
                 String seriesJson=Api.request(Api.xtream(this,"get_series",""),null);
+                String movieCategoryJson="[]",seriesCategoryJson="[]";
+                try{movieCategoryJson=Api.request(Api.xtream(this,"get_vod_categories",""),null);}catch(Exception ignored){}
+                try{seriesCategoryJson=Api.request(Api.xtream(this,"get_series_categories",""),null);}catch(Exception ignored){}
                 List<Catalog.Item> m=Catalog.parse(movieJson,"movie"),s=Catalog.parse(seriesJson,"series");
                 if(m.isEmpty() && s.isEmpty()) throw new IllegalStateException("No movies or series available");
                 Api.cache(this,"movies",movieJson);Api.cache(this,"series",seriesJson);
-                runOnUiThread(()->{if(token!=generation||isFinishing())return;movies=m;series=s;notice.setText(config.optString("announcement",""));drawRows();});
+                List<Category> mc=parseCategories(movieCategoryJson),sc=parseCategories(seriesCategoryJson);
+                Api.cache(this,"movie_categories",movieCategoryJson);Api.cache(this,"series_categories",seriesCategoryJson);
+                runOnUiThread(()->{if(token!=generation||isFinishing())return;movies=m;series=s;movieCategories=mc;seriesCategories=sc;notice.setText(config.optString("announcement",""));drawRows();});
             } catch(Exception e) { runOnUiThread(()->{if(movies.isEmpty()&&series.isEmpty())notice.setText("Could not load the catalog. Check your connection.");}); }
         });
     }
@@ -115,8 +133,8 @@ public class HomeActivity extends Activity {
         if(tab.equals("Settings")){settingButtons();return;}
         if(tab.equals("Search")){searchUi();return;}
         if(tab.equals("Favorites")){addRow("Favorites",favorites());return;}
-        if(tab.equals("Movies")){sortButton();addRow("Movies",sorted(movies));}
-        else if(tab.equals("Series")){sortButton();addRow("Series",sorted(series));}
+        if(tab.equals("Movies")){categoryButtons(movieCategories,true);sortButton();addRow("Movies",sorted(filter(movies,movieCategory)));}
+        else if(tab.equals("Series")){categoryButtons(seriesCategories,false);sortButton();addRow("Series",sorted(filter(series,seriesCategory)));}
         else {
             List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);
             if(!continued.isEmpty())addRow("Continue Watching",continued);
@@ -126,6 +144,26 @@ public class HomeActivity extends Activity {
         scroll.post(()->scroll.scrollTo(0,oldScroll));
     }
     private boolean isInRail(View focused){for(View v=focused;v!=null && v.getParent() instanceof View;v=(View)v.getParent())if(v==rail)return true;return false;}
+    private static final class Category {final String id,name;Category(String id,String name){this.id=id;this.name=name;}}
+    private static List<Category> parseCategories(String json){
+        List<Category> out=new ArrayList<>();try{org.json.JSONArray data=new org.json.JSONArray(json);
+            for(int i=0;i<data.length();i++){org.json.JSONObject c=data.optJSONObject(i);if(c!=null && !c.optString("category_id","").isEmpty())out.add(new Category(c.optString("category_id"),c.optString("category_name","Category")));}
+        }catch(Exception ignored){}return out;
+    }
+    private List<Catalog.Item> filter(List<Catalog.Item> items,String category){if(category.isEmpty())return items;
+        List<Catalog.Item> out=new ArrayList<>();for(Catalog.Item item:items)if(category.equals(item.categoryId))out.add(item);return out;}
+    private void categoryButtons(List<Category> categories,boolean isMovie){
+        TextView title=Ui.heading(this,isMovie?"Movie categories":"Series categories",20);Ui.pad(title,this,3,4,0,10);rows.addView(title);
+        android.widget.HorizontalScrollView scroller=new android.widget.HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
+        LinearLayout chips=Ui.row(this);scroller.addView(chips);rows.addView(scroller);
+        List<Category> options=new ArrayList<>();options.add(new Category("","All"));options.addAll(categories);
+        String selected=isMovie?movieCategory:seriesCategory;
+        for(Category category:options){TextView chip=Ui.text(this,category.name,15);chip.setGravity(Gravity.CENTER);chip.setFocusable(true);
+            Ui.pad(chip,this,20,9,20,9);chip.setBackground(Ui.rounded(category.id.equals(selected)?Ui.RED:0xFF252832,10,this));
+            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-2,Ui.dp(this,43));cp.rightMargin=Ui.dp(this,9);chips.addView(chip,cp);
+            chip.setOnFocusChangeListener((v,f)->chip.setBackground(Ui.rounded(f?Ui.RED:(category.id.equals(isMovie?movieCategory:seriesCategory)?Ui.RED:0xFF252832),10,this)));
+            chip.setOnClickListener(v->{if(isMovie)movieCategory=category.id;else seriesCategory=category.id;scroll.scrollTo(0,0);drawRows();});}
+    }
     private List<Catalog.Item> sorted(List<Catalog.Item> items){
         if(sortMode==1)return Catalog.alphabetical(items);
         if(sortMode==2)return Catalog.topRated(items,items.size());
