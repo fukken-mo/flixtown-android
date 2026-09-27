@@ -31,7 +31,7 @@ if (is_array($result) && !empty($result['id'])) {
     foreach (array_slice($credits['cast'] ?? [], 0, 15) as $actor) {
         if (!is_array($actor) || empty($actor['name'])) continue;
         $path = (string)($actor['profile_path'] ?? '');
-        $cast[] = ['name' => (string)$actor['name'], 'character' => (string)($actor['character'] ?? ''),
+        $cast[] = ['id' => (int)($actor['id'] ?? 0), 'name' => (string)$actor['name'], 'character' => (string)($actor['character'] ?? ''),
             'image' => str_starts_with($path, '/') ? 'https://image.tmdb.org/t/p/w185' . $path : ''];
     }
     $videos = tmdbGet($type . '/' . $id . '/videos', ['api_key' => $key, 'language' => 'en-US']);

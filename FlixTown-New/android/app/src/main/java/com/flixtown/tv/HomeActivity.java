@@ -133,8 +133,8 @@ public class HomeActivity extends Activity {
         if(tab.equals("Settings")){settingButtons();return;}
         if(tab.equals("Search")){searchUi();return;}
         if(tab.equals("Favorites")){addRow("Favorites",favorites());return;}
-        if(tab.equals("Movies")){categoryButtons(movieCategories,true);sortButton();addRow("Movies",sorted(filter(movies,movieCategory)));}
-        else if(tab.equals("Series")){categoryButtons(seriesCategories,false);sortButton();addRow("Series",sorted(filter(series,seriesCategory)));}
+        if(tab.equals("Movies")){categoryButtons(movieCategories,true);sortButton();List<Catalog.Item> filtered=filter(movies,movieCategory);if(filtered.isEmpty())emptyCategory();else addRow("Movies",sorted(filtered));}
+        else if(tab.equals("Series")){categoryButtons(seriesCategories,false);sortButton();List<Catalog.Item> filtered=filter(series,seriesCategory);if(filtered.isEmpty())emptyCategory();else addRow("Series",sorted(filtered));}
         else {
             List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);
             if(!continued.isEmpty())addRow("Continue Watching",continued);
@@ -152,6 +152,7 @@ public class HomeActivity extends Activity {
     }
     private List<Catalog.Item> filter(List<Catalog.Item> items,String category){if(category.isEmpty())return items;
         List<Catalog.Item> out=new ArrayList<>();for(Catalog.Item item:items)if(category.equals(item.categoryId))out.add(item);return out;}
+    private void emptyCategory(){TextView empty=Ui.text(this,"No titles in this category yet",19);Ui.pad(empty,this,8,35,0,0);rows.addView(empty);}
     private void categoryButtons(List<Category> categories,boolean isMovie){
         TextView title=Ui.heading(this,isMovie?"Movie categories":"Series categories",20);Ui.pad(title,this,3,4,0,10);rows.addView(title);
         android.widget.HorizontalScrollView scroller=new android.widget.HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);

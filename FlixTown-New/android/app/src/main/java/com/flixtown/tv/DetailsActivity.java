@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -151,10 +152,16 @@ public class DetailsActivity extends Activity {
         LinearLayout row=Ui.row(this);scroller.addView(row);
         for(int i=0;i<Math.min(15,cast.length());i++){
             JSONObject actor=cast.optJSONObject(i);if(actor==null)continue;
-            LinearLayout card=Ui.column(this);LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,120),Ui.dp(this,175));cp.rightMargin=Ui.dp(this,12);row.addView(card,cp);
+            LinearLayout card=Ui.column(this);card.setFocusable(true);card.setGravity(Gravity.CENTER_HORIZONTAL);
+            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,126),Ui.dp(this,175));cp.rightMargin=Ui.dp(this,14);row.addView(card,cp);
             ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setBackgroundColor(Ui.CARD);
-            card.addView(image,new LinearLayout.LayoutParams(-1,Ui.dp(this,125)));Images.load(image,actor.optString("image"),185);
-            TextView name=Ui.text(this,actor.optString("name"),14);card.addView(name);
+            image.setOutlineProvider(new android.view.ViewOutlineProvider(){@Override public void getOutline(View v,android.graphics.Outline outline){outline.setOval(0,0,v.getWidth(),v.getHeight());}});
+            image.setClipToOutline(true);
+            card.addView(image,new LinearLayout.LayoutParams(Ui.dp(this,115),Ui.dp(this,115)));Images.load(image,actor.optString("image"),185);
+            String actorName=actor.optString("name");int actorId=actor.optInt("id",0);
+            TextView name=Ui.text(this,actorName,14);name.setGravity(Gravity.CENTER);name.setMaxLines(2);card.addView(name);
+            card.setOnFocusChangeListener((v,f)->{v.setBackground(Ui.rounded(f?Ui.RED:0x00000000,12,this));v.animate().scaleX(f?1.05f:1f).scaleY(f?1.05f:1f).setDuration(110).start();});
+            card.setOnClickListener(v->{Intent intent=new Intent(this,ActorActivity.class);intent.putExtra("actor_id",actorId);intent.putExtra("actor_name",actorName);startActivity(intent);});
         }
     }
     private void play(String streamId,String ext) { playUrl(Api.stream(this,"movie".equals(kind)?"movie":"series",streamId,ext==null||ext.isEmpty()?"mp4":ext),true); }
