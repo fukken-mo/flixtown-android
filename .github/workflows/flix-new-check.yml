@@ -4,6 +4,36 @@ on:
     branches: [codex/flix-new-check]
   workflow_dispatch:
 jobs:
+  panel:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: flixtown_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptestpass"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq php-mysql mysql-client
+      - run: mysql -h127.0.0.1 -uroot -ptestpass flixtown_test < FlixTown-New/panel/schema.sql
+      - run: |
+          cat > FlixTown-New/panel/private/config.php <<'PHP'
+          <?php return [
+            'db_dsn' => 'mysql:host=127.0.0.1;dbname=flixtown_test;charset=utf8mb4',
+            'db_user' => 'root', 'db_password' => 'testpass',
+            'app_key' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'qr_origin' => 'http://localhost:8080',
+            'activation_url' => 'http://localhost:8080/activate.php',
+          ];
+          PHP
+          mysql -h127.0.0.1 -uroot -ptestpass flixtown_test -e "UPDATE settings SET value='http://127.0.0.1:8082' WHERE name='xtream_url'"
+          php -S 127.0.0.1:8082 -t FlixTown-New/panel/tests/mock-xtream > /tmp/mock-xtream.log 2>&1 &
+          php -S 127.0.0.1:8081 -t FlixTown-New/panel > /tmp/panel-php.log 2>&1 &
+          python3 FlixTown-New/panel/tests/pair_integration.py
   android:
     runs-on: ubuntu-latest
     steps:
