@@ -22,8 +22,8 @@ import java.util.List;
 public class HomeActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
-    private LinearLayout rows,rail; private ImageView backdrop; private TextView hero,notice,expiry;
-    private String tab="Home",lastFocused=""; private int generation,sortMode; private boolean focusQueued;
+    private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop; private TextView hero,notice,expiry;
+    private String tab="Home",lastFocused=""; private int generation,sortMode; private boolean focusQueued,avoidFocusSteal;
     @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache(); }
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
     private void renderShell() {
@@ -37,7 +37,7 @@ public class HomeActivity extends Activity {
         hero=Ui.heading(this,"Flix Town",27);info.addView(hero);
         expiry=Ui.text(this,"",15);info.addView(expiry);
         notice=Ui.text(this,"",16); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,12);info.addView(notice,np);
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,24,0,18,20);scroll.addView(rows);
         for(String name:new String[]{"Home","Search","Movies","Series","Favorites","Settings"}) {
             TextView button=Ui.text(this,name.equals("Home")?"⌂":name.substring(0,1),21);button.setGravity(Gravity.CENTER);button.setFocusable(true);
@@ -87,6 +87,8 @@ public class HomeActivity extends Activity {
         if(rows==null)return;
         android.view.View focused=getCurrentFocus();
         if(focused!=null && focused.getTag() instanceof String)lastFocused=(String)focused.getTag();
+        int oldScroll=scroll.getScrollY();
+        avoidFocusSteal=focused!=null && isInRail(focused);
         rows.removeAllViews();
         focusQueued=false;
         if(tab.equals("Settings")){settingButtons();return;}
@@ -100,7 +102,9 @@ public class HomeActivity extends Activity {
             addRow("Trending Movies",Catalog.topRated(movies,20));
             addRow("Latest Movies",Catalog.recent(movies,25));addRow("Latest Series",Catalog.recent(series,25));
         }
+        scroll.post(()->scroll.scrollTo(0,oldScroll));
     }
+    private boolean isInRail(View focused){for(View v=focused;v!=null && v.getParent() instanceof View;v=(View)v.getParent())if(v==rail)return true;return false;}
     private List<Catalog.Item> sorted(List<Catalog.Item> items){
         if(sortMode==1)return Catalog.alphabetical(items);
         if(sortMode==2)return Catalog.topRated(items,items.size());
@@ -124,10 +128,10 @@ public class HomeActivity extends Activity {
             handler.postDelayed(()->Images.load(backdrop,item.backdrop,800),180);
         }));
         rows.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(this,260)));
-        for(int i=0;i<items.size();i++)if((items.get(i).kind+":"+items.get(i).id).equals(lastFocused)){
+        for(int i=0;i<items.size()&&!avoidFocusSteal;i++)if((items.get(i).kind+":"+items.get(i).id).equals(lastFocused)){
             final int position=i;focusQueued=true;grid.post(()->{grid.setSelectedPosition(position);grid.requestFocus();});break;
         }
-        if(!focusQueued && rows.getChildCount()==2 && (tab.equals("Home")||tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites"))){
+        if(!focusQueued && !avoidFocusSteal && rows.getChildCount()==2 && (tab.equals("Home")||tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites"))){
             focusQueued=true;grid.post(()->{grid.setSelectedPosition(0);grid.requestFocus();});
         }
     }
