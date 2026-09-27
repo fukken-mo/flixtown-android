@@ -38,7 +38,14 @@ public class DetailsActivity extends Activity {
         LinearLayout actions=Ui.row(this);text.addView(actions);
         Button watch=Ui.button(this,"Watch Now");actions.addView(watch);watch.setOnClickListener(v->{
             if("movie".equals(kind))play(id,extension);
-            else if(episodeArea!=null && episodeArea.getChildCount()>1) {
+            else if(Api.prefs(this).getLong("resume_position_series:"+id,0)>=15000 &&
+                    !Api.prefs(this).getString("resume_episode_series:"+id,"").isEmpty()) {
+                String key="series:"+id;
+                playEpisode(Api.prefs(this).getString("resume_episode_"+key,""),
+                    Api.prefs(this).getString("resume_extension_"+key,"mp4"),
+                    Api.prefs(this).getString("resume_next_"+key,""),
+                    Api.prefs(this).getString("resume_next_ext_"+key,"mp4"));
+            } else if(episodeArea!=null && episodeArea.getChildCount()>1) {
                 android.view.View first=episodeArea.getChildAt(1);
                 if(first instanceof HorizontalScrollView) {
                     android.view.View row=((HorizontalScrollView)first).getChildAt(0);
@@ -49,7 +56,7 @@ public class DetailsActivity extends Activity {
         trailerButton=Ui.button(this,"Trailer");LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(this,12);actions.addView(trailerButton,tp);
         trailerButton.setEnabled(false);
         trailerButton.setOnClickListener(v->{String url=trailerButton.getTag() instanceof String?(String)trailerButton.getTag():"";
-            if(url.startsWith("http") && !url.contains("youtube.com/") && !url.contains("youtu.be/"))playUrl(url);
+            if(url.startsWith("http") && !url.contains("youtube.com/") && !url.contains("youtu.be/"))playUrl(url,false);
             else if(!url.isEmpty())startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url.startsWith("http")?url:"https://www.youtube.com/watch?v="+url)));
         });
         Button favorite=Ui.button(this,isFavorite()?"Remove Favorite":"Add Favorite");
@@ -150,14 +157,17 @@ public class DetailsActivity extends Activity {
             TextView name=Ui.text(this,actor.optString("name"),14);card.addView(name);
         }
     }
-    private void play(String streamId,String ext) { playUrl(Api.stream(this,"movie".equals(kind)?"movie":"series",streamId,ext==null||ext.isEmpty()?"mp4":ext)); }
+    private void play(String streamId,String ext) { playUrl(Api.stream(this,"movie".equals(kind)?"movie":"series",streamId,ext==null||ext.isEmpty()?"mp4":ext),true); }
     private void playEpisode(String streamId,String ext,String nextId,String nextExt){
         String url=Api.stream(this,"series",streamId,ext==null||ext.isEmpty()?"mp4":ext);
         String next=nextId.isEmpty()?"":Api.stream(this,"series",nextId,nextExt);
         Catalog.remember(this,new Catalog.Item(itemJson(),kind));
-        Intent intent=new Intent(this,PlayerActivity.class);intent.putExtra("url",url);intent.putExtra("title",title);intent.putExtra("next_url",next);startActivity(intent);
+        Intent intent=new Intent(this,PlayerActivity.class);intent.putExtra("url",url);intent.putExtra("title",title);intent.putExtra("next_url",next);
+        intent.putExtra("content_kind",kind);intent.putExtra("content_id",id);
+        intent.putExtra("episode_id",streamId);intent.putExtra("episode_ext",ext);
+        intent.putExtra("next_episode_id",nextId);intent.putExtra("next_episode_ext",nextExt);startActivity(intent);
     }
-    private void playUrl(String url) { Catalog.remember(this,new Catalog.Item(itemJson(),kind));Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",url);i.putExtra("title",title);startActivity(i); }
+    private void playUrl(String url,boolean track) { if(track)Catalog.remember(this,new Catalog.Item(itemJson(),kind));Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",url);i.putExtra("title",title);if(track){i.putExtra("content_kind",kind);i.putExtra("content_id",id);}startActivity(i); }
     private JSONObject itemJson() { JSONObject j=new JSONObject();try {j.put("name",title).put("stream_id",id).put("series_id",id);}catch(Exception ignored){}return j; }
     private boolean isFavorite(){return Api.prefs(this).getString("favorites","").contains("|"+kind+":"+id+"|");}
     private void toggleFavorite(){String key="|"+kind+":"+id+"|";String favorites=Api.prefs(this).getString("favorites","");

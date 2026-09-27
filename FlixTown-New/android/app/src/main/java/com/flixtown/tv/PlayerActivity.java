@@ -39,8 +39,9 @@ public class PlayerActivity extends Activity {
     private TextView clock, playButton, status;
     private SeekBar timeline;
     private String url, nextUrl;
+    private String kind, contentId, episodeId, episodeExt, nextEpisodeId, nextEpisodeExt;
     private long position;
-    private boolean nextCanceled, promptShown, scrubbing;
+    private boolean nextCanceled, promptShown, scrubbing, ended;
     private Dialog dialog;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -48,6 +49,10 @@ public class PlayerActivity extends Activity {
         super.onCreate(state);
         url=getIntent().getStringExtra("url");
         nextUrl=getIntent().getStringExtra("next_url");
+        kind=getIntent().getStringExtra("content_kind");contentId=getIntent().getStringExtra("content_id");
+        episodeId=getIntent().getStringExtra("episode_id");episodeExt=getIntent().getStringExtra("episode_ext");
+        nextEpisodeId=getIntent().getStringExtra("next_episode_id");nextEpisodeExt=getIntent().getStringExtra("next_episode_ext");
+        if(kind!=null && contentId!=null && !contentId.isEmpty())position=Api.prefs(this).getLong("resume_position_"+kind+":"+contentId,0);
         if(url==null || url.isEmpty()){finish();return;}
         root=new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
@@ -173,7 +178,7 @@ public class PlayerActivity extends Activity {
         player.play();
         player.addListener(new Player.Listener(){
             @Override public void onPlaybackStateChanged(int state){
-                if(state==Player.STATE_ENDED && !nextCanceled && nextUrl!=null && !nextUrl.isEmpty())playNext();
+                if(state==Player.STATE_ENDED){ended=true;clearProgress();if(!nextCanceled && nextUrl!=null && !nextUrl.isEmpty())playNext();}
             }
             @Override public void onIsPlayingChanged(boolean playing){updatePlay();if(playing)scheduleHide();else showControls();}
         });
@@ -246,7 +251,7 @@ public class PlayerActivity extends Activity {
             p.bottomMargin=Ui.dp(this,4);box.addView(option,p);
             option.setBackground(Ui.rounded(0xFF282A34,9,this));
             option.setOnFocusChangeListener((v,focused)->v.setBackground(Ui.rounded(focused?Ui.RED:0xFF282A34,9,this)));
-            option.setOnClickListener(v->{choice.select(selected);dialog.dismiss();});
+            option.setOnClickListener(v->{Dialog active=dialog;choice.select(selected);if(active!=null && active.isShowing())active.dismiss();});
             if(i==0)option.post(option::requestFocus);
         }
         dialog.setContentView(box);
@@ -261,6 +266,7 @@ public class PlayerActivity extends Activity {
     private final Runnable progress=new Runnable(){@Override public void run(){
         if(player==null)return;
         long duration=player.getDuration(),current=player.getCurrentPosition();
+        if(player.isPlaying() && current>=15000 && current/5000!=lastSavedAt/5000){saveProgress(current,duration);lastSavedAt=current;}
         if(duration>0 && duration!=C.TIME_UNSET){
             if(!scrubbing){timeline.setProgress((int)Math.min(1000,current*1000/duration));clock.setText(time(current)+" / "+time(duration));}
             long remaining=duration-current;
@@ -273,6 +279,12 @@ public class PlayerActivity extends Activity {
         handler.postDelayed(this,1000);
     }};
     private TextView nextCountdown;
+    private long lastSavedAt;
+    private void saveProgress(long current,long duration){
+        if(!ended && kind!=null && contentId!=null && !contentId.isEmpty())
+            Catalog.saveProgress(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,current,duration);
+    }
+    private void clearProgress(){if(kind!=null && contentId!=null && !contentId.isEmpty())Catalog.clearProgress(this,kind,contentId);}
     private void showNext(){
         List<String> choices=new ArrayList<>();choices.add("Play next now");choices.add("Cancel autoplay");
         showDialog("Up next",choices,index->{if(index==0)playNext();else nextCanceled=true;});
@@ -280,13 +292,14 @@ public class PlayerActivity extends Activity {
     private void playNext(){
         if(nextUrl==null || nextUrl.isEmpty() || player==null)return;
         if(dialog!=null){dialog.dismiss();dialog=null;}
-        url=nextUrl;nextUrl="";position=0;promptShown=false;
+        url=nextUrl;nextUrl="";position=0;promptShown=false;ended=false;lastSavedAt=0;
+        episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
     }
     @Override protected void onStop(){
         handler.removeCallbacksAndMessages(null);
         if(dialog!=null){dialog.dismiss();dialog=null;}
-        if(player!=null){position=player.getCurrentPosition();video.setPlayer(null);player.release();player=null;}
+        if(player!=null){position=player.getCurrentPosition();if(!ended)saveProgress(position,player.getDuration());video.setPlayer(null);player.release();player=null;}
         super.onStop();
     }
 }

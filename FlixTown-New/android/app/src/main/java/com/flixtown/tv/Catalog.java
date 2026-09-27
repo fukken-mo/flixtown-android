@@ -45,6 +45,7 @@ final class Catalog {
         List<Item> result=new ArrayList<>();
         String saved=Api.prefs(c).getString("continue_ids","");
         for(String key:saved.split(",")) {
+            if(Api.prefs(c).getLong("resume_position_"+key,0)<15000)continue;
             for(Item item:movies) if(("movie:"+item.id).equals(key)) { result.add(item); break; }
             for(Item item:series) if(("series:"+item.id).equals(key)) { result.add(item); break; }
         } return result;
@@ -55,5 +56,36 @@ final class Catalog {
         StringBuilder s=new StringBuilder(key);
         for(String other:existing.split(",")) if(!other.isEmpty()&&!other.equals(key)&&s.length()<500) s.append(',').append(other);
         Api.prefs(c).edit().putString("continue_ids",s.toString()).apply();
+    }
+    static void saveProgress(Context c,String kind,String id,String episodeId,String episodeExt,
+                             String nextId,String nextExt,long position,long duration) {
+        if(kind==null || id==null || id.isEmpty() || position<15000)return;
+        String key=kind+":"+id;
+        if(duration>0 && (position>=duration-30000 || position*100>=duration*95)){
+            clearProgress(c,kind,id);return;
+        }
+        android.content.SharedPreferences.Editor edit=Api.prefs(c).edit();
+        edit.putLong("resume_position_"+key,position).putLong("resume_duration_"+key,duration);
+        if("series".equals(kind)){
+            edit.putString("resume_episode_"+key,episodeId==null?"":episodeId);
+            edit.putString("resume_extension_"+key,episodeExt==null?"mp4":episodeExt);
+            edit.putString("resume_next_"+key,nextId==null?"":nextId);
+            edit.putString("resume_next_ext_"+key,nextExt==null?"mp4":nextExt);
+        }
+        edit.apply();
+        String saved=Api.prefs(c).getString("continue_ids","");
+        StringBuilder updated=new StringBuilder(key);
+        for(String other:saved.split(","))if(!other.isEmpty()&&!other.equals(key)&&updated.length()<500)updated.append(',').append(other);
+        Api.prefs(c).edit().putString("continue_ids",updated.toString()).apply();
+    }
+    static void clearProgress(Context c,String kind,String id) {
+        String key=kind+":"+id;
+        StringBuilder updated=new StringBuilder();
+        for(String other:Api.prefs(c).getString("continue_ids","").split(","))
+            if(!other.isEmpty()&&!other.equals(key)){if(updated.length()>0)updated.append(',');updated.append(other);}
+        Api.prefs(c).edit().remove("resume_position_"+key).remove("resume_duration_"+key)
+            .remove("resume_episode_"+key).remove("resume_extension_"+key)
+            .remove("resume_next_"+key).remove("resume_next_ext_"+key)
+            .putString("continue_ids",updated.toString()).apply();
     }
 }
