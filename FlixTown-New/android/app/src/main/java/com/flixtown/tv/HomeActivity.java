@@ -23,7 +23,7 @@ public class HomeActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
     private LinearLayout rows,rail; private ImageView backdrop; private TextView hero,notice,expiry;
-    private String tab="Home",lastFocused=""; private int generation; private boolean focusQueued;
+    private String tab="Home",lastFocused=""; private int generation,sortMode; private boolean focusQueued;
     @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache(); }
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
     private void renderShell() {
@@ -37,7 +37,7 @@ public class HomeActivity extends Activity {
         hero=Ui.heading(this,"Flix Town",27);info.addView(hero);
         expiry=Ui.text(this,"",15);info.addView(expiry);
         notice=Ui.text(this,"",16); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,12);info.addView(notice,np);
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,24,0,18,20);scroll.addView(rows);
         for(String name:new String[]{"Home","Search","Movies","Series","Favorites","Settings"}) {
             TextView button=Ui.text(this,name.equals("Home")?"⌂":name.substring(0,1),21);button.setGravity(Gravity.CENTER);button.setFocusable(true);
@@ -92,14 +92,25 @@ public class HomeActivity extends Activity {
         if(tab.equals("Settings")){settingButtons();return;}
         if(tab.equals("Search")){searchUi();return;}
         if(tab.equals("Favorites")){addRow("Favorites",favorites());return;}
-        if(tab.equals("Movies")) addRow("Movies",Catalog.recent(movies,120));
-        else if(tab.equals("Series")) addRow("Series",Catalog.recent(series,120));
+        if(tab.equals("Movies")){sortButton();addRow("Movies",sorted(movies));}
+        else if(tab.equals("Series")){sortButton();addRow("Series",sorted(series));}
         else {
             List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);
             if(!continued.isEmpty())addRow("Continue Watching",continued);
             addRow("Trending Movies",Catalog.topRated(movies,20));
             addRow("Latest Movies",Catalog.recent(movies,25));addRow("Latest Series",Catalog.recent(series,25));
         }
+    }
+    private List<Catalog.Item> sorted(List<Catalog.Item> items){
+        if(sortMode==1)return Catalog.alphabetical(items);
+        if(sortMode==2)return Catalog.topRated(items,items.size());
+        return Catalog.recent(items,items.size());
+    }
+    private void sortButton(){
+        android.widget.Button sort=Ui.button(this,"Sort: "+new String[]{"Recently Added","Title A-Z","Rating"}[sortMode]);
+        rows.addView(sort,new LinearLayout.LayoutParams(Ui.dp(this,220),Ui.dp(this,52)));
+        sort.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Sort titles")
+            .setItems(new String[]{"Recently Added","Title A-Z","Rating"},(dialog,which)->{sortMode=which;drawRows();}).show());
     }
     private void addRow(String title,List<Catalog.Item> items) {
         if(items.isEmpty())return;

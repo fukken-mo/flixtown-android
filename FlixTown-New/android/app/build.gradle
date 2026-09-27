@@ -4,7 +4,7 @@ android {
     namespace 'com.flixtown.tv'
     compileSdk 36
     defaultConfig {
-        applicationId 'com.flixtown.tv'
+        applicationId 'com.myflixtown.tv'
         minSdk 23
         targetSdk 35
         versionCode 1

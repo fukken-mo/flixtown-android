@@ -102,15 +102,33 @@ public class DetailsActivity extends Activity {
                     String episodeId=ep.optString("id");String ext=ep.optJSONObject("info")!=null?ep.optJSONObject("info").optString("container_extension","mp4"):"mp4";
                     int index=ordered.indexOf(ep);JSONObject next=index>=0&&index+1<ordered.size()?ordered.get(index+1):null;
                     String nextId=next==null?"":next.optString("id");String nextExt=next!=null&&next.optJSONObject("info")!=null?next.optJSONObject("info").optString("container_extension","mp4"):"mp4";
-                    Button button=Ui.button(this,(i+1)+"  "+ep.optString("title","Episode "+(i+1)));
-                    LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,185),Ui.dp(this,72));bp.setMargins(0,0,Ui.dp(this,12),Ui.dp(this,14));row.addView(button,bp);
-                    button.setOnClickListener(v->playEpisode(episodeId,ext,nextId,nextExt));
+                    FrameLayout card=episodeCard(ep,i+1);
+                    LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,230),Ui.dp(this,145));bp.setMargins(0,0,Ui.dp(this,12),Ui.dp(this,14));row.addView(card,bp);
+                    card.setOnClickListener(v->playEpisode(episodeId,ext,nextId,nextExt));
                 }
                 }
             }
         }
     }
     private static int parseSeason(String value){try{return Integer.parseInt(value);}catch(Exception e){return Integer.MAX_VALUE;}}
+    private FrameLayout episodeCard(JSONObject ep,int number){
+        FrameLayout frame=new FrameLayout(this);frame.setFocusable(true);frame.setBackgroundColor(Ui.CARD);
+        ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setAlpha(.7f);
+        frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
+        JSONObject info=ep.optJSONObject("info");String art=info==null?"":info.optString("movie_image","");
+        Images.load(image,art,350);
+        TextView index=Ui.heading(this,String.format(java.util.Locale.US,"%02d",number),38);
+        Ui.pad(index,this,12,5,0,0);frame.addView(index);
+        TextView label=Ui.text(this,ep.optString("title","Episode "+number),13);label.setMaxLines(2);
+        label.setBackgroundColor(0xB9000000);Ui.pad(label,this,8,6,8,6);
+        frame.addView(label,new FrameLayout.LayoutParams(-1,Ui.dp(this,47),Gravity.BOTTOM));
+        frame.setOnFocusChangeListener((v,focused)->{
+            v.setBackground(Ui.rounded(focused?Ui.RED:Ui.CARD,6,this));
+            v.setPadding(Ui.dp(this,focused?4:0),Ui.dp(this,focused?4:0),Ui.dp(this,focused?4:0),Ui.dp(this,focused?4:0));
+            v.animate().scaleX(focused?1.05f:1f).scaleY(focused?1.05f:1f).setDuration(110).start();
+        });
+        return frame;
+    }
     private void cast(){Api.IO.execute(()->{try{
         int year=getIntent().getIntExtra("year",0);
         String endpoint=BuildConfig.PANEL_URL+"tmdb.php?kind="+Api.enc(kind)+"&title="+Api.enc(title)

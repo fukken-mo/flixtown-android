@@ -38,6 +38,9 @@ final class Catalog {
         ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->Double.compare(b.rating,a.rating));
         return sorted.subList(0,Math.min(limit,sorted.size()));
     }
+    static List<Item> alphabetical(List<Item> original) {
+        ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->a.title.compareToIgnoreCase(b.title));return sorted;
+    }
     static List<Item> continueWatching(Context c,List<Item> movies,List<Item> series) {
         List<Item> result=new ArrayList<>();
         String saved=Api.prefs(c).getString("continue_ids","");
