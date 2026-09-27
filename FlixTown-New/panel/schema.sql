@@ -17,6 +17,19 @@ CREATE TABLE IF NOT EXISTS pairings (
   INDEX (created_ip_hash,created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS renewal_requests (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(128) NOT NULL,
+  phone VARCHAR(32) NOT NULL,
+  plan ENUM('1m','3m','6m','12m') NOT NULL,
+  status ENUM('pending','handled') NOT NULL DEFAULT 'pending',
+  ip_hash CHAR(64) NOT NULL,
+  created_at DATETIME NOT NULL,
+  handled_at DATETIME NULL,
+  INDEX (username,created_at),
+  INDEX (status,created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT IGNORE INTO settings (name,value) VALUES
 ('app_name','Flix Town'),
 ('xtream_url','http://streamtown.live:8080'),

@@ -49,6 +49,12 @@ final class Api {
             + "/player_api.php?username=" + enc(account[0])
             + "&password=" + enc(account[1]) + "&action=" + enc(action) + extra;
     }
+    static String accountUrl(Context c) {
+        SharedPreferences p=prefs(c);String[] account=AccountStore.read(c);
+        if(account==null)throw new IllegalStateException("Sign in required");
+        return p.getString("server","http://streamtown.live:8080").replaceAll("/+$", "")
+            + "/player_api.php?username="+enc(account[0])+"&password="+enc(account[1]);
+    }
     static String stream(Context c, String type, String id, String extension) {
         SharedPreferences p = prefs(c);
         String[] account=AccountStore.read(c);if(account==null)throw new IllegalStateException("Sign in required");

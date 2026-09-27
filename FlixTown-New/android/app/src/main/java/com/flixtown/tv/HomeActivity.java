@@ -24,7 +24,7 @@ public class HomeActivity extends Activity {
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
     private LinearLayout rows,rail; private ImageView backdrop; private TextView hero,notice;
     private String tab="Home",lastFocused=""; private int generation; private boolean focusQueued;
-    @Override public void onCreate(Bundle b) { super.onCreate(b); renderShell(); loadCache(); }
+    @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache(); }
     @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
     private void renderShell() {
         LinearLayout shell=Ui.row(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
@@ -56,6 +56,18 @@ public class HomeActivity extends Activity {
             try {
                 org.json.JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");
                 Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
+                org.json.JSONObject account=Api.get(Api.accountUrl(this));
+                org.json.JSONObject user=account.optJSONObject("user_info");
+                if(user!=null){
+                    boolean expired=!"Active".equalsIgnoreCase(user.optString("status",""));
+                    Api.prefs(this).edit().putBoolean("expired",expired).apply();
+                    if(expired){runOnUiThread(()->{if(!isFinishing()){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();}});return;}
+                    String date=user.optString("exp_date","");
+                    if(date.matches("[0-9]{9,12}")){
+                        String expires=new java.text.SimpleDateFormat("MMM d, yyyy",java.util.Locale.US).format(new java.util.Date(Long.parseLong(date)*1000));
+                        runOnUiThread(()->notice.setText("Expires " + expires));
+                    }
+                }
                 String movieJson=Api.request(Api.xtream(this,"get_vod_streams",""),null);
                 String seriesJson=Api.request(Api.xtream(this,"get_series",""),null);
                 List<Catalog.Item> m=Catalog.parse(movieJson,"movie"),s=Catalog.parse(seriesJson,"series");

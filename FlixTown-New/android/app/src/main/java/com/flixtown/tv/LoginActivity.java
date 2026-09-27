@@ -62,7 +62,9 @@ public class LoginActivity extends Activity {
                 JSONObject config = Api.get(BuildConfig.PANEL_URL + "config.php");
                 String server = config.getString("xtream_url");
                 JSONObject account = Api.get(server.replaceAll("/+$", "") + "/player_api.php?username=" + Api.enc(user) + "&password=" + Api.enc(pass));
-                if (account.optJSONObject("user_info") == null || account.getJSONObject("user_info").optInt("auth") != 1 || !"Active".equals(account.getJSONObject("user_info").optString("status"))) throw new IllegalArgumentException("Account is not active");
+                JSONObject info=account.optJSONObject("user_info");
+                if(info==null || (!"Active".equalsIgnoreCase(info.optString("status")) && !"Expired".equalsIgnoreCase(info.optString("status")))) throw new IllegalArgumentException("Account could not be verified");
+                Api.prefs(this).edit().putBoolean("expired",!"Active".equalsIgnoreCase(info.optString("status"))).apply();
                 Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
                 runOnUiThread(() -> saveAndGo(server,user,pass));
             } catch (Exception e) { runOnUiThread(() -> message.setText("Sign in failed: " + e.getMessage())); }
@@ -105,7 +107,8 @@ public class LoginActivity extends Activity {
     }
     private void home() {
         String intro=Api.prefs(this).getString("intro_url","");
-        startActivity(new Intent(this,intro.isEmpty()?HomeActivity.class:IntroActivity.class));finish();
+        Class<?> destination=Api.prefs(this).getBoolean("expired",false)?RenewalActivity.class:(intro.isEmpty()?HomeActivity.class:IntroActivity.class);
+        startActivity(new Intent(this,destination));finish();
     }
     @Override protected void onDestroy() { polling=false; handler.removeCallbacksAndMessages(null); super.onDestroy(); }
 }

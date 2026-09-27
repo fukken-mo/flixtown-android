@@ -26,6 +26,12 @@ $authorized = !empty($_SESSION['admin']);
 if ($authorized) {
     try {
         $db = new PDO($config['db_dsn'], $config['db_user'], $config['db_password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false]);
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['handled'])) {
+            if (!hash_equals((string)$_SESSION['csrf'], (string)($_POST['csrf'] ?? ''))) { http_response_code(403); exit('Invalid request'); }
+            $id = filter_var($_POST['handled'], FILTER_VALIDATE_INT);
+            if ($id) $db->prepare("UPDATE renewal_requests SET status='handled',handled_at=UTC_TIMESTAMP() WHERE id=? AND status='pending'")->execute([$id]);
+            header('Location: index.php'); exit;
+        }
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
             if (!hash_equals((string)$_SESSION['csrf'], (string)($_POST['csrf'] ?? ''))) { http_response_code(403); exit('Invalid request'); }
             $values = [
@@ -56,6 +62,7 @@ if ($authorized) {
             }
         }
         $values = $db->query('SELECT name,value FROM settings')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $renewals = $db->query("SELECT id,username,phone,plan,created_at FROM renewal_requests WHERE status='pending' ORDER BY created_at ASC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $e) { $error = 'Database is unavailable'; $values = []; }
 }
 function h(string $value): string { return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -67,6 +74,16 @@ function h(string $value): string { return htmlspecialchars($value, ENT_QUOTES |
 <form method="post"><label>Username</label><input name="user" autocomplete="username" required><label>Password</label><input type="password" name="password" autocomplete="current-password" required><button name="login" value="1">Sign in</button></form>
 <?php else: ?>
 <p><a href="?logout=1">Sign out</a></p><?php if (isset($_GET['saved'])): ?><p>Settings saved.</p><?php endif; ?>
+<h2>Renewal requests</h2>
+<?php if (empty($renewals)): ?><p>No pending requests.</p><?php else: ?>
+<p><small>Confirm payment and extend the same account in your Xtream admin before marking it handled. Marking it here does not alter the Xtream account.</small></p>
+<?php foreach ($renewals as $renewal): ?>
+<form method="post" style="background:#252a35;padding:12px;margin:8px 0;border-radius:8px">
+<input type="hidden" name="csrf" value="<?= h((string)$_SESSION['csrf']) ?>">
+<strong><?= h((string)$renewal['username']) ?></strong> · <?= h((string)$renewal['plan']) ?> · <?= h((string)$renewal['phone']) ?> · <?= h((string)$renewal['created_at']) ?> UTC
+<button name="handled" value="<?= (int)$renewal['id'] ?>">Mark handled</button></form>
+<?php endforeach; endif; ?>
+<h2>App settings</h2>
 <form method="post"><input type="hidden" name="csrf" value="<?= h((string)$_SESSION['csrf']) ?>">
 <label>App name</label><input name="app_name" value="<?= h((string)($values['app_name'] ?? 'Flix Town')) ?>" required>
 <label>Xtream server URL</label><input name="xtream_url" value="<?= h((string)($values['xtream_url'] ?? '')) ?>" required>

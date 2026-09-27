@@ -4,6 +4,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <application android:theme="@style/FlixTheme" android:label="Flix Town" android:icon="@drawable/app_icon" android:usesCleartextTraffic="true" android:allowBackup="false" android:banner="@drawable/tv_banner">
         <activity android:name=".PlayerActivity" android:exported="false" android:screenOrientation="landscape"/>
+        <activity android:name=".RenewalActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".IntroActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".DetailsActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".HomeActivity" android:exported="false" android:screenOrientation="landscape"/>
