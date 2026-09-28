@@ -60,7 +60,36 @@ if ($authorized) {
             if (!$error && $values['intro_url'] !== '' && parse_url($values['intro_url'], PHP_URL_SCHEME) !== 'https') $error = 'Intro video must use HTTPS';
             if (!$error && !preg_match('/^(0|[1-9][0-9]{0,8})$/D',$values['update_version_code'])) $error = 'Update version must be a whole number';
             if (!$error && $values['update_apk_url'] !== '' && (!filter_var($values['update_apk_url'], FILTER_VALIDATE_URL) || parse_url($values['update_apk_url'], PHP_URL_SCHEME) !== 'https')) $error = 'APK link must use HTTPS';
-            if (!$error && (int)$values['update_version_code'] > 0 && $values['update_apk_url'] === '') $error = 'Add an APK link before enabling the update';
+            $upload = $_FILES['update_apk'] ?? null;
+            $hasUpload = is_array($upload) && (int)($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+            if (!$error && (int)$values['update_version_code'] > 0 && $values['update_apk_url'] === '' && !$hasUpload) $error = 'Upload an APK or add its direct link';
+            if ($hasUpload && (int)$values['update_version_code'] === 0) $error = 'Set the APK build number before uploading';
+            if ($hasUpload && (int)($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) $error = 'APK upload failed. Check your hosting upload size limit';
+            if ($hasUpload && !$error) {
+                $size = (int)($upload['size'] ?? 0);
+                $source = (string)($upload['tmp_name'] ?? '');
+                $name = (string)($upload['name'] ?? '');
+                if ($size < 1024 || $size > 83886080 || !preg_match('/\.apk$/iD',$name) || !is_uploaded_file($source)) $error = 'Choose a valid APK under 80 MB';
+                elseif (($handle = fopen($source,'rb')) === false) $error = 'Could not read the uploaded APK';
+                else {
+                    $header = fread($handle,4); fclose($handle);
+                    if ($header !== "PK\x03\x04") $error = 'This is not an APK file';
+                }
+                if (!$error) {
+                    $folder = dirname(__DIR__) . '/updates';
+                    if (!is_dir($folder) && !mkdir($folder,0755,true)) $error = 'Could not create the updates folder';
+                    elseif (!is_writable($folder)) $error = 'The updates folder is not writable';
+                    else {
+                        $basename = 'FlixTown-v' . $values['update_version_code'] . '.apk';
+                        $temporary = $folder . '/.' . $basename . '.upload';
+                        if (!move_uploaded_file($source,$temporary) || !rename($temporary,$folder . '/' . $basename)) $error = 'Could not save the APK on the server';
+                        else {
+                            chmod($folder . '/' . $basename,0644);
+                            $values['update_apk_url'] = 'https://panelsandapps.com/panels/flixtown2027/updates/' . $basename;
+                        }
+                    }
+                }
+            }
             foreach (['price_1m','price_3m','price_6m','price_12m'] as $key) if (!$error && !preg_match('/^[0-9]{1,4}(?:\.[0-9]{1,2})?$/D',$values[$key])) $error='Check plan prices';
             if (!$error) {
                 $stmt = $db->prepare('INSERT INTO settings (name,value) VALUES (?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)');
@@ -96,7 +125,7 @@ function clipText(string $value,int $limit): string {
 <button name="handled" value="<?= (int)$renewal['id'] ?>">Mark handled</button></form>
 <?php endforeach; endif; ?>
 <h2>App settings</h2>
-<form method="post"><input type="hidden" name="csrf" value="<?= h((string)$_SESSION['csrf']) ?>">
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="<?= h((string)$_SESSION['csrf']) ?>">
 <label>App name</label><input name="app_name" value="<?= h((string)($values['app_name'] ?? 'Flix Town')) ?>" required>
 <label>Xtream server URL</label><input name="xtream_url" value="<?= h((string)($values['xtream_url'] ?? '')) ?>" required>
 <label>Logo URL</label><input name="logo_url" value="<?= h((string)($values['logo_url'] ?? '')) ?>" placeholder="https://">
@@ -104,8 +133,9 @@ function clipText(string $value,int $limit): string {
 <label><input type="checkbox" name="intro_enabled" <?= ($values['intro_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> Play intro on app open</label>
 <label>TMDB API key (kept on the panel)</label><input name="tmdb_key" value="<?= h((string)($values['tmdb_key'] ?? '')) ?>">
 <h2>App updates</h2>
-<p><small>Upload a signed Flix Town APK to your HTTPS hosting first. Enter its build number and direct APK link. Use 0 to turn off the update prompt.</small></p>
+<p><small>Set the APK build number and upload the APK below. The panel will create its direct link. Use 0 to turn off the update prompt.</small></p>
 <label>Latest APK build number</label><input type="number" min="0" max="999999999" name="update_version_code" value="<?= h((string)($values['update_version_code'] ?? '0')) ?>">
+<label>Upload signed APK</label><input type="file" name="update_apk" accept=".apk,application/vnd.android.package-archive">
 <label>Direct HTTPS APK link</label><input type="url" name="update_apk_url" value="<?= h((string)($values['update_apk_url'] ?? '')) ?>" placeholder="https://myflixtown.com/updates/FlixTown.apk">
 <label>What is new</label><input name="update_notes" value="<?= h((string)($values['update_notes'] ?? '')) ?>" maxlength="250">
 <label><input type="checkbox" name="update_required" <?= ($values['update_required'] ?? '0') === '1' ? 'checked' : '' ?>> Require this update</label>
