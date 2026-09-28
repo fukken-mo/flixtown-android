@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ColorDrawable
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
@@ -28,18 +29,18 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private val bg = Color.rgb(7, 8, 11)
     private val surface = Color.rgb(18, 22, 32)
     private val red = Color.rgb(211, 50, 68)
+    private val cyan = Color.rgb(0, 229, 255)
     private val muted = Color.rgb(148, 163, 184)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val rail = LinearLayout(activity).apply {
-        orientation = 1; setBackgroundColor(surface); setPadding(dp(8), 0, dp(8), 0)
+        orientation = 1; setBackgroundColor(surface); setPadding(0, dp(27), 0, dp(27))
     }
     private val content = FrameLayout(activity).apply {
-        setPadding(dp(16), 0, 0, 0); clipChildren = false; clipToPadding = false
+        setPadding(dp(48), dp(27), dp(48), dp(27)); clipChildren = false; clipToPadding = false
     }
     val root = LinearLayout(activity).apply {
         orientation = 0; setBackgroundColor(bg); clipChildren = false; clipToPadding = false
-        setPadding(dp(48), dp(27), dp(48), dp(27))
-        addView(rail, LinearLayout.LayoutParams(dp(88), -1))
+        addView(rail, LinearLayout.LayoutParams(dp(96), -1))
         addView(content, LinearLayout.LayoutParams(0, -1, 1f))
     }
     private var catalog = BrowseCatalog()
@@ -53,10 +54,12 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private var refresh: () -> Unit = {}
     private var signOut: () -> Unit = {}
     private val nav = mutableMapOf<BrowsePage, TextView>()
+    private val indicators = mutableMapOf<BrowsePage, View>()
     private val sorts = listOf("Recently added", "Title A–Z", "Top rated")
     private val homeRows = mutableListOf<RecyclerView>()
     private var homeScroll: ScrollView? = null
     private var heroPlay: View? = null
+    private var activeGridFilters: Pair<View, View>? = null
 
     init {
         root.viewTreeObserver.addOnGlobalFocusChangeListener { _, focused ->
@@ -86,7 +89,13 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 }
             }
             nav[destination] = item
-            rail.addView(item, LinearLayout.LayoutParams(-1, dp(62)).apply { topMargin = dp(6) })
+            val slot = FrameLayout(activity)
+            slot.addView(item, FrameLayout.LayoutParams(-1, -1))
+            val marker = View(activity).apply { setBackgroundColor(cyan) }
+            slot.addView(marker, FrameLayout.LayoutParams(dp(3), dp(27),
+                Gravity.START or Gravity.CENTER_VERTICAL))
+            indicators[destination] = marker
+            rail.addView(slot, LinearLayout.LayoutParams(-1, dp(62)).apply { topMargin = dp(6) })
         }
         paintRail()
     }
@@ -129,16 +138,16 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private fun paintRail() {
         nav.forEach { (destination, item) ->
             val focused = item.hasFocus()
-            item.setTextColor(if (focused || destination == page) red else Color.WHITE)
-            item.background = shape(
-                if (focused) Color.rgb(58, 25, 37) else if (destination == page)
-                    Color.rgb(34, 25, 32) else surface, 14)
+            item.setTextColor(if (focused || destination == page) cyan else Color.WHITE)
+            item.background = ColorDrawable(if (focused) Color.argb(28, 0, 229, 255) else surface)
+            indicators[destination]?.visibility =
+                if (focused || destination == page) View.VISIBLE else View.INVISIBLE
         }
     }
 
     private fun render() {
         work?.cancel(); content.removeAllViews()
-        homeRows.clear(); homeScroll = null; heroPlay = null
+        homeRows.clear(); homeScroll = null; heroPlay = null; activeGridFilters = null
         when (page) {
             BrowsePage.Home -> home()
             BrowsePage.Movies, BrowsePage.Series, BrowsePage.Watchlist -> grid()
@@ -261,6 +270,34 @@ internal class NativeBrowseController(private val activity: Activity, private va
         val destination = page
         val column = LinearLayout(activity).apply { orientation = 1 }
         content.addView(column, FrameLayout.LayoutParams(-1, -1))
+        val posterGrid = list(GridLayoutManager(activity, 4))
+        var pendingGridFocus = false
+        fun focusFirstPoster(): Boolean {
+            val count = posterGrid.adapter?.itemCount
+            if (count == null) { pendingGridFocus = true; return true }
+            if (count == 0) return true
+            pendingGridFocus = false
+            val visible = posterGrid.findViewHolderForAdapterPosition(0)?.itemView
+            if (visible != null) { visible.requestFocus(); return true }
+            val listener = object : RecyclerView.OnChildAttachStateChangeListener {
+                override fun onChildViewAttachedToWindow(view: View) {
+                    if (posterGrid.getChildAdapterPosition(view) == 0) {
+                        posterGrid.removeOnChildAttachStateChangeListener(this)
+                        view.requestFocus()
+                    }
+                }
+                override fun onChildViewDetachedFromWindow(view: View) {}
+            }
+            posterGrid.addOnChildAttachStateChangeListener(listener)
+            posterGrid.scrollToPosition(0)
+            posterGrid.post {
+                posterGrid.findViewHolderForAdapterPosition(0)?.itemView?.let {
+                    posterGrid.removeOnChildAttachStateChangeListener(listener)
+                    it.requestFocus()
+                }
+            }
+            return true
+        }
         column.addView(text(when (destination) {
             BrowsePage.Movies -> "Movies"; BrowsePage.Series -> "TV Shows"; else -> "Watchlist"
         }, 29, Color.WHITE, true), LinearLayout.LayoutParams(-1, dp(48)))
@@ -277,18 +314,30 @@ internal class NativeBrowseController(private val activity: Activity, private va
                         render()
                     }.show()
             }
-            leftToMenu(categoryButton)
+            categoryButton.setOnKeyListener { _, key, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) false else when (key) {
+                    KeyEvent.KEYCODE_DPAD_LEFT -> showMenu()
+                    KeyEvent.KEYCODE_DPAD_DOWN -> focusFirstPoster()
+                    else -> false
+                }
+            }
             controls.addView(categoryButton)
-            controls.addView(button("Sort by  ·  " + sorts[sort] + "  ▾") {
+            val sortButton = button("Sort by  ·  " + sorts[sort] + "  ▾") {
                 AlertDialog.Builder(activity).setTitle("Sort by")
                     .setItems(sorts.toTypedArray()) { _, index -> sort = index; render() }.show()
-            }, LinearLayout.LayoutParams(-2, dp(48)).apply { marginStart = dp(12) })
+            }
+            sortButton.setOnKeyListener { _, key, event ->
+                event.action == KeyEvent.ACTION_DOWN &&
+                    key == KeyEvent.KEYCODE_DPAD_DOWN && focusFirstPoster()
+            }
+            activeGridFilters = categoryButton to sortButton
+            controls.addView(sortButton,
+                LinearLayout.LayoutParams(-2, dp(48)).apply { marginStart = dp(12) })
             column.addView(controls, LinearLayout.LayoutParams(-1, dp(48)).apply {
-                topMargin = dp(6); bottomMargin = dp(22)
+                topMargin = dp(6); bottomMargin = dp(34)
             })
         }
-        val grid = list(GridLayoutManager(activity, 4))
-        column.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
+        column.addView(posterGrid, LinearLayout.LayoutParams(-1, 0, 1f))
         val selectedCategory = category; val selectedSort = sort
         work = scope.launch {
             val titles = withContext(Dispatchers.Default) {
@@ -307,7 +356,10 @@ internal class NativeBrowseController(private val activity: Activity, private va
                     else -> subset.sortedByDescending { it.added }
                 }
             }
-            if (page == destination) grid.adapter = Posters(titles, 190, 268, true)
+            if (page == destination) {
+                posterGrid.adapter = Posters(titles, 190, 268, true)
+                if (pendingGridFocus) focusFirstPoster()
+            }
         }
     }
 
@@ -420,7 +472,9 @@ internal class NativeBrowseController(private val activity: Activity, private va
                             else false
                         KeyEvent.KEYCODE_DPAD_UP ->
                             if (!isGrid) moveHomeFocus(holder.itemView.parent as RecyclerView, position, false)
-                            else false
+                            else if (position < 4 && activeGridFilters != null) {
+                                activeGridFilters?.first?.requestFocus() == true
+                            } else false
                         KeyEvent.KEYCODE_DPAD_LEFT ->
                             (position == 0 || (isGrid && position % 4 == 0)) && showMenu()
                         else -> false
