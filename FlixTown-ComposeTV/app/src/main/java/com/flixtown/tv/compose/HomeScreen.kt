@@ -41,14 +41,15 @@ data class TvTitle(
     val tags: String = "",
     val posterUrl: String = "",
     val backdropUrl: String = "",
-    val streamUrl: String = ""
+    val streamUrl: String = "",
+    val kind: String = "movie", val added: Long = 0, val rating: Double = 0.0
 )
 
 // Replace this empty catalog with the authenticated panel API response.
 data class BrowseCatalog(val featured: TvTitle? = null, val rows: List<Pair<String, List<TvTitle>>> = emptyList())
 
 @Composable
-fun HomeScreen(onPlay: (TvTitle) -> Unit, catalog: BrowseCatalog = BrowseCatalog()) {
+fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit, catalog: BrowseCatalog = BrowseCatalog()) {
     val featured = catalog.featured
     val heroPlayFocus = remember { FocusRequester() }
     val rows = catalog.rows.filter { it.second.isNotEmpty() }
@@ -63,7 +64,7 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, catalog: BrowseCatalog = BrowseCatalog
             verticalArrangement = Arrangement.spacedBy(26.dp)
         ) {
             item(key = "hero") {
-                Hero(featured, heroPlayFocus, onPlay)
+                Hero(featured, heroPlayFocus, onPlay, onDetails)
             }
             items(rows, key = { it.first }) { (heading, titles) ->
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -72,7 +73,7 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, catalog: BrowseCatalog = BrowseCatalog
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(22.dp)
                     ) {
-                        items(titles, key = { it.id }) { item -> PosterCard(item) { onPlay(item) } }
+                        items(titles, key = { it.id }) { item -> PosterCard(item) { onDetails(item) } }
                     }
                 }
             }
@@ -85,7 +86,8 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, catalog: BrowseCatalog = BrowseCatalog
 }
 
 @Composable
-private fun Hero(item: TvTitle?, playFocus: FocusRequester, onPlay: (TvTitle) -> Unit) {
+private fun Hero(item: TvTitle?, playFocus: FocusRequester,
+    onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit) {
     Box(Modifier.fillMaxWidth().height(290.dp).clip(RoundedCornerShape(20.dp))
         .background(Color(0xFF151B2A))) {
         if (item != null) {
@@ -116,7 +118,7 @@ private fun Hero(item: TvTitle?, playFocus: FocusRequester, onPlay: (TvTitle) ->
                             Text("▶  Play", fontSize = 18.sp)
                         }
                     }
-                    Button(onClick = { /* Details route follows catalog integration. */ }) {
+                    Button(onClick = { onDetails(item) }) {
                         Text("Details", fontSize = 18.sp)
                     }
                 }

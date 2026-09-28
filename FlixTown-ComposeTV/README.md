@@ -1,6 +1,8 @@
 # Flix Town Compose TV starter
 
-Fresh Kotlin + Compose for TV project. The browsable catalog and sign-in are placeholders until the panel API is integrated. The Details action is not connected yet. The player accepts only HTTP(S) URLs supplied through its intent.
+Fresh Kotlin + Compose for TV project. It reads the existing Flix Town panel configuration, supports direct Xtream credentials or QR pairing, refreshes movie and series lists on opening, and loads season/episode lists in Details. The player accepts HTTP(S) Xtream streams through its intent.
+
+This remains a preview. Continue Watching, subtitles, search, category filters, renewal, intro, panel-driven updates, trailer lookup, and polished TV playback controls are not integrated yet. QR login needs a live panel, and panel endpoints must use HTTPS.
 
 Open this directory as an Android Studio project or build with `./gradlew assembleDebug` and find the APK in `app/build/outputs/apk/debug/`.
 
