@@ -146,7 +146,7 @@ class FlixRepository(private val context: Context) {
                     "Top Rated Movies" to topMovies),
                 movies = movies, series = series,
                 movieCategories = movieCategoriesJob.await().filter { it.id in movieCategoryIds },
-                seriesCategories = seriesCategoriesJob.await().filter { it.id in seriesCategoryIds })
+                seriesCategories = seriesCategoriesJob.await().filter { it.id in seriesCategoryIds }
             )
         }
     }
