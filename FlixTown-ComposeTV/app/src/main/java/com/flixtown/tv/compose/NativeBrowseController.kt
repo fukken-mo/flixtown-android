@@ -33,13 +33,13 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private val muted = Color.rgb(148, 163, 184)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val rail = LinearLayout(activity).apply {
-        orientation = 1; setBackgroundColor(surface); setPadding(0, dp(27), 0, dp(27))
+        orientation = 1; background = TvChrome.rail(); setPadding(0, dp(27), 0, dp(27))
     }
     private val content = FrameLayout(activity).apply {
         setPadding(dp(48), dp(27), dp(48), dp(27)); clipChildren = false; clipToPadding = false
     }
     val root = LinearLayout(activity).apply {
-        orientation = 0; setBackgroundColor(bg); clipChildren = false; clipToPadding = false
+        orientation = 0; background = TvChrome.background(); clipChildren = false; clipToPadding = false
         addView(rail, LinearLayout.LayoutParams(dp(96), -1))
         addView(content, LinearLayout.LayoutParams(0, -1, 1f))
     }
@@ -91,7 +91,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
             nav[destination] = item
             val slot = FrameLayout(activity)
             slot.addView(item, FrameLayout.LayoutParams(-1, -1))
-            val marker = View(activity).apply { setBackgroundColor(cyan) }
+            val marker = View(activity).apply { setBackgroundColor(red) }
             slot.addView(marker, FrameLayout.LayoutParams(dp(3), dp(27),
                 Gravity.START or Gravity.CENTER_VERTICAL))
             indicators[destination] = marker
@@ -138,8 +138,9 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private fun paintRail() {
         nav.forEach { (destination, item) ->
             val focused = item.hasFocus()
-            item.setTextColor(if (focused || destination == page) cyan else Color.WHITE)
-            item.background = ColorDrawable(if (focused) Color.argb(28, 0, 229, 255) else surface)
+            item.setTextColor(if (focused || destination == page) Color.WHITE else muted)
+            item.background = if (focused) TvChrome.action(dp(12).toFloat(), true, 0)
+                else ColorDrawable(Color.TRANSPARENT)
             indicators[destination]?.visibility =
                 if (focused || destination == page) View.VISIBLE else View.INVISIBLE
         }
@@ -167,7 +168,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
         }
         scroll.addView(column); content.addView(scroll, FrameLayout.LayoutParams(-1, -1))
         catalog.featured?.let { featured ->
-            val hero = FrameLayout(activity).apply { background = shape(surface, 18) }
+            val hero = FrameLayout(activity).apply { background = TvChrome.panel(dp(14).toFloat()) }
             if (featured.backdropUrl.isNotBlank()) hero.addView(ImageView(activity).apply {
                 scaleType = ImageView.ScaleType.CENTER_CROP; alpha = .42f
                 load(featured.backdropUrl) { size(780, 350); crossfade(false) }
@@ -176,7 +177,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 orientation = 1; gravity = Gravity.BOTTOM
                 setPadding(dp(30), dp(18), dp(28), dp(28))
             }
-            info.addView(text("FEATURED", 14, red, true))
+            info.addView(text("FEATURED ON FLIX TOWN", 14, Color.rgb(255, 139, 149), true))
             info.addView(text(featured.name, 33, Color.WHITE, true).apply { maxLines = 2 },
                 LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
             info.addView(text(featured.tags, 16, muted),
@@ -308,11 +309,10 @@ internal class NativeBrowseController(private val activity: Activity, private va
             val categoryButton = button("Categories  ·  " +
                 (categories.firstOrNull { it.id == category }?.name ?: "All categories") + "  ▾") {
                 val options = listOf("All categories") + categories.map { it.name }
-                AlertDialog.Builder(activity).setTitle("Categories")
-                    .setItems(options.toTypedArray()) { _, index ->
-                        category = if (index == 0) "" else categories[index - 1].id
-                        render()
-                    }.show()
+                showPicker("Categories", options) { index ->
+                    category = if (index == 0) "" else categories[index - 1].id
+                    render()
+                }
             }
             categoryButton.setOnKeyListener { _, key, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) false else when (key) {
@@ -323,8 +323,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
             }
             controls.addView(categoryButton)
             val sortButton = button("Sort by  ·  " + sorts[sort] + "  ▾") {
-                AlertDialog.Builder(activity).setTitle("Sort by")
-                    .setItems(sorts.toTypedArray()) { _, index -> sort = index; render() }.show()
+                showPicker("Sort by", sorts) { index -> sort = index; render() }
             }
             sortButton.setOnKeyListener { _, key, event ->
                 event.action == KeyEvent.ACTION_DOWN &&
@@ -498,16 +497,43 @@ internal class NativeBrowseController(private val activity: Activity, private va
 
     private fun button(title: String, click: () -> Unit) = text(title, 17, Color.WHITE, true).apply {
         gravity = Gravity.CENTER; setPadding(dp(22), 0, dp(22), 0)
-        background = shape(surface, 24, muted)
+        background = TvChrome.action(dp(10).toFloat(), false, dp(1))
         isFocusable = true; isClickable = true; setOnClickListener { click() }
         setOnFocusChangeListener { view, focused ->
             view.animate().cancel()
             view.animate().scaleX(if (focused) 1.035f else 1f)
                 .scaleY(if (focused) 1.035f else 1f).setDuration(100).start()
-            background = shape(if (focused) red else surface, 24,
-                if (focused) Color.WHITE else muted)
+            background = TvChrome.action(dp(10).toFloat(), focused, dp(1))
         }
     }.apply { layoutParams = LinearLayout.LayoutParams(-2, dp(48)) }
+    private fun showPicker(title: String, options: List<String>, selected: (Int) -> Unit) {
+        val panel = LinearLayout(activity).apply {
+            orientation = 1; background = TvChrome.panel(dp(16).toFloat())
+            setPadding(dp(24), dp(22), dp(24), dp(22))
+        }
+        panel.addView(text(title, 24, Color.WHITE, true),
+            LinearLayout.LayoutParams(-1, dp(45)))
+        val scroll = ScrollView(activity).apply {
+            isVerticalScrollBarEnabled = false; clipToPadding = false
+        }
+        val entries = LinearLayout(activity).apply { orientation = 1 }
+        scroll.addView(entries)
+        panel.addView(scroll, LinearLayout.LayoutParams(-1, dp(360)))
+        val dialog = AlertDialog.Builder(activity).setView(panel).create()
+        options.forEachIndexed { index, option ->
+            val choice = button(option) { dialog.dismiss(); selected(index) }
+            entries.addView(choice, LinearLayout.LayoutParams(-1, dp(48)).apply {
+                bottomMargin = dp(8)
+            })
+        }
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setOnShowListener {
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            dialog.window?.setLayout(dp(420), -2)
+            entries.getChildAt(0)?.requestFocus()
+        }
+        dialog.show()
+    }
     private fun text(value: String, size: Int, color: Int, bold: Boolean = false) =
         TextView(activity).apply {
             text = value; textSize = size.toFloat(); setTextColor(color)

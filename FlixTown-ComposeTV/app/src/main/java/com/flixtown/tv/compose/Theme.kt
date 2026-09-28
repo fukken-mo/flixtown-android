@@ -29,11 +29,11 @@ fun FlixTownTheme(content: @Composable () -> Unit) {
 @Composable
 fun PremiumButton(onClick: () -> Unit, modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit) {
-    val shape = RoundedCornerShape(50)
+    val shape = RoundedCornerShape(12.dp)
     Button(onClick = onClick, modifier = modifier,
         shape = ButtonDefaults.shape(shape),
         colors = ButtonDefaults.colors(
-            containerColor = Color.White.copy(alpha = 0.15f),
+            containerColor = Color(0xFF292D38),
             contentColor = CinemaColor.Text,
             focusedContainerColor = CinemaColor.Accent,
             focusedContentColor = CinemaColor.Text),

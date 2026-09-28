@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -22,6 +24,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Text
+import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
@@ -31,8 +34,11 @@ fun DetailsScreen(item: TvTitle, repo: FlixRepository, account: TvAccount,
     BackHandler(onBack = onBack)
     var episodes by remember(item.id) { mutableStateOf<Map<Int, List<TvTitle>>>(emptyMap()) }
     var selectedSeason by remember(item.id) { mutableIntStateOf(0) }
+    var seasonPickerOpen by remember(item.id) { mutableStateOf(false) }
+    val playFocus = remember(item.id) { FocusRequester() }
     var error by remember(item.id) { mutableStateOf("") }
     LaunchedEffect(item.id) {
+        playFocus.requestFocus()
         if (item.kind == "series") {
             try {
                 episodes = repo.episodes(account, item)
@@ -60,24 +66,25 @@ fun DetailsScreen(item: TvTitle, repo: FlixRepository, account: TvAccount,
                     maxLines = 4, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    if (item.streamUrl.isNotBlank()) PremiumButton(onClick = { onPlay(item) }) {
+                    if (item.streamUrl.isNotBlank()) PremiumButton(onClick = { onPlay(item) },
+                        modifier = Modifier.focusRequester(playFocus)) {
                         Text("▶  Play movie", fontSize = 18.sp)
                     }
-                    PremiumButton(onClick = onBack) { Text("Back", fontSize = 18.sp) }
+                    PremiumButton(onClick = onBack,
+                        modifier = if (item.streamUrl.isBlank()) Modifier.focusRequester(playFocus)
+                        else Modifier) { Text("Back", fontSize = 18.sp) }
                 }
             }
         }
         if (item.kind == "series") {
-            Text("Episodes", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            if (episodes.isNotEmpty()) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 5.dp)) {
-                    items(episodes.keys.toList(), key = { it }) { season ->
-                        PremiumButton(onClick = { selectedSeason = season }) {
-                            Text("Season $season" + if (selectedSeason == season) "  ✓" else "")
-                        }
-                    }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Episodes", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                if (episodes.isNotEmpty()) PremiumButton(onClick = { seasonPickerOpen = true }) {
+                    Text("Season $selectedSeason  ▾", fontSize = 16.sp)
                 }
+            }
+            if (episodes.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp),
                     contentPadding = PaddingValues(vertical = 12.dp)) {
                     items(episodes[selectedSeason].orEmpty(), key = { it.id }) { episode ->
@@ -100,6 +107,33 @@ fun DetailsScreen(item: TvTitle, repo: FlixRepository, account: TvAccount,
                 }
             } else Text(if (error.isNotBlank()) error else "Loading episodes…",
                 color = Color(0xFFBDC6D8), fontSize = 16.sp)
+        }
+    }
+    if (seasonPickerOpen) {
+        val firstSeasonFocus = remember(item.id) { FocusRequester() }
+        LaunchedEffect(seasonPickerOpen) { firstSeasonFocus.requestFocus() }
+        Dialog(onDismissRequest = { seasonPickerOpen = false }) {
+            Column(Modifier.width(330.dp)
+                .background(CinemaColor.Surface, RoundedCornerShape(14.dp))
+                .padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Select season", color = Color.White, fontSize = 23.sp,
+                    fontWeight = FontWeight.Bold)
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.heightIn(max = 360.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(episodes.keys.toList(), key = { it }) { season ->
+                        PremiumButton(onClick = {
+                            selectedSeason = season
+                            seasonPickerOpen = false
+                        }, modifier = Modifier.fillMaxWidth().then(
+                            if (season == episodes.keys.first()) Modifier.focusRequester(firstSeasonFocus)
+                            else Modifier)) {
+                            Text("Season $season" + if (season == selectedSeason) "  ✓" else "",
+                                fontSize = 17.sp)
+                        }
+                    }
+                }
+            }
         }
     }
 }

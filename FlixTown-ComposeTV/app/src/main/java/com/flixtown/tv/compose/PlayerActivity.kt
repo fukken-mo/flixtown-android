@@ -232,8 +232,8 @@ private fun PlayerTimeline(player: ExoPlayer, modifier: Modifier = Modifier) {
                 strokeWidth = 2.dp.toPx())
             if (progress > 0f) {
                 val end = Offset(size.width * progress, y)
-                drawLine(Color(0x5500E5FF), Offset(0f, y), end, strokeWidth = 7.dp.toPx())
-                drawLine(Color(0xFF00E5FF), Offset(0f, y), end, strokeWidth = 2.dp.toPx())
+                drawLine(Color(0x66D33244), Offset(0f, y), end, strokeWidth = 7.dp.toPx())
+                drawLine(CinemaColor.Accent, Offset(0f, y), end, strokeWidth = 2.dp.toPx())
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
