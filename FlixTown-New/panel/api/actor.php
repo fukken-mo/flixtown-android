@@ -34,9 +34,10 @@ foreach (array_slice($credits['cast'] ?? [], 0, 500) as $credit) {
     $titles[] = ['kind' => $credit['media_type'] === 'movie' ? 'movie' : 'series', 'title' => $title];
 }
 $payload = json_encode(['titles' => $titles], JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+$cacheHours = $titles ? 168 : 1;
 try {
-    $save = $db->prepare('INSERT INTO tmdb_cache (cache_key,payload,expires_at) VALUES (?,?,UTC_TIMESTAMP() + INTERVAL 7 DAY) ON DUPLICATE KEY UPDATE payload=VALUES(payload),expires_at=VALUES(expires_at)');
-    $save->execute([$cacheKey,$payload]);
+    $save = $db->prepare('INSERT INTO tmdb_cache (cache_key,payload,expires_at) VALUES (?,?,UTC_TIMESTAMP() + INTERVAL ? HOUR) ON DUPLICATE KEY UPDATE payload=VALUES(payload),expires_at=VALUES(expires_at)');
+    $save->execute([$cacheKey,$payload,$cacheHours]);
 } catch (PDOException $e) { /* Continue serving live results. */ }
 header('Content-Type: application/json; charset=utf-8');
 echo $payload;

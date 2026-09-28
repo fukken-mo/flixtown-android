@@ -5,6 +5,8 @@ $kind = (string)($_GET['kind'] ?? '');
 $title = trim((string)($_GET['title'] ?? ''));
 $year = (string)($_GET['year'] ?? '');
 if (!in_array($kind, ['movie','series'], true) || $title === '' || strlen($title) > 160 || ($year !== '' && !preg_match('/^[0-9]{4}$/D', $year))) response(['error' => 'Invalid title request'], 400);
+$searchTitle = trim((string)preg_replace('/\s*\((?:19|20)\d{2}\)\s*$/u', '', $title));
+if ($year === '' && preg_match('/\(((?:19|20)\d{2})\)\s*$/u', $title, $yearMatch)) $year = $yearMatch[1];
 $key = setting($db, 'tmdb_key');
 if ($key === '') response(['cast' => [], 'trailer' => '']);
 $cacheKey = hash('sha256', $kind . '|' . strtolower($title) . '|' . $year);
@@ -22,10 +24,15 @@ function tmdbGet(string $path, array $query): array {
     return $status === 200 && is_string($body) ? (json_decode($body, true) ?: []) : [];
 }
 $type = $kind === 'series' ? 'tv' : 'movie';
-$q = ['api_key' => $key, 'query' => $title, 'language' => 'en-US'];
+$q = ['api_key' => $key, 'query' => $searchTitle !== '' ? $searchTitle : $title, 'language' => 'en-US'];
 if ($year !== '') $q[$type === 'tv' ? 'first_air_date_year' : 'year'] = $year;
 $search = tmdbGet('search/' . $type, $q);
 $result = $search['results'][0] ?? null;
+if (!$result && $year !== '') {
+    unset($q[$type === 'tv' ? 'first_air_date_year' : 'year']);
+    $search = tmdbGet('search/' . $type, $q);
+    $result = $search['results'][0] ?? null;
+}
 $cast = [];$trailer = '';
 if (is_array($result) && !empty($result['id'])) {
     $id = (int)$result['id'];
@@ -42,8 +49,9 @@ if (is_array($result) && !empty($result['id'])) {
     }
 }
 $payload = json_encode(['cast' => $cast, 'trailer' => $trailer], JSON_UNESCAPED_SLASHES);
+$cacheHours = $cast || $trailer !== '' ? 168 : 1;
 try {
-    $save = $db->prepare('INSERT INTO tmdb_cache (cache_key,payload,expires_at) VALUES (?,?,UTC_TIMESTAMP() + INTERVAL 7 DAY) ON DUPLICATE KEY UPDATE payload=VALUES(payload),expires_at=VALUES(expires_at)');
-    $save->execute([$cacheKey,$payload]);
+    $save = $db->prepare('INSERT INTO tmdb_cache (cache_key,payload,expires_at) VALUES (?,?,UTC_TIMESTAMP() + INTERVAL ? HOUR) ON DUPLICATE KEY UPDATE payload=VALUES(payload),expires_at=VALUES(expires_at)');
+    $save->execute([$cacheKey,$payload,$cacheHours]);
 } catch (PDOException $e) { /* Continue serving the live response. */ }
 echo $payload;
