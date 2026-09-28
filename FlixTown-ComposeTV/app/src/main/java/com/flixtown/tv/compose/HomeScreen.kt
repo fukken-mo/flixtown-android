@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,7 +64,8 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
     LaunchedEffect(featured?.id) {
         if (autoFocusHero && featured != null) heroPlayFocus.requestFocus()
     }
-    Box(Modifier.fillMaxSize().background(Color(0xFF090C16))
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
+        CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))
         .then(if (includeSafePadding) Modifier.padding(horizontal = 48.dp, vertical = 27.dp) else Modifier)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().graphicsLayer { clip = false },
@@ -74,9 +76,12 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
                 Hero(featured, heroPlayFocus, onPlay, onDetails)
             }
             items(rows, key = { it.first }) { (heading, titles) ->
+                val rowState = rememberLazyListState()
+                PrefetchPosters(rowState, titles)
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(heading, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     LazyRow(
+                        state = rowState,
                         modifier = Modifier.fillMaxWidth().graphicsLayer { clip = false },
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp),
                         horizontalArrangement = Arrangement.spacedBy(22.dp)
@@ -97,36 +102,37 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
 private fun Hero(item: TvTitle?, playFocus: FocusRequester,
     onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit) {
     Box(Modifier.fillMaxWidth().height(290.dp).clip(RoundedCornerShape(20.dp))
-        .background(Color(0xFF151B2A))) {
+        .background(CinemaColor.Surface)) {
         if (item != null) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(item.backdropUrl)
-                    .memoryCachePolicy(CachePolicy.ENABLED).diskCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(false).build(),
+                model = backdropRequest(item.backdropUrl),
                 contentDescription = null, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
-            Color(0xF2090C16), Color(0xD9090C16), Color(0x1A090C16)
+            CinemaColor.Background, CinemaColor.Background.copy(alpha = 0.78f), Color.Transparent
+        ))))
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
+            Color.Transparent, Color.Transparent, CinemaColor.Background.copy(alpha = 0.94f)
         ))))
         Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 34.dp).widthIn(max = 620.dp),
             verticalArrangement = Arrangement.spacedBy(11.dp)) {
-            Text("FLIX TOWN  /  FEATURED", color = Color(0xFFFF7194), fontSize = 14.sp,
+            Text("FLIX TOWN  /  FEATURED", color = CinemaColor.Accent, fontSize = 14.sp,
                 fontWeight = FontWeight.Bold)
             Text(item?.name ?: "Flix Town", color = Color.White, fontSize = 38.sp,
                 fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (!item?.tags.isNullOrBlank()) Text(item!!.tags, color = Color(0xFFECEDF1), fontSize = 16.sp)
+            if (!item?.tags.isNullOrBlank()) Text(item!!.tags, color = CinemaColor.Muted, fontSize = 16.sp)
             if (!item?.overview.isNullOrBlank()) Text(item!!.overview, color = Color(0xFFE0E3EB),
                 fontSize = 16.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
             if (item != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     if (item.streamUrl.isNotBlank()) {
-                        Button(onClick = { onPlay(item) }, modifier = Modifier.focusRequester(playFocus)) {
+                        PremiumPremiumButton(onClick = { onPlay(item) }, modifier = Modifier.focusRequester(playFocus)) {
                             Text("▶  Play", fontSize = 18.sp)
                         }
                     }
-                    Button(onClick = { onDetails(item) },
+                    PremiumPremiumButton(onClick = { onDetails(item) },
                         modifier = if (item.streamUrl.isBlank()) Modifier.focusRequester(playFocus) else Modifier) {
                         Text("Details", fontSize = 18.sp)
                     }
@@ -145,16 +151,14 @@ private fun PosterCard(item: TvTitle, onClick: () -> Unit) {
             shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
             border = CardDefaults.border(
                 focusedBorder = androidx.tv.material3.Border(
-                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF567F)),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, CinemaColor.Accent),
                     shape = RoundedCornerShape(12.dp)
                 )
             ),
             scale = CardDefaults.scale(focusedScale = 1.07f)
         ) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(item.posterUrl)
-                    .memoryCachePolicy(CachePolicy.ENABLED).diskCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(false).build(),
+                model = posterRequest(item.posterUrl),
                 contentDescription = item.name, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().background(Color(0xFF252B39))
             )

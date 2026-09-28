@@ -54,11 +54,11 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
             }
         }
     }
-    Row(Modifier.fillMaxSize().background(Color(0xFF090C16))
+    Row(Modifier.fillMaxSize().background(CinemaColor.Background)
         .padding(horizontal = 48.dp, vertical = 27.dp),
         horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
-            Text("FLIX TOWN", color = Color(0xFFFF527C), fontSize = 18.sp,
+            Text("FLIX TOWN", color = CinemaColor.Accent, fontSize = 18.sp,
                 fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(20.dp))
             Text("Sign in", color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold)
@@ -67,7 +67,7 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
             Spacer(Modifier.height(12.dp))
             LoginField(password, "Password", true) { password = it }
             Spacer(Modifier.height(18.dp))
-            Button(onClick = {
+            PremiumButton(onClick = {
                 if (busy) return@Button
                 if (username.isBlank() || password.isBlank()) { error = "Enter both account fields"; return@Button }
                 busy = true; error = ""
@@ -108,13 +108,13 @@ private fun LoginField(value: String, hint: String, secret: Boolean, onChange: (
     var focused by remember { mutableStateOf(false) }
     BasicTextField(value = value, onValueChange = onChange, singleLine = true,
         textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 18.sp),
-        cursorBrush = SolidColor(Color(0xFFFF527C)),
+        cursorBrush = SolidColor(CinemaColor.Accent),
         keyboardOptions = KeyboardOptions(keyboardType = if (secret) KeyboardType.Password else KeyboardType.Text),
         visualTransformation = if (secret) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
-            .background(Color(0xFF1C2332), RoundedCornerShape(10.dp))
+            .background(CinemaColor.Surface, RoundedCornerShape(10.dp))
             .border(if (focused) 2.dp else 1.dp,
-                if (focused) Color(0xFFFF527C) else Color(0xFF465069), RoundedCornerShape(10.dp))
+                if (focused) CinemaColor.Accent else Color(0xFF465069), RoundedCornerShape(10.dp))
             .padding(horizontal = 18.dp, vertical = 14.dp),
         decorationBox = { inner ->
             Box {

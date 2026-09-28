@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,15 +49,15 @@ fun DetailScreen(item: TvTitle, account: TvAccount, repo: FlixRepository,
                 if (related.isNotEmpty()) related.take(18) else all.take(18)
             }
     }
-    Column(Modifier.fillMaxSize().background(Color(0xFF090C16))
+    Column(Modifier.fillMaxSize().background(CinemaColor.Background)
         .padding(horizontal = 48.dp, vertical = 27.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF1A2132))) {
-            AsyncImage(item.backdropUrl, contentDescription = null,
+            .background(CinemaColor.Surface)) {
+            AsyncImage(backdropRequest(item.backdropUrl), contentDescription = null,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
-                Color(0xFF090C16), Color(0xE9090C16), Color(0x1B090C16)))))
+                CinemaColor.Background, CinemaColor.Background.copy(alpha = 0.91f), Color.Transparent))))
             Column(Modifier.align(Alignment.CenterStart).padding(30.dp).widthIn(max = 670.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(item.name, color = Color.White, fontSize = 36.sp,
@@ -64,29 +65,31 @@ fun DetailScreen(item: TvTitle, account: TvAccount, repo: FlixRepository,
                 Text(listOf(info.year.ifBlank { item.year }, info.duration, info.contentRating,
                     item.rating.takeIf { it > 0 }?.let { "★ $it" }.orEmpty())
                     .filter { it.isNotBlank() }.joinToString("  •  "),
-                    color = Color(0xFFFFB4C5), fontSize = 16.sp)
+                    color = CinemaColor.Muted, fontSize = 16.sp)
                 Text(info.synopsis.ifBlank { item.overview }.ifBlank { "No synopsis available." },
                     color = Color(0xFFE4E7EF), fontSize = 17.sp,
                     maxLines = 4, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { onPlay(item) }, modifier = Modifier.focusRequester(playFocus)) {
+                    PremiumButton(onClick = { onPlay(item) }, modifier = Modifier.focusRequester(playFocus)) {
                         Text("▶  Play Now", fontSize = 18.sp)
                     }
-                    Button(onClick = {
+                    PremiumButton(onClick = {
                         if (info.trailer.isBlank()) notice = "Trailer unavailable for this movie"
                         else onTrailer(info.trailer)
                     }) { Text("Trailer", fontSize = 18.sp) }
-                    Button(onClick = { watchlisted = repo.toggleWatchlist(item.id) }) {
+                    PremiumButton(onClick = { watchlisted = repo.toggleWatchlist(item.id) }) {
                         Text(if (watchlisted) "✓  In Watchlist" else "+  Add to Watchlist", fontSize = 18.sp)
                     }
                 }
-                if (notice.isNotBlank()) Text(notice, color = Color(0xFFFFB4C5), fontSize = 15.sp)
+                if (notice.isNotBlank()) Text(notice, color = CinemaColor.Muted, fontSize = 15.sp)
             }
         }
         if (candidates.isNotEmpty()) {
             Text("More Like This", color = Color.White, fontSize = 25.sp,
                 fontWeight = FontWeight.SemiBold)
-            LazyRow(modifier = Modifier.fillMaxWidth().graphicsLayer { clip = false },
+            val similarRow = rememberLazyListState()
+            PrefetchPosters(similarRow, candidates)
+            LazyRow(state = similarRow, modifier = Modifier.fillMaxWidth().graphicsLayer { clip = false },
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                 items(candidates, key = { it.id }) { title ->
@@ -94,7 +97,7 @@ fun DetailScreen(item: TvTitle, account: TvAccount, repo: FlixRepository,
                         Card(onClick = { onSimilar(title) },
                             modifier = Modifier.width(142.dp).height(174.dp),
                             scale = CardDefaults.scale(focusedScale = 1.07f)) {
-                            AsyncImage(title.posterUrl, contentDescription = title.name,
+                            AsyncImage(posterRequest(title.posterUrl), contentDescription = title.name,
                                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
                                     .background(Color(0xFF242B3A)))
                         }

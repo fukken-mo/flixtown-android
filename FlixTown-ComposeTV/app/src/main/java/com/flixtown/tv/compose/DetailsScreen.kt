@@ -40,31 +40,30 @@ fun DetailsScreen(item: TvTitle, repo: FlixRepository, account: TvAccount,
             } catch (e: Exception) { error = e.message ?: "Episodes unavailable" }
         }
     }
-    Column(Modifier.fillMaxSize().background(Color(0xFF090C16))
+    Column(Modifier.fillMaxSize().background(CinemaColor.Background)
         .padding(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF1A2132))) {
-            AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(item.backdropUrl)
-                .crossfade(false).build(), contentDescription = null,
+            .background(CinemaColor.Surface)) {
+            AsyncImage(model = backdropRequest(item.backdropUrl), contentDescription = null,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
-                Color(0xFF090C16), Color(0xE0090C16), Color(0x24090C16)))))
+                CinemaColor.Background, CinemaColor.Background.copy(alpha = 0.88f), Color.Transparent))))
             Column(Modifier.fillMaxHeight().widthIn(max = 680.dp).padding(28.dp),
                 verticalArrangement = Arrangement.Center) {
                 Text(item.name, color = Color.White, fontWeight = FontWeight.Bold,
                     fontSize = 35.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(8.dp))
-                Text(item.tags, color = Color(0xFFFFB1C4), fontSize = 17.sp)
+                Text(item.tags, color = CinemaColor.Muted, fontSize = 17.sp)
                 Spacer(Modifier.height(10.dp))
                 Text(item.overview, color = Color(0xFFE2E6EF), fontSize = 17.sp,
                     maxLines = 4, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    if (item.streamUrl.isNotBlank()) Button(onClick = { onPlay(item) }) {
+                    if (item.streamUrl.isNotBlank()) PremiumButton(onClick = { onPlay(item) }) {
                         Text("▶  Play movie", fontSize = 18.sp)
                     }
-                    Button(onClick = onBack) { Text("Back", fontSize = 18.sp) }
+                    PremiumButton(onClick = onBack) { Text("Back", fontSize = 18.sp) }
                 }
             }
         }
@@ -74,7 +73,7 @@ fun DetailsScreen(item: TvTitle, repo: FlixRepository, account: TvAccount,
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(vertical = 5.dp)) {
                     items(episodes.keys.toList(), key = { it }) { season ->
-                        Button(onClick = { selectedSeason = season }) {
+                        PremiumButton(onClick = { selectedSeason = season }) {
                             Text("Season $season" + if (selectedSeason == season) "  ✓" else "")
                         }
                     }
@@ -86,7 +85,7 @@ fun DetailsScreen(item: TvTitle, repo: FlixRepository, account: TvAccount,
                             modifier = Modifier.width(260.dp).height(150.dp),
                             scale = CardDefaults.scale(focusedScale = 1.06f)) {
                             Box(Modifier.fillMaxSize().background(Color(0xFF252E40))) {
-                                AsyncImage(model = episode.posterUrl, contentDescription = null,
+                                AsyncImage(model = backdropRequest(episode.posterUrl), contentDescription = null,
                                     contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                 Text(episode.name, color = Color.White, fontSize = 15.sp,
                                     maxLines = 2, overflow = TextOverflow.Ellipsis,

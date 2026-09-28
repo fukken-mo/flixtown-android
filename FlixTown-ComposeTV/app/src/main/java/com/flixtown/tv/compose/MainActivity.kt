@@ -25,10 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val repo = FlixRepository(applicationContext)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme(
-                primary = Color(0xFFE52254), background = Color(0xFF090C16),
-                surface = Color(0xFF151B2A), onSurface = Color.White
-            )) {
+            FlixTownTheme {
                 var account by remember { mutableStateOf(repo.savedAccount()) }
                 var catalog by remember { mutableStateOf(BrowseCatalog()) }
                 var details by remember { mutableStateOf<TvTitle?>(null) }
@@ -95,7 +92,7 @@ class MainActivity : ComponentActivity() {
                                 Text(if (loading) "Refreshing movies and series…" else error,
                                     color = Color.White, fontSize = 18.sp)
                                 if (!loading && error.isNotBlank()) {
-                                    Button(onClick = { refresh++ }) { Text("Retry") }
+                                    PremiumPremiumButton(onClick = { refresh++ }) { Text("Retry") }
                                 }
                             }
                         }

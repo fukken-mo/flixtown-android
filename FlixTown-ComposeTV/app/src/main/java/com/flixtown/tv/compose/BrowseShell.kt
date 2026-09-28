@@ -61,56 +61,25 @@ private enum class Page(val label: String, val icon: ImageVector) {
 fun BrowseShell(catalog: BrowseCatalog, repo: FlixRepository,
     onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
     onRefresh: () -> Unit, onSignOut: () -> Unit) {
-    var page by remember { mutableStateOf(Page.Home) }
-    var expanded by remember { mutableStateOf(true) }
+    var page by remember { mutableStateOf(BrowsePage.Home) }
     val homeFocus = remember { FocusRequester() }
-    val railWidth by animateDpAsState(if (expanded) 204.dp else 76.dp, label = "TV rail width")
     LaunchedEffect(Unit) { homeFocus.requestFocus() }
-    Row(Modifier.fillMaxSize().background(Color(0xFF090C16))
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
+        CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))
         .padding(horizontal = 48.dp, vertical = 27.dp)) {
-        Column(Modifier.width(railWidth).fillMaxHeight()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF202338), Color(0xFF111522))))
-            .padding(horizontal = 10.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            Text(if (expanded) "FLIX TOWN" else "FT", color = Color(0xFFFF6C90),
-                fontSize = if (expanded) 21.sp else 19.sp, fontWeight = FontWeight.ExtraBold,
-                maxLines = 1, modifier = Modifier.padding(start = 10.dp, bottom = 16.dp))
-            Page.entries.forEach { item ->
-                val selected = page == item
-                Card(onClick = { page = item; expanded = true },
-                    modifier = Modifier.fillMaxWidth().height(54.dp)
-                        .then(if (item == Page.Home) Modifier.focusRequester(homeFocus) else Modifier)
-                        .onFocusChanged { if (it.isFocused) expanded = true },
-                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                    colors = CardDefaults.colors(
-                        containerColor = if (selected) Color(0xFF712642) else Color.Transparent,
-                        focusedContainerColor = Color(0xFFD9295A)),
-                    scale = CardDefaults.scale(focusedScale = 1.03f)) {
-                    Row(Modifier.fillMaxSize().padding(horizontal = 13.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Icon(item.icon, contentDescription = null, modifier = Modifier.size(27.dp),
-                            tint = Color.White)
-                        if (expanded) Text(item.label, color = Color.White, fontSize = 17.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                            maxLines = 1)
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.width(20.dp))
-        Box(Modifier.weight(1f).fillMaxHeight().onFocusChanged { if (it.hasFocus) expanded = false }) {
+      FlixNavigationDrawer(page, homeFocus, onSelect = { page = it }) {
+        Box(Modifier.fillMaxSize().padding(start = 20.dp)) {
             when (page) {
-                Page.Home -> HomeScreen(onPlay, onDetails, catalog, autoFocusHero = false,
+                BrowsePage.Home -> HomeScreen(onPlay, onDetails, catalog, autoFocusHero = false,
                     includeSafePadding = false)
-                Page.Movies -> CatalogPage("Movies", catalog.movies, catalog.movieCategories, onDetails)
-                Page.Series -> CatalogPage("Series", catalog.series, catalog.seriesCategories, onDetails)
-                Page.Search -> SearchPage(catalog.movies + catalog.series, onDetails)
-                Page.Watchlist -> WatchlistPage(catalog, repo, onDetails)
-                Page.Settings -> SettingsPage(onRefresh, onSignOut)
+                BrowsePage.Movies -> CatalogPage("Movies", catalog.movies, catalog.movieCategories, onDetails)
+                BrowsePage.Series -> CatalogPage("Series", catalog.series, catalog.seriesCategories, onDetails)
+                BrowsePage.Search -> SearchPage(catalog.movies + catalog.series, onDetails)
+                BrowsePage.Watchlist -> WatchlistPage(catalog, repo, onDetails)
+                BrowsePage.Settings -> SettingsPage(onRefresh, onSignOut)
             }
         }
+      }
     }
 }
 
@@ -132,12 +101,12 @@ private fun CatalogPage(title: String, source: List<TvTitle>, categories: List<T
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(title, color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { picker = "category" }) {
+            PremiumButton(onClick = { picker = "category" }) {
                 Text("Categories  •  ${category?.name ?: "All"}", fontSize = 16.sp)
             }
-            Button(onClick = { picker = "sort" }) { Text("Sort by  •  $sort", fontSize = 16.sp) }
+            PremiumButton(onClick = { picker = "sort" }) { Text("Sort by  •  $sort", fontSize = 16.sp) }
         }
-        Text("${filtered.size} titles", color = Color(0xFFB7C0D0), fontSize = 15.sp)
+        Text("${filtered.size} titles", color = CinemaColor.Muted, fontSize = 15.sp)
         if (filtered.isEmpty()) Text("No titles in this category.", color = Color.White, fontSize = 18.sp)
         else LazyVerticalGrid(columns = GridCells.Fixed(4), state = gridState,
             modifier = Modifier.weight(1f).fillMaxWidth().graphicsLayer { clip = false },
@@ -172,18 +141,18 @@ private fun SearchPage(all: List<TvTitle>, onDetails: (TvTitle) -> Unit) {
         Text("Search", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
         BasicTextField(query, onValueChange = { query = it }, singleLine = true,
             textStyle = TextStyle(color = Color.White, fontSize = 21.sp),
-            cursorBrush = SolidColor(Color(0xFFFF668B)),
+            cursorBrush = SolidColor(CinemaColor.Accent),
             modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
-                .background(Color(0xFF1D2636), RoundedCornerShape(12.dp))
+                .background(CinemaColor.Surface, RoundedCornerShape(12.dp))
                 .border(if (focused) 2.dp else 1.dp,
-                    if (focused) Color(0xFFFF668B) else Color(0xFF48516A), RoundedCornerShape(12.dp))
+                    if (focused) CinemaColor.Accent else Color(0xFF48516A), RoundedCornerShape(12.dp))
                 .padding(17.dp),
             decorationBox = { inner -> Box {
                 if (query.isEmpty()) Text("Search movies and series", color = Color(0xFFAFB8C8), fontSize = 21.sp)
                 inner()
             } })
         Text(if (query.length < 2) "Enter at least two letters" else "${matches.size} results",
-            color = Color(0xFFC4CBD8), fontSize = 16.sp)
+            color = CinemaColor.Muted, fontSize = 16.sp)
         LazyVerticalGrid(columns = GridCells.Fixed(4),
             modifier = Modifier.weight(1f).fillMaxWidth().graphicsLayer { clip = false },
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
@@ -201,7 +170,7 @@ private fun WatchlistPage(catalog: BrowseCatalog, repo: FlixRepository,
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Text("Watchlist", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
         if (saved.isEmpty()) Text("Titles you save will appear here.",
-            color = Color(0xFFC4CBD8), fontSize = 18.sp)
+            color = CinemaColor.Muted, fontSize = 18.sp)
         else LazyVerticalGrid(columns = GridCells.Fixed(4),
             modifier = Modifier.weight(1f).fillMaxWidth().graphicsLayer { clip = false },
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
@@ -216,8 +185,8 @@ private fun WatchlistPage(catalog: BrowseCatalog, repo: FlixRepository,
 private fun SettingsPage(onRefresh: () -> Unit, onSignOut: () -> Unit) {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Text("Settings", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-        Button(onClick = onRefresh) { Text("Refresh movies and series", fontSize = 18.sp) }
-        Button(onClick = onSignOut) { Text("Sign out", fontSize = 18.sp) }
+        PremiumButton(onClick = onRefresh) { Text("Refresh movies and series", fontSize = 18.sp) }
+        PremiumButton(onClick = onSignOut) { Text("Sign out", fontSize = 18.sp) }
     }
 }
 
@@ -227,11 +196,10 @@ private fun GridPoster(item: TvTitle, onClick: () -> Unit) {
         Card(onClick = onClick, modifier = Modifier.fillMaxWidth().aspectRatio(0.69f),
             shape = CardDefaults.shape(RoundedCornerShape(11.dp)),
             border = CardDefaults.border(focusedBorder = androidx.tv.material3.Border(
-                border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF658D)),
+                border = androidx.compose.foundation.BorderStroke(2.dp, CinemaColor.Accent),
                 shape = RoundedCornerShape(11.dp))),
             scale = CardDefaults.scale(focusedScale = 1.06f)) {
-            AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(item.posterUrl)
-                .crossfade(false).build(), contentDescription = item.name,
+            AsyncImage(model = posterRequest(item.posterUrl), contentDescription = item.name,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
                     .background(Color(0xFF222B3A)))
         }
@@ -245,14 +213,14 @@ private fun PickerDialog(title: String, options: List<Pair<String, String>>,
     onDismiss: () -> Unit, onSelect: (String) -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Column(Modifier.widthIn(max = 500.dp).fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp)).background(Color(0xFF171F31))
+            .clip(RoundedCornerShape(18.dp)).background(CinemaColor.Surface)
             .padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             LazyColumn(modifier = Modifier.heightIn(max = 360.dp),
                 contentPadding = PaddingValues(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 items(options, key = { it.second }) { (label, id) ->
-                    Button(onClick = { onSelect(id) }, modifier = Modifier.fillMaxWidth()) {
+                    PremiumButton(onClick = { onSelect(id) }, modifier = Modifier.fillMaxWidth()) {
                         Text(label, fontSize = 17.sp)
                     }
                 }
