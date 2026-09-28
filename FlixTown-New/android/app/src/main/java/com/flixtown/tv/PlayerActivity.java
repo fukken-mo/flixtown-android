@@ -208,7 +208,7 @@ public class PlayerActivity extends Activity {
         player.play();
         player.addListener(new Player.Listener(){
             @Override public void onPlaybackStateChanged(int state){
-                if(state==Player.STATE_ENDED){ended=true;clearProgress();if(!nextCanceled && nextUrl!=null && !nextUrl.isEmpty())playNext();}
+                if(state==Player.STATE_ENDED){ended=true;clearProgress();if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && !nextCanceled && nextUrl!=null && !nextUrl.isEmpty())playNext();}
             }
             @Override public void onIsPlayingChanged(boolean playing){updatePlay();if(playing)scheduleHide();else showControls();}
         });
@@ -314,7 +314,7 @@ public class PlayerActivity extends Activity {
         if(duration>0 && duration!=C.TIME_UNSET){
             if(!scrubbing){timeline.setProgress((int)Math.min(1000,(previewPosition>=0?previewPosition:current)*1000/duration));clock.setText(time(previewPosition>=0?previewPosition:current)+" / "+time(duration));}
             long remaining=duration-current;
-            if(nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && remaining>0){
+            if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && remaining>0){
                 if(remaining<=25000 && !promptShown){promptShown=true;showNext();}
                 if(dialog!=null && dialog.isShowing() && remaining<=25000 && nextCountdown!=null)
                     nextCountdown.setText("Next episode in "+Math.max(1,(remaining+999)/1000)+" seconds");

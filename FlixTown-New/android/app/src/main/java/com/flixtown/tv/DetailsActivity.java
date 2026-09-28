@@ -17,7 +17,7 @@ import org.json.JSONObject;
 
 public class DetailsActivity extends Activity {
     private String id,kind,title,extension;
-    private LinearLayout episodeArea,castArea; private TextView summary; private Button trailerButton;
+    private LinearLayout episodeArea,castArea,seasonContent; private TextView summary; private Button trailerButton;
     private boolean enrichedCast;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -28,11 +28,10 @@ public class DetailsActivity extends Activity {
         FrameLayout shell=new FrameLayout(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
         ImageView background=new ImageView(this);background.setScaleType(ImageView.ScaleType.CENTER_CROP);background.setAlpha(.25f);
         shell.addView(background,new FrameLayout.LayoutParams(-1,-1));Images.load(background,getIntent().getStringExtra("backdrop"),1000);
-        ScrollView scroll=new ScrollView(this);scroll.setClipToPadding(false);shell.addView(scroll);
-        LinearLayout content=Ui.column(this);Ui.pad(content,this,96,55,96,70);scroll.addView(content);
+        LinearLayout content=Ui.column(this);Ui.pad(content,this,80,30,80,22);shell.addView(content,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout hero=Ui.row(this);content.addView(hero);
         ImageView poster=new ImageView(this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        hero.addView(poster,new LinearLayout.LayoutParams(Ui.dp(this,175),Ui.dp(this,250)));
+        hero.addView(poster,new LinearLayout.LayoutParams(Ui.dp(this,148),Ui.dp(this,210)));
         Images.load(poster,getIntent().getStringExtra("poster"),300);
         LinearLayout text=Ui.column(this);Ui.pad(text,this,35,5,0,0);hero.addView(text,new LinearLayout.LayoutParams(0,-2,1));
         text.addView(Ui.heading(this,title,30));
@@ -47,8 +46,8 @@ public class DetailsActivity extends Activity {
                     Api.prefs(this).getString("resume_extension_"+key,"mp4"),
                     Api.prefs(this).getString("resume_next_"+key,""),
                     Api.prefs(this).getString("resume_next_ext_"+key,"mp4"));
-            } else if(episodeArea!=null && episodeArea.getChildCount()>1) {
-                android.view.View first=episodeArea.getChildAt(1);
+            } else if(seasonContent!=null && seasonContent.getChildCount()>0) {
+                android.view.View first=seasonContent.getChildAt(0);
                 if(first instanceof HorizontalScrollView) {
                     android.view.View row=((HorizontalScrollView)first).getChildAt(0);
                     if(row instanceof LinearLayout && ((LinearLayout)row).getChildCount()>0)((LinearLayout)row).getChildAt(0).requestFocus();
@@ -66,8 +65,11 @@ public class DetailsActivity extends Activity {
         favorite.setOnClickListener(v->{toggleFavorite();favorite.setText(isFavorite()?"Remove Favorite":"Add Favorite");});
         castArea=Ui.column(this);content.addView(castArea);
         if("series".equals(kind)) {
-            TextView heading=Ui.heading(this,"Episodes",23);Ui.pad(heading,this,0,55,0,16);content.addView(heading);
-            episodeArea=Ui.column(this);content.addView(episodeArea);
+            TextView heading=Ui.heading(this,"Episodes",21);Ui.pad(heading,this,0,8,0,6);content.addView(heading);
+            ScrollView episodeScroll=new ScrollView(this);episodeScroll.setVerticalScrollBarEnabled(false);
+            episodeScroll.setClipChildren(false);episodeScroll.setClipToPadding(false);
+            content.addView(episodeScroll,new LinearLayout.LayoutParams(-1,0,1));
+            episodeArea=Ui.column(this);Ui.pad(episodeArea,this,18,3,18,14);episodeScroll.addView(episodeArea);
         }
         watch.requestFocus();
     }
@@ -111,25 +113,37 @@ public class DetailsActivity extends Activity {
                 for(String season:seasons){JSONArray list=episodes.optJSONArray(season);if(list!=null)for(int i=0;i<list.length();i++){
                     JSONObject episode=list.optJSONObject(i);if(episode!=null)ordered.add(episode);
                 }}
+                episodeArea.removeAllViews();
+                HorizontalScrollView seasonScroller=new HorizontalScrollView(this);seasonScroller.setHorizontalScrollBarEnabled(false);
+                episodeArea.addView(seasonScroller,new LinearLayout.LayoutParams(-1,Ui.dp(this,49)));
+                LinearLayout tabs=Ui.row(this);seasonScroller.addView(tabs);
+                seasonContent=Ui.column(this);episodeArea.addView(seasonContent);
                 for(String season:seasons){
-                JSONArray list=episodes.optJSONArray(season);if(list==null)continue;
-                TextView label=Ui.heading(this,"Season "+season,19);Ui.pad(label,this,0,15,0,8);episodeArea.addView(label);
-                HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
-                episodeArea.addView(scroller);LinearLayout row=Ui.row(this);scroller.addView(row);
-                for(int i=0;i<Math.min(30,list.length());i++) {
-                    JSONObject ep=list.optJSONObject(i);if(ep==null)continue;
-                    String episodeId=ep.optString("id");String ext=ep.optJSONObject("info")!=null?ep.optJSONObject("info").optString("container_extension","mp4"):"mp4";
-                    int index=ordered.indexOf(ep);JSONObject next=index>=0&&index+1<ordered.size()?ordered.get(index+1):null;
-                    String nextId=next==null?"":next.optString("id");String nextExt=next!=null&&next.optJSONObject("info")!=null?next.optJSONObject("info").optString("container_extension","mp4"):"mp4";
-                    FrameLayout card=episodeCard(ep,i+1);
-                    LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,230),Ui.dp(this,145));bp.setMargins(0,0,Ui.dp(this,12),Ui.dp(this,14));row.addView(card,bp);
-                    card.setOnClickListener(v->playEpisode(episodeId,ext,nextId,nextExt));
+                    Button button=Ui.button(this,"Season "+season);button.setTextSize(15);
+                    LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,124),Ui.dp(this,43));sp.rightMargin=Ui.dp(this,10);tabs.addView(button,sp);
+                    button.setOnClickListener(v->showSeason(episodes,season,ordered));
                 }
-                }
+                if(!seasons.isEmpty())showSeason(episodes,seasons.get(0),ordered);
             }
         }
     }
     private static int parseSeason(String value){try{return Integer.parseInt(value);}catch(Exception e){return Integer.MAX_VALUE;}}
+    private void showSeason(JSONObject seasons,String season,java.util.List<JSONObject> ordered){
+        JSONArray list=seasons.optJSONArray(season);seasonContent.removeAllViews();if(list==null)return;
+        HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
+        scroller.setClipChildren(false);scroller.setClipToPadding(false);scroller.setPadding(Ui.dp(this,10),Ui.dp(this,8),Ui.dp(this,10),Ui.dp(this,9));
+        seasonContent.addView(scroller,new LinearLayout.LayoutParams(-1,Ui.dp(this,143)));
+        LinearLayout row=Ui.row(this);row.setClipChildren(false);row.setClipToPadding(false);scroller.addView(row);
+        for(int i=0;i<list.length();i++){
+            JSONObject ep=list.optJSONObject(i);if(ep==null)continue;
+            String episodeId=ep.optString("id");String ext=ep.optJSONObject("info")!=null?ep.optJSONObject("info").optString("container_extension","mp4"):"mp4";
+            int index=ordered.indexOf(ep);JSONObject next=index>=0&&index+1<ordered.size()?ordered.get(index+1):null;
+            String nextId=next==null?"":next.optString("id");String nextExt=next!=null&&next.optJSONObject("info")!=null?next.optJSONObject("info").optString("container_extension","mp4"):"mp4";
+            FrameLayout card=episodeCard(ep,i+1);
+            LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,206),Ui.dp(this,114));bp.setMargins(Ui.dp(this,8),0,Ui.dp(this,15),0);row.addView(card,bp);
+            card.setOnClickListener(v->playEpisode(episodeId,ext,nextId,nextExt));
+        }
+    }
     private FrameLayout episodeCard(JSONObject ep,int number){
         FrameLayout frame=new FrameLayout(this);frame.setFocusable(true);frame.setBackground(Ui.glass(this,10));
         ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setAlpha(.7f);
@@ -163,17 +177,18 @@ public class DetailsActivity extends Activity {
         if(hasPortrait)enrichedCast=true;
         else if(enrichedCast)return;
         castArea.removeAllViews();
-        TextView heading=Ui.heading(this,"Cast",23);Ui.pad(heading,this,0,30,0,13);castArea.addView(heading);
-        HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);castArea.addView(scroller);
+        TextView heading=Ui.heading(this,"Cast",20);Ui.pad(heading,this,0,13,0,8);castArea.addView(heading);
+        HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
+        scroller.setClipChildren(false);scroller.setClipToPadding(false);scroller.setPadding(Ui.dp(this,12),Ui.dp(this,6),Ui.dp(this,12),Ui.dp(this,6));castArea.addView(scroller);
         LinearLayout row=Ui.row(this);scroller.addView(row);
         for(int i=0;i<Math.min(15,cast.length());i++){
             JSONObject actor=cast.optJSONObject(i);if(actor==null)continue;
             LinearLayout card=Ui.column(this);card.setFocusable(true);card.setGravity(Gravity.CENTER_HORIZONTAL);
-            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,130),Ui.dp(this,161));cp.rightMargin=Ui.dp(this,19);row.addView(card,cp);
+            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,102),Ui.dp(this,123));cp.rightMargin=Ui.dp(this,17);row.addView(card,cp);
             String actorName=actor.optString("name");int actorId=actor.optInt("id",0);
             FrameLayout avatar=new FrameLayout(this);avatar.setBackground(castRing(false));
             avatar.setPadding(Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3));
-            card.addView(avatar,new LinearLayout.LayoutParams(Ui.dp(this,108),Ui.dp(this,108)));
+            card.addView(avatar,new LinearLayout.LayoutParams(Ui.dp(this,82),Ui.dp(this,82)));
             FrameLayout portrait=new FrameLayout(this);portrait.setBackground(Ui.rounded(0xFF2D2330,54,this));
             portrait.setOutlineProvider(new android.view.ViewOutlineProvider(){@Override public void getOutline(View v,android.graphics.Outline outline){outline.setOval(0,0,v.getWidth(),v.getHeight());}});
             portrait.setClipToOutline(true);avatar.addView(portrait,new FrameLayout.LayoutParams(-1,-1));
@@ -187,7 +202,7 @@ public class DetailsActivity extends Activity {
             }
             TextView name=Ui.text(this,actorName,14);name.setGravity(Gravity.CENTER);name.setMaxLines(2);
             name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,Ui.dp(this,45));np.topMargin=Ui.dp(this,7);card.addView(name,np);
+            LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,Ui.dp(this,33));np.topMargin=Ui.dp(this,6);card.addView(name,np);
             card.setOnFocusChangeListener((v,f)->{avatar.setBackground(castRing(f));
                 name.setTextColor(f?0xFFFFC9D0:0xFFFFFFFF);
                 v.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(130).start();});

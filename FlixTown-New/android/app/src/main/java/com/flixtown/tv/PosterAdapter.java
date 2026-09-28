@@ -38,10 +38,13 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         int width=cardWidth(activity,browse);
         LinearLayout card=Ui.column(activity);card.setFocusable(true);card.setGravity(Gravity.TOP);
         card.setClipChildren(false);card.setClipToPadding(false);
-        RecyclerView.LayoutParams layout=new RecyclerView.LayoutParams(Ui.dp(activity,width),Ui.dp(activity,Math.round(width*1.54f)+TITLE_HEIGHT));
+        RecyclerView.LayoutParams layout=new RecyclerView.LayoutParams(browse?-1:Ui.dp(activity,width),browse?-2:Ui.dp(activity,Math.round(width*1.54f)+TITLE_HEIGHT));
         layout.setMargins(Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP),Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP));card.setLayoutParams(layout);
-        FrameLayout stage=new FrameLayout(activity);stage.setClipChildren(false);stage.setClipToPadding(false);
-        card.addView(stage,new LinearLayout.LayoutParams(-1,Ui.dp(activity,Math.round(width*1.54f))));
+        FrameLayout stage=new FrameLayout(activity){@Override protected void onMeasure(int w,int h){
+            if(browse)h=View.MeasureSpec.makeMeasureSpec(Math.round(View.MeasureSpec.getSize(w)*1.54f),View.MeasureSpec.EXACTLY);
+            super.onMeasure(w,h);
+        }};stage.setClipChildren(false);stage.setClipToPadding(false);
+        card.addView(stage,new LinearLayout.LayoutParams(-1,browse?-2:Ui.dp(activity,Math.round(width*1.54f))));
         View glow=new View(activity);glow.setBackground(Ui.posterGlow(activity));glow.setAlpha(0f);
         FrameLayout.LayoutParams glowParams=new FrameLayout.LayoutParams(-1,-1);
         glowParams.setMargins(-Ui.dp(activity,10),-Ui.dp(activity,10),-Ui.dp(activity,10),-Ui.dp(activity,10));stage.addView(glow,glowParams);

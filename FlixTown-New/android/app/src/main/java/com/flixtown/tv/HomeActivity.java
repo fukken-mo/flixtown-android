@@ -72,9 +72,13 @@ public class HomeActivity extends Activity {
         rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,30,12,30,24);scroll.addView(rows);
         browse=Ui.column(this);browse.setVisibility(View.GONE);Ui.pad(browse,this,42,28,42,0);body.addView(browse,new FrameLayout.LayoutParams(-1,-1));
         browseHeader=Ui.column(this);browse.addView(browseHeader,new LinearLayout.LayoutParams(-1,-2));
-        browseGrid=new RecyclerView(this);browseGrid.setLayoutManager(new GridLayoutManager(this,4));
+        browseGrid=new RecyclerView(this){@Override public View focusSearch(View focused,int direction){
+            View next=super.focusSearch(focused,direction);
+            if((direction==View.FOCUS_UP||direction==View.FOCUS_DOWN) && next!=null && isInRail(next))return focused;
+            return next;
+        }};browseGrid.setLayoutManager(new GridLayoutManager(this,4));
         browseGrid.setItemAnimator(null);browseGrid.setClipToPadding(false);browseGrid.setClipChildren(false);
-        browseGrid.setPadding(Ui.dp(this,12),Ui.dp(this,20),Ui.dp(this,12),Ui.dp(this,34));browseGrid.setHasFixedSize(true);
+        browseGrid.setPadding(Ui.dp(this,24),Ui.dp(this,24),Ui.dp(this,24),Ui.dp(this,34));browseGrid.setHasFixedSize(true);
         browse.addView(browseGrid,new LinearLayout.LayoutParams(-1,0,1));
         String[] names={"Home","Search","Movies","Series","Favorites","Settings"};
         for(int n=0;n<names.length;n++) {
@@ -149,7 +153,8 @@ public class HomeActivity extends Activity {
                 Api.cache(this,"movies",movieJson);Api.cache(this,"series",seriesJson);
                 List<Category> mc=parseCategories(movieCategoryJson),sc=parseCategories(seriesCategoryJson);
                 Api.cache(this,"movie_categories",movieCategoryJson);Api.cache(this,"series_categories",seriesCategoryJson);
-                runOnUiThread(()->{if(token!=generation||isFinishing())return;movies=m;series=s;movieCategories=mc;seriesCategories=sc;notice.setText(config.optString("announcement",""));drawRows();});
+                runOnUiThread(()->{if(token!=generation||isFinishing())return;movies=m;series=s;movieCategories=mc;seriesCategories=sc;notice.setText(config.optString("announcement",""));
+                    if(!(tab.equals("Movies")||tab.equals("Series")) || browseGrid==null || browseGrid.getAdapter()==null || browseGrid.getAdapter().getItemCount()==0)drawRows();});
             } catch(Exception e) { runOnUiThread(()->{if(movies.isEmpty()&&series.isEmpty())notice.setText("Could not load the catalog. Check your connection.");}); }
         });
     }
@@ -305,6 +310,9 @@ public class HomeActivity extends Activity {
         return result;}
     private void settingButtons() {
         android.widget.Button refresh=Ui.button(this,"Refresh content");rows.addView(refresh);refresh.setOnClickListener(v->refresh());
+        android.widget.Button autoplay=Ui.button(this,"Autoplay next episode: "+(Api.prefs(this).getBoolean("autoplay_next",true)?"On":"Off"));
+        rows.addView(autoplay);autoplay.setOnClickListener(v->{boolean enabled=!Api.prefs(this).getBoolean("autoplay_next",true);
+            Api.prefs(this).edit().putBoolean("autoplay_next",enabled).apply();autoplay.setText("Autoplay next episode: "+(enabled?"On":"Off"));});
         android.widget.Button logout=Ui.button(this,"Sign out");rows.addView(logout);
         logout.setOnClickListener(v->{AccountStore.clear(this);startActivity(new android.content.Intent(this,LoginActivity.class));finish();});
     }
