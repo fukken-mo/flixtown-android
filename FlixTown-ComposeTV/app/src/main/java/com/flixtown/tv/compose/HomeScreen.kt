@@ -43,18 +43,28 @@ data class TvTitle(
 )
 
 // Replace this empty catalog with the authenticated panel API response.
-data class BrowseCatalog(val featured: TvTitle? = null, val rows: List<Pair<String, List<TvTitle>>> = emptyList())
+data class TvCategory(val id: String, val name: String)
+data class BrowseCatalog(
+    val featured: TvTitle? = null,
+    val rows: List<Pair<String, List<TvTitle>>> = emptyList(),
+    val movies: List<TvTitle> = emptyList(),
+    val series: List<TvTitle> = emptyList(),
+    val movieCategories: List<TvCategory> = emptyList(),
+    val seriesCategories: List<TvCategory> = emptyList()
+)
 
 @Composable
-fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit, catalog: BrowseCatalog = BrowseCatalog()) {
+fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
+    catalog: BrowseCatalog = BrowseCatalog(), autoFocusHero: Boolean = true,
+    includeSafePadding: Boolean = true) {
     val featured = catalog.featured
     val heroPlayFocus = remember { FocusRequester() }
     val rows = catalog.rows.filter { it.second.isNotEmpty() }
     LaunchedEffect(featured?.id) {
-        if (featured != null) heroPlayFocus.requestFocus()
+        if (autoFocusHero && featured != null) heroPlayFocus.requestFocus()
     }
     Box(Modifier.fillMaxSize().background(Color(0xFF090C16))
-        .padding(horizontal = 48.dp, vertical = 27.dp)) {
+        .then(if (includeSafePadding) Modifier.padding(horizontal = 48.dp, vertical = 27.dp) else Modifier)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().graphicsLayer { clip = false },
             contentPadding = PaddingValues(vertical = 12.dp),

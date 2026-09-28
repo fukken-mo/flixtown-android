@@ -81,7 +81,14 @@ class MainActivity : ComponentActivity() {
                     )
                     details != null -> DetailsScreen(details!!, repo, account!!, play) { details = null }
                     else -> Box(Modifier.fillMaxSize()) {
-                        HomeScreen(onPlay = play, onDetails = { detailHistory.clear(); details = it }, catalog = catalog)
+                        BrowseShell(catalog = catalog, repo = repo,
+                            onPlay = play,
+                            onDetails = { detailHistory.clear(); details = it },
+                            onRefresh = { refresh++ },
+                            onSignOut = {
+                                repo.signOut(); account = null; catalog = BrowseCatalog()
+                                details = null; detailHistory.clear()
+                            })
                         if (catalog.featured == null && (loading || error.isNotBlank())) {
                             Column(Modifier.padding(start = 48.dp, top = 340.dp)
                                 .background(Color(0xDD090C16)).padding(16.dp)) {

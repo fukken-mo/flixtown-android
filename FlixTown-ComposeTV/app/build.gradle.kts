@@ -28,6 +28,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.tv:tv-material:1.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

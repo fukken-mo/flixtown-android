@@ -132,15 +132,30 @@ class FlixRepository(private val context: Context) {
         coroutineScope {
             val moviesJob = async { parse(JSONArray(api(account, "get_vod_streams")), "movie", account) }
             val seriesJob = async { parse(JSONArray(api(account, "get_series")), "series", account) }
+            val movieCategoriesJob = async { runCatching { parseCategories(JSONArray(api(account, "get_vod_categories"))) }.getOrDefault(emptyList()) }
+            val seriesCategoriesJob = async { runCatching { parseCategories(JSONArray(api(account, "get_series_categories"))) }.getOrDefault(emptyList()) }
             val movies = moviesJob.await(); val series = seriesJob.await()
             val latestMovies = movies.sortedByDescending { it.added }.take(32)
             val latestSeries = series.sortedByDescending { it.added }.take(32)
             val topMovies = movies.filter { it.rating > 0 }.sortedByDescending { it.rating }.take(32)
+            val movieCategoryIds = movies.mapTo(HashSet()) { it.categoryId }
+            val seriesCategoryIds = series.mapTo(HashSet()) { it.categoryId }
             BrowseCatalog(
                 featured = latestMovies.firstOrNull() ?: latestSeries.firstOrNull(),
                 rows = listOf("Latest Movies" to latestMovies, "Latest Series" to latestSeries,
-                    "Top Rated Movies" to topMovies)
+                    "Top Rated Movies" to topMovies),
+                movies = movies, series = series,
+                movieCategories = movieCategoriesJob.await().filter { it.id in movieCategoryIds },
+                seriesCategories = seriesCategoriesJob.await().filter { it.id in seriesCategoryIds })
             )
+        }
+    }
+
+    private fun parseCategories(array: JSONArray): List<TvCategory> = buildList {
+        for (i in 0 until array.length()) {
+            val j = array.optJSONObject(i) ?: continue
+            val id = j.optString("category_id")
+            if (id.isNotBlank()) add(TvCategory(id, j.optString("category_name", "Category")))
         }
     }
 
