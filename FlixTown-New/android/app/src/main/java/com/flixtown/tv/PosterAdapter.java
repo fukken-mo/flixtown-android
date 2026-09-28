@@ -15,11 +15,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
-    private static final int SIDE_GAP=11, TOP_GAP=8, TITLE_HEIGHT=62;
+    private static final int SIDE_GAP=13, TOP_GAP=8, TITLE_HEIGHT=62;
     static int cardWidth(Activity activity,boolean browse) {
         int width=Math.round(activity.getResources().getDisplayMetrics().widthPixels/activity.getResources().getDisplayMetrics().density);
         int rail=browse?220:84, contentPadding=browse?84:60;
-        return Math.max(76,Math.min(330,(width-rail-contentPadding-5*SIDE_GAP*2)/5));
+        return Math.max(76,Math.min(330,(width-rail-contentPadding-4*SIDE_GAP*2)/4));
     }
     static int cardWidth(Activity activity){return cardWidth(activity,false);}
     static int rowHeight(Activity activity){return Math.round(cardWidth(activity)*1.43f)+TITLE_HEIGHT+TOP_GAP*2+8;}
@@ -38,11 +38,11 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         int width=cardWidth(activity,browse);
         LinearLayout card=Ui.column(activity);card.setFocusable(true);card.setGravity(Gravity.TOP);
         card.setClipChildren(false);card.setClipToPadding(false);
-        RecyclerView.LayoutParams layout=new RecyclerView.LayoutParams(browse?-1:Ui.dp(activity,width),Ui.dp(activity,Math.round(width*1.43f)+TITLE_HEIGHT));
+        RecyclerView.LayoutParams layout=new RecyclerView.LayoutParams(browse?-1:Ui.dp(activity,width),Ui.dp(activity,Math.round(width*1.50f)+TITLE_HEIGHT));
         layout.setMargins(Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP),Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP));card.setLayoutParams(layout);
         FrameLayout artwork=new FrameLayout(activity);artwork.setBackground(Ui.posterBorder(activity,false));
         artwork.setPadding(Ui.dp(activity,3),Ui.dp(activity,3),Ui.dp(activity,3),Ui.dp(activity,3));
-        card.addView(artwork,new LinearLayout.LayoutParams(-1,Ui.dp(activity,Math.round(width*1.43f))));
+        card.addView(artwork,new LinearLayout.LayoutParams(-1,Ui.dp(activity,Math.round(width*1.50f))));
         ImageView poster=new ImageView(activity);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);poster.setBackgroundColor(Ui.CARD);
         artwork.addView(poster,new FrameLayout.LayoutParams(-1,-1));
         TextView title=Ui.text(activity,"",width<150?13:15);title.setTextColor(0xFFE7E4E7);title.setMaxLines(3);

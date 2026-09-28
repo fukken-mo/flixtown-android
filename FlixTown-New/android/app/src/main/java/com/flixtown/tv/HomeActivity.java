@@ -72,7 +72,7 @@ public class HomeActivity extends Activity {
         rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,30,12,30,24);scroll.addView(rows);
         browse=Ui.column(this);browse.setVisibility(View.GONE);Ui.pad(browse,this,42,28,42,0);body.addView(browse,new FrameLayout.LayoutParams(-1,-1));
         browseHeader=Ui.column(this);browse.addView(browseHeader,new LinearLayout.LayoutParams(-1,-2));
-        browseGrid=new RecyclerView(this);browseGrid.setLayoutManager(new GridLayoutManager(this,5));
+        browseGrid=new RecyclerView(this);browseGrid.setLayoutManager(new GridLayoutManager(this,4));
         browseGrid.setItemAnimator(null);browseGrid.setClipToPadding(false);browseGrid.setClipChildren(false);
         browseGrid.setPadding(0,Ui.dp(this,15),0,Ui.dp(this,34));browseGrid.setHasFixedSize(true);
         browse.addView(browseGrid,new LinearLayout.LayoutParams(-1,0,1));
@@ -193,7 +193,7 @@ public class HomeActivity extends Activity {
                 View card=focused;
                 while(card.getParent() instanceof View && !(card.getParent() instanceof RecyclerView))card=(View)card.getParent();
                 if(card.getParent() instanceof RecyclerView){RecyclerView list=(RecyclerView)card.getParent();int position=list.getChildAdapterPosition(card);
-                    if(position==0 || (list.getLayoutManager() instanceof GridLayoutManager && position>=0 && position%5==0)){focusRail();return true;}}
+                    if(position==0 || (list.getLayoutManager() instanceof GridLayoutManager && position>=0 && position%4==0)){focusRail();return true;}}
                 if(!(card.getParent() instanceof RecyclerView) && focused.focusSearch(View.FOCUS_LEFT)==null){focusRail();return true;}
             }
             if(event.getKeyCode()==KeyEvent.KEYCODE_DPAD_RIGHT && focused!=null && isInRail(focused)){

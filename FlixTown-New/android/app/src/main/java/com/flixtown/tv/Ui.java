@@ -34,6 +34,11 @@ final class Ui {
             new int[]{0xF12C2932,0xF0181922,0xF20C0E14});
         d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),0x888B727B);return d;
     }
+    static GradientDrawable focusSurface(Context c,boolean focused){
+        GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+            focused?new int[]{0xFF8B263B,0xFF4A1D2B,0xFF25151E}:new int[]{0xF23A3440,0xF221202A,0xF013151D});
+        d.setCornerRadius(dp(c,13));d.setStroke(dp(c,focused?2:1),focused?0xFFFF8295:0xFF655863);return d;
+    }
     static GradientDrawable posterBorder(Context c,boolean focused){
         GradientDrawable d=new GradientDrawable();d.setColor(0xFF10131A);d.setCornerRadius(dp(c,9));
         d.setStroke(dp(c,focused?3:1),focused?0xFFE73550:0xFF343842);return d;
@@ -47,9 +52,9 @@ final class Ui {
     }
     static Button button(Context c, String label) {
         Button b = new Button(c); b.setText(label); b.setTextColor(Color.WHITE); b.setTextSize(17);
-        b.setAllCaps(false); b.setBackground(glass(c, 10));
+        b.setAllCaps(false); b.setBackground(focusSurface(c,false));
         b.setOnFocusChangeListener((v,focused) -> {
-            v.setBackground(focused ? rounded(RED, 10, c) : glass(c, 10));
+            v.setBackground(focusSurface(c,focused));
             v.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f).setDuration(100).start();
         }); return b;
     }
@@ -66,9 +71,9 @@ final class Ui {
             final int index=i;
             TextView option=text(activity,labels[i],17);option.setGravity(Gravity.CENTER_VERTICAL);
             option.setFocusable(true);pad(option,activity,18,0,12,0);
-            option.setBackground(glass(activity,10));
+            option.setBackground(focusSurface(activity,false));
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(activity,54));p.bottomMargin=dp(activity,9);body.addView(option,p);
-            option.setOnFocusChangeListener((v,focused)->{v.setBackground(focused?rounded(RED,10,activity):glass(activity,10));v.animate().scaleX(focused?1.025f:1f).scaleY(focused?1.025f:1f).setDuration(110).start();});
+            option.setOnFocusChangeListener((v,focused)->{v.setBackground(focusSurface(activity,focused));v.animate().scaleX(focused?1.025f:1f).scaleY(focused?1.025f:1f).setDuration(110).start();});
             option.setOnClickListener(v->{dialog.dismiss();action.select(index);});
             if(i==0)option.post(option::requestFocus);
         }

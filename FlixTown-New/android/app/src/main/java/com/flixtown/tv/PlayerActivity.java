@@ -36,12 +36,14 @@ public class PlayerActivity extends Activity {
     private PlayerView video;
     private FrameLayout root;
     private LinearLayout controls;
-    private TextView clock, playButton, status;
+    private TextView clock, playButton, status, seekPreview;
     private SeekBar timeline;
     private String url, nextUrl;
     private String kind, contentId, episodeId, episodeExt, nextEpisodeId, nextEpisodeExt;
     private long position;
     private boolean nextCanceled, promptShown, scrubbing, ended;
+    private long previewPosition=-1;
+    private int seekDirection, seekRepeats;
     private Dialog dialog;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -80,6 +82,9 @@ public class PlayerActivity extends Activity {
 
         TextView label=Ui.heading(this,getIntent().getStringExtra("title")==null?"FLIX TOWN":getIntent().getStringExtra("title"),24);
         controls.addView(label);
+        seekPreview=Ui.text(this,"",17);seekPreview.setTextColor(0xFFFFB4BE);
+        LinearLayout.LayoutParams previewParams=new LinearLayout.LayoutParams(-1,-2);
+        previewParams.topMargin=Ui.dp(this,8);controls.addView(seekPreview,previewParams);
 
         LinearLayout timeRow=Ui.row(this);
         timeRow.setGravity(Gravity.CENTER_VERTICAL);
@@ -106,7 +111,7 @@ public class PlayerActivity extends Activity {
         });
         timeline.setOnKeyListener((v,key,event)->{
             if(event.getAction()==KeyEvent.ACTION_DOWN && (key==KeyEvent.KEYCODE_DPAD_LEFT || key==KeyEvent.KEYCODE_DPAD_RIGHT)){
-                seek(key==KeyEvent.KEYCODE_DPAD_LEFT?-10000:10000);return true;
+                previewSeek(key==KeyEvent.KEYCODE_DPAD_LEFT?-1:1,event.getRepeatCount());return true;
             }
             return false;
         });
@@ -116,11 +121,12 @@ public class PlayerActivity extends Activity {
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,-2);
         ap.topMargin=Ui.dp(this,7);
         controls.addView(actions,ap);
-        addAction(actions,"↶ 10s",()->seek(-10000));
+        addAction(actions,"−10s",()->seek(-10000));
         playButton=addAction(actions,"Pause",()->{if(player==null)return;if(player.isPlaying())player.pause();else player.play();updatePlay();scheduleHide();});
-        addAction(actions,"10s ↷",()->seek(10000));
+        addAction(actions,"+10s",()->seek(10000));
         addAction(actions,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));
         addAction(actions,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));
+        addAction(actions,"Speed",this::showSpeed);
         status=Ui.text(this,"",13);status.setTextColor(0xFFD6D0D1);
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=Ui.dp(this,10);
         controls.addView(status,sp);
@@ -132,13 +138,13 @@ public class PlayerActivity extends Activity {
         button.setTypeface(null,Typeface.BOLD);
         button.setGravity(Gravity.CENTER);
         button.setFocusable(true);
-        button.setBackground(Ui.glass(this,11));
+        button.setBackground(Ui.focusSurface(this,false));
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,Ui.dp(this,49),1);
         bp.setMargins(Ui.dp(this,5),0,Ui.dp(this,5),0);
         parent.addView(button,bp);
         button.setOnClickListener(v->{click.run();showControls();});
         button.setOnFocusChangeListener((v,focused)->{
-            button.setBackground(focused?Ui.rounded(Ui.RED,11,this):Ui.glass(this,11));
+            button.setBackground(Ui.focusSurface(this,focused));
             v.animate().scaleX(focused?1.06f:1f).scaleY(focused?1.06f:1f).setDuration(100).start();
             if(focused)showControls();
         });
@@ -147,9 +153,32 @@ public class PlayerActivity extends Activity {
     private void showControls(){controls.setVisibility(View.VISIBLE);scheduleHide();}
     private void scheduleHide(){handler.removeCallbacks(hideControls);if(player!=null && player.isPlaying() && dialog==null && !scrubbing)handler.postDelayed(hideControls,6000);}
     private final Runnable hideControls=()->{
-        if(controls.hasFocus())root.requestFocus();
+        if(previewPosition>=0 || controls.hasFocus())return;
         controls.setVisibility(View.GONE);
     };
+    private void previewSeek(int direction,int repeats){
+        if(player==null)return;
+        long duration=player.getDuration();
+        if(previewPosition<0)previewPosition=player.getCurrentPosition();
+        seekRepeats=direction==seekDirection?Math.max(seekRepeats,repeats):0;
+        seekDirection=direction;
+        long step=seekRepeats>=12?60000:seekRepeats>=5?30000:10000;
+        previewPosition=Math.max(0,previewPosition+direction*step);
+        if(duration>0 && duration!=C.TIME_UNSET)previewPosition=Math.min(duration,previewPosition);
+        seekPreview.setText("Seek to " + time(previewPosition) + "   •   OK to play   •   Back to cancel");
+        showControls();handler.removeCallbacks(commitPreview);handler.postDelayed(commitPreview,2400);
+    }
+    private final Runnable commitPreview=()->{
+        if(previewPosition<0 || player==null)return;
+        player.seekTo(previewPosition);previewPosition=-1;seekPreview.setText("");scheduleHide();
+    };
+    private void showSpeed(){
+        if(player==null)return;
+        float[] speeds={0.75f,1f,1.25f,1.5f,2f};
+        List<String> choices=new ArrayList<>();
+        for(float speed:speeds)choices.add(speed==1f?"Normal (1×)":String.format(Locale.US,"%.2g×",speed));
+        showDialog("Playback speed",choices,index->{player.setPlaybackSpeed(speeds[index]);});
+    }
     private void seek(long delta){
         if(player==null)return;
         long current=player.getCurrentPosition();
@@ -190,9 +219,18 @@ public class PlayerActivity extends Activity {
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         if(player!=null && event.getAction()==KeyEvent.ACTION_DOWN && dialog==null){
             int key=event.getKeyCode();
+            if(previewPosition>=0){
+                if(key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER){handler.removeCallbacks(commitPreview);commitPreview.run();return true;}
+                if(key==KeyEvent.KEYCODE_BACK){handler.removeCallbacks(commitPreview);previewPosition=-1;seekPreview.setText("");scheduleHide();return true;}
+            }
+            if(key==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE || key==KeyEvent.KEYCODE_HEADSETPHOOK){if(player.isPlaying())player.pause();else player.play();showControls();return true;}
+            if(key==KeyEvent.KEYCODE_MEDIA_PLAY){player.play();showControls();return true;}
+            if(key==KeyEvent.KEYCODE_MEDIA_PAUSE){player.pause();showControls();return true;}
+            if(key==KeyEvent.KEYCODE_MEDIA_REWIND){previewSeek(-1,event.getRepeatCount());return true;}
+            if(key==KeyEvent.KEYCODE_MEDIA_FAST_FORWARD){previewSeek(1,event.getRepeatCount());return true;}
             boolean focusOnControl=controls!=null && controls.hasFocus();
-            if(key==KeyEvent.KEYCODE_DPAD_LEFT && !focusOnControl){seek(-10000);return true;}
-            if(key==KeyEvent.KEYCODE_DPAD_RIGHT && !focusOnControl){seek(10000);return true;}
+            if(key==KeyEvent.KEYCODE_DPAD_LEFT && !focusOnControl){previewSeek(-1,event.getRepeatCount());return true;}
+            if(key==KeyEvent.KEYCODE_DPAD_RIGHT && !focusOnControl){previewSeek(1,event.getRepeatCount());return true;}
             if(key==KeyEvent.KEYCODE_DPAD_UP && !focusOnControl){showControls();playButton.requestFocus();return true;}
             if((key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER) && !focusOnControl){showControls();playButton.requestFocus();return true;}
         }
@@ -244,16 +282,19 @@ public class PlayerActivity extends Activity {
         if(title.equals("Up next"))nextCountdown=hint;
         hint.setTextColor(0xFFACACB6);
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=Ui.dp(this,5);hp.bottomMargin=Ui.dp(this,19);box.addView(hint,hp);
-        int count=Math.min(options.size(),12);
+        int count=options.size();
+        android.widget.ScrollView scroller=new android.widget.ScrollView(this);
+        scroller.setVerticalScrollBarEnabled(false);box.addView(scroller,new LinearLayout.LayoutParams(-1,-2));
+        LinearLayout optionList=Ui.column(this);scroller.addView(optionList);
         for(int i=0;i<count;i++){
             final int selected=i;
             TextView option=Ui.text(this,options.get(i),17);
             Ui.pad(option,this,18,12,18,12);
             option.setFocusable(true);
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,Ui.dp(this,51));
-            p.bottomMargin=Ui.dp(this,7);box.addView(option,p);
-            option.setBackground(Ui.glass(this,10));
-            option.setOnFocusChangeListener((v,focused)->v.setBackground(focused?Ui.rounded(Ui.RED,10,this):Ui.glass(this,10)));
+            p.bottomMargin=Ui.dp(this,7);optionList.addView(option,p);
+            option.setBackground(Ui.focusSurface(this,false));
+            option.setOnFocusChangeListener((v,focused)->v.setBackground(Ui.focusSurface(this,focused)));
             option.setOnClickListener(v->{Dialog active=dialog;choice.select(selected);if(active!=null && active.isShowing())active.dismiss();});
             if(i==0)option.post(option::requestFocus);
         }
@@ -263,7 +304,7 @@ public class PlayerActivity extends Activity {
         dialog.setOnDismissListener(d->{dialog=null;nextCountdown=null;scheduleHide();});
         dialog.show();
         Window shown=dialog.getWindow();
-        if(shown!=null)shown.setLayout(Math.min(Ui.dp(this,510),getResources().getDisplayMetrics().widthPixels-Ui.dp(this,80)),WindowManager.LayoutParams.WRAP_CONTENT);
+        if(shown!=null)shown.setLayout(Math.min(Ui.dp(this,510),getResources().getDisplayMetrics().widthPixels-Ui.dp(this,80)),Math.min(Ui.dp(this,570),getResources().getDisplayMetrics().heightPixels-Ui.dp(this,60)));
     }
 
     private final Runnable progress=new Runnable(){@Override public void run(){
@@ -271,7 +312,7 @@ public class PlayerActivity extends Activity {
         long duration=player.getDuration(),current=player.getCurrentPosition();
         if(player.isPlaying() && current>=15000 && current/5000!=lastSavedAt/5000){saveProgress(current,duration);lastSavedAt=current;}
         if(duration>0 && duration!=C.TIME_UNSET){
-            if(!scrubbing){timeline.setProgress((int)Math.min(1000,current*1000/duration));clock.setText(time(current)+" / "+time(duration));}
+            if(!scrubbing){timeline.setProgress((int)Math.min(1000,(previewPosition>=0?previewPosition:current)*1000/duration));clock.setText(time(previewPosition>=0?previewPosition:current)+" / "+time(duration));}
             long remaining=duration-current;
             if(nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && remaining>0){
                 if(remaining<=25000 && !promptShown){promptShown=true;showNext();}

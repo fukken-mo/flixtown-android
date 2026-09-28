@@ -18,6 +18,7 @@ import org.json.JSONObject;
 public class DetailsActivity extends Activity {
     private String id,kind,title,extension;
     private LinearLayout episodeArea,castArea; private TextView summary; private Button trailerButton;
+    private boolean enrichedCast;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         id=getIntent().getStringExtra("id");kind=getIntent().getStringExtra("kind");title=getIntent().getStringExtra("title");extension=getIntent().getStringExtra("extension");
@@ -85,7 +86,7 @@ public class DetailsActivity extends Activity {
         if(!trailer.isEmpty()){trailerButton.setTag(trailer);trailerButton.setEnabled(true);}
         String plot=info.optString("plot",info.optString("description",""));
         summary.setText(plot.length()>300?plot.substring(0,300)+"…":plot);
-        if(castArea.getChildCount()==0){
+        if(!enrichedCast && castArea.getChildCount()==0){
             String actorNames=info.optString("cast",info.optString("actors",""));
             if(!actorNames.isEmpty()){
                 JSONArray fallback=new JSONArray();
@@ -157,6 +158,10 @@ public class DetailsActivity extends Activity {
     private void showCast(JSONObject data){
         String trailer=data.optString("trailer","");if(!trailer.isEmpty() && (trailerButton.getTag()==null || "".equals(trailerButton.getTag()))){trailerButton.setTag(trailer);trailerButton.setEnabled(true);}
         JSONArray cast=data.optJSONArray("cast");if(cast==null||cast.length()==0)return;
+        boolean hasPortrait=false;
+        for(int j=0;j<cast.length();j++){JSONObject person=cast.optJSONObject(j);if(person!=null && person.optString("image","").startsWith("https://")){hasPortrait=true;break;}}
+        if(hasPortrait)enrichedCast=true;
+        else if(enrichedCast)return;
         castArea.removeAllViews();
         TextView heading=Ui.heading(this,"Cast",23);Ui.pad(heading,this,0,30,0,13);castArea.addView(heading);
         HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);castArea.addView(scroller);
