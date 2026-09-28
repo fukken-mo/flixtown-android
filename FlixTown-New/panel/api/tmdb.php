@@ -41,7 +41,7 @@ if (is_array($result) && !empty($result['id'])) {
         if (!is_array($actor) || empty($actor['name'])) continue;
         $path = (string)($actor['profile_path'] ?? '');
         $cast[] = ['id' => (int)($actor['id'] ?? 0), 'name' => (string)$actor['name'], 'character' => (string)($actor['character'] ?? ''),
-            'image' => str_starts_with($path, '/') ? 'https://image.tmdb.org/t/p/w185' . $path : ''];
+            'image' => substr($path, 0, 1) === '/' ? 'https://image.tmdb.org/t/p/w185' . $path : ''];
     }
     $videos = tmdbGet($type . '/' . $id . '/videos', ['api_key' => $key, 'language' => 'en-US']);
     foreach ($videos['results'] ?? [] as $video) if (($video['site'] ?? '') === 'YouTube' && ($video['type'] ?? '') === 'Trailer' && !empty($video['key'])) {
