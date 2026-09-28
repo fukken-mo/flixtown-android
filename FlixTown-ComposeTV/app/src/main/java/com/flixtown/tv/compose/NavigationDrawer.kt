@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.DrawerValue
 import androidx.tv.material3.Icon
-import androidx.tv.material3.NavigationDrawer
+import androidx.tv.material3.ModalNavigationDrawer
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Border
@@ -36,7 +36,7 @@ enum class BrowsePage(val label: String, val icon: ImageVector) {
 @Composable
 fun FlixNavigationDrawer(selected: BrowsePage, homeFocus: FocusRequester,
     onSelect: (BrowsePage) -> Unit, content: @Composable () -> Unit) {
-    NavigationDrawer(drawerContent = { drawerValue ->
+    ModalNavigationDrawer(drawerContent = { drawerValue ->
         val expanded = drawerValue == DrawerValue.Open
         val width = animateDpAsState(if (expanded) 190.dp else 72.dp, label = "Drawer width")
         Column(Modifier.width(width.value).fillMaxHeight()

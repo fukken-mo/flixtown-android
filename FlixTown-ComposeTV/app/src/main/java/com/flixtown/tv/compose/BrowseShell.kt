@@ -64,10 +64,10 @@ fun BrowseShell(catalog: BrowseCatalog, repo: FlixRepository,
     var page by remember { mutableStateOf(BrowsePage.Home) }
     val homeFocus = remember { FocusRequester() }
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
-        CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))
-        .padding(horizontal = 48.dp, vertical = 27.dp)) {
+        CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))) {
       FlixNavigationDrawer(page, homeFocus, onSelect = { page = it }) {
-        Box(Modifier.fillMaxSize().padding(start = 20.dp)) {
+        Box(Modifier.fillMaxSize().padding(start = 104.dp, end = 48.dp,
+            top = 27.dp, bottom = 27.dp)) {
             when (page) {
                 BrowsePage.Home -> HomeScreen(onPlay, onDetails, catalog, autoFocusHero = true,
                     includeSafePadding = false)

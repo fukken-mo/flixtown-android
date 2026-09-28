@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun posterRequest(url: String): ImageRequest {
     val context = LocalContext.current
     return androidx.compose.runtime.remember(context, url) {
-        ImageRequest.Builder(context).data(url).size(260, 390).crossfade(true).build()
+        ImageRequest.Builder(context).data(url).size(260, 390).crossfade(false).build()
     }
 }
 
@@ -27,7 +27,7 @@ fun backdropRequest(url: String): ImageRequest {
 }
 
 // Compose foundation in this project has no TvLazyRow beyondBoundsItemCount argument.
-// Queue only the next four small poster decodes as focus approaches the row edge.
+// Keep prefetch small on budget TV sticks to avoid competing with playback/UI.
 @Composable
 fun PrefetchPosters(state: LazyListState, titles: List<TvTitle>) {
     val context = LocalContext.current
@@ -36,10 +36,10 @@ fun PrefetchPosters(state: LazyListState, titles: List<TvTitle>) {
             state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
         }.distinctUntilChanged().collectLatest { lastVisible ->
             if (lastVisible < 0) return@collectLatest
-            (lastVisible + 1..minOf(lastVisible + 4, titles.lastIndex)).forEach { index ->
+            (lastVisible + 1..minOf(lastVisible + 1, titles.lastIndex)).forEach { index ->
                 val url = titles[index].posterUrl
                 if (url.isNotBlank()) context.imageLoader.enqueue(
-                    ImageRequest.Builder(context).data(url).size(260, 390).crossfade(true).build())
+                    ImageRequest.Builder(context).data(url).size(260, 390).crossfade(false).build())
             }
         }
     }
