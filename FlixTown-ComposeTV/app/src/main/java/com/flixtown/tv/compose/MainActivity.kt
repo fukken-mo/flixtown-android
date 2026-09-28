@@ -1,6 +1,7 @@
 package com.flixtown.tv.compose
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +32,7 @@ class MainActivity : ComponentActivity() {
                 var account by remember { mutableStateOf(repo.savedAccount()) }
                 var catalog by remember { mutableStateOf(BrowseCatalog()) }
                 var details by remember { mutableStateOf<TvTitle?>(null) }
+                val detailHistory = remember { mutableStateListOf<TvTitle>() }
                 var error by remember { mutableStateOf("") }
                 var loading by remember { mutableStateOf(false) }
                 var refresh by remember { mutableIntStateOf(0) }
@@ -63,10 +65,23 @@ class MainActivity : ComponentActivity() {
                     } else details = title
                 }
                 when {
-                    account == null -> LoginScreen(repo) { account = it; details = null }
+                    account == null -> LoginScreen(repo) { account = it; details = null; detailHistory.clear() }
+                    details?.kind == "movie" -> DetailScreen(
+                        item = details!!, account = account!!, repo = repo, catalog = catalog,
+                        onPlay = play,
+                        onTrailer = { url ->
+                            if (url.startsWith("https://")) {
+                                try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                                catch (_: Exception) { /* No trailer handler installed on this TV. */ }
+                            }
+                        },
+                        onSimilar = { selected -> details?.let { detailHistory.add(it) }; details = selected },
+                        onBack = { details = if (detailHistory.isNotEmpty())
+                            detailHistory.removeAt(detailHistory.lastIndex) else null }
+                    )
                     details != null -> DetailsScreen(details!!, repo, account!!, play) { details = null }
                     else -> Box(Modifier.fillMaxSize()) {
-                        HomeScreen(onPlay = play, onDetails = { details = it }, catalog = catalog)
+                        HomeScreen(onPlay = play, onDetails = { detailHistory.clear(); details = it }, catalog = catalog)
                         if (catalog.featured == null && (loading || error.isNotBlank())) {
                             Column(Modifier.padding(start = 48.dp, top = 340.dp)
                                 .background(Color(0xDD090C16)).padding(16.dp)) {

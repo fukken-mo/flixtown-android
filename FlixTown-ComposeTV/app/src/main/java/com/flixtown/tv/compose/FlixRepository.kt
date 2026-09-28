@@ -21,6 +21,8 @@ import javax.crypto.spec.GCMParameterSpec
 
 data class TvAccount(val server: String, val username: String, val password: String)
 data class PairCode(val code: String, val verifier: String, val activationUrl: String)
+data class MovieInfo(val year: String = "", val duration: String = "",
+                     val contentRating: String = "", val synopsis: String = "", val trailer: String = "")
 
 class FlixRepository(private val context: Context) {
     companion object { const val PANEL = "https://panelsandapps.com/panels/flixtown2027/api/" }
@@ -58,6 +60,13 @@ class FlixRepository(private val context: Context) {
     }
 
     fun signOut() { prefs.edit().clear().apply() }
+    fun inWatchlist(id: String): Boolean = prefs.getStringSet("watchlist", emptySet())?.contains(id) == true
+    fun toggleWatchlist(id: String): Boolean {
+        val updated = prefs.getStringSet("watchlist", emptySet()).orEmpty().toMutableSet()
+        if (!updated.add(id)) updated.remove(id)
+        prefs.edit().putStringSet("watchlist", updated).apply()
+        return id in updated
+    }
     private fun enc(value: String) = URLEncoder.encode(value, "UTF-8")
 
     private fun request(url: String, body: JSONObject? = null): String {
@@ -155,8 +164,23 @@ class FlixRepository(private val context: Context) {
                     .filter { it.isNotBlank() }.joinToString("  •  "),
                 posterUrl = image, backdropUrl = backdrop, streamUrl = stream,
                 kind = type, added = j.optLong("added", j.optLong("last_modified")),
-                rating = j.optDouble("rating", 0.0)))
+                rating = j.optDouble("rating", 0.0), categoryId = j.optString("category_id")))
         }
+    }
+
+    suspend fun movieInfo(account: TvAccount, movie: TvTitle): MovieInfo = withContext(Dispatchers.IO) {
+        val j = JSONObject(api(account, "get_vod_info", "&vod_id=${enc(movie.id.substringAfter(':'))}"))
+        val info = j.optJSONObject("info") ?: JSONObject()
+        val rawTrailer = info.optString("youtube_trailer", "")
+        val trailer = when {
+            rawTrailer.startsWith("https://") -> rawTrailer
+            rawTrailer.matches(Regex("[a-zA-Z0-9_-]{11}")) -> "https://www.youtube.com/watch?v=$rawTrailer"
+            else -> ""
+        }
+        MovieInfo(year = info.optString("releasedate", movie.year).take(4),
+            duration = info.optString("duration"),
+            contentRating = info.optString("age", info.optString("rated")),
+            synopsis = info.optString("plot", movie.overview), trailer = trailer)
     }
 
     suspend fun episodes(account: TvAccount, series: TvTitle): Map<Int, List<TvTitle>> = withContext(Dispatchers.IO) {

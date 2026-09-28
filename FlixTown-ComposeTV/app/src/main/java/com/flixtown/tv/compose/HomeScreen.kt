@@ -1,8 +1,6 @@
 package com.flixtown.tv.compose
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -12,11 +10,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -27,11 +25,9 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Text
-import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import coil.util.DebugLogger
 
 data class TvTitle(
     val id: String,
@@ -42,7 +38,8 @@ data class TvTitle(
     val posterUrl: String = "",
     val backdropUrl: String = "",
     val streamUrl: String = "",
-    val kind: String = "movie", val added: Long = 0, val rating: Double = 0.0
+    val kind: String = "movie", val added: Long = 0, val rating: Double = 0.0,
+    val categoryId: String = ""
 )
 
 // Replace this empty catalog with the authenticated panel API response.
@@ -54,13 +51,13 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit, catalog:
     val heroPlayFocus = remember { FocusRequester() }
     val rows = catalog.rows.filter { it.second.isNotEmpty() }
     LaunchedEffect(featured?.id) {
-        if (featured?.streamUrl?.isNotBlank() == true) heroPlayFocus.requestFocus()
+        if (featured != null) heroPlayFocus.requestFocus()
     }
-    Box(Modifier.fillMaxSize().background(Color(0xFF090C16))) {
+    Box(Modifier.fillMaxSize().background(Color(0xFF090C16))
+        .padding(horizontal = 48.dp, vertical = 27.dp)) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            // The root safe area stays visible even when items scroll to the edges.
-            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+            modifier = Modifier.fillMaxSize().graphicsLayer { clip = false },
+            contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(26.dp)
         ) {
             item(key = "hero") {
@@ -70,7 +67,8 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit, catalog:
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(heading, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     LazyRow(
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                        modifier = Modifier.fillMaxWidth().graphicsLayer { clip = false },
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp),
                         horizontalArrangement = Arrangement.spacedBy(22.dp)
                     ) {
                         items(titles, key = { it.id }) { item -> PosterCard(item) { onDetails(item) } }
@@ -118,7 +116,8 @@ private fun Hero(item: TvTitle?, playFocus: FocusRequester,
                             Text("▶  Play", fontSize = 18.sp)
                         }
                     }
-                    Button(onClick = { onDetails(item) }) {
+                    Button(onClick = { onDetails(item) },
+                        modifier = if (item.streamUrl.isBlank()) Modifier.focusRequester(playFocus) else Modifier) {
                         Text("Details", fontSize = 18.sp)
                     }
                 }
