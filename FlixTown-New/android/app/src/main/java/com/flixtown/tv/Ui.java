@@ -67,26 +67,26 @@ final class Ui {
     }
     static void options(Activity activity,String title,String[] labels,Choice action) {
         Dialog dialog=new Dialog(activity);
-        LinearLayout body=column(activity);pad(body,activity,34,29,34,27);
+        LinearLayout body=column(activity);pad(body,activity,24,22,24,20);
         body.setBackground(panel(activity,20));
         View accent=new View(activity);accent.setBackground(rounded(RED,3,activity));
-        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(activity,45),dp(activity,3));ap.bottomMargin=dp(activity,18);body.addView(accent,ap);
-        TextView heading=heading(activity,title,24);body.addView(heading);
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(activity,36),dp(activity,3));ap.bottomMargin=dp(activity,13);body.addView(accent,ap);
+        TextView heading=heading(activity,title,22);body.addView(heading);
         TextView hint=text(activity,"Select with your remote",14);hint.setTextColor(0xFFA9ABB5);
-        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,5);hp.bottomMargin=dp(activity,22);body.addView(hint,hp);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,4);hp.bottomMargin=dp(activity,16);body.addView(hint,hp);
         for(int i=0;i<labels.length;i++){
             final int index=i;
-            TextView option=text(activity,labels[i],17);option.setGravity(Gravity.CENTER_VERTICAL);
+            TextView option=text(activity,labels[i],16);option.setGravity(Gravity.CENTER_VERTICAL);
             option.setFocusable(true);pad(option,activity,18,0,12,0);
             option.setBackground(focusSurface(activity,false));
-            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(activity,54));p.bottomMargin=dp(activity,9);body.addView(option,p);
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(activity,45));p.bottomMargin=dp(activity,7);body.addView(option,p);
             option.setOnFocusChangeListener((v,focused)->{v.setBackground(focusSurface(activity,focused));v.animate().scaleX(focused?1.025f:1f).scaleY(focused?1.025f:1f).setDuration(110).start();});
             option.setOnClickListener(v->{dialog.dismiss();action.select(index);});
             if(i==0)option.post(option::requestFocus);
         }
         dialog.setContentView(body);dialog.show();
         Window window=dialog.getWindow();if(window!=null){window.setBackgroundDrawableResource(android.R.color.transparent);
-            window.setLayout(Math.min(dp(activity,490),activity.getResources().getDisplayMetrics().widthPixels-dp(activity,80)),WindowManager.LayoutParams.WRAP_CONTENT);}
+            window.setLayout(Math.min(dp(activity,375),activity.getResources().getDisplayMetrics().widthPixels-dp(activity,100)),WindowManager.LayoutParams.WRAP_CONTENT);}
     }
     static void picker(Activity activity,String title,String[] labels,int selected,Choice action){
         Dialog dialog=new Dialog(activity);
