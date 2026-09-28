@@ -1,0 +1,154 @@
+package com.flixtown.tv.compose
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.tv.material3.Button
+import androidx.tv.material3.Card
+import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.Text
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import coil.util.DebugLogger
+
+data class TvTitle(
+    val id: String,
+    val name: String,
+    val year: String = "",
+    val overview: String = "",
+    val tags: String = "",
+    val posterUrl: String = "",
+    val backdropUrl: String = "",
+    val streamUrl: String = ""
+)
+
+// Replace this empty catalog with the authenticated panel API response.
+data class BrowseCatalog(val featured: TvTitle? = null, val rows: List<Pair<String, List<TvTitle>>> = emptyList())
+
+@Composable
+fun HomeScreen(onPlay: (TvTitle) -> Unit, catalog: BrowseCatalog = BrowseCatalog()) {
+    val featured = catalog.featured
+    val heroPlayFocus = remember { FocusRequester() }
+    val rows = catalog.rows.filter { it.second.isNotEmpty() }
+    LaunchedEffect(featured?.id) {
+        if (featured?.streamUrl?.isNotBlank() == true) heroPlayFocus.requestFocus()
+    }
+    Box(Modifier.fillMaxSize().background(Color(0xFF090C16))) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            // The root safe area stays visible even when items scroll to the edges.
+            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+            verticalArrangement = Arrangement.spacedBy(26.dp)
+        ) {
+            item(key = "hero") {
+                Hero(featured, heroPlayFocus, onPlay)
+            }
+            items(rows, key = { it.first }) { (heading, titles) ->
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(heading, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(22.dp)
+                    ) {
+                        items(titles, key = { it.id }) { item -> PosterCard(item) { onPlay(item) } }
+                    }
+                }
+            }
+            if (featured == null && rows.isEmpty()) {
+                item { Text("Your movies and series will appear here after sign in.",
+                    color = Color(0xFFB8C1D4), fontSize = 20.sp) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Hero(item: TvTitle?, playFocus: FocusRequester, onPlay: (TvTitle) -> Unit) {
+    Box(Modifier.fillMaxWidth().height(290.dp).clip(RoundedCornerShape(20.dp))
+        .background(Color(0xFF151B2A))) {
+        if (item != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current).data(item.backdropUrl)
+                    .memoryCachePolicy(CachePolicy.ENABLED).diskCachePolicy(CachePolicy.ENABLED)
+                    .crossfade(false).build(),
+                contentDescription = null, contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
+            Color(0xF2090C16), Color(0xD9090C16), Color(0x1A090C16)
+        ))))
+        Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 34.dp).widthIn(max = 620.dp),
+            verticalArrangement = Arrangement.spacedBy(11.dp)) {
+            Text("FLIX TOWN  /  FEATURED", color = Color(0xFFFF7194), fontSize = 14.sp,
+                fontWeight = FontWeight.Bold)
+            Text(item?.name ?: "Flix Town", color = Color.White, fontSize = 38.sp,
+                fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (!item?.tags.isNullOrBlank()) Text(item!!.tags, color = Color(0xFFECEDF1), fontSize = 16.sp)
+            if (!item?.overview.isNullOrBlank()) Text(item!!.overview, color = Color(0xFFE0E3EB),
+                fontSize = 16.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            if (item != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (item.streamUrl.isNotBlank()) {
+                        Button(onClick = { onPlay(item) }, modifier = Modifier.focusRequester(playFocus)) {
+                            Text("▶  Play", fontSize = 18.sp)
+                        }
+                    }
+                    Button(onClick = { /* Details route follows catalog integration. */ }) {
+                        Text("Details", fontSize = 18.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PosterCard(item: TvTitle, onClick: () -> Unit) {
+    Column(Modifier.width(174.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.width(174.dp).height(252.dp),
+            shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+            border = CardDefaults.border(
+                focusedBorder = androidx.tv.material3.Border(
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF567F)),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            ),
+            scale = CardDefaults.scale(focusedScale = 1.07f)
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current).data(item.posterUrl)
+                    .memoryCachePolicy(CachePolicy.ENABLED).diskCachePolicy(CachePolicy.ENABLED)
+                    .crossfade(false).build(),
+                contentDescription = item.name, contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().background(Color(0xFF252B39))
+            )
+        }
+        Text(item.name, color = Color.White, fontSize = 16.sp, maxLines = 2,
+            lineHeight = 20.sp, overflow = TextOverflow.Ellipsis)
+    }
+}
