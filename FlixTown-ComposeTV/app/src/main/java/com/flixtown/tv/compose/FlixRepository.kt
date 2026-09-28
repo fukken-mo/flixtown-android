@@ -14,6 +14,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.security.KeyStore
+import kotlin.random.Random
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -23,6 +24,7 @@ data class TvAccount(val server: String, val username: String, val password: Str
 data class PairCode(val code: String, val verifier: String, val activationUrl: String)
 data class MovieInfo(val year: String = "", val duration: String = "",
                      val contentRating: String = "", val synopsis: String = "", val trailer: String = "")
+private data class RankedMovie(val title: String, val year: String, val rating: Double)
 
 class FlixRepository(private val context: Context) {
     companion object { const val PANEL = "https://panelsandapps.com/panels/flixtown2027/api/" }
@@ -137,18 +139,53 @@ class FlixRepository(private val context: Context) {
             val movies = moviesJob.await(); val series = seriesJob.await()
             val latestMovies = movies.sortedByDescending { it.added }.take(32)
             val latestSeries = series.sortedByDescending { it.added }.take(32)
-            val topMovies = movies.filter { it.rating > 0 }.sortedByDescending { it.rating }.take(32)
+            // The TMDB row is filled only with verified TMDB entries below.
+            val featuredPool = movies.filter { it.rating >= 7.0 && it.posterUrl.isNotBlank() }
+            val randomFeatured = (featuredPool.ifEmpty { latestMovies.take(40) }).randomOrNull(Random.Default)
             val movieCategoryIds = movies.mapTo(HashSet()) { it.categoryId }
             val seriesCategoryIds = series.mapTo(HashSet()) { it.categoryId }
             BrowseCatalog(
-                featured = latestMovies.firstOrNull() ?: latestSeries.firstOrNull(),
+                featured = randomFeatured ?: latestSeries.firstOrNull(),
                 rows = listOf("Latest Movies" to latestMovies, "Latest Series" to latestSeries,
-                    "Top Rated Movies" to topMovies),
+                    "Top Rated on TMDB" to emptyList()),
                 movies = movies, series = series,
                 movieCategories = movieCategoriesJob.await().filter { it.id in movieCategoryIds },
                 seriesCategories = seriesCategoriesJob.await().filter { it.id in seriesCategoryIds }
             )
         }
+    }
+
+    suspend fun withTmdbRankings(catalog: BrowseCatalog): BrowseCatalog = withContext(Dispatchers.IO) {
+        val response = JSONObject(request(PANEL + "rankings.php"))
+        fun parse(name: String): List<RankedMovie> = buildList {
+            val array = response.optJSONArray(name) ?: return@buildList
+            for (index in 0 until array.length()) {
+                val movie = array.optJSONObject(index) ?: continue
+                val title = movie.optString("title")
+                if (title.isNotBlank() && movie.optDouble("rating") > 0)
+                    add(RankedMovie(title, movie.optString("year"), movie.optDouble("rating")))
+            }
+        }
+        val yearSuffix = Regex("""\s*\(((?:19|20)\d{2})\)\s*$""")
+        fun key(title: String): String = title.replace(yearSuffix, "")
+            .lowercase().replace(Regex("""[^\p{L}\p{N}]"""), "")
+        fun year(movie: TvTitle): String = movie.year.takeIf { it.matches(Regex("""\d{4}""")) }
+            ?: yearSuffix.find(movie.name)?.groupValues?.get(1).orEmpty()
+        val server = catalog.movies.groupBy { key(it.name) }
+        fun match(entries: List<RankedMovie>): List<TvTitle> = entries.mapNotNull { ranked ->
+            val matches = server[key(ranked.title)].orEmpty()
+            val title = matches.firstOrNull { year(it) == ranked.year }
+                ?: matches.singleOrNull { year(it).isBlank() }
+            title?.copy(rating = ranked.rating)
+        }.distinctBy { it.id }
+        val popular = match(parse("popular"))
+        val topRated = match(parse("top_rated")).take(32)
+        catalog.copy(
+            featured = popular.randomOrNull(Random.Default) ?: catalog.featured,
+            rows = catalog.rows.map { (heading, titles) ->
+                if (heading == "Top Rated on TMDB") heading to topRated else heading to titles
+            }
+        )
     }
 
     private fun parseCategories(array: JSONArray): List<TvCategory> = buildList {

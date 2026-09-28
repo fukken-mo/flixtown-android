@@ -19,6 +19,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +45,17 @@ class MainActivity : ComponentActivity() {
                         if (!repo.verify(current)) {
                             repo.signOut(); account = null; catalog = BrowseCatalog()
                             error = "Account is no longer active"
-                        } else catalog = repo.browse(current)
+                        } else {
+                            catalog = repo.browse(current)
+                            val loadedCatalog = catalog
+                            launch {
+                                runCatching { repo.withTmdbRankings(loadedCatalog) }
+                                    .onSuccess { updated ->
+                                        if (account == current && catalog === loadedCatalog)
+                                            catalog = updated
+                                    }
+                            }
+                        }
                     } catch (e: Exception) {
                         error = e.message ?: "Could not refresh the catalog"
                     } finally { loading = false }

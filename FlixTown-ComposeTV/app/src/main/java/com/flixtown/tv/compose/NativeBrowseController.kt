@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -54,6 +55,10 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private val sorts = listOf("Recently added", "Title A–Z", "Top rated")
 
     init {
+        root.viewTreeObserver.addOnGlobalFocusChangeListener { _, focused ->
+            if (focused != null && isInside(focused, content)) rail.visibility = View.GONE
+            else if (focused != null && isInside(focused, rail)) rail.visibility = View.VISIBLE
+        }
         rail.addView(text("FT", 23, red, true).apply { gravity = Gravity.CENTER },
             LinearLayout.LayoutParams(-1, dp(64)))
         BrowsePage.entries.forEach { destination ->
@@ -85,10 +90,37 @@ internal class NativeBrowseController(private val activity: Activity, private va
     fun bind(catalog: BrowseCatalog, onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
              onRefresh: () -> Unit, onSignOut: () -> Unit) {
         play = onPlay; details = onDetails; refresh = onRefresh; signOut = onSignOut
-        if (bound !== catalog) { bound = catalog; this.catalog = catalog; render() }
+        if (bound !== catalog) {
+            bound = catalog; this.catalog = catalog
+            // A late TMDB response must not reset focus or scroll in a movie row/grid.
+            val focused = content.findFocus()
+            if (page == BrowsePage.Home && focused?.parent !is RecyclerView) render()
+        }
     }
 
     fun dispose() { work?.cancel(); scope.cancel() }
+
+    private fun isInside(view: View, ancestor: View): Boolean {
+        var current: View? = view
+        while (current != null) {
+            if (current === ancestor) return true
+            current = current.parent as? View
+        }
+        return false
+    }
+
+    private fun showMenu(): Boolean {
+        rail.visibility = View.VISIBLE
+        nav[page]?.requestFocus()
+        return true
+    }
+
+    private fun leftToMenu(view: View) {
+        view.setOnKeyListener { _, key, event ->
+            key == KeyEvent.KEYCODE_DPAD_LEFT && event.action == KeyEvent.ACTION_DOWN &&
+                showMenu()
+        }
+    }
 
     private fun paintRail() {
         nav.forEach { (destination, item) ->
@@ -136,6 +168,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
             val actions = LinearLayout(activity)
             val primary = button("▶  Play") { play(featured) }
+            leftToMenu(primary)
             actions.addView(primary)
             actions.addView(button("Details") { details(featured) },
                 LinearLayout.LayoutParams(-2, dp(48)).apply { marginStart = dp(12) })
@@ -166,7 +199,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
             val categories = if (destination == BrowsePage.Movies)
                 catalog.movieCategories else catalog.seriesCategories
             val controls = LinearLayout(activity)
-            controls.addView(button("Categories  ·  " +
+            val categoryButton = button("Categories  ·  " +
                 (categories.firstOrNull { it.id == category }?.name ?: "All categories") + "  ▾") {
                 val options = listOf("All categories") + categories.map { it.name }
                 AlertDialog.Builder(activity).setTitle("Categories")
@@ -174,7 +207,9 @@ internal class NativeBrowseController(private val activity: Activity, private va
                         category = if (index == 0) "" else categories[index - 1].id
                         render()
                     }.show()
-            })
+            }
+            leftToMenu(categoryButton)
+            controls.addView(categoryButton)
             controls.addView(button("Sort by  ·  " + sorts[sort] + "  ▾") {
                 AlertDialog.Builder(activity).setTitle("Sort by")
                     .setItems(sorts.toTypedArray()) { _, index -> sort = index; render() }.show()
@@ -216,6 +251,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
             setTextColor(Color.WHITE); textSize = 19f; setSingleLine(true)
             background = shape(surface, 12, red); setPadding(dp(20), 0, dp(20), 0)
         }
+        leftToMenu(input)
         column.addView(input, LinearLayout.LayoutParams(-1, dp(58)).apply {
             topMargin = dp(18); bottomMargin = dp(22)
         })
@@ -246,10 +282,14 @@ internal class NativeBrowseController(private val activity: Activity, private va
         val column = LinearLayout(activity).apply { orientation = 1 }
         content.addView(column, FrameLayout.LayoutParams(-1, -1))
         column.addView(text("Settings", 29, Color.WHITE, true))
-        column.addView(button("Refresh catalog") { refresh() },
+        val refreshButton = button("Refresh catalog") { refresh() }
+        leftToMenu(refreshButton)
+        column.addView(refreshButton,
             LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(20) })
         column.addView(button("Sign out") { signOut() },
             LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(20) })
+        column.addView(text("This product uses the TMDB API but is not endorsed or certified by TMDB.",
+            14, muted), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(32) })
     }
 
     private fun list(manager: RecyclerView.LayoutManager) = RecyclerView(activity).apply {
@@ -274,7 +314,14 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 background = shape(surface, 10); clipToOutline = true
             }
-            outer.addView(poster, LinearLayout.LayoutParams(-1, dp(height)))
+            val posterFrame = FrameLayout(activity).apply { clipChildren = false }
+            posterFrame.addView(poster, FrameLayout.LayoutParams(-1, -1))
+            val focusCover = View(activity).apply {
+                background = shape(Color.argb(92, 211, 50, 68), 10, red)
+                visibility = View.GONE
+            }
+            posterFrame.addView(focusCover, FrameLayout.LayoutParams(-1, -1))
+            outer.addView(posterFrame, LinearLayout.LayoutParams(-1, dp(height)))
             val name = text("", 16, Color.WHITE, true).apply {
                 maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
             }
@@ -283,10 +330,9 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 view.animate().cancel()
                 view.animate().scaleX(if (focused) 1.035f else 1f)
                     .scaleY(if (focused) 1.035f else 1f).setDuration(100).start()
-                outer.background = shape(Color.TRANSPARENT, 12,
-                    if (focused) red else Color.TRANSPARENT)
+                focusCover.visibility = if (focused) View.VISIBLE else View.GONE
             }
-            return PosterHolder(outer, poster, name)
+            return PosterHolder(outer, poster, name, focusCover)
         }
         override fun onBindViewHolder(holder: PosterHolder, position: Int) {
             val item = titles[position]
@@ -296,6 +342,11 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 size(200, 300); crossfade(false)
             }
             holder.itemView.setOnClickListener { details(item) }
+            holder.itemView.setOnKeyListener { _, key, event ->
+                key == KeyEvent.KEYCODE_DPAD_LEFT && event.action == KeyEvent.ACTION_DOWN &&
+                    holder.bindingAdapterPosition.let { it == 0 || (isGrid && it > 0 && it % 4 == 0) } &&
+                    showMenu()
+            }
             holder.itemView.layoutParams = RecyclerView.LayoutParams(
                 if (isGrid) -1 else dp(width), dp(height + 82)).apply {
                 setMargins(dp(7), dp(6), dp(7), dp(4))
@@ -305,9 +356,10 @@ internal class NativeBrowseController(private val activity: Activity, private va
             holder.poster.setImageDrawable(null)
             holder.itemView.animate().cancel()
             holder.itemView.scaleX = 1f; holder.itemView.scaleY = 1f
+            holder.cover.visibility = View.GONE
         }
     }
-    private class PosterHolder(view: View, val poster: ImageView, val name: TextView) :
+    private class PosterHolder(view: View, val poster: ImageView, val name: TextView, val cover: View) :
         RecyclerView.ViewHolder(view)
 
     private fun button(title: String, click: () -> Unit) = text(title, 17, Color.WHITE, true).apply {

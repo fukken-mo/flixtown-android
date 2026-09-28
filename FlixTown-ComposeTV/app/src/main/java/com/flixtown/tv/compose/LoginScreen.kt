@@ -14,6 +14,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
@@ -38,6 +40,8 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
     var pair by remember { mutableStateOf<PairCode?>(null) }
     var error by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    val signInFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { signInFocus.requestFocus() }
     LaunchedEffect(Unit) {
         runCatching { repo.startPair() }.onSuccess { pair = it }
             .onFailure { error = "QR login unavailable. You can sign in with your remote." }
@@ -76,7 +80,7 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
                 Text("Sign in with your account", color = CinemaColor.Muted, fontSize = 16.sp)
                 LoginField(username, "Username", false) { username = it }
                 LoginField(password, "Password", true) { password = it }
-                PremiumButton(onClick = {
+                PremiumButton(modifier = Modifier.focusRequester(signInFocus), onClick = {
                     if (busy) return@PremiumButton
                     if (username.isBlank() || password.isBlank()) {
                         error = "Enter both account fields"; return@PremiumButton
