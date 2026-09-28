@@ -3,6 +3,8 @@ package com.flixtown.tv;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -45,7 +47,12 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
             super.onMeasure(w,h);
         }};stage.setClipChildren(false);stage.setClipToPadding(false);
         card.addView(stage,new LinearLayout.LayoutParams(-1,browse?-2:Ui.dp(activity,Math.round(width*1.54f))));
-        View glow=new View(activity);glow.setBackground(Ui.posterGlow(activity));glow.setAlpha(0f);
+        View glow=new View(activity){final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+            {setLayerType(View.LAYER_TYPE_SOFTWARE,null);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Ui.dp(activity,2));
+             paint.setColor(0xFFFF526D);paint.setShadowLayer(Ui.dp(activity,18),0,0,0xF1F51F50);}
+            @Override protected void onDraw(Canvas canvas){float edge=Ui.dp(activity,12);
+                canvas.drawRoundRect(edge,edge,getWidth()-edge,getHeight()-edge,Ui.dp(activity,10),Ui.dp(activity,10),paint);}
+        };glow.setAlpha(0f);
         FrameLayout.LayoutParams glowParams=new FrameLayout.LayoutParams(-1,-1);
         glowParams.setMargins(-Ui.dp(activity,10),-Ui.dp(activity,10),-Ui.dp(activity,10),-Ui.dp(activity,10));stage.addView(glow,glowParams);
         FrameLayout artwork=new FrameLayout(activity);artwork.setBackground(Ui.posterBorder(activity,false));

@@ -266,6 +266,7 @@ public class HomeActivity extends Activity {
         if(items.isEmpty())return;
         TextView heading=Ui.heading(this,title,21);Ui.pad(heading,this,4,19,0,12);rows.addView(heading);
         HorizontalGridView grid=new HorizontalGridView(this);grid.setNumRows(1);grid.setClipChildren(false);grid.setClipToPadding(false);
+        grid.setPadding(Ui.dp(this,26),Ui.dp(this,12),Ui.dp(this,26),Ui.dp(this,12));
         if(firstGrid==null)firstGrid=grid;
         grid.setItemAnimator(null);grid.setHasFixedSize(true);
         grid.setAdapter(new PosterAdapter(this,items,item->{
@@ -275,7 +276,7 @@ public class HomeActivity extends Activity {
             handler.removeCallbacksAndMessages(null);
             handler.postDelayed(()->{Images.load(backdrop,item.backdrop,800);Images.load(ambient,item.backdrop,800);},180);
         }));
-        LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,Ui.dp(this,PosterAdapter.rowHeight(this)));
+        LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,Ui.dp(this,PosterAdapter.rowHeight(this)+24));
         gp.bottomMargin=Ui.dp(this,15);rows.addView(grid,gp);
         for(int i=0;i<items.size()&&!avoidFocusSteal;i++)if((items.get(i).kind+":"+items.get(i).id).equals(lastFocused)){
             final int position=i;focusQueued=true;grid.post(()->{grid.setSelectedPosition(position);grid.requestFocus();});break;

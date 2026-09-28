@@ -41,7 +41,7 @@ final class Ui {
     }
     static GradientDrawable posterBorder(Context c,boolean focused){
         GradientDrawable d=new GradientDrawable();d.setColor(0xFF10131A);d.setCornerRadius(dp(c,9));
-        d.setStroke(dp(c,focused?2:1),focused?0xFFFF7591:0xFF343842);return d;
+        d.setStroke(dp(c,1),focused?0xFFFF899A:0xFF343842);return d;
     }
     static GradientDrawable posterGlow(Context c){
         GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
