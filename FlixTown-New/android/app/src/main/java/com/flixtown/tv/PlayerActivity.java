@@ -223,7 +223,7 @@ public class PlayerActivity extends Activity {
                 if(key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER){handler.removeCallbacks(commitPreview);commitPreview.run();return true;}
                 if(key==KeyEvent.KEYCODE_BACK){handler.removeCallbacks(commitPreview);previewPosition=-1;seekPreview.setText("");scheduleHide();return true;}
             }
-            if(key==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE || key==KeyEvent.KEYCODE_HEADSETPHOOK){if(player.isPlaying())player.pause();else player.play();showControls();return true;}
+            if(key==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE){if(player.isPlaying())player.pause();else player.play();showControls();return true;}
             if(key==KeyEvent.KEYCODE_MEDIA_PLAY){player.play();showControls();return true;}
             if(key==KeyEvent.KEYCODE_MEDIA_PAUSE){player.pause();showControls();return true;}
             if(key==KeyEvent.KEYCODE_MEDIA_REWIND){previewSeek(-1,event.getRepeatCount());return true;}
