@@ -28,7 +28,8 @@ public class DetailsActivity extends Activity {
         FrameLayout shell=new FrameLayout(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
         ImageView background=new ImageView(this);background.setScaleType(ImageView.ScaleType.CENTER_CROP);background.setAlpha(.25f);
         shell.addView(background,new FrameLayout.LayoutParams(-1,-1));Images.load(background,getIntent().getStringExtra("backdrop"),1000);
-        LinearLayout content=Ui.column(this);Ui.pad(content,this,80,20,80,14);shell.addView(content,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout content=Ui.column(this);content.setClipChildren(false);
+        content.setPadding(Ui.dp(this,80),Ui.safeY(this),Ui.dp(this,80),Ui.safeY(this));shell.addView(content,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout hero=Ui.row(this);content.addView(hero);
         ImageView poster=new ImageView(this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);
         hero.addView(poster,new LinearLayout.LayoutParams(Ui.dp(this,128),Ui.dp(this,180)));
@@ -116,6 +117,7 @@ public class DetailsActivity extends Activity {
                 }}
                 episodeArea.removeAllViews();
                 HorizontalScrollView seasonScroller=new HorizontalScrollView(this);seasonScroller.setHorizontalScrollBarEnabled(false);
+                seasonScroller.setClipToPadding(false);seasonScroller.setClipChildren(false);
                 episodeArea.addView(seasonScroller,new LinearLayout.LayoutParams(-1,Ui.dp(this,49)));
                 LinearLayout tabs=Ui.row(this);seasonScroller.addView(tabs);
                 seasonContent=Ui.column(this);episodeArea.addView(seasonContent);
@@ -146,7 +148,7 @@ public class DetailsActivity extends Activity {
         }
     }
     private FrameLayout episodeCard(JSONObject ep,int number){
-        FrameLayout frame=new FrameLayout(this);frame.setFocusable(true);frame.setBackground(Ui.glass(this,10));
+        FrameLayout frame=new FrameLayout(this);frame.setFocusable(true);frame.setFocusableInTouchMode(true);frame.setClickable(true);frame.setBackground(Ui.glass(this,10));
         ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setAlpha(.7f);
         frame.addView(image,new FrameLayout.LayoutParams(-1,-1));
         JSONObject info=ep.optJSONObject("info");String art=info==null?"":info.optString("movie_image","");
@@ -184,7 +186,7 @@ public class DetailsActivity extends Activity {
         LinearLayout row=Ui.row(this);scroller.addView(row);
         for(int i=0;i<Math.min(15,cast.length());i++){
             JSONObject actor=cast.optJSONObject(i);if(actor==null)continue;
-            LinearLayout card=Ui.column(this);card.setFocusable(true);card.setGravity(Gravity.CENTER_HORIZONTAL);
+            LinearLayout card=Ui.column(this);card.setFocusable(true);card.setFocusableInTouchMode(true);card.setClickable(true);card.setGravity(Gravity.CENTER_HORIZONTAL);
             LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,92),Ui.dp(this,110));cp.rightMargin=Ui.dp(this,17);row.addView(card,cp);
             String actorName=actor.optString("name");int actorId=actor.optInt("id",0);
             FrameLayout avatar=new FrameLayout(this);avatar.setBackground(castRing(false));

@@ -20,6 +20,8 @@ final class Ui {
     interface Choice { void select(int index); }
     static final int BG = Color.rgb(8,9,13), CARD = Color.rgb(24,28,37), RED = Color.rgb(215,37,54);
     static int dp(Context c, int value) { return Math.round(value * c.getResources().getDisplayMetrics().density); }
+    static int safeX(Context c){return Math.max(dp(c,24),Math.round(c.getResources().getDisplayMetrics().widthPixels*.05f));}
+    static int safeY(Context c){return Math.max(dp(c,16),Math.round(c.getResources().getDisplayMetrics().heightPixels*.05f));}
     static LinearLayout column(Context c) { LinearLayout v = new LinearLayout(c); v.setOrientation(1); return v; }
     static LinearLayout row(Context c) { LinearLayout v = new LinearLayout(c); v.setOrientation(0); return v; }
     static TextView text(Context c, String text, int sp) { TextView v = new TextView(c); v.setText(text); v.setTextSize(sp); v.setTextColor(Color.WHITE); return v; }
@@ -59,10 +61,10 @@ final class Ui {
         Button b = new Button(c); b.setText(label); b.setTextColor(Color.WHITE); b.setTextSize(17);
         b.setAllCaps(false);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);
         b.setPadding(dp(c,20),0,dp(c,20),0);b.setSingleLine(true);
-        b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setBackground(focusSurface(c,false));
+        b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setFocusable(true);b.setFocusableInTouchMode(true);b.setClickable(true);
+        b.setBackgroundResource(R.drawable.tv_item_selector);
         b.setOnFocusChangeListener((v,focused) -> {
-            v.setBackground(focusSurface(c,focused));
-            v.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f).setDuration(100).start();
+            v.animate().scaleX(focused ? 1.08f : 1f).scaleY(focused ? 1.08f : 1f).setDuration(150).start();
         }); return b;
     }
     static void options(Activity activity,String title,String[] labels,Choice action) {
@@ -77,7 +79,7 @@ final class Ui {
         for(int i=0;i<labels.length;i++){
             final int index=i;
             TextView option=text(activity,labels[i],16);option.setGravity(Gravity.CENTER_VERTICAL);
-            option.setFocusable(true);pad(option,activity,18,0,12,0);
+            option.setFocusable(true);option.setFocusableInTouchMode(true);option.setClickable(true);pad(option,activity,18,0,12,0);
             option.setBackground(focusSurface(activity,false));
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(activity,45));p.bottomMargin=dp(activity,7);body.addView(option,p);
             option.setOnFocusChangeListener((v,focused)->{v.setBackground(focusSurface(activity,focused));v.animate().scaleX(focused?1.025f:1f).scaleY(focused?1.025f:1f).setDuration(110).start();});
@@ -94,12 +96,13 @@ final class Ui {
         TextView heading=heading(activity,title,23);body.addView(heading);
         TextView hint=text(activity,"Select with your remote",13);hint.setTextColor(0xFFB6B4BD);
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,5);hp.bottomMargin=dp(activity,15);body.addView(hint,hp);
-        RecyclerView list=new RecyclerView(activity);LinearLayoutManager manager=new LinearLayoutManager(activity);list.setLayoutManager(manager);
+        RecyclerView list=new RecyclerView(activity);list.setClipToPadding(false);list.setClipChildren(false);
+        LinearLayoutManager manager=new LinearLayoutManager(activity);list.setLayoutManager(manager);
         list.setItemAnimator(null);list.setVerticalScrollBarEnabled(false);
         list.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>(){
             @Override public int getItemCount(){return labels.length;}
             @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int type){
-                TextView item=text(activity,"",16);item.setGravity(Gravity.CENTER_VERTICAL);item.setFocusable(true);
+                TextView item=text(activity,"",16);item.setGravity(Gravity.CENTER_VERTICAL);item.setFocusable(true);item.setFocusableInTouchMode(true);item.setClickable(true);
                 item.setSingleLine(true);item.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 pad(item,activity,16,0,16,0);
                 RecyclerView.LayoutParams params=new RecyclerView.LayoutParams(-1,dp(activity,48));params.bottomMargin=dp(activity,5);item.setLayoutParams(params);

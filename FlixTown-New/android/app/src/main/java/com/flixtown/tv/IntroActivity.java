@@ -20,7 +20,7 @@ public class IntroActivity extends Activity {
         if(!url.startsWith("https://")){openHome();return;}
         FrameLayout root=new FrameLayout(this);root.setBackgroundColor(Ui.BG);setContentView(root);
         VideoView video=new VideoView(this);root.addView(video,new FrameLayout.LayoutParams(-1,-1));
-        Button skip=Ui.button(this,"Skip");FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(Ui.dp(this,110),Ui.dp(this,52),Gravity.RIGHT|Gravity.BOTTOM);bp.setMargins(0,0,Ui.dp(this,42),Ui.dp(this,28));root.addView(skip,bp);
+        Button skip=Ui.button(this,"Skip");FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(Ui.dp(this,110),Ui.dp(this,52),Gravity.RIGHT|Gravity.BOTTOM);bp.setMargins(0,0,Ui.safeX(this),Ui.safeY(this));root.addView(skip,bp);
         skip.setOnClickListener(v->openHome());skip.requestFocus();
         video.setOnCompletionListener(mp->openHome());video.setOnErrorListener((mp,what,extra)->{openHome();return true;});
         video.setOnPreparedListener(mp->video.start());video.setVideoURI(Uri.parse(url));

@@ -59,7 +59,7 @@ public class PlayerActivity extends Activity {
         if(url==null || url.isEmpty()){finish();return;}
         root=new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
-        root.setFocusable(true);
+        root.setFocusable(true);root.setFocusableInTouchMode(true);
         video=new PlayerView(this);
         video.setUseController(false);
         video.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);
@@ -137,7 +137,7 @@ public class PlayerActivity extends Activity {
         TextView button=Ui.text(this,label,16);
         button.setTypeface(null,Typeface.BOLD);
         button.setGravity(Gravity.CENTER);
-        button.setFocusable(true);
+        button.setFocusable(true);button.setFocusableInTouchMode(true);button.setClickable(true);
         button.setBackground(Ui.focusSurface(this,false));
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,Ui.dp(this,49),1);
         bp.setMargins(Ui.dp(this,5),0,Ui.dp(this,5),0);
@@ -284,13 +284,13 @@ public class PlayerActivity extends Activity {
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=Ui.dp(this,5);hp.bottomMargin=Ui.dp(this,19);box.addView(hint,hp);
         int count=options.size();
         android.widget.ScrollView scroller=new android.widget.ScrollView(this);
-        scroller.setVerticalScrollBarEnabled(false);box.addView(scroller,new LinearLayout.LayoutParams(-1,-2));
+        scroller.setVerticalScrollBarEnabled(false);scroller.setClipToPadding(false);box.addView(scroller,new LinearLayout.LayoutParams(-1,-2));
         LinearLayout optionList=Ui.column(this);scroller.addView(optionList);
         for(int i=0;i<count;i++){
             final int selected=i;
             TextView option=Ui.text(this,options.get(i),17);
             Ui.pad(option,this,18,12,18,12);
-            option.setFocusable(true);
+            option.setFocusable(true);option.setFocusableInTouchMode(true);option.setClickable(true);
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,Ui.dp(this,51));
             p.bottomMargin=Ui.dp(this,7);optionList.addView(option,p);
             option.setBackground(Ui.focusSurface(this,false));

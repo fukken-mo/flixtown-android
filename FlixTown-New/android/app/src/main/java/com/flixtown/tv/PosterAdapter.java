@@ -20,8 +20,9 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     private static final int SIDE_GAP=17, TOP_GAP=13, TITLE_HEIGHT=62;
     static int cardWidth(Activity activity,boolean browse) {
         int width=Math.round(activity.getResources().getDisplayMetrics().widthPixels/activity.getResources().getDisplayMetrics().density);
-        int rail=browse?220:84, contentPadding=browse?84:60;
-        return Math.max(76,Math.min(330,(width-rail-contentPadding-4*SIDE_GAP*2)/4));
+        int rail=browse?190:84, contentPadding=browse?96:72;
+        int safeWidth=Math.round(Ui.safeX(activity)*2/activity.getResources().getDisplayMetrics().density);
+        return Math.max(76,Math.min(330,(width-safeWidth-rail-contentPadding-4*SIDE_GAP*2)/4));
     }
     static int cardWidth(Activity activity){return cardWidth(activity,false);}
     static int rowHeight(Activity activity){return Math.round(cardWidth(activity)*1.54f)+TITLE_HEIGHT+TOP_GAP*2+16;}
@@ -38,7 +39,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     }
     @Override public Holder onCreateViewHolder(ViewGroup parent,int type){
         int width=cardWidth(activity,browse);
-        LinearLayout card=Ui.column(activity);card.setFocusable(true);card.setGravity(Gravity.TOP);
+        LinearLayout card=Ui.column(activity);card.setFocusable(true);card.setFocusableInTouchMode(true);card.setClickable(true);card.setGravity(Gravity.TOP);
         card.setClipChildren(false);card.setClipToPadding(false);
         RecyclerView.LayoutParams layout=new RecyclerView.LayoutParams(browse?-1:Ui.dp(activity,width),browse?-2:Ui.dp(activity,Math.round(width*1.54f)+TITLE_HEIGHT));
         layout.setMargins(Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP),Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP));card.setLayoutParams(layout);
