@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,8 @@ class MainActivity : ComponentActivity() {
                 var catalog by remember { mutableStateOf(BrowseCatalog()) }
                 var details by remember { mutableStateOf<TvTitle?>(null) }
                 val detailHistory = remember { mutableStateListOf<TvTitle>() }
+                val nativeBrowse = remember { NativeBrowseController(this, repo) }
+                DisposableEffect(nativeBrowse) { onDispose { nativeBrowse.dispose() } }
                 var error by remember { mutableStateOf("") }
                 var loading by remember { mutableStateOf(account != null) }
                 var refresh by remember { mutableIntStateOf(0) }
@@ -76,16 +79,17 @@ class MainActivity : ComponentActivity() {
                             detailHistory.removeAt(detailHistory.lastIndex) else null }
                     )
                     details != null -> DetailsScreen(details!!, repo, account!!, play) { details = null }
-                    else -> Box(Modifier.fillMaxSize()) {
-                        BrowseShell(catalog = catalog, repo = repo,
-                            onPlay = play,
-                            onDetails = { detailHistory.clear(); details = it },
-                            onRefresh = { refresh++ },
-                            onSignOut = {
-                                repo.signOut(); account = null; catalog = BrowseCatalog(); loading = false
-                                details = null; detailHistory.clear()
-                            })
-                    }
+                    else -> AndroidView(factory = { nativeBrowse.root },
+                        modifier = Modifier.fillMaxSize(), update = {
+                            nativeBrowse.bind(catalog,
+                                onPlay = play,
+                                onDetails = { detailHistory.clear(); details = it },
+                                onRefresh = { refresh++ },
+                                onSignOut = {
+                                    repo.signOut(); account = null; catalog = BrowseCatalog(); loading = false
+                                    details = null; detailHistory.clear()
+                                })
+                        })
                 }
             }
         }
