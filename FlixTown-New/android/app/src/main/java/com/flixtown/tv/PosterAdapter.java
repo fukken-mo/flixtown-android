@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
-    private static final int SIDE_GAP=11, TOP_GAP=8, TITLE_HEIGHT=52;
+    private static final int SIDE_GAP=11, TOP_GAP=8, TITLE_HEIGHT=62;
     static int cardWidth(Activity activity,boolean browse) {
         int width=Math.round(activity.getResources().getDisplayMetrics().widthPixels/activity.getResources().getDisplayMetrics().density);
         int rail=browse?220:84, contentPadding=browse?84:60;
@@ -45,7 +45,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         card.addView(artwork,new LinearLayout.LayoutParams(-1,Ui.dp(activity,Math.round(width*1.43f))));
         ImageView poster=new ImageView(activity);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);poster.setBackgroundColor(Ui.CARD);
         artwork.addView(poster,new FrameLayout.LayoutParams(-1,-1));
-        TextView title=Ui.text(activity,"",15);title.setTextColor(0xFFE7E4E7);title.setMaxLines(2);
+        TextView title=Ui.text(activity,"",width<150?13:15);title.setTextColor(0xFFE7E4E7);title.setMaxLines(3);
         title.setEllipsize(TextUtils.TruncateAt.END);title.setGravity(Gravity.TOP|Gravity.START);
         title.setIncludeFontPadding(false);Ui.pad(title,activity,3,8,4,0);
         card.addView(title,new LinearLayout.LayoutParams(-1,Ui.dp(activity,TITLE_HEIGHT)));
