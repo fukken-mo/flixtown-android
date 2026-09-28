@@ -83,6 +83,9 @@ fun DetailsScreen(item: TvTitle, repo: FlixRepository, account: TvAccount,
                     items(episodes[selectedSeason].orEmpty(), key = { it.id }) { episode ->
                         Card(onClick = { onPlay(episode) },
                             modifier = Modifier.width(260.dp).height(150.dp),
+                            border = CardDefaults.border(focusedBorder = androidx.tv.material3.Border(
+                                border = androidx.compose.foundation.BorderStroke(2.dp, CinemaColor.Accent),
+                                shape = RoundedCornerShape(12.dp))),
                             scale = CardDefaults.scale(focusedScale = 1.06f)) {
                             Box(Modifier.fillMaxSize().background(Color(0xFF252E40))) {
                                 AsyncImage(model = backdropRequest(episode.posterUrl), contentDescription = null,

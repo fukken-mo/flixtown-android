@@ -95,7 +95,10 @@ fun DetailScreen(item: TvTitle, account: TvAccount, repo: FlixRepository,
                 items(candidates, key = { it.id }) { title ->
                     Column(Modifier.width(142.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         Card(onClick = { onSimilar(title) },
-                            modifier = Modifier.width(142.dp).height(174.dp),
+                            modifier = Modifier.width(142.dp).height(205.dp),
+                            border = CardDefaults.border(focusedBorder = androidx.tv.material3.Border(
+                                border = androidx.compose.foundation.BorderStroke(2.dp, CinemaColor.Accent),
+                                shape = RoundedCornerShape(12.dp))),
                             scale = CardDefaults.scale(focusedScale = 1.07f)) {
                             AsyncImage(posterRequest(title.posterUrl), contentDescription = title.name,
                                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()

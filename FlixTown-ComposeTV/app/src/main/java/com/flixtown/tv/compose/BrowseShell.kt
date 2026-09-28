@@ -63,14 +63,13 @@ fun BrowseShell(catalog: BrowseCatalog, repo: FlixRepository,
     onRefresh: () -> Unit, onSignOut: () -> Unit) {
     var page by remember { mutableStateOf(BrowsePage.Home) }
     val homeFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { homeFocus.requestFocus() }
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
         CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))
         .padding(horizontal = 48.dp, vertical = 27.dp)) {
       FlixNavigationDrawer(page, homeFocus, onSelect = { page = it }) {
         Box(Modifier.fillMaxSize().padding(start = 20.dp)) {
             when (page) {
-                BrowsePage.Home -> HomeScreen(onPlay, onDetails, catalog, autoFocusHero = false,
+                BrowsePage.Home -> HomeScreen(onPlay, onDetails, catalog, autoFocusHero = true,
                     includeSafePadding = false)
                 BrowsePage.Movies -> CatalogPage("Movies", catalog.movies, catalog.movieCategories, onDetails)
                 BrowsePage.Series -> CatalogPage("Series", catalog.series, catalog.seriesCategories, onDetails)
@@ -201,7 +200,7 @@ private fun GridPoster(item: TvTitle, onClick: () -> Unit) {
             scale = CardDefaults.scale(focusedScale = 1.06f)) {
             AsyncImage(model = posterRequest(item.posterUrl), contentDescription = item.name,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
-                    .background(Color(0xFF222B3A)))
+                    .background(CinemaColor.Surface))
         }
         Text(item.name, color = Color.White, fontSize = 16.sp,
             maxLines = 2, lineHeight = 19.sp, overflow = TextOverflow.Ellipsis)

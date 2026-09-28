@@ -160,7 +160,7 @@ private fun PosterCard(item: TvTitle, onClick: () -> Unit) {
             AsyncImage(
                 model = posterRequest(item.posterUrl),
                 contentDescription = item.name, contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().background(Color(0xFF252B39))
+                modifier = Modifier.fillMaxSize().background(CinemaColor.Surface)
             )
         }
         Text(item.name, color = Color.White, fontSize = 16.sp, maxLines = 2,

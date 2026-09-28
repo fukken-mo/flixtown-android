@@ -33,12 +33,12 @@ fun PremiumButton(onClick: () -> Unit, modifier: Modifier = Modifier,
     Button(onClick = onClick, modifier = modifier,
         shape = ButtonDefaults.shape(shape),
         colors = ButtonDefaults.colors(
-            containerColor = Color.White.copy(alpha = 0.12f),
+            containerColor = Color.White.copy(alpha = 0.15f),
             contentColor = CinemaColor.Text,
             focusedContainerColor = CinemaColor.Accent,
             focusedContentColor = CinemaColor.Text),
         border = ButtonDefaults.border(focusedBorder = Border(
-            border = BorderStroke(2.dp, CinemaColor.Text), shape = shape)),
-        scale = ButtonDefaults.scale(focusedScale = 1.06f),
+            border = BorderStroke(2.dp, CinemaColor.Accent), shape = shape)),
+        scale = ButtonDefaults.scale(focusedScale = 1.05f),
         content = content)
 }
