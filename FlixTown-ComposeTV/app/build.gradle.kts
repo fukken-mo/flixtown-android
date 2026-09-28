@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.flixtown.tv.compose"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.flixtown.tv.compose"
         minSdk = 23
