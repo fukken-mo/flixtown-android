@@ -74,7 +74,7 @@ public class HomeActivity extends Activity {
         browseHeader=Ui.column(this);browse.addView(browseHeader,new LinearLayout.LayoutParams(-1,-2));
         browseGrid=new RecyclerView(this);browseGrid.setLayoutManager(new GridLayoutManager(this,4));
         browseGrid.setItemAnimator(null);browseGrid.setClipToPadding(false);browseGrid.setClipChildren(false);
-        browseGrid.setPadding(0,Ui.dp(this,15),0,Ui.dp(this,34));browseGrid.setHasFixedSize(true);
+        browseGrid.setPadding(Ui.dp(this,12),Ui.dp(this,20),Ui.dp(this,12),Ui.dp(this,34));browseGrid.setHasFixedSize(true);
         browse.addView(browseGrid,new LinearLayout.LayoutParams(-1,0,1));
         String[] names={"Home","Search","Movies","Series","Favorites","Settings"};
         for(int n=0;n<names.length;n++) {
@@ -224,9 +224,10 @@ public class HomeActivity extends Activity {
         LinearLayout filters=Ui.row(this);filters.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams filterParams=new LinearLayout.LayoutParams(-1,Ui.dp(this,66));filterParams.topMargin=Ui.dp(this,15);
         filterParams.bottomMargin=Ui.dp(this,16);browseHeader.addView(filters,filterParams);
-        android.widget.Button categoryButton=Ui.button(this,"Categories   ·   "+categoryName+"  ▾");browseCategoryButton=categoryButton;
+        android.widget.Button categoryButton=Ui.button(this,"Categories  ·  "+categoryName+"  ▾");browseCategoryButton=categoryButton;
+        categoryButton.setTextSize(15);
         categoryButton.setSingleLine(true);categoryButton.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        filters.addView(categoryButton,new LinearLayout.LayoutParams(Ui.dp(this,305),Ui.dp(this,54)));
+        filters.addView(categoryButton,new LinearLayout.LayoutParams(Ui.dp(this,270),Ui.dp(this,50)));
         categoryButton.setOnClickListener(v->{List<Category> options=new ArrayList<>();options.add(new Category("","All categories"));options.addAll(categories);
             String[] labels=new String[options.size()];int selectedIndex=0;
             for(int i=0;i<options.size();i++){labels[i]=options.get(i).name;if(options.get(i).id.equals(isMovie?movieCategory:seriesCategory))selectedIndex=i;}
@@ -235,8 +236,9 @@ public class HomeActivity extends Activity {
                 drawRows();if(browseCategoryButton!=null)browseCategoryButton.requestFocus();
             });
         });
-        android.widget.Button sort=Ui.button(this,"Sort by   ·   "+new String[]{"Recently added","Title A–Z","Rating"}[sortMode]+"  ▾");browseSortButton=sort;
-        LinearLayout.LayoutParams sortParams=new LinearLayout.LayoutParams(Ui.dp(this,260),Ui.dp(this,54));sortParams.leftMargin=Ui.dp(this,16);
+        android.widget.Button sort=Ui.button(this,"Sort by  ·  "+new String[]{"Recent","Title A–Z","Rating"}[sortMode]+"  ▾");browseSortButton=sort;
+        sort.setTextSize(15);sort.setSingleLine(true);sort.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams sortParams=new LinearLayout.LayoutParams(Ui.dp(this,210),Ui.dp(this,50));sortParams.leftMargin=Ui.dp(this,16);
         filters.addView(sort,sortParams);
         sort.setOnClickListener(v->Ui.picker(this,"Sort titles",new String[]{"Recently added","Title A–Z","Rating"},sortMode,index->{sortMode=index;drawRows();if(browseSortButton!=null)browseSortButton.requestFocus();}));
         List<Catalog.Item> filtered=sorted(filter(isMovie?movies:series,selected));
@@ -289,8 +291,10 @@ public class HomeActivity extends Activity {
                 for(Catalog.Item item:series)if(item.title.toLowerCase(java.util.Locale.ROOT).contains(needle)&&found.size()<80)found.add(item);
                 if(found.isEmpty())return;
                 TextView heading=Ui.heading(HomeActivity.this,"Results",20);matches.addView(heading);
-                HorizontalGridView grid=new HorizontalGridView(HomeActivity.this);grid.setNumRows(1);grid.setClipChildren(false);grid.setAdapter(new PosterAdapter(HomeActivity.this,found,item->hero.setText(item.title)));
-                matches.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(HomeActivity.this,PosterAdapter.rowHeight(HomeActivity.this))));
+                HorizontalGridView grid=new HorizontalGridView(HomeActivity.this);grid.setNumRows(1);grid.setClipChildren(false);grid.setClipToPadding(false);
+                grid.setPadding(Ui.dp(HomeActivity.this,20),Ui.dp(HomeActivity.this,14),Ui.dp(HomeActivity.this,20),Ui.dp(HomeActivity.this,12));
+                grid.setAdapter(new PosterAdapter(HomeActivity.this,found,item->hero.setText(item.title)));
+                matches.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(HomeActivity.this,PosterAdapter.rowHeight(HomeActivity.this)+30)));
             }
             public void afterTextChanged(Editable s){}
         });

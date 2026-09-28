@@ -28,17 +28,17 @@ public class DetailsActivity extends Activity {
         FrameLayout shell=new FrameLayout(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
         ImageView background=new ImageView(this);background.setScaleType(ImageView.ScaleType.CENTER_CROP);background.setAlpha(.25f);
         shell.addView(background,new FrameLayout.LayoutParams(-1,-1));Images.load(background,getIntent().getStringExtra("backdrop"),1000);
-        ScrollView scroll=new ScrollView(this);shell.addView(scroll);
-        LinearLayout content=Ui.column(this);Ui.pad(content,this,96,75,96,50);scroll.addView(content);
+        ScrollView scroll=new ScrollView(this);scroll.setClipToPadding(false);shell.addView(scroll);
+        LinearLayout content=Ui.column(this);Ui.pad(content,this,96,55,96,70);scroll.addView(content);
         LinearLayout hero=Ui.row(this);content.addView(hero);
         ImageView poster=new ImageView(this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);
         hero.addView(poster,new LinearLayout.LayoutParams(Ui.dp(this,175),Ui.dp(this,250)));
         Images.load(poster,getIntent().getStringExtra("poster"),300);
         LinearLayout text=Ui.column(this);Ui.pad(text,this,35,5,0,0);hero.addView(text,new LinearLayout.LayoutParams(0,-2,1));
         text.addView(Ui.heading(this,title,30));
-        summary=Ui.text(this,"Loading details…",16);Ui.pad(summary,this,0,10,0,10);text.addView(summary);
-        LinearLayout actions=Ui.row(this);text.addView(actions);
-        Button watch=Ui.button(this,"Watch Now");actions.addView(watch);watch.setOnClickListener(v->{
+        summary=Ui.text(this,"Loading details…",16);Ui.pad(summary,this,0,10,0,14);text.addView(summary);
+        LinearLayout actions=Ui.row(this);actions.setGravity(Gravity.CENTER_VERTICAL);text.addView(actions);
+        Button watch=Ui.button(this,"Watch Now");actions.addView(watch,new LinearLayout.LayoutParams(Ui.dp(this,150),Ui.dp(this,52)));watch.setOnClickListener(v->{
             if("movie".equals(kind))play(id,extension);
             else if(Api.prefs(this).getLong("resume_position_series:"+id,0)>=15000 &&
                     !Api.prefs(this).getString("resume_episode_series:"+id,"").isEmpty()) {
@@ -55,14 +55,14 @@ public class DetailsActivity extends Activity {
                 }
             }
         });
-        trailerButton=Ui.button(this,"Trailer");LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(this,12);actions.addView(trailerButton,tp);
+        trailerButton=Ui.button(this,"Trailer");LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(Ui.dp(this,130),Ui.dp(this,52));tp.leftMargin=Ui.dp(this,12);actions.addView(trailerButton,tp);
         trailerButton.setEnabled(false);
         trailerButton.setOnClickListener(v->{String url=trailerButton.getTag() instanceof String?(String)trailerButton.getTag():"";
             if(url.startsWith("http") && !url.contains("youtube.com/") && !url.contains("youtu.be/"))playUrl(url,false);
             else if(!url.isEmpty())startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url.startsWith("http")?url:"https://www.youtube.com/watch?v="+url)));
         });
         Button favorite=Ui.button(this,isFavorite()?"Remove Favorite":"Add Favorite");
-        LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(-2,-2);fp.leftMargin=Ui.dp(this,12);actions.addView(favorite,fp);
+        LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(Ui.dp(this,185),Ui.dp(this,52));fp.leftMargin=Ui.dp(this,12);actions.addView(favorite,fp);
         favorite.setOnClickListener(v->{toggleFavorite();favorite.setText(isFavorite()?"Remove Favorite":"Add Favorite");});
         castArea=Ui.column(this);content.addView(castArea);
         if("series".equals(kind)) {
