@@ -53,6 +53,9 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private var signOut: () -> Unit = {}
     private val nav = mutableMapOf<BrowsePage, TextView>()
     private val sorts = listOf("Recently added", "Title A–Z", "Top rated")
+    private val homeRows = mutableListOf<RecyclerView>()
+    private var homeScroll: ScrollView? = null
+    private var heroPlay: View? = null
 
     init {
         root.viewTreeObserver.addOnGlobalFocusChangeListener { _, focused ->
@@ -134,6 +137,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
 
     private fun render() {
         work?.cancel(); content.removeAllViews()
+        homeRows.clear(); homeScroll = null; heroPlay = null
         when (page) {
             BrowsePage.Home -> home()
             BrowsePage.Movies, BrowsePage.Series, BrowsePage.Watchlist -> grid()
@@ -146,6 +150,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
         val scroll = ScrollView(activity).apply {
             clipToPadding = false; clipChildren = false; isVerticalScrollBarEnabled = false
         }
+        homeScroll = scroll
         val column = LinearLayout(activity).apply {
             orientation = 1; clipChildren = false; clipToPadding = false
             setPadding(dp(8), dp(4), dp(8), dp(36))
@@ -168,9 +173,25 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
             val actions = LinearLayout(activity)
             val primary = button("▶  Play") { play(featured) }
-            leftToMenu(primary)
+            heroPlay = primary
+            primary.setOnKeyListener { _, key, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) false else when (key) {
+                    KeyEvent.KEYCODE_DPAD_LEFT -> showMenu()
+                    KeyEvent.KEYCODE_DPAD_DOWN -> focusHomeRow(0, 0)
+                    KeyEvent.KEYCODE_DPAD_UP -> true
+                    else -> false
+                }
+            }
             actions.addView(primary)
-            actions.addView(button("Details") { details(featured) },
+            val moreInfo = button("Details") { details(featured) }
+            moreInfo.setOnKeyListener { _, key, event ->
+                event.action == KeyEvent.ACTION_DOWN && when (key) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> focusHomeRow(0, 0)
+                    KeyEvent.KEYCODE_DPAD_UP -> true
+                    else -> false
+                }
+            }
+            actions.addView(moreInfo,
                 LinearLayout.LayoutParams(-2, dp(48)).apply { marginStart = dp(12) })
             info.addView(actions, LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(16) })
             hero.addView(info, FrameLayout.LayoutParams(-1, -1))
@@ -182,10 +203,57 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 LinearLayout.LayoutParams(-1, -2).apply {
                     topMargin = dp(28); bottomMargin = dp(10)
                 })
-            column.addView(list(LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false)).apply {
+            val row = list(LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false)).apply {
                 adapter = Posters(titles, 176, 262, false)
-            }, LinearLayout.LayoutParams(-1, dp(340)))
+            }
+            homeRows.add(row)
+            column.addView(row, LinearLayout.LayoutParams(-1, dp(340)))
         }
+    }
+
+    private fun focusHomeRow(rowIndex: Int, position: Int): Boolean {
+        val row = homeRows.getOrNull(rowIndex) ?: return true
+        val count = row.adapter?.itemCount ?: 0
+        if (count == 0) return true
+        val targetIndex = position.coerceIn(0, count - 1)
+        homeScroll?.scrollTo(0, (row.top - dp(70)).coerceAtLeast(0))
+        val visible = row.findViewHolderForAdapterPosition(targetIndex)?.itemView
+        if (visible != null) {
+            visible.requestFocus()
+            return true
+        }
+        row.scrollToPosition(targetIndex)
+        // Focus on the first layout after the target card is attached. One D-pad press is enough
+        // even when the corresponding poster is far off-screen in the next row.
+        val listener = object : RecyclerView.OnChildAttachStateChangeListener {
+            override fun onChildViewAttachedToWindow(view: View) {
+                if (row.getChildAdapterPosition(view) == targetIndex) {
+                    row.removeOnChildAttachStateChangeListener(this)
+                    view.requestFocus()
+                }
+            }
+            override fun onChildViewDetachedFromWindow(view: View) {}
+        }
+        row.addOnChildAttachStateChangeListener(listener)
+        row.post {
+            row.findViewHolderForAdapterPosition(targetIndex)?.itemView?.let {
+                row.removeOnChildAttachStateChangeListener(listener)
+                it.requestFocus()
+            }
+        }
+        return true
+    }
+
+    private fun moveHomeFocus(row: RecyclerView, position: Int, down: Boolean): Boolean {
+        val index = homeRows.indexOf(row)
+        if (index < 0) return false
+        if (down) return focusHomeRow(index + 1, position)
+        if (index == 0) {
+            homeScroll?.scrollTo(0, 0)
+            heroPlay?.requestFocus()
+            return true
+        }
+        return focusHomeRow(index - 1, position)
     }
 
     private fun grid() {
@@ -343,9 +411,20 @@ internal class NativeBrowseController(private val activity: Activity, private va
             }
             holder.itemView.setOnClickListener { details(item) }
             holder.itemView.setOnKeyListener { _, key, event ->
-                key == KeyEvent.KEYCODE_DPAD_LEFT && event.action == KeyEvent.ACTION_DOWN &&
-                    holder.bindingAdapterPosition.let { it == 0 || (isGrid && it > 0 && it % 4 == 0) } &&
-                    showMenu()
+                if (event.action != KeyEvent.ACTION_DOWN) false else {
+                    val position = holder.bindingAdapterPosition
+                    if (position == RecyclerView.NO_POSITION) false else when (key) {
+                        KeyEvent.KEYCODE_DPAD_DOWN ->
+                            if (!isGrid) moveHomeFocus(holder.itemView.parent as RecyclerView, position, true)
+                            else false
+                        KeyEvent.KEYCODE_DPAD_UP ->
+                            if (!isGrid) moveHomeFocus(holder.itemView.parent as RecyclerView, position, false)
+                            else false
+                        KeyEvent.KEYCODE_DPAD_LEFT ->
+                            (position == 0 || (isGrid && position % 4 == 0)) && showMenu()
+                        else -> false
+                    }
+                }
             }
             holder.itemView.layoutParams = RecyclerView.LayoutParams(
                 if (isGrid) -1 else dp(width), dp(height + 82)).apply {
