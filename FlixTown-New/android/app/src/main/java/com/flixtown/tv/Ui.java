@@ -41,7 +41,7 @@ final class Ui {
     }
     static GradientDrawable posterBorder(Context c,boolean focused){
         GradientDrawable d=new GradientDrawable();d.setColor(0xFF10131A);d.setCornerRadius(dp(c,9));
-        d.setStroke(dp(c,focused?3:1),focused?0xFFE73550:0xFF343842);return d;
+        d.setStroke(dp(c,focused?2:1),focused?0xFFFF7591:0xFF343842);return d;
     }
     static GradientDrawable navBackground(Context c,boolean focused,boolean selected){
         GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
@@ -52,7 +52,9 @@ final class Ui {
     }
     static Button button(Context c, String label) {
         Button b = new Button(c); b.setText(label); b.setTextColor(Color.WHITE); b.setTextSize(17);
-        b.setAllCaps(false); b.setBackground(focusSurface(c,false));
+        b.setAllCaps(false);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);
+        b.setPadding(dp(c,14),0,dp(c,14),0);b.setSingleLine(true);
+        b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setBackground(focusSurface(c,false));
         b.setOnFocusChangeListener((v,focused) -> {
             v.setBackground(focusSurface(c,focused));
             v.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f).setDuration(100).start();

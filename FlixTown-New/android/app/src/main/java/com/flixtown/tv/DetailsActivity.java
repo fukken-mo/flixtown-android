@@ -171,7 +171,7 @@ public class DetailsActivity extends Activity {
             LinearLayout card=Ui.column(this);card.setFocusable(true);card.setGravity(Gravity.CENTER_HORIZONTAL);
             LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,130),Ui.dp(this,161));cp.rightMargin=Ui.dp(this,19);row.addView(card,cp);
             String actorName=actor.optString("name");int actorId=actor.optInt("id",0);
-            FrameLayout avatar=new FrameLayout(this);avatar.setBackground(Ui.posterBorder(this,false));
+            FrameLayout avatar=new FrameLayout(this);avatar.setBackground(castRing(false));
             avatar.setPadding(Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3));
             card.addView(avatar,new LinearLayout.LayoutParams(Ui.dp(this,108),Ui.dp(this,108)));
             FrameLayout portrait=new FrameLayout(this);portrait.setBackground(Ui.rounded(0xFF2D2330,54,this));
@@ -188,11 +188,17 @@ public class DetailsActivity extends Activity {
             TextView name=Ui.text(this,actorName,14);name.setGravity(Gravity.CENTER);name.setMaxLines(2);
             name.setEllipsize(android.text.TextUtils.TruncateAt.END);
             LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,Ui.dp(this,45));np.topMargin=Ui.dp(this,7);card.addView(name,np);
-            card.setOnFocusChangeListener((v,f)->{avatar.setBackground(Ui.posterBorder(this,f));
+            card.setOnFocusChangeListener((v,f)->{avatar.setBackground(castRing(f));
                 name.setTextColor(f?0xFFFFC9D0:0xFFFFFFFF);
                 v.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(130).start();});
             card.setOnClickListener(v->{Intent intent=new Intent(this,ActorActivity.class);intent.putExtra("actor_id",actorId);intent.putExtra("actor_name",actorName);startActivity(intent);});
         }
+    }
+    private android.graphics.drawable.GradientDrawable castRing(boolean focused){
+        android.graphics.drawable.GradientDrawable ring=new android.graphics.drawable.GradientDrawable();
+        ring.setShape(android.graphics.drawable.GradientDrawable.OVAL);ring.setColor(0xFF211A26);
+        ring.setStroke(Ui.dp(this,focused?3:1),focused?0xFFFF7792:0xFF69505D);
+        return ring;
     }
     private void promptResume(Runnable resume,Runnable restart){
         long saved=Api.prefs(this).getLong("resume_position_"+kind+":"+id,0);

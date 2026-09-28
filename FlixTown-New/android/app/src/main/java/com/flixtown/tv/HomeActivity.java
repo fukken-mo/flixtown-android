@@ -240,7 +240,9 @@ public class HomeActivity extends Activity {
         filters.addView(sort,sortParams);
         sort.setOnClickListener(v->Ui.picker(this,"Sort titles",new String[]{"Recently added","Title A–Z","Rating"},sortMode,index->{sortMode=index;drawRows();if(browseSortButton!=null)browseSortButton.requestFocus();}));
         List<Catalog.Item> filtered=sorted(filter(isMovie?movies:series,selected));
-        browseGrid.setAdapter(new PosterAdapter(this,filtered,item->{},true));
+        browseGrid.setAdapter(new PosterAdapter(this,filtered,item->{
+            if(item.backdrop!=null && !item.backdrop.isEmpty())Images.load(ambient,item.backdrop,800);
+        },true));
         firstGrid=browseGrid;
         browseGrid.scrollToPosition(0);
         if(filtered.isEmpty()){

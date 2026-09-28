@@ -22,7 +22,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         return Math.max(76,Math.min(330,(width-rail-contentPadding-4*SIDE_GAP*2)/4));
     }
     static int cardWidth(Activity activity){return cardWidth(activity,false);}
-    static int rowHeight(Activity activity){return Math.round(cardWidth(activity)*1.43f)+TITLE_HEIGHT+TOP_GAP*2+8;}
+    static int rowHeight(Activity activity){return Math.round(cardWidth(activity)*1.54f)+TITLE_HEIGHT+TOP_GAP*2+12;}
     interface Focus {void onFocus(Catalog.Item item);}
     private final Activity activity;private final List<Catalog.Item> items;private final Focus focus;private final boolean browse;
     PosterAdapter(Activity activity,List<Catalog.Item> items,Focus focus){this(activity,items,focus,false);}
@@ -38,11 +38,11 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         int width=cardWidth(activity,browse);
         LinearLayout card=Ui.column(activity);card.setFocusable(true);card.setGravity(Gravity.TOP);
         card.setClipChildren(false);card.setClipToPadding(false);
-        RecyclerView.LayoutParams layout=new RecyclerView.LayoutParams(browse?-1:Ui.dp(activity,width),Ui.dp(activity,Math.round(width*1.50f)+TITLE_HEIGHT));
+        RecyclerView.LayoutParams layout=new RecyclerView.LayoutParams(browse?-1:Ui.dp(activity,width),Ui.dp(activity,Math.round(width*1.54f)+TITLE_HEIGHT));
         layout.setMargins(Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP),Ui.dp(activity,SIDE_GAP),Ui.dp(activity,TOP_GAP));card.setLayoutParams(layout);
         FrameLayout artwork=new FrameLayout(activity);artwork.setBackground(Ui.posterBorder(activity,false));
         artwork.setPadding(Ui.dp(activity,3),Ui.dp(activity,3),Ui.dp(activity,3),Ui.dp(activity,3));
-        card.addView(artwork,new LinearLayout.LayoutParams(-1,Ui.dp(activity,Math.round(width*1.50f))));
+        card.addView(artwork,new LinearLayout.LayoutParams(-1,Ui.dp(activity,Math.round(width*1.54f))));
         ImageView poster=new ImageView(activity);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);poster.setBackgroundColor(Ui.CARD);
         artwork.addView(poster,new FrameLayout.LayoutParams(-1,-1));
         TextView title=Ui.text(activity,"",width<150?13:15);title.setTextColor(0xFFE7E4E7);title.setMaxLines(3);
@@ -60,7 +60,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
             holder.artwork.setBackground(Ui.posterBorder(activity,focused));
             holder.title.setTextColor(focused?Color.WHITE:0xFFE7E4E7);
             view.setElevation(Ui.dp(activity,focused?20:0));
-            view.animate().scaleX(focused?1.035f:1f).scaleY(focused?1.035f:1f).setDuration(135).start();
+            view.animate().scaleX(focused?1.055f:1f).scaleY(focused?1.055f:1f).setDuration(150).start();
             if(focused)focus.onFocus(item);
         });
         holder.itemView.setOnClickListener(view->{
