@@ -28,14 +28,15 @@ public class DetailsActivity extends Activity {
         FrameLayout shell=new FrameLayout(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
         ImageView background=new ImageView(this);background.setScaleType(ImageView.ScaleType.CENTER_CROP);background.setAlpha(.25f);
         shell.addView(background,new FrameLayout.LayoutParams(-1,-1));Images.load(background,getIntent().getStringExtra("backdrop"),1000);
-        LinearLayout content=Ui.column(this);Ui.pad(content,this,80,30,80,22);shell.addView(content,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout content=Ui.column(this);Ui.pad(content,this,80,20,80,14);shell.addView(content,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout hero=Ui.row(this);content.addView(hero);
         ImageView poster=new ImageView(this);poster.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        hero.addView(poster,new LinearLayout.LayoutParams(Ui.dp(this,148),Ui.dp(this,210)));
+        hero.addView(poster,new LinearLayout.LayoutParams(Ui.dp(this,128),Ui.dp(this,180)));
         Images.load(poster,getIntent().getStringExtra("poster"),300);
         LinearLayout text=Ui.column(this);Ui.pad(text,this,35,5,0,0);hero.addView(text,new LinearLayout.LayoutParams(0,-2,1));
-        text.addView(Ui.heading(this,title,30));
-        summary=Ui.text(this,"Loading details…",16);Ui.pad(summary,this,0,10,0,14);text.addView(summary);
+        TextView titleView=Ui.heading(this,title,27);titleView.setMaxLines(2);titleView.setEllipsize(android.text.TextUtils.TruncateAt.END);text.addView(titleView);
+        summary=Ui.text(this,"Loading details…",16);summary.setMaxLines(2);summary.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        Ui.pad(summary,this,0,10,0,14);text.addView(summary);
         LinearLayout actions=Ui.row(this);actions.setGravity(Gravity.CENTER_VERTICAL);text.addView(actions);
         Button watch=Ui.button(this,"Watch Now");actions.addView(watch,new LinearLayout.LayoutParams(Ui.dp(this,150),Ui.dp(this,52)));watch.setOnClickListener(v->{
             if("movie".equals(kind))play(id,extension);
@@ -184,11 +185,11 @@ public class DetailsActivity extends Activity {
         for(int i=0;i<Math.min(15,cast.length());i++){
             JSONObject actor=cast.optJSONObject(i);if(actor==null)continue;
             LinearLayout card=Ui.column(this);card.setFocusable(true);card.setGravity(Gravity.CENTER_HORIZONTAL);
-            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,102),Ui.dp(this,123));cp.rightMargin=Ui.dp(this,17);row.addView(card,cp);
+            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,92),Ui.dp(this,110));cp.rightMargin=Ui.dp(this,17);row.addView(card,cp);
             String actorName=actor.optString("name");int actorId=actor.optInt("id",0);
             FrameLayout avatar=new FrameLayout(this);avatar.setBackground(castRing(false));
             avatar.setPadding(Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3));
-            card.addView(avatar,new LinearLayout.LayoutParams(Ui.dp(this,82),Ui.dp(this,82)));
+            card.addView(avatar,new LinearLayout.LayoutParams(Ui.dp(this,68),Ui.dp(this,68)));
             FrameLayout portrait=new FrameLayout(this);portrait.setBackground(Ui.rounded(0xFF2D2330,54,this));
             portrait.setOutlineProvider(new android.view.ViewOutlineProvider(){@Override public void getOutline(View v,android.graphics.Outline outline){outline.setOval(0,0,v.getWidth(),v.getHeight());}});
             portrait.setClipToOutline(true);avatar.addView(portrait,new FrameLayout.LayoutParams(-1,-1));
