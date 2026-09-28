@@ -68,8 +68,8 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
             LoginField(password, "Password", true) { password = it }
             Spacer(Modifier.height(18.dp))
             PremiumButton(onClick = {
-                if (busy) return@Button
-                if (username.isBlank() || password.isBlank()) { error = "Enter both account fields"; return@Button }
+                if (busy) return@PremiumButton
+                if (username.isBlank() || password.isBlank()) { error = "Enter both account fields"; return@PremiumButton }
                 busy = true; error = ""
                 scope.launch {
                     try { onAuthenticated(repo.signIn(username, password)) }

@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
                                 Text(if (loading) "Refreshing movies and series…" else error,
                                     color = Color.White, fontSize = 18.sp)
                                 if (!loading && error.isNotBlank()) {
-                                    PremiumPremiumButton(onClick = { refresh++ }) { Text("Retry") }
+                                    PremiumButton(onClick = { refresh++ }) { Text("Retry") }
                                 }
                             }
                         }

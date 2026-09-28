@@ -128,11 +128,11 @@ private fun Hero(item: TvTitle?, playFocus: FocusRequester,
             if (item != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     if (item.streamUrl.isNotBlank()) {
-                        PremiumPremiumButton(onClick = { onPlay(item) }, modifier = Modifier.focusRequester(playFocus)) {
+                        PremiumButton(onClick = { onPlay(item) }, modifier = Modifier.focusRequester(playFocus)) {
                             Text("▶  Play", fontSize = 18.sp)
                         }
                     }
-                    PremiumPremiumButton(onClick = { onDetails(item) },
+                    PremiumButton(onClick = { onDetails(item) },
                         modifier = if (item.streamUrl.isBlank()) Modifier.focusRequester(playFocus) else Modifier) {
                         Text("Details", fontSize = 18.sp)
                     }
