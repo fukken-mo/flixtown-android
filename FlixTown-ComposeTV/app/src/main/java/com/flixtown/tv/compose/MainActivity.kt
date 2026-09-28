@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
                 primary = Color(0xFFE52254), background = Color(0xFF090C16),
                 surface = Color(0xFF151B2A), onSurface = Color.White
             )) {
-                HomeScreen { title ->
+                HomeScreen(onPlay = { title ->
                     // Only launch playable entries; real catalog URLs come from the panel integration.
                     if (title.streamUrl.isNotBlank()) {
                         startActivity(Intent(this, PlayerActivity::class.java).apply {
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
                             putExtra(PlayerActivity.EXTRA_TITLE, title.name)
                         })
                     }
-                }
+                })
             }
         }
     }
