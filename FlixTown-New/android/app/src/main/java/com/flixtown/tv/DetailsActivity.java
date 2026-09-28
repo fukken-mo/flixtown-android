@@ -158,34 +158,72 @@ public class DetailsActivity extends Activity {
         String trailer=data.optString("trailer","");if(!trailer.isEmpty() && (trailerButton.getTag()==null || "".equals(trailerButton.getTag()))){trailerButton.setTag(trailer);trailerButton.setEnabled(true);}
         JSONArray cast=data.optJSONArray("cast");if(cast==null||cast.length()==0)return;
         castArea.removeAllViews();
-        TextView heading=Ui.heading(this,"Cast",23);Ui.pad(heading,this,0,55,0,16);castArea.addView(heading);
+        TextView heading=Ui.heading(this,"Cast",23);Ui.pad(heading,this,0,30,0,13);castArea.addView(heading);
         HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);castArea.addView(scroller);
         LinearLayout row=Ui.row(this);scroller.addView(row);
         for(int i=0;i<Math.min(15,cast.length());i++){
             JSONObject actor=cast.optJSONObject(i);if(actor==null)continue;
             LinearLayout card=Ui.column(this);card.setFocusable(true);card.setGravity(Gravity.CENTER_HORIZONTAL);
-            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,126),Ui.dp(this,175));cp.rightMargin=Ui.dp(this,14);row.addView(card,cp);
-            ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setBackgroundColor(Ui.CARD);
-            image.setOutlineProvider(new android.view.ViewOutlineProvider(){@Override public void getOutline(View v,android.graphics.Outline outline){outline.setOval(0,0,v.getWidth(),v.getHeight());}});
-            image.setClipToOutline(true);
-            card.addView(image,new LinearLayout.LayoutParams(Ui.dp(this,115),Ui.dp(this,115)));Images.load(image,actor.optString("image"),185);
+            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(Ui.dp(this,130),Ui.dp(this,161));cp.rightMargin=Ui.dp(this,19);row.addView(card,cp);
             String actorName=actor.optString("name");int actorId=actor.optInt("id",0);
-            TextView name=Ui.text(this,actorName,14);name.setGravity(Gravity.CENTER);name.setMaxLines(2);card.addView(name);
-            card.setOnFocusChangeListener((v,f)->{v.setBackground(f?Ui.rounded(Ui.RED,12,this):Ui.glass(this,12));v.animate().scaleX(f?1.05f:1f).scaleY(f?1.05f:1f).setDuration(110).start();});
+            FrameLayout avatar=new FrameLayout(this);avatar.setBackground(Ui.posterBorder(this,false));
+            avatar.setPadding(Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3),Ui.dp(this,3));
+            card.addView(avatar,new LinearLayout.LayoutParams(Ui.dp(this,108),Ui.dp(this,108)));
+            FrameLayout portrait=new FrameLayout(this);portrait.setBackground(Ui.rounded(0xFF2D2330,54,this));
+            portrait.setOutlineProvider(new android.view.ViewOutlineProvider(){@Override public void getOutline(View v,android.graphics.Outline outline){outline.setOval(0,0,v.getWidth(),v.getHeight());}});
+            portrait.setClipToOutline(true);avatar.addView(portrait,new FrameLayout.LayoutParams(-1,-1));
+            String initial=actorName.isEmpty()?"?":actorName.substring(0,1).toUpperCase(java.util.Locale.ROOT);
+            TextView letter=Ui.heading(this,initial,40);letter.setTextColor(0xFFFFD4D9);letter.setGravity(Gravity.CENTER);
+            portrait.addView(letter,new FrameLayout.LayoutParams(-1,-1));
+            String imageUrl=actor.optString("image","");
+            if(imageUrl.startsWith("https://")||imageUrl.startsWith("http://")){
+                ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                portrait.addView(image,new FrameLayout.LayoutParams(-1,-1));Images.load(image,imageUrl,200);
+            }
+            TextView name=Ui.text(this,actorName,14);name.setGravity(Gravity.CENTER);name.setMaxLines(2);
+            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,Ui.dp(this,45));np.topMargin=Ui.dp(this,7);card.addView(name,np);
+            card.setOnFocusChangeListener((v,f)->{avatar.setBackground(Ui.posterBorder(this,f));
+                name.setTextColor(f?0xFFFFC9D0:0xFFFFFFFF);
+                v.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(130).start();});
             card.setOnClickListener(v->{Intent intent=new Intent(this,ActorActivity.class);intent.putExtra("actor_id",actorId);intent.putExtra("actor_name",actorName);startActivity(intent);});
         }
     }
-    private void play(String streamId,String ext) { playUrl(Api.stream(this,"movie".equals(kind)?"movie":"series",streamId,ext==null||ext.isEmpty()?"mp4":ext),true); }
+    private void promptResume(Runnable resume,Runnable restart){
+        long saved=Api.prefs(this).getLong("resume_position_"+kind+":"+id,0);
+        if(saved<15000){resume.run();return;}
+        long minutes=saved/60000,seconds=(saved/1000)%60;
+        String time=String.format(java.util.Locale.US,"%d:%02d",minutes,seconds);
+        Ui.options(this,"Keep watching " + title + "?",new String[]{"Continue from " + time,"Start over"},choice->{
+            if(choice==0)resume.run();else restart.run();
+        });
+    }
+    private void play(String streamId,String ext){
+        String url=Api.stream(this,"movie",streamId,ext==null||ext.isEmpty()?"mp4":ext);
+        promptResume(()->playUrl(url,true,false),()->playUrl(url,true,true));
+    }
     private void playEpisode(String streamId,String ext,String nextId,String nextExt){
+        String savedEpisode=Api.prefs(this).getString("resume_episode_series:"+id,"");
+        if(streamId.equals(savedEpisode))promptResume(()->launchEpisode(streamId,ext,nextId,nextExt,false),
+            ()->launchEpisode(streamId,ext,nextId,nextExt,true));
+        else launchEpisode(streamId,ext,nextId,nextExt,false);
+    }
+    private void launchEpisode(String streamId,String ext,String nextId,String nextExt,boolean startOver){
         String url=Api.stream(this,"series",streamId,ext==null||ext.isEmpty()?"mp4":ext);
         String next=nextId.isEmpty()?"":Api.stream(this,"series",nextId,nextExt);
         Catalog.remember(this,new Catalog.Item(itemJson(),kind));
         Intent intent=new Intent(this,PlayerActivity.class);intent.putExtra("url",url);intent.putExtra("title",title);intent.putExtra("next_url",next);
         intent.putExtra("content_kind",kind);intent.putExtra("content_id",id);
         intent.putExtra("episode_id",streamId);intent.putExtra("episode_ext",ext);
-        intent.putExtra("next_episode_id",nextId);intent.putExtra("next_episode_ext",nextExt);startActivity(intent);
+        intent.putExtra("next_episode_id",nextId);intent.putExtra("next_episode_ext",nextExt);
+        intent.putExtra("start_over",startOver);startActivity(intent);
     }
-    private void playUrl(String url,boolean track) { if(track)Catalog.remember(this,new Catalog.Item(itemJson(),kind));Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",url);i.putExtra("title",title);if(track){i.putExtra("content_kind",kind);i.putExtra("content_id",id);}startActivity(i); }
+    private void playUrl(String url,boolean track){playUrl(url,track,false);}
+    private void playUrl(String url,boolean track,boolean startOver){
+        if(track)Catalog.remember(this,new Catalog.Item(itemJson(),kind));
+        Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",url);i.putExtra("title",title);
+        if(track){i.putExtra("content_kind",kind);i.putExtra("content_id",id);i.putExtra("start_over",startOver);}startActivity(i);
+    }
     private JSONObject itemJson() { JSONObject j=new JSONObject();try {j.put("name",title).put("stream_id",id).put("series_id",id);}catch(Exception ignored){}return j; }
     private boolean isFavorite(){return Api.prefs(this).getString("favorites","").contains("|"+kind+":"+id+"|");}
     private void toggleFavorite(){String key="|"+kind+":"+id+"|";String favorites=Api.prefs(this).getString("favorites","");

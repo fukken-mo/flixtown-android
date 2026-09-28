@@ -11,4 +11,8 @@ response([
     'plans' => ['1m' => setting($db,'price_1m'),'3m' => setting($db,'price_3m'),'6m' => setting($db,'price_6m'),'12m' => setting($db,'price_12m')],
     'announcement' => setting($db, 'announcement'),
     'maintenance' => setting($db, 'maintenance') === '1',
+    'update_version_code' => (int)setting($db, 'update_version_code'),
+    'update_apk_url' => setting($db, 'update_apk_url'),
+    'update_notes' => setting($db, 'update_notes'),
+    'update_required' => setting($db, 'update_required') === '1',
 ]);

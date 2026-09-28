@@ -13,6 +13,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 final class Ui {
     interface Choice { void select(int index); }
@@ -31,6 +33,17 @@ final class Ui {
         GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
             new int[]{0xF12C2932,0xF0181922,0xF20C0E14});
         d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),0x888B727B);return d;
+    }
+    static GradientDrawable posterBorder(Context c,boolean focused){
+        GradientDrawable d=new GradientDrawable();d.setColor(0xFF10131A);d.setCornerRadius(dp(c,9));
+        d.setStroke(dp(c,focused?3:1),focused?0xFFE73550:0xFF343842);return d;
+    }
+    static GradientDrawable navBackground(Context c,boolean focused,boolean selected){
+        GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            focused?new int[]{0xDB692335,0xDC281B28}:selected?new int[]{0xAA391C29,0xB2181B23}:new int[]{0x00131920,0x00131920});
+        d.setCornerRadius(dp(c,12));
+        if(focused)d.setStroke(dp(c,1),0xFFE64D68);
+        return d;
     }
     static Button button(Context c, String label) {
         Button b = new Button(c); b.setText(label); b.setTextColor(Color.WHITE); b.setTextSize(17);
@@ -62,6 +75,37 @@ final class Ui {
         dialog.setContentView(body);dialog.show();
         Window window=dialog.getWindow();if(window!=null){window.setBackgroundDrawableResource(android.R.color.transparent);
             window.setLayout(Math.min(dp(activity,490),activity.getResources().getDisplayMetrics().widthPixels-dp(activity,80)),WindowManager.LayoutParams.WRAP_CONTENT);}
+    }
+    static void picker(Activity activity,String title,String[] labels,int selected,Choice action){
+        Dialog dialog=new Dialog(activity);
+        LinearLayout body=column(activity);pad(body,activity,24,22,24,20);body.setBackground(panel(activity,18));
+        TextView heading=heading(activity,title,23);body.addView(heading);
+        TextView hint=text(activity,"Select with your remote",13);hint.setTextColor(0xFFB6B4BD);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,5);hp.bottomMargin=dp(activity,15);body.addView(hint,hp);
+        RecyclerView list=new RecyclerView(activity);LinearLayoutManager manager=new LinearLayoutManager(activity);list.setLayoutManager(manager);
+        list.setItemAnimator(null);list.setVerticalScrollBarEnabled(false);
+        list.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>(){
+            @Override public int getItemCount(){return labels.length;}
+            @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int type){
+                TextView item=text(activity,"",17);item.setGravity(Gravity.CENTER_VERTICAL);item.setFocusable(true);
+                pad(item,activity,18,0,18,0);
+                RecyclerView.LayoutParams params=new RecyclerView.LayoutParams(-1,dp(activity,52));params.bottomMargin=dp(activity,5);item.setLayoutParams(params);
+                return new RecyclerView.ViewHolder(item){};
+            }
+            @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
+                TextView item=(TextView)holder.itemView;item.setText(labels[position]);
+                item.setBackground(navBackground(activity,false,position==selected));
+                item.setOnFocusChangeListener((v,focused)->v.setBackground(navBackground(activity,focused,position==selected)));
+                item.setOnClickListener(v->{dialog.dismiss();action.select(position);});
+            }
+        });
+        body.addView(list,new LinearLayout.LayoutParams(-1,0,1));dialog.setContentView(body);dialog.show();
+        Window window=dialog.getWindow();if(window!=null){window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(Math.min(dp(activity,560),activity.getResources().getDisplayMetrics().widthPixels-dp(activity,80)),
+                Math.min(dp(activity,600),activity.getResources().getDisplayMetrics().heightPixels-dp(activity,80)));}
+        manager.scrollToPositionWithOffset(Math.max(0,selected),dp(activity,105));
+        list.post(()->{RecyclerView.ViewHolder holder=list.findViewHolderForAdapterPosition(selected);
+            if(holder!=null)holder.itemView.requestFocus();else list.requestFocus();});
     }
     static TextView heading(Context c, String text, int size) { TextView v = text(c,text,size); v.setTypeface(null,Typeface.BOLD); return v; }
     static void pad(View v, Context c, int l,int t,int r,int b) { v.setPadding(dp(c,l),dp(c,t),dp(c,r),dp(c,b)); }

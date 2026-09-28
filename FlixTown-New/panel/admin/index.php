@@ -48,12 +48,19 @@ if ($authorized) {
                 'price_12m' => trim((string)($_POST['price_12m'] ?? '')),
                 'announcement' => clipText(trim((string)($_POST['announcement'] ?? '')),500),
                 'maintenance' => isset($_POST['maintenance']) ? '1' : '0',
+                'update_version_code' => trim((string)($_POST['update_version_code'] ?? '0')),
+                'update_apk_url' => trim((string)($_POST['update_apk_url'] ?? '')),
+                'update_notes' => clipText(trim((string)($_POST['update_notes'] ?? '')),250),
+                'update_required' => isset($_POST['update_required']) ? '1' : '0',
             ];
             foreach (['xtream_url', 'intro_url', 'logo_url', 'cashapp_url'] as $key) {
                 if ($values[$key] !== '' && !filter_var($values[$key], FILTER_VALIDATE_URL)) { $error = 'Check the ' . $key . ' URL'; break; }
             }
             if (!$error && !in_array(parse_url($values['xtream_url'], PHP_URL_SCHEME), ['http','https'], true)) $error = 'Xtream URL must use HTTP or HTTPS';
             if (!$error && $values['intro_url'] !== '' && parse_url($values['intro_url'], PHP_URL_SCHEME) !== 'https') $error = 'Intro video must use HTTPS';
+            if (!$error && !preg_match('/^(0|[1-9][0-9]{0,8})$/D',$values['update_version_code'])) $error = 'Update version must be a whole number';
+            if (!$error && $values['update_apk_url'] !== '' && (!filter_var($values['update_apk_url'], FILTER_VALIDATE_URL) || parse_url($values['update_apk_url'], PHP_URL_SCHEME) !== 'https')) $error = 'APK link must use HTTPS';
+            if (!$error && (int)$values['update_version_code'] > 0 && $values['update_apk_url'] === '') $error = 'Add an APK link before enabling the update';
             foreach (['price_1m','price_3m','price_6m','price_12m'] as $key) if (!$error && !preg_match('/^[0-9]{1,4}(?:\.[0-9]{1,2})?$/D',$values[$key])) $error='Check plan prices';
             if (!$error) {
                 $stmt = $db->prepare('INSERT INTO settings (name,value) VALUES (?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)');
@@ -96,6 +103,12 @@ function clipText(string $value,int $limit): string {
 <label>Intro video URL</label><input name="intro_url" value="<?= h((string)($values['intro_url'] ?? '')) ?>" placeholder="https://">
 <label><input type="checkbox" name="intro_enabled" <?= ($values['intro_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> Play intro on app open</label>
 <label>TMDB API key (kept on the panel)</label><input name="tmdb_key" value="<?= h((string)($values['tmdb_key'] ?? '')) ?>">
+<h2>App updates</h2>
+<p><small>Upload a signed Flix Town APK to your HTTPS hosting first. Enter its build number and direct APK link. Use 0 to turn off the update prompt.</small></p>
+<label>Latest APK build number</label><input type="number" min="0" max="999999999" name="update_version_code" value="<?= h((string)($values['update_version_code'] ?? '0')) ?>">
+<label>Direct HTTPS APK link</label><input type="url" name="update_apk_url" value="<?= h((string)($values['update_apk_url'] ?? '')) ?>" placeholder="https://myflixtown.com/updates/FlixTown.apk">
+<label>What is new</label><input name="update_notes" value="<?= h((string)($values['update_notes'] ?? '')) ?>" maxlength="250">
+<label><input type="checkbox" name="update_required" <?= ($values['update_required'] ?? '0') === '1' ? 'checked' : '' ?>> Require this update</label>
 <label>Cash App URL</label><input name="cashapp_url" value="<?= h((string)($values['cashapp_url'] ?? '')) ?>">
 <label>1 month price</label><input name="price_1m" value="<?= h((string)($values['price_1m'] ?? '15.00')) ?>">
 <label>3 month price</label><input name="price_3m" value="<?= h((string)($values['price_3m'] ?? '40.00')) ?>">

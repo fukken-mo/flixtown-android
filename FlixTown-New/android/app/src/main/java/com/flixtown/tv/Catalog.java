@@ -32,12 +32,18 @@ final class Catalog {
         }} catch (Exception ignored) {} return items;
     }
     static List<Item> recent(List<Item> original,int limit) {
-        ArrayList<Item> sorted=new ArrayList<>(original); sorted.sort((a,b)->Integer.compare(b.added,a.added));
-        return sorted.subList(0,Math.min(limit,sorted.size()));
+        java.util.PriorityQueue<Item> queue=new java.util.PriorityQueue<>(Math.max(1,limit),
+            (a,b)->Integer.compare(a.added,b.added));
+        for(Item item:original){if(queue.size()<limit)queue.add(item);
+            else if(item.added>queue.peek().added){queue.poll();queue.add(item);}}
+        ArrayList<Item> sorted=new ArrayList<>(queue);sorted.sort((a,b)->Integer.compare(b.added,a.added));return sorted;
     }
     static List<Item> topRated(List<Item> original,int limit) {
-        ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->Double.compare(b.rating,a.rating));
-        return sorted.subList(0,Math.min(limit,sorted.size()));
+        java.util.PriorityQueue<Item> queue=new java.util.PriorityQueue<>(Math.max(1,limit),
+            (a,b)->Double.compare(a.rating,b.rating));
+        for(Item item:original){if(queue.size()<limit)queue.add(item);
+            else if(item.rating>queue.peek().rating){queue.poll();queue.add(item);}}
+        ArrayList<Item> sorted=new ArrayList<>(queue);sorted.sort((a,b)->Double.compare(b.rating,a.rating));return sorted;
     }
     static List<Item> alphabetical(List<Item> original) {
         ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->a.title.compareToIgnoreCase(b.title));return sorted;

@@ -52,7 +52,8 @@ public class PlayerActivity extends Activity {
         kind=getIntent().getStringExtra("content_kind");contentId=getIntent().getStringExtra("content_id");
         episodeId=getIntent().getStringExtra("episode_id");episodeExt=getIntent().getStringExtra("episode_ext");
         nextEpisodeId=getIntent().getStringExtra("next_episode_id");nextEpisodeExt=getIntent().getStringExtra("next_episode_ext");
-        if(kind!=null && contentId!=null && !contentId.isEmpty())position=Api.prefs(this).getLong("resume_position_"+kind+":"+contentId,0);
+        if(kind!=null && contentId!=null && !contentId.isEmpty() && !getIntent().getBooleanExtra("start_over",false))
+            position=Api.prefs(this).getLong("resume_position_"+kind+":"+contentId,0);
         if(url==null || url.isEmpty()){finish();return;}
         root=new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);

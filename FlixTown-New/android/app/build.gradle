@@ -7,8 +7,8 @@ android {
         applicationId 'com.myflixtown.tv'
         minSdk 23
         targetSdk 35
-        versionCode 1
-        versionName '2.0.0-preview'
+        versionCode 2
+        versionName '2.0.1-preview'
         buildConfigField 'String', 'PANEL_URL', '"https://panelsandapps.com/panels/flixtown2027/api/"'
     }
     buildFeatures { buildConfig true }
@@ -18,6 +18,7 @@ android {
 dependencies {
     implementation 'androidx.leanback:leanback-grid:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.core:core:1.16.0'
     implementation 'androidx.media3:media3-exoplayer:1.11.1'
     implementation 'androidx.media3:media3-exoplayer-hls:1.11.1'
     implementation 'androidx.media3:media3-exoplayer-dash:1.11.1'

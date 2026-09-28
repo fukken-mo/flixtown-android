@@ -50,4 +50,8 @@ INSERT IGNORE INTO settings (name,value) VALUES
 ('price_6m','75.00'),
 ('price_12m','130.00'),
 ('announcement',''),
+('update_version_code','0'),
+('update_apk_url',''),
+('update_notes',''),
+('update_required','0'),
 ('maintenance','0');

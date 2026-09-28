@@ -25,25 +25,26 @@ import java.util.List;
 
 public class HomeActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
+    private AppUpdates appUpdates;
     private List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
     private List<Category> movieCategories=new ArrayList<>(),seriesCategories=new ArrayList<>();
     private String movieCategory="",seriesCategory="";
-    private LinearLayout rows,rail; private ScrollView scroll; private ImageView backdrop,ambient; private TextView hero,heroMeta,notice,expiry; private RecyclerView firstGrid; private int visibleCount=60;
-    private final List<TextView> railLabels=new ArrayList<>(); private ImageView railLogo; private boolean railExpanded=true;
+    private LinearLayout rows,rail,browse,browseHeader; private ScrollView scroll; private FrameLayout top; private ImageView backdrop,ambient; private TextView hero,heroMeta,notice,expiry; private RecyclerView firstGrid,browseGrid; private android.widget.Button browseCategoryButton,browseSortButton;
+    private final List<TextView> railLabels=new ArrayList<>(); private ImageView railLogo; private boolean railExpanded=true; private ValueAnimator railAnimator;
     private final android.view.ViewTreeObserver.OnGlobalFocusChangeListener railFocus=(oldFocus,newFocus)->{
         if(newFocus!=null)setRailExpanded(isInRail(newFocus));
     };
     private String tab="Home",lastFocused=""; private int generation,sortMode; private boolean focusQueued,avoidFocusSteal;
-    @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}renderShell(); loadCache();getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener(railFocus);rail.post(()->{if(rail.getChildCount()>1)rail.getChildAt(1).requestFocus();}); }
-    @Override protected void onResume() { super.onResume(); if(rows!=null)refresh(); }
+    @Override public void onCreate(Bundle b) { super.onCreate(b);if(Api.prefs(this).getBoolean("expired",false)){startActivity(new android.content.Intent(this,RenewalActivity.class));finish();return;}appUpdates=new AppUpdates(this);renderShell(); loadCache();getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener(railFocus);rail.post(()->{if(rail.getChildCount()>1)rail.getChildAt(1).requestFocus();}); }
+    @Override protected void onResume() { super.onResume(); if(appUpdates!=null)appUpdates.installIfReady();if(rows!=null)refresh(); }
     private void renderShell() {
         FrameLayout scene=new FrameLayout(this);scene.setBackgroundColor(Ui.BG);
         ambient=new ImageView(this);ambient.setScaleType(ImageView.ScaleType.CENTER_CROP);ambient.setAlpha(.045f);
         scene.addView(ambient,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout shell=Ui.row(this);scene.addView(shell,new FrameLayout.LayoutParams(-1,-1));setContentView(scene);
         rail=Ui.column(this);rail.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-            new int[]{0xEE30202A,0xEC15151E,0xF2080910}));Ui.pad(rail,this,12,20,12,0);
-        shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,194),-1));
+            new int[]{0xF51C1B27,0xF20D1018,0xFB090B10}));Ui.pad(rail,this,14,20,14,0);
+        shell.addView(rail,new LinearLayout.LayoutParams(Ui.dp(this,220),-1));
         railLogo=new ImageView(this);
         railLogo.setImageResource(R.drawable.flix_logo);
         railLogo.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -52,7 +53,7 @@ public class HomeActivity extends Activity {
         LinearLayout content=Ui.column(this);shell.addView(content,new LinearLayout.LayoutParams(0,-1,1));
         int screenDp=Math.round(getResources().getDisplayMetrics().heightPixels/getResources().getDisplayMetrics().density);
         int heroHeight=Math.max(175,Math.min(220,Math.round(screenDp*.27f)));
-        FrameLayout top=new FrameLayout(this); content.addView(top,new LinearLayout.LayoutParams(-1,Ui.dp(this,heroHeight)));
+        top=new FrameLayout(this); content.addView(top,new LinearLayout.LayoutParams(-1,Ui.dp(this,heroHeight)));
         backdrop=new ImageView(this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(.38f);top.addView(backdrop,new FrameLayout.LayoutParams(-1,-1));
         View scrim=new View(this);
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
@@ -66,40 +67,47 @@ public class HomeActivity extends Activity {
         heroMeta=Ui.text(this,"Movies & Series",15);heroMeta.setTextColor(0xFFD4D0D5);info.addView(heroMeta);
         expiry=Ui.text(this,"",14);info.addView(expiry);
         notice=Ui.text(this,"",15);notice.setMaxLines(2); LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-2);np.topMargin=Ui.dp(this,7);info.addView(notice,np);
-        scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false); content.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        FrameLayout body=new FrameLayout(this);content.addView(body,new LinearLayout.LayoutParams(-1,0,1));
+        scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipChildren(false);scroll.setClipToPadding(false);body.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
         rows=Ui.column(this);rows.setClipChildren(false);Ui.pad(rows,this,30,12,30,24);scroll.addView(rows);
+        browse=Ui.column(this);browse.setVisibility(View.GONE);Ui.pad(browse,this,42,28,42,0);body.addView(browse,new FrameLayout.LayoutParams(-1,-1));
+        browseHeader=Ui.column(this);browse.addView(browseHeader,new LinearLayout.LayoutParams(-1,-2));
+        browseGrid=new RecyclerView(this);browseGrid.setLayoutManager(new GridLayoutManager(this,5));
+        browseGrid.setItemAnimator(null);browseGrid.setClipToPadding(false);browseGrid.setClipChildren(false);
+        browseGrid.setPadding(0,Ui.dp(this,15),0,Ui.dp(this,34));browseGrid.setHasFixedSize(true);
+        browse.addView(browseGrid,new LinearLayout.LayoutParams(-1,0,1));
         String[] names={"Home","Search","Movies","Series","Favorites","Settings"};
         for(int n=0;n<names.length;n++) {
             String name=names[n];
             LinearLayout button=Ui.row(this);button.setGravity(Gravity.CENTER_VERTICAL);button.setFocusable(true);
-            Ui.pad(button,this,16,0,9,0);
+            Ui.pad(button,this,13,0,8,0);
             NavIcon icon=new NavIcon(this,n);
-            button.addView(icon,new LinearLayout.LayoutParams(Ui.dp(this,23),Ui.dp(this,23)));
+            button.addView(icon,new LinearLayout.LayoutParams(Ui.dp(this,30),Ui.dp(this,30)));
             TextView label=Ui.text(this,name,17);label.setTypeface(null,android.graphics.Typeface.BOLD);
             railLabels.add(label);
-            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.leftMargin=Ui.dp(this,15);button.addView(label,lp);
-            LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,Ui.dp(this,52));bp.bottomMargin=Ui.dp(this,7);rail.addView(button,bp);
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.leftMargin=Ui.dp(this,16);button.addView(label,lp);
+            LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,Ui.dp(this,56));bp.bottomMargin=Ui.dp(this,8);rail.addView(button,bp);
             button.setContentDescription(name);
-            button.setBackground(name.equals(tab)?Ui.rounded(0xCC542633,11,this):Ui.glass(this,11));
+            button.setBackground(Ui.navBackground(this,false,name.equals(tab)));
             button.setOnFocusChangeListener((v,f)->{
                 if(f) setRailExpanded(true);
-                v.setBackground(f?Ui.rounded(Ui.RED,11,this):name.equals(tab)?Ui.rounded(0xCC542633,11,this):Ui.glass(this,11));
+                v.setBackground(Ui.navBackground(this,f,name.equals(tab)));
                 icon.setActive(f || name.equals(tab));label.setTextColor(f?0xFFFFFFFF:0xFFE1E1E8);
             });
             button.setOnClickListener(v->{tab=name;for(int i=1;i<rail.getChildCount();i++){
-                View entry=rail.getChildAt(i);if(entry!=v && !entry.hasFocus())entry.setBackground(Ui.glass(this,11));
+                View entry=rail.getChildAt(i);entry.setBackground(Ui.navBackground(this,entry==v,name.contentEquals(entry.getContentDescription())));
             }drawRows();});
         }
     }
     private void setRailExpanded(boolean expanded){
         if(railExpanded==expanded || rail==null)return;
         railExpanded=expanded;
-        int from=rail.getLayoutParams().width,to=Ui.dp(this,expanded?194:70);
+        if(railAnimator!=null)railAnimator.cancel();
+        int from=rail.getLayoutParams().width,to=Ui.dp(this,expanded?220:84);
         for(TextView label:railLabels)label.setVisibility(expanded?View.VISIBLE:View.GONE);
-        railLogo.setVisibility(expanded?View.VISIBLE:View.GONE);
-        ValueAnimator animator=ValueAnimator.ofInt(from,to);animator.setDuration(170);
-        animator.addUpdateListener(a->{android.view.ViewGroup.LayoutParams lp=rail.getLayoutParams();lp.width=(int)a.getAnimatedValue();rail.setLayoutParams(lp);});
-        animator.start();
+        railAnimator=ValueAnimator.ofInt(from,to);railAnimator.setDuration(190);
+        railAnimator.addUpdateListener(a->{android.view.ViewGroup.LayoutParams lp=rail.getLayoutParams();lp.width=(int)a.getAnimatedValue();rail.setLayoutParams(lp);});
+        railAnimator.start();
     }
     private void loadCache() {
         movies=Catalog.parse(Api.prefs(this).getString("movies","[]"),"movie");
@@ -112,6 +120,7 @@ public class HomeActivity extends Activity {
         Api.IO.execute(()->{
             try {
                 org.json.JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");
+                runOnUiThread(()->{if(!isFinishing() && appUpdates!=null)appUpdates.check(config);});
                 Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
                 if(config.optBoolean("maintenance")){
                     runOnUiThread(()->{rows.removeAllViews();rail.setVisibility(View.GONE);hero.setText("Flix Town is temporarily unavailable");notice.setText(config.optString("announcement","Please try again later."));});
@@ -146,6 +155,10 @@ public class HomeActivity extends Activity {
     }
     private void drawRows() {
         if(rows==null)return;
+        boolean catalog=tab.equals("Movies")||tab.equals("Series");
+        top.setVisibility(tab.equals("Home")?View.VISIBLE:View.GONE);
+        browse.setVisibility(catalog?View.VISIBLE:View.GONE);
+        scroll.setVisibility(catalog?View.GONE:View.VISIBLE);
         android.view.View focused=getCurrentFocus();
         if(focused!=null && focused.getTag() instanceof String)lastFocused=(String)focused.getTag();
         int oldScroll=scroll.getScrollY();
@@ -153,12 +166,11 @@ public class HomeActivity extends Activity {
         rows.removeAllViews();
         firstGrid=null;
         focusQueued=false;
+        if(catalog){drawBrowse();return;}
         if(tab.equals("Settings")){settingButtons();return;}
         if(tab.equals("Search")){searchUi();return;}
         if(tab.equals("Favorites")){addRow("Favorites",favorites());return;}
-        if(tab.equals("Movies")){categoryButtons(movieCategories,true);List<Catalog.Item> filtered=filter(movies,movieCategory);if(filtered.isEmpty())emptyCategory();else addGrid("Movies",sorted(filtered));}
-        else if(tab.equals("Series")){categoryButtons(seriesCategories,false);List<Catalog.Item> filtered=filter(series,seriesCategory);if(filtered.isEmpty())emptyCategory();else addGrid("Series",sorted(filtered));}
-        else {
+        {
             List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);
             if(!continued.isEmpty())addRow("Continue Watching",continued);
             addRow("Top Rated Movies",Catalog.topRated(movies,20));
@@ -185,6 +197,7 @@ public class HomeActivity extends Activity {
                 if(!(card.getParent() instanceof RecyclerView) && focused.focusSearch(View.FOCUS_LEFT)==null){focusRail();return true;}
             }
             if(event.getKeyCode()==KeyEvent.KEYCODE_DPAD_RIGHT && focused!=null && isInRail(focused)){
+                if(browse.getVisibility()==View.VISIBLE && browseCategoryButton!=null){browseCategoryButton.requestFocus();return true;}
                 if(firstGrid!=null){if(firstGrid instanceof HorizontalGridView)((HorizontalGridView)firstGrid).setSelectedPosition(0);
                     firstGrid.requestFocus();return true;}
             }
@@ -199,47 +212,46 @@ public class HomeActivity extends Activity {
     }
     private List<Catalog.Item> filter(List<Catalog.Item> items,String category){if(category.isEmpty())return items;
         List<Catalog.Item> out=new ArrayList<>();for(Catalog.Item item:items)if(category.equals(item.categoryId))out.add(item);return out;}
-    private void emptyCategory(){TextView empty=Ui.text(this,"No titles in this category yet",19);Ui.pad(empty,this,8,35,0,0);rows.addView(empty);}
-    private void categoryButtons(List<Category> categories,boolean isMovie){
-        LinearLayout headingRow=Ui.row(this);headingRow.setGravity(Gravity.CENTER_VERTICAL);rows.addView(headingRow);
-        TextView title=Ui.heading(this,isMovie?"Browse Movies":"Browse Series",27);Ui.pad(title,this,3,4,0,10);
-        headingRow.addView(title,new LinearLayout.LayoutParams(0,-2,1));
-        sortButton(headingRow);
-        TextView categoryLabel=Ui.text(this,"CATEGORIES",12);categoryLabel.setTextColor(0xFFFF6773);
-        Ui.pad(categoryLabel,this,3,12,0,9);rows.addView(categoryLabel);
-        android.widget.HorizontalScrollView scroller=new android.widget.HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
-        LinearLayout chips=Ui.row(this);scroller.addView(chips);rows.addView(scroller);
-        List<Category> options=new ArrayList<>();options.add(new Category("","All"));options.addAll(categories);
+    private void drawBrowse(){
+        boolean isMovie=tab.equals("Movies");
+        List<Category> categories=isMovie?movieCategories:seriesCategories;
         String selected=isMovie?movieCategory:seriesCategory;
-        for(Category category:options){TextView chip=Ui.text(this,category.name,15);chip.setGravity(Gravity.CENTER);chip.setFocusable(true);
-            Ui.pad(chip,this,20,9,20,9);chip.setBackground(Ui.rounded(category.id.equals(selected)?Ui.RED:0xFF252832,10,this));
-            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-2,Ui.dp(this,43));cp.rightMargin=Ui.dp(this,9);chips.addView(chip,cp);
-            chip.setOnFocusChangeListener((v,f)->chip.setBackground(Ui.rounded(f?Ui.RED:(category.id.equals(isMovie?movieCategory:seriesCategory)?Ui.RED:0xFF252832),10,this)));
-            chip.setOnClickListener(v->{if(isMovie)movieCategory=category.id;else seriesCategory=category.id;visibleCount=60;scroll.scrollTo(0,0);drawRows();});}
+        String categoryName="All categories";
+        for(Category category:categories)if(category.id.equals(selected)){categoryName=category.name;break;}
+        browseHeader.removeAllViews();
+        TextView title=Ui.heading(this,isMovie?"Movies":"Series",31);
+        browseHeader.addView(title);
+        LinearLayout filters=Ui.row(this);filters.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams filterParams=new LinearLayout.LayoutParams(-1,Ui.dp(this,66));filterParams.topMargin=Ui.dp(this,15);
+        filterParams.bottomMargin=Ui.dp(this,16);browseHeader.addView(filters,filterParams);
+        android.widget.Button categoryButton=Ui.button(this,"Categories   ·   "+categoryName+"  ▾");browseCategoryButton=categoryButton;
+        categoryButton.setSingleLine(true);categoryButton.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        filters.addView(categoryButton,new LinearLayout.LayoutParams(Ui.dp(this,305),Ui.dp(this,54)));
+        categoryButton.setOnClickListener(v->{List<Category> options=new ArrayList<>();options.add(new Category("","All categories"));options.addAll(categories);
+            String[] labels=new String[options.size()];int selectedIndex=0;
+            for(int i=0;i<options.size();i++){labels[i]=options.get(i).name;if(options.get(i).id.equals(isMovie?movieCategory:seriesCategory))selectedIndex=i;}
+            Ui.picker(this,isMovie?"Movie categories":"Series categories",labels,selectedIndex,index->{
+                if(isMovie)movieCategory=options.get(index).id;else seriesCategory=options.get(index).id;
+                drawRows();if(browseCategoryButton!=null)browseCategoryButton.requestFocus();
+            });
+        });
+        android.widget.Button sort=Ui.button(this,"Sort by   ·   "+new String[]{"Recently added","Title A–Z","Rating"}[sortMode]+"  ▾");browseSortButton=sort;
+        LinearLayout.LayoutParams sortParams=new LinearLayout.LayoutParams(Ui.dp(this,260),Ui.dp(this,54));sortParams.leftMargin=Ui.dp(this,16);
+        filters.addView(sort,sortParams);
+        sort.setOnClickListener(v->Ui.picker(this,"Sort titles",new String[]{"Recently added","Title A–Z","Rating"},sortMode,index->{sortMode=index;drawRows();if(browseSortButton!=null)browseSortButton.requestFocus();}));
+        List<Catalog.Item> filtered=sorted(filter(isMovie?movies:series,selected));
+        browseGrid.setAdapter(new PosterAdapter(this,filtered,item->{},true));
+        firstGrid=browseGrid;
+        browseGrid.scrollToPosition(0);
+        if(filtered.isEmpty()){
+            TextView empty=Ui.text(this,"No titles in this category yet",18);Ui.pad(empty,this,4,10,0,14);
+            browseHeader.addView(empty);
+        }
     }
     private List<Catalog.Item> sorted(List<Catalog.Item> items){
         if(sortMode==1)return Catalog.alphabetical(items);
         if(sortMode==2)return Catalog.topRated(items,items.size());
         return Catalog.recent(items,items.size());
-    }
-    private void sortButton(LinearLayout parent){
-        android.widget.Button sort=Ui.button(this,"Sort: "+new String[]{"Newest","Title A–Z","Rating"}[sortMode]+"  ▾");
-        parent.addView(sort,new LinearLayout.LayoutParams(Ui.dp(this,210),Ui.dp(this,48)));
-        sort.setOnClickListener(v->Ui.options(this,"Sort titles",new String[]{"Recently Added","Title A-Z","Rating"},which->{sortMode=which;drawRows();}));
-    }
-    private void addGrid(String title,List<Catalog.Item> items){
-        TextView heading=Ui.heading(this,title+"  ·  "+items.size()+" titles",24);Ui.pad(heading,this,4,17,0,14);rows.addView(heading);
-        int count=Math.min(visibleCount,items.size());
-        RecyclerView grid=new RecyclerView(this);grid.setLayoutManager(new GridLayoutManager(this,5));grid.setItemAnimator(null);
-        grid.setNestedScrollingEnabled(false);grid.setClipChildren(false);grid.setClipToPadding(false);
-        grid.setAdapter(new PosterAdapter(this,new ArrayList<>(items.subList(0,count)),item->hero.setText(item.title)));
-        firstGrid=grid;
-        rows.addView(grid,new LinearLayout.LayoutParams(-1,-2));
-        if(count<items.size()){
-            android.widget.Button more=Ui.button(this,"Show more titles");
-            LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,250),Ui.dp(this,56));mp.topMargin=Ui.dp(this,12);rows.addView(more,mp);
-            more.setOnClickListener(v->{int currentScroll=scroll.getScrollY();visibleCount+=60;drawRows();scroll.post(()->scroll.scrollTo(0,currentScroll));});
-        }
     }
     private void addRow(String title,List<Catalog.Item> items) {
         if(items.isEmpty())return;
@@ -291,5 +303,5 @@ public class HomeActivity extends Activity {
         logout.setOnClickListener(v->{AccountStore.clear(this);startActivity(new android.content.Intent(this,LoginActivity.class));finish();});
     }
     @Override public void onBackPressed() { if(!tab.equals("Home")){tab="Home";drawRows();return;}Ui.options(this,"Exit Flix Town?",new String[]{"Stay","Exit"},which->{if(which==1)finish();}); }
-    @Override protected void onDestroy(){generation++;handler.removeCallbacksAndMessages(null);getWindow().getDecorView().getViewTreeObserver().removeOnGlobalFocusChangeListener(railFocus);super.onDestroy();}
+    @Override protected void onDestroy(){generation++;handler.removeCallbacksAndMessages(null);if(railAnimator!=null)railAnimator.cancel();if(appUpdates!=null)appUpdates.destroy();getWindow().getDecorView().getViewTreeObserver().removeOnGlobalFocusChangeListener(railFocus);super.onDestroy();}
 }
