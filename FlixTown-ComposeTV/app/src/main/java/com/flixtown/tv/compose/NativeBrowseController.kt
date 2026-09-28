@@ -31,13 +31,14 @@ internal class NativeBrowseController(private val activity: Activity, private va
     private val muted = Color.rgb(148, 163, 184)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val rail = LinearLayout(activity).apply {
-        orientation = 1; setBackgroundColor(surface); setPadding(dp(8), dp(27), dp(8), dp(20))
+        orientation = 1; setBackgroundColor(surface); setPadding(dp(8), 0, dp(8), 0)
     }
     private val content = FrameLayout(activity).apply {
-        setPadding(dp(22), dp(27), dp(48), dp(27)); clipChildren = false; clipToPadding = false
+        setPadding(dp(16), 0, 0, 0); clipChildren = false; clipToPadding = false
     }
     val root = LinearLayout(activity).apply {
         orientation = 0; setBackgroundColor(bg); clipChildren = false; clipToPadding = false
+        setPadding(dp(48), dp(27), dp(48), dp(27))
         addView(rail, LinearLayout.LayoutParams(dp(88), -1))
         addView(content, LinearLayout.LayoutParams(0, -1, 1f))
     }
