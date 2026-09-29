@@ -9,6 +9,30 @@ import java.util.Comparator;
 import java.util.List;
 
 final class Catalog {
+    static final class Category {final String id,name;Category(String id,String name){this.id=id;this.name=name;}}
+    static List<Category> parseCategories(String json){ArrayList<Category> list=new ArrayList<>();try{
+        JSONArray array=new JSONArray(json);for(int i=0;i<array.length();i++){
+            JSONObject o=array.optJSONObject(i);if(o!=null)list.add(new Category(o.optString("category_id"),o.optString("category_name","Category")));
+        }}catch(Exception ignored){}return list;}
+
+    /** In-memory copy of the catalog for this process, shared by Home, Details and Actor pages. */
+    static final class Store {
+        static volatile List<Item> movies=java.util.Collections.emptyList(),series=java.util.Collections.emptyList();
+        static void set(List<Item> m,List<Item> s){movies=new ArrayList<>(m);series=new ArrayList<>(s);}
+        static boolean loaded(){return !movies.isEmpty()||!series.isEmpty();}
+    }
+
+    /** Titles from the same category (then best rated of the same kind), never including the title itself. */
+    static List<Item> similar(Item self,List<Item> pool,int limit){
+        ArrayList<Item> same=new ArrayList<>(),rest=new ArrayList<>();
+        for(Item item:pool){if(item.id.equals(self.id))continue;
+            if(!self.categoryId.isEmpty() && self.categoryId.equals(item.categoryId))same.add(item);else rest.add(item);}
+        java.util.Comparator<Item> order=(a,b)->a.rating!=b.rating?Double.compare(b.rating,a.rating):Integer.compare(b.added,a.added);
+        same.sort(order);
+        ArrayList<Item> out=new ArrayList<>(same.subList(0,Math.min(limit,same.size())));
+        if(out.size()<limit)out.addAll(topRated(rest,limit-out.size()));
+        return out;
+    }
     static final class Item {
         final String id,title,poster,backdrop,kind,extension,categoryId,overview;
         final int year,added; final double rating;

@@ -47,7 +47,7 @@
         </LinearLayout>
         <androidx.leanback.widget.VerticalGridView android:id="@+id/browse_grid"
             android:layout_width="match_parent" android:layout_height="match_parent"
-            android:layout_marginTop="85dp" android:paddingStart="16dp" android:paddingEnd="48dp"
+            android:layout_marginTop="85dp" android:paddingStart="8dp" android:paddingEnd="40dp"
             android:paddingTop="10dp" android:paddingBottom="27dp"
             android:clipToPadding="false" android:clipChildren="false" android:visibility="gone"
             app:focusOutFront="true" app:focusOutEnd="false" />
@@ -55,11 +55,32 @@
             android:layout_gravity="center" android:textColor="#A9ABB1" android:textSize="17sp" android:visibility="gone" />
     </FrameLayout>
     <View android:id="@+id/dim" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:background="#B3000000" android:visibility="gone" android:focusable="false" />
+        android:background="#B8000000" android:visibility="gone" android:focusable="false" />
     <LinearLayout android:id="@+id/rail" android:layout_width="96dp" android:layout_height="match_parent"
-        android:background="#E607080B" android:orientation="vertical" android:paddingTop="27dp"
+        android:background="#EB08080B" android:orientation="vertical" android:paddingTop="27dp"
         android:paddingBottom="27dp" android:clipChildren="false" />
     <LinearLayout android:id="@+id/expanded_menu" android:layout_width="240dp" android:layout_height="match_parent"
-        android:background="#F507080B" android:orientation="vertical" android:paddingTop="27dp"
+        android:background="@drawable/menu_panel" android:orientation="vertical" android:paddingTop="27dp"
         android:paddingBottom="27dp" android:visibility="gone" />
+    <!-- Fresh-launch loading screen. Cached titles show underneath as soon as they are read. -->
+    <FrameLayout android:id="@+id/startup_overlay" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:background="@color/flix_bg" android:visibility="gone" android:clickable="true">
+        <View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/startup_glow" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center"
+            android:orientation="vertical" android:gravity="center_horizontal">
+            <ImageView android:layout_width="300dp" android:layout_height="207dp" android:src="@drawable/flix_logo"
+                android:scaleType="fitCenter" android:contentDescription="Flix Town" />
+            <FrameLayout android:id="@+id/startup_track" android:layout_width="220dp" android:layout_height="3dp"
+                android:layout_marginTop="26dp" android:background="#1FFFFFFF">
+                <View android:id="@+id/startup_sweep" android:layout_width="72dp" android:layout_height="match_parent"
+                    android:background="@color/flix_glow" />
+            </FrameLayout>
+            <TextView android:id="@+id/startup_status" android:layout_width="520dp" android:layout_height="wrap_content"
+                android:layout_marginTop="18dp" android:gravity="center" android:text="Checking for new movies and shows…"
+                android:textColor="@color/flix_text_2" android:textSize="17sp" android:maxLines="3" />
+            <LinearLayout android:id="@+id/startup_actions" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="22dp" android:orientation="horizontal" android:visibility="gone"
+                android:clipChildren="false" android:clipToPadding="false" />
+        </LinearLayout>
+    </FrameLayout>
 </FrameLayout>

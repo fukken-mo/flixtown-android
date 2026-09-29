@@ -25,6 +25,7 @@ final class Api {
         return new JSONObject(request(BuildConfig.PANEL_URL + name + ".php", body.toString()));
     }
     static String request(String url, String json) throws Exception {
+        if (BuildConfig.DEMO) return DemoData.respond(url, json);
         HttpURLConnection connection = (HttpURLConnection)new URL(url).openConnection();
         connection.setConnectTimeout(5000); connection.setReadTimeout(12000);
         connection.setInstanceFollowRedirects(false);
@@ -60,6 +61,7 @@ final class Api {
             + "/player_api.php?username="+enc(account[0])+"&password="+enc(account[1]);
     }
     static String stream(Context c, String type, String id, String extension) {
+        if (BuildConfig.DEMO) return DemoData.STREAM;
         SharedPreferences p = prefs(c);
         String[] account=AccountStore.read(c);if(account==null)throw new IllegalStateException("Sign in required");
         return p.getString("server", "http://streamtown.live:8080").replaceAll("/+$", "")

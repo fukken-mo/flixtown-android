@@ -32,10 +32,15 @@ final class Images {
 
     static void load(ImageView view, String url, int maxWidth) {
         view.setTag(url); view.setImageDrawable(null);
-        if (url == null || !(url.startsWith("https://") || url.startsWith("http://"))) return;
+        if (url == null || !(url.startsWith("https://") || url.startsWith("http://") || (BuildConfig.DEMO && url.startsWith("demo:")))) return;
         String key = maxWidth + ":" + url;
         Bitmap cached = MEMORY.get(key);
         if (cached != null) { view.setImageBitmap(cached); return; }
+        if (BuildConfig.DEMO && url.startsWith("demo:")) {
+            IMAGE_IO.execute(() -> { Bitmap bmp = DemoData.image(url, maxWidth); MEMORY.put(key, bmp);
+                view.post(() -> { if (url.equals(view.getTag())) view.setImageBitmap(bmp); }); });
+            return;
+        }
         IMAGE_IO.execute(() -> {
             // Fast scrolling queues many requests; skip the ones whose card was already rebound.
             if (!url.equals(view.getTag())) return;

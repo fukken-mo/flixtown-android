@@ -2,6 +2,11 @@ name: Build Flix Town APK
 
 on:
   workflow_dispatch:
+    inputs:
+      preview:
+        description: "Build a side-by-side test copy (Flix Town Preview, package .preview)"
+        type: boolean
+        default: false
   push:
     branches: [main]
 
@@ -19,10 +24,10 @@ jobs:
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
       - name: Build universal debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace -PflixPreview=${{ inputs.preview == true }}
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-NativeTV-debug
+          name: ${{ inputs.preview == true && 'FlixTown-NativeTV-preview' || 'FlixTown-NativeTV-debug' }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30

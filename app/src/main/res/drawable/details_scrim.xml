@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Readable text over any backdrop: dark from the left, fading into the page at the bottom. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape><gradient android:angle="0" android:startColor="#F208080B" android:centerColor="#A008080B" android:endColor="#2008080B" /></shape></item>
+    <item><shape><gradient android:angle="270" android:startColor="#4008080B" android:centerColor="#3008080B" android:endColor="#FF08080B" /></shape></item>
+</layer-list>

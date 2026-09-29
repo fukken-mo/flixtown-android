@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sampled from drawable-nodpi/flix_logo.png: letter face #AB3A39, rim gold #B99254. Mirrors Ui.java. -->
+<resources>
+    <color name="flix_bg">#08080B</color>
+    <color name="flix_accent">#AB3A39</color>
+    <color name="flix_accent_focus">#B53231</color>
+    <color name="flix_glow">#CE4B4A</color>
+    <color name="flix_gold">#B99254</color>
+    <color name="flix_text">#F4F1EE</color>
+    <color name="flix_text_2">#BDB7B2</color>
+    <color name="flix_text_3">#8C8782</color>
+    <color name="flix_error">#F0A29F</color>
+</resources>

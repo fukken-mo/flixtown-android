@@ -6,9 +6,9 @@
         android:paddingStart="16dp" android:gravity="center_vertical"
         android:textColor="#FFFFFF" android:textSize="20sp" android:fontFamily="sans-serif-medium"
         android:singleLine="true" android:ellipsize="end" />
-    <!-- Height is set from PosterAdapter.rowListHeight(); posters are 120x180dp. -->
+    <!-- Height is set from PosterAdapter.rowListHeight(); posters are 120x180dp plus an 8dp glow margin, so padding is 8dp less than the title inset. -->
     <androidx.leanback.widget.HorizontalGridView android:id="@+id/row_list"
         android:layout_width="match_parent" android:layout_height="196dp"
-        android:paddingStart="16dp" android:paddingEnd="48dp" android:paddingTop="8dp" android:paddingBottom="8dp"
+        android:paddingStart="8dp" android:paddingEnd="40dp" android:paddingTop="6dp" android:paddingBottom="6dp"
         android:clipToPadding="false" android:clipChildren="false" />
 </LinearLayout>
