@@ -120,8 +120,16 @@ final class Ui {
             window.setLayout(Math.min(dp(activity,465),activity.getResources().getDisplayMetrics().widthPixels-dp(activity,110)),
                 Math.min(dp(activity,440),activity.getResources().getDisplayMetrics().heightPixels-dp(activity,110)));}
         manager.scrollToPositionWithOffset(Math.max(0,selected),dp(activity,105));
-        list.post(()->{RecyclerView.ViewHolder holder=list.findViewHolderForAdapterPosition(selected);
+        // Focus the current choice once it is laid out, so one OK press confirms the highlighted row.
+        afterLayout(list,()->{RecyclerView.ViewHolder holder=list.findViewHolderForAdapterPosition(Math.max(0,selected));
             if(holder!=null)holder.itemView.requestFocus();else list.requestFocus();});
+    }
+    /** Runs once after the view's next layout pass (for focusing grid items that are not laid out yet). */
+    static void afterLayout(View view,Runnable action){
+        view.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener(){
+            @Override public void onGlobalLayout(){view.getViewTreeObserver().removeOnGlobalLayoutListener(this);action.run();}
+        });
+        view.requestLayout();
     }
     static TextView heading(Context c, String text, int size) { TextView v = text(c,text,size); v.setTypeface(null,Typeface.BOLD); return v; }
     static void pad(View v, Context c, int l,int t,int r,int b) { v.setPadding(dp(c,l),dp(c,t),dp(c,r),dp(c,b)); }

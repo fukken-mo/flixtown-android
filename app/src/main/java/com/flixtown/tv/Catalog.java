@@ -50,27 +50,31 @@ final class Catalog {
         ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->a.title.compareToIgnoreCase(b.title));return sorted;
     }
     static List<Item> continueWatching(Context c,List<Item> movies,List<Item> series) {
+        String[] keys=Api.prefs(c).getString("continue_ids","").split(",");
+        java.util.Map<String,Integer> wanted=new java.util.HashMap<>();
+        for(String key:keys) {
+            if(key.isEmpty() || wanted.containsKey(key))continue;
+            boolean started=Api.prefs(c).getLong("resume_position_"+key,0)>=15000;
+            // A finished episode leaves the next episode queued at 0:00; the show stays in the row.
+            boolean upNext=key.startsWith("series:") && !Api.prefs(c).getString("resume_episode_"+key,"").isEmpty();
+            if(started || upNext)wanted.put(key,wanted.size());
+        }
+        Item[] ordered=new Item[wanted.size()];
+        if(!wanted.isEmpty()) {
+            for(Item item:movies){Integer at=wanted.get("movie:"+item.id);if(at!=null)ordered[at]=item;}
+            for(Item item:series){Integer at=wanted.get("series:"+item.id);if(at!=null)ordered[at]=item;}
+        }
         List<Item> result=new ArrayList<>();
-        String saved=Api.prefs(c).getString("continue_ids","");
-        for(String key:saved.split(",")) {
-            if(Api.prefs(c).getLong("resume_position_"+key,0)<15000)continue;
-            for(Item item:movies) if(("movie:"+item.id).equals(key)) { result.add(item); break; }
-            for(Item item:series) if(("series:"+item.id).equals(key)) { result.add(item); break; }
-        } return result;
+        for(Item item:ordered)if(item!=null)result.add(item);
+        return result;
     }
-    static void remember(Context c,Item item) {
-        String key=item.kind+":"+item.id;
-        String existing=Api.prefs(c).getString("continue_ids","");
-        StringBuilder s=new StringBuilder(key);
-        for(String other:existing.split(",")) if(!other.isEmpty()&&!other.equals(key)&&s.length()<500) s.append(',').append(other);
-        Api.prefs(c).edit().putString("continue_ids",s.toString()).apply();
-    }
+    static void remember(Context c,Item item) { remember(c,item.kind+":"+item.id); }
     static void saveProgress(Context c,String kind,String id,String episodeId,String episodeExt,
                              String nextId,String nextExt,long position,long duration) {
         if(kind==null || id==null || id.isEmpty() || position<15000)return;
         String key=kind+":"+id;
         if(duration>0 && (position>=duration-30000 || position*100>=duration*95)){
-            clearProgress(c,kind,id);return;
+            markFinished(c,kind,id,nextId,nextExt);return;
         }
         android.content.SharedPreferences.Editor edit=Api.prefs(c).edit();
         edit.putLong("resume_position_"+key,position).putLong("resume_duration_"+key,duration);
@@ -81,10 +85,22 @@ final class Catalog {
             edit.putString("resume_next_ext_"+key,nextExt==null?"mp4":nextExt);
         }
         edit.apply();
-        String saved=Api.prefs(c).getString("continue_ids","");
-        StringBuilder updated=new StringBuilder(key);
-        for(String other:saved.split(","))if(!other.isEmpty()&&!other.equals(key)&&updated.length()<500)updated.append(',').append(other);
-        Api.prefs(c).edit().putString("continue_ids",updated.toString()).apply();
+        remember(c,key);
+    }
+    /** Movie finished: forget it. Episode finished: queue the next episode so Continue Watching moves on. */
+    static void markFinished(Context c,String kind,String id,String nextId,String nextExt) {
+        if(!"series".equals(kind) || nextId==null || nextId.isEmpty()){clearProgress(c,kind,id);return;}
+        String key=kind+":"+id;
+        Api.prefs(c).edit().remove("resume_position_"+key).remove("resume_duration_"+key)
+            .putString("resume_episode_"+key,nextId).putString("resume_extension_"+key,nextExt==null||nextExt.isEmpty()?"mp4":nextExt)
+            .putString("resume_next_"+key,"").putString("resume_next_ext_"+key,"mp4").apply();
+        remember(c,key);
+    }
+    private static void remember(Context c,String key) {
+        String existing=Api.prefs(c).getString("continue_ids","");
+        StringBuilder s=new StringBuilder(key);
+        for(String other:existing.split(",")) if(!other.isEmpty()&&!other.equals(key)&&s.length()<500) s.append(',').append(other);
+        Api.prefs(c).edit().putString("continue_ids",s.toString()).apply();
     }
     static void clearProgress(Context c,String kind,String id) {
         String key=kind+":"+id;

@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -26,11 +27,13 @@ public class RenewalActivity extends Activity {
         TextView description=Ui.text(this,"Your account has expired. Choose a plan and send a renewal request for the same account.",17);
         Ui.pad(description,this,0,12,0,15);root.addView(description);
         LinearLayout body=Ui.row(this);root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
-        LinearLayout left=Ui.column(this);body.addView(left,new LinearLayout.LayoutParams(0,-1,1));
-        plans=Ui.row(this);left.addView(plans);showPlans(null);
+        android.widget.ScrollView leftScroll=new android.widget.ScrollView(this);leftScroll.setVerticalScrollBarEnabled(false);
+        leftScroll.setClipChildren(false);leftScroll.setClipToPadding(false);body.addView(leftScroll,new LinearLayout.LayoutParams(0,-1,1));
+        LinearLayout left=Ui.column(this);left.setClipChildren(false);left.setPadding(Ui.dp(this,6),Ui.dp(this,4),Ui.dp(this,6),Ui.dp(this,4));leftScroll.addView(left);
+        plans=Ui.column(this);plans.setClipChildren(false);left.addView(plans);showPlans(null);
         EditText phone=new EditText(this);phone.setHint("Phone number");phone.setTextColor(Color.WHITE);phone.setSingleLine(true);
-        phone.setInputType(InputType.TYPE_CLASS_PHONE);left.addView(phone,new LinearLayout.LayoutParams(-1,Ui.dp(this,58)));
-        Button submit=Ui.button(this,"Request renewal");left.addView(submit);submit.setOnClickListener(v->{
+        phone.setInputType(InputType.TYPE_CLASS_PHONE);left.addView(phone,new LinearLayout.LayoutParams(-1,Ui.dp(this,54)));
+        Button submit=Ui.button(this,"Request renewal");left.addView(submit,buttonParams(-1,0));submit.setOnClickListener(v->{
             String[] account=AccountStore.read(this);if(account==null){status.setText("Please sign in again");return;}
             status.setText("Sending request…");
             Api.IO.execute(()->{try{JSONObject result=Api.post("renewal-request",new JSONObject()
@@ -38,22 +41,38 @@ public class RenewalActivity extends Activity {
                 runOnUiThread(()->status.setText("Request sent. Pay through Cash App, then wait for approval."));
             }catch(Exception e){runOnUiThread(()->status.setText(e.getMessage()));}});
         });
-        Button check=Ui.button(this,"Check account again");left.addView(check);check.setOnClickListener(v->checkAccount());
-        Button logout=Ui.button(this,"Use a different account");left.addView(logout);logout.setOnClickListener(v->{AccountStore.clear(this);Api.prefs(this).edit().remove("expired").apply();startActivity(new Intent(this,LoginActivity.class));finish();});
+        LinearLayout more=Ui.row(this);more.setClipChildren(false);left.addView(more);
+        Button check=Ui.button(this,"Check account");more.addView(check,buttonParams(0,0));check.setOnClickListener(v->checkAccount());
+        Button logout=Ui.button(this,"Different account");more.addView(logout,buttonParams(0,10));logout.setOnClickListener(v->{AccountStore.clear(this);Api.prefs(this).edit().remove("expired").apply();startActivity(new Intent(this,LoginActivity.class));finish();});
         status=Ui.text(this,"",16);Ui.pad(status,this,0,14,0,0);left.addView(status);
         LinearLayout right=Ui.column(this);right.setGravity(Gravity.CENTER);body.addView(right,new LinearLayout.LayoutParams(0,-1,1));
         cashQr=new ImageView(this);right.addView(cashQr,new LinearLayout.LayoutParams(Ui.dp(this,190),Ui.dp(this,190)));
         TextView cashText=Ui.text(this,"Cash App",18);cashText.setGravity(Gravity.CENTER);right.addView(cashText);
         submit.requestFocus();
     }
+    private JSONObject planConfig;
+    /** Plans are shown two per row so labels such as "12 months  $50" are never cut off; ✓ marks the choice. */
     private void showPlans(JSONObject config){
-        plans.removeAllViews();JSONObject values=config==null?null:config.optJSONObject("plans");
+        if(config!=null)planConfig=config;
+        View focused=getCurrentFocus();int focusedIndex=-1;
+        plans.removeAllViews();JSONObject values=planConfig==null?null:planConfig.optJSONObject("plans");
         String[][] choices={{"1m","1 month"},{"3m","3 months"},{"6m","6 months"},{"12m","12 months"}};
-        for(String[] choice:choices){String price=values==null?"":values.optString(choice[0],"");
-            Button b=Ui.button(this,choice[1]+(price.isEmpty()?"":"  $"+price));
-            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,Ui.dp(this,58),1);p.rightMargin=Ui.dp(this,8);plans.addView(b,p);
-            b.setOnClickListener(v->{selected=choice[0];status.setText(choice[1]+" selected");});
+        LinearLayout line=null;
+        for(int i=0;i<choices.length;i++){String[] choice=choices[i];String price=values==null?"":values.optString(choice[0],"");
+            if(i%2==0){line=Ui.row(this);line.setClipChildren(false);plans.addView(line);}
+            boolean chosen=choice[0].equals(selected);
+            Button b=Ui.button(this,(chosen?"✓ ":"")+choice[1]+(price.isEmpty()?"":"  $"+price));
+            line.addView(b,buttonParams(0,i%2==0?0:10));
+            if(focused!=null && focused.getParent()!=null && focused.getParent().getParent()==plans && focused.getTag() instanceof String && choice[0].equals(focused.getTag()))focusedIndex=i;
+            b.setTag(choice[0]);
+            b.setOnClickListener(v->{selected=choice[0];status.setText(choice[1]+" selected");showPlans(null);focusPlan(choice[0]);});
         }
+        if(focusedIndex>=0)focusPlan(choices[focusedIndex][0]);
+    }
+    private void focusPlan(String id){View v=plans.findViewWithTag(id);if(v!=null)v.requestFocus();}
+    private LinearLayout.LayoutParams buttonParams(int width,int leftMargin){
+        LinearLayout.LayoutParams p=width==0?new LinearLayout.LayoutParams(0,Ui.dp(this,48),1):new LinearLayout.LayoutParams(width,Ui.dp(this,48));
+        p.topMargin=Ui.dp(this,10);p.leftMargin=Ui.dp(this,leftMargin);return p;
     }
     private void loadConfig(){Api.IO.execute(()->{try{JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");
         String cash=config.optString("cashapp_url","");Bitmap bitmap=makeQr(cash);

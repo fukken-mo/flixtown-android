@@ -18,7 +18,7 @@ import java.util.Set;
 public class ActorActivity extends Activity {
     private LinearLayout content;
     private TextView message;
-    @Override public void onCreate(Bundle state){super.onCreate(state);
+    @Override public void onCreate(Bundle state){super.onCreate(state);Images.init(this);
         LinearLayout shell=Ui.column(this);shell.setBackgroundColor(Ui.BG);Ui.pad(shell,this,65,36,50,20);setContentView(shell);
         String name=getIntent().getStringExtra("actor_name");if(name==null)name="Actor";
         shell.addView(Ui.heading(this,name,31));
@@ -35,19 +35,19 @@ public class ActorActivity extends Activity {
             }
             List<Catalog.Item> movies=matched("movies","movie",credits),series=matched("series","series",credits);
             runOnUiThread(()->{message.setText(movies.isEmpty()&&series.isEmpty()?"No matching titles in your catalog yet":"Titles available in Flix Town");
-                addRow("Movies",movies);addRow("Series",series);});
+                addRow("Movies",movies);addRow("TV Shows",series);});
         }catch(Exception e){runOnUiThread(()->message.setText("Actor titles are unavailable right now."));}});
     }
     private static String normalize(String text){return text.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]","");}
     private List<Catalog.Item> matched(String cache,String kind,Set<String> credits){
-        List<Catalog.Item> result=new ArrayList<>();for(Catalog.Item item:Catalog.parse(Api.prefs(this).getString(cache,"[]"),kind))
+        List<Catalog.Item> result=new ArrayList<>();for(Catalog.Item item:Catalog.parse(Api.cached(this,cache),kind))
             if(credits.contains(kind+":"+normalize(item.title)))result.add(item);return result;
     }
     private void addRow(String heading,List<Catalog.Item> items){if(items.isEmpty())return;
         TextView label=Ui.heading(this,heading,22);Ui.pad(label,this,0,16,0,10);content.addView(label);
         HorizontalGridView grid=new HorizontalGridView(this);grid.setNumRows(1);grid.setItemAnimator(null);
-        grid.setClipToPadding(false);grid.setClipChildren(false);grid.setPadding(Ui.dp(this,24),Ui.dp(this,12),Ui.dp(this,24),Ui.dp(this,12));
+        grid.setClipToPadding(false);grid.setClipChildren(false);grid.setPadding(Ui.dp(this,24),Ui.dp(this,8),Ui.dp(this,24),Ui.dp(this,8));grid.setHorizontalSpacing(Ui.dp(this,16));
         grid.setAdapter(new PosterAdapter(this,items,item->{}));
-        content.addView(grid,new LinearLayout.LayoutParams(-1,Ui.dp(this,PosterAdapter.rowHeight(this)+24)));
+        content.addView(grid,new LinearLayout.LayoutParams(-1,PosterAdapter.rowListHeight(this)));
     }
 }

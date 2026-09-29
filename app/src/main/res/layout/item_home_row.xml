@@ -2,10 +2,13 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
     android:clipChildren="false" android:clipToPadding="false">
-    <TextView android:id="@+id/row_title" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:textColor="#FFFFFF" android:textSize="22sp" android:fontFamily="sans-serif-medium"
-        android:paddingTop="8dp" android:paddingBottom="8dp" />
-    <androidx.recyclerview.widget.RecyclerView android:id="@+id/row_list"
-        android:layout_width="match_parent" android:layout_height="206dp"
-        android:clipToPadding="false" android:clipChildren="false" android:overScrollMode="never" />
+    <TextView android:id="@+id/row_title" android:layout_width="match_parent" android:layout_height="36dp"
+        android:paddingStart="16dp" android:gravity="center_vertical"
+        android:textColor="#FFFFFF" android:textSize="20sp" android:fontFamily="sans-serif-medium"
+        android:singleLine="true" android:ellipsize="end" />
+    <!-- Height is set from PosterAdapter.rowListHeight(); posters are 120x180dp. -->
+    <androidx.leanback.widget.HorizontalGridView android:id="@+id/row_list"
+        android:layout_width="match_parent" android:layout_height="196dp"
+        android:paddingStart="16dp" android:paddingEnd="48dp" android:paddingTop="8dp" android:paddingBottom="8dp"
+        android:clipToPadding="false" android:clipChildren="false" />
 </LinearLayout>

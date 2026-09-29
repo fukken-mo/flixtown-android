@@ -35,7 +35,7 @@ public class LoginActivity extends Activity {
         findViewById(R.id.back_to_qr).setOnClickListener(v->showQr());
         findViewById(R.id.sign_in).setOnClickListener(v->{EditText user=findViewById(R.id.username),pass=findViewById(R.id.password);
             validate(user.getText().toString().trim(),pass.getText().toString());});
-        remote.requestFocus();startPair();
+        remote.requestFocus();Images.init(this);startPair();
     }
     private void showQr(){View focused=getCurrentFocus();if(focused!=null){
         InputMethodManager ime=(InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);ime.hideSoftInputFromWindow(focused.getWindowToken(),0);}
@@ -71,5 +71,8 @@ public class LoginActivity extends Activity {
         catch(Exception e){message.setText("Could not save account securely");}}
     private void home(){Class<?> destination=Api.prefs(this).getBoolean("expired",false)?RenewalActivity.class:HomeActivity.class;
         startActivity(new Intent(this,destination));finish();}
+    // Poll only while the activation screen is visible; resume with the same code when it returns.
+    @Override protected void onStop(){polling=false;handler.removeCallbacksAndMessages(null);super.onStop();}
+    @Override protected void onRestart(){super.onRestart();if(pairCode!=null && AccountStore.read(this)==null){polling=true;poll();}}
     @Override protected void onDestroy(){polling=false;handler.removeCallbacksAndMessages(null);super.onDestroy();}
 }
