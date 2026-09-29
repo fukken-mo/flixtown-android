@@ -20,7 +20,7 @@ import java.util.Locale;
 final class DemoData {
     private DemoData(){}
     /** Public test stream with several audio languages and subtitle tracks. */
-    static final String STREAM="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8";
+    static final String STREAM="https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8";
     private static final String[] A={"Silent","Crimson","Last","Midnight","Broken","Golden","Hidden","Northern","Electric","Lost","Wild","Paper","Iron","Distant","Hollow"};
     private static final String[] B={"Harbor","Frontier","Signal","Garden","Kingdom","Horizon","Letters","Station","Empire","Tide","Orchard","Protocol","Summer","Voyage","Circuit"};
     private static final String[] MOVIE_CATS={"Action","Drama","Comedy","Thriller","Family","Sci-Fi"};

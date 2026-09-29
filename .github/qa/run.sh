@@ -56,34 +56,33 @@ key DPAD_UP DPAD_UP;                        shot 30-details-back-to-actions
 key BACK;                                   shot 31-back-to-grid-same-poster 1.2
 key BACK;                                   shot 32-back-to-home
 
-# --- Player ---
+# --- Player (test clip is ~60 s, so this block is paced to fit inside it) ---
 key DPAD_DOWN DPAD_CENTER;                  shot 33-home-row-details 3
-key DPAD_CENTER;                            shot 34-player-starting 2
-sleep 12;                                   shot 35-player-playing-clean 0.1
-key DPAD_UP;                                shot 36-player-controls 0.3
-key DPAD_RIGHT;                             shot 37-player-audio-focus 0.3
-key DPAD_CENTER;                            shot 38-audio-menu 0.6
-key BACK;                                   shot 39-audio-menu-closed 0.3
-key DPAD_RIGHT DPAD_CENTER;                 shot 40-subtitles-menu 0.6
-key DPAD_DOWN DPAD_DOWN DPAD_CENTER;        shot 41-subtitle-selected 1.5
-sleep 4;                                    shot 42-controls-auto-hidden 0.1
+key DPAD_CENTER;                            shot 34-player-starting 0.5
+sleep 7;                                    shot 35-player-playing-clean 0.1
+key DPAD_UP;                                shot 36-player-controls 0.2
+key DPAD_RIGHT;                             shot 37-player-audio-focus 0.1
+key DPAD_CENTER;                            shot 38-audio-menu 0.4
+key BACK;                                   shot 39-audio-menu-closed 0.1
+key DPAD_RIGHT DPAD_CENTER;                 shot 40-subtitles-menu 0.4
+key DPAD_DOWN DPAD_CENTER;                  shot 41-subtitle-selected 0.8
+sleep 3.2;                                  shot 42-controls-auto-hidden 0.1
 key DPAD_RIGHT;                             shot 43-seek-plus-10 0.1
-key DPAD_RIGHT DPAD_RIGHT;                  shot 44-seek-plus-30 0.1
-sleep 4.5;                                  shot 45-after-seek-hidden 0.1
-key DPAD_CENTER;                            shot 46-ok-pauses 0.3
-sleep 4;                                    shot 47-paused-overlay-hidden-after-3s 0.1
-key DPAD_CENTER;                            shot 48-ok-resumes 1
-key DPAD_UP;                                shot 49-controls-again 0.3
-key BACK;                                   shot 50-back-hides-controls 0.3
-key BACK;                                   shot 51-back-leaves-player 1.5
-key DPAD_CENTER;                            shot 52-resume-choice 3
-key DPAD_RIGHT;                             shot 53-resume-start-over-focus 0.3
-key DPAD_LEFT DPAD_CENTER;                  shot 54-continued 5
-key BACK;                                   shot 55-back-in-details 1.5
-key BACK;                                   shot 56-home-continue-row 1.5
+sleep 3.5;                                  shot 44-after-seek-hidden 0.1
+key DPAD_CENTER;                            shot 45-ok-pauses 0.3
+sleep 3.4;                                  shot 46-paused-overlay-hidden-after-3s 0.1
+key DPAD_CENTER;                            shot 47-ok-resumes 0.5
+key DPAD_UP;                                shot 48-controls-again 0.2
+key BACK;                                   shot 49-back-hides-controls 0.2
+key BACK;                                   shot 50-back-leaves-player 1.5
+key DPAD_CENTER;                            shot 51-resume-choice 3
+key DPAD_RIGHT;                             shot 52-resume-start-over-focus 0.2
+key DPAD_LEFT DPAD_CENTER;                  shot 53-continued 3
+sleep 25;                                   shot 54-finished-back-in-details 1
+key BACK;                                   shot 55-home-after-player 1.5
+key DPAD_UP DPAD_UP;                        shot 56-home-hero 0.5
 
 # --- TV show ---
-key BACK;                                   shot 57-home-hero-before-menu 0.5
 key DPAD_LEFT DPAD_DOWN DPAD_DOWN;          shot 58-menu-tv-shows-focus
 key DPAD_CENTER;                            shot 59-tv-grid 1.5
 key DPAD_CENTER;                            shot 60-series-details 3

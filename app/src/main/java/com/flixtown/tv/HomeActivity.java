@@ -183,6 +183,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         if(sweep!=null)sweep.cancel();
         content.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         startupOverlay.animate().alpha(0f).setDuration(220).withEndAction(()->startupOverlay.setVisibility(View.GONE)).start();
+        if(tab.equals("Home") && movies.isEmpty())featured(); // explains the empty page when continuing offline
         View focus=getCurrentFocus();
         if(focus==null || !isDescendant(content,focus))focusDefault();
     }
@@ -269,7 +270,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         if(isBrowse())return restoreGridPosition>=0;
         return tab.equals("Home") && actions.hasFocus();
     }
-    private void featured(){if(movies.isEmpty()){featured=null;title.setText("Flix Town");meta.setText(cacheLoaded?"Your titles will appear here once they load":"");overview.setText("");return;}
+    private void featured(){if(movies.isEmpty()){featured=null;title.setText("Flix Town");
+            meta.setText(cacheLoaded?"No titles yet. They'll appear here as soon as the server is reachable.":"");
+            overview.setText(cacheLoaded?"Try Settings › Check for new titles, or reopen Flix Town once the TV is online.":"");return;}
         if(featured==null){List<Catalog.Item> popular=Catalog.topRated(movies,Math.min(40,movies.size()));
             featured=popular.get((int)(Math.random()*popular.size()));}
         title.setText(featured.title);meta.setText((featured.year>1900?featured.year+"   ":"")+
