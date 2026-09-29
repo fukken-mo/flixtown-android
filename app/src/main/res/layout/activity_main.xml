@@ -34,9 +34,15 @@
             android:paddingTop="281dp" android:paddingBottom="27dp"
             android:clipToPadding="false" android:clipChildren="false"
             app:focusOutFront="true" app:focusOutEnd="false" />
+        <androidx.leanback.widget.VerticalGridView android:id="@+id/browse_grid"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:layout_marginTop="85dp" android:paddingStart="8dp" android:paddingEnd="40dp"
+            android:paddingTop="10dp" android:paddingBottom="27dp"
+            android:clipToPadding="false" android:clipChildren="false" android:visibility="gone"
+            app:focusOutFront="true" app:focusOutEnd="false" />
         <!-- Movies / TV Shows / My List: compact header, then a full-page grid. -->
         <LinearLayout android:id="@+id/browse_header" android:layout_width="match_parent" android:layout_height="52dp"
-            android:layout_marginTop="27dp" android:paddingStart="16dp" android:paddingEnd="48dp"
+            android:background="@color/flix_bg" android:paddingStart="16dp" android:paddingEnd="48dp"
             android:orientation="horizontal" android:gravity="center_vertical" android:visibility="gone"
             android:clipChildren="false" android:clipToPadding="false">
             <TextView android:id="@+id/browse_title" android:layout_width="0dp" android:layout_weight="1"
@@ -45,12 +51,9 @@
             <LinearLayout android:id="@+id/filters" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:clipChildren="false" android:clipToPadding="false" />
         </LinearLayout>
-        <androidx.leanback.widget.VerticalGridView android:id="@+id/browse_grid"
-            android:layout_width="match_parent" android:layout_height="match_parent"
-            android:layout_marginTop="85dp" android:paddingStart="8dp" android:paddingEnd="40dp"
-            android:paddingTop="10dp" android:paddingBottom="27dp"
-            android:clipToPadding="false" android:clipChildren="false" android:visibility="gone"
-            app:focusOutFront="true" app:focusOutEnd="false" />
+        <!-- Soft fade so the next row's title or poster names never end in a hard cut at the screen edge. -->
+        <View android:id="@+id/bottom_fade" android:layout_width="match_parent" android:layout_height="36dp"
+            android:layout_gravity="bottom" android:background="@drawable/bottom_fade" />
         <TextView android:id="@+id/empty_message" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_gravity="center" android:textColor="#A9ABB1" android:textSize="17sp" android:visibility="gone" />
     </FrameLayout>

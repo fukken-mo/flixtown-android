@@ -38,6 +38,9 @@ import java.util.Locale;
  */
 public class DetailsActivity extends Activity {
     private static final int SIDE_DP=56,CAST_ROW_DP=92,SECTION_LABEL_DP=30;
+    // Fixed heights for the movie layout, so the poster row can be sized once and never overflows.
+    private static final int TITLE_DP=46,META_DP=24,SUMMARY_DP=62,ACTIONS_DP=46,CAST_GAP_DP=14,INFO_GAPS_DP=4+8+14;
+    private int moreArtWidth,moreArtHeight;
     private String id,kind,title,extension,categoryId;
     private LinearLayout content,episodeArea,seasonContent,castSection,moreSection;
     private HorizontalGridView castRow,moreRow;
@@ -89,15 +92,15 @@ public class DetailsActivity extends Activity {
 
         TextView titleView=Ui.heading(this,title,32);titleView.setMaxLines(movie?1:2);titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setShadowLayer(12,0,2,0xAA000000);
-        content.addView(titleView,new LinearLayout.LayoutParams(Ui.dp(this,640),-2));
+        content.addView(titleView,new LinearLayout.LayoutParams(Ui.dp(this,640),movie?Ui.dp(this,TITLE_DP):-2));
         metaLine=Ui.text(this,yearText(),16);metaLine.setTextColor(Ui.TEXT_2);metaLine.setSingleLine(true);metaLine.setEllipsize(TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,640),-2);mp.topMargin=Ui.dp(this,6);content.addView(metaLine,mp);
+        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,640),movie?Ui.dp(this,META_DP):-2);mp.topMargin=Ui.dp(this,4);content.addView(metaLine,mp);
         summary=Ui.text(this,"Loading details…",15);summary.setTextColor(0xFFD9D4CF);summary.setMaxLines(3);summary.setEllipsize(TextUtils.TruncateAt.END);
         summary.setLineSpacing(0,1.12f);
-        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,580),-2);sp.topMargin=Ui.dp(this,10);content.addView(summary,sp);
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,580),movie?Ui.dp(this,SUMMARY_DP):-2);sp.topMargin=Ui.dp(this,8);content.addView(summary,sp);
 
         LinearLayout actions=Ui.row(this);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setClipChildren(false);actions.setClipToPadding(false);
-        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-2,-2);ap.topMargin=Ui.dp(this,16);content.addView(actions,ap);
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-2,-2);ap.topMargin=Ui.dp(this,14);content.addView(actions,ap);
         watch=Ui.button(this,watchLabel());actions.addView(watch,actionParams(false));
         watch.setOnClickListener(v->{
             if(movie)play(id,extension);
@@ -114,18 +117,22 @@ public class DetailsActivity extends Activity {
         favorite.setOnClickListener(v->{toggleFavorite();favorite.setText(favoriteLabel());});
 
         if(movie){
-            castSection=Ui.column(this);castSection.setVisibility(View.GONE);castSection.setClipChildren(false);
-            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,Ui.dp(this,CAST_ROW_DP));cp.topMargin=Ui.dp(this,16);
+            castSection=Ui.column(this);castSection.setVisibility(View.INVISIBLE);castSection.setClipChildren(false);
+            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,Ui.dp(this,CAST_ROW_DP));cp.topMargin=Ui.dp(this,CAST_GAP_DP);
             content.addView(castSection,cp);
             castRow=castGrid();castSection.addView(castRow,new LinearLayout.LayoutParams(-1,-1));
 
             moreSection=Ui.column(this);moreSection.setVisibility(View.GONE);moreSection.setClipChildren(false);
-            content.addView(moreSection,new LinearLayout.LayoutParams(-1,0,1));
+            content.addView(moreSection,new LinearLayout.LayoutParams(-1,-2));
             TextView label=Ui.heading(this,"More Like This",19);label.setGravity(Gravity.BOTTOM);
             label.setPadding(0,0,0,Ui.dp(this,2));
             moreSection.addView(label,new LinearLayout.LayoutParams(-1,Ui.dp(this,SECTION_LABEL_DP)));
             moreRow=new HorizontalGridView(this);configureRow(moreRow,-PosterAdapter.GLOW_DP);
-            moreSection.addView(moreRow,new LinearLayout.LayoutParams(-1,0,1));
+            // Whatever is left of the screen below the fixed blocks (the cast row is always reserved).
+            int fixed=Ui.dp(this,TITLE_DP+META_DP+SUMMARY_DP+ACTIONS_DP+INFO_GAPS_DP+CAST_GAP_DP+CAST_ROW_DP+SECTION_LABEL_DP);
+            int listHeight=Math.max(Ui.dp(this,120),screenH-2*safeY-fixed);
+            moreArtHeight=listHeight-2*Ui.dp(this,PosterAdapter.GLOW_DP)-Ui.dp(this,6);moreArtWidth=moreArtHeight*2/3;
+            moreSection.addView(moreRow,new LinearLayout.LayoutParams(-1,listHeight));
         }else{
             TextView heading=Ui.heading(this,"Episodes",21);heading.setPadding(0,Ui.dp(this,20),0,Ui.dp(this,6));content.addView(heading);
             episodeArea=Ui.column(this);episodeArea.setClipChildren(false);episodeArea.setClipToPadding(false);
@@ -224,13 +231,7 @@ public class DetailsActivity extends Activity {
         List<Catalog.Item> similar=Catalog.similar(self,pool,20);
         runOnUiThread(()->{if(isFinishing()||similar.isEmpty())return;
             moreSection.setVisibility(View.VISIBLE);
-            // Size posters to the space left under the cast row so the page never scrolls.
-            moreRow.post(()->{
-                int h=moreRow.getHeight();if(h<=0)return;
-                int glow=Ui.dp(this,PosterAdapter.GLOW_DP);
-                int artH=Math.max(Ui.dp(this,90),h-2*glow-Ui.dp(this,6)),artW=artH*2/3;
-                moreRow.setAdapter(new PosterAdapter(this,similar,artW,artH,false,null));
-            });
+            moreRow.setAdapter(new PosterAdapter(this,similar,moreArtWidth,moreArtHeight,false,null));
         });
     });}
 

@@ -141,7 +141,7 @@ public class PlayerActivity extends Activity {
     /** Shows the overlay and focuses {@code target} (or keeps the current control focused). */
     private void showControls(View target){
         if(card.getVisibility()==View.VISIBLE)return;
-        controls.setVisibility(View.VISIBLE);
+        controls.setVisibility(View.VISIBLE);liftSubtitles(true);
         if(target!=null)target.requestFocus();
         else if(!controls.hasFocus())playButton.requestFocus();
         updateProgressUi();scheduleHide();
@@ -149,8 +149,13 @@ public class PlayerActivity extends Activity {
     private void scheduleHide(){handler.removeCallbacks(hideControls);if(dialog==null)handler.postDelayed(hideControls,HIDE_MS);}
     private final Runnable hideControls=()->{
         if(dialog!=null || pendingSeek>=0){scheduleHide();return;}
-        controls.setVisibility(View.GONE);status.setVisibility(View.GONE);root.requestFocus();
+        controls.setVisibility(View.GONE);status.setVisibility(View.GONE);liftSubtitles(false);root.requestFocus();
     };
+    /** Keeps subtitles above the controls while they are shown, and at the normal height otherwise. */
+    private void liftSubtitles(boolean up){
+        androidx.media3.ui.SubtitleView subs=video.getSubtitleView();
+        if(subs!=null)subs.setBottomPaddingFraction(up?0.25f:androidx.media3.ui.SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION);
+    }
     private void hideNow(){handler.removeCallbacks(hideControls);hideControls.run();}
     private void flash(String text){status.setText(text);status.setVisibility(View.VISIBLE);}
 

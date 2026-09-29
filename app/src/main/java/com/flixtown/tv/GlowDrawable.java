@@ -32,7 +32,7 @@ final class GlowDrawable extends Drawable {
         android.graphics.Rect b=getBounds();
         for(float d=step/2f;d<spread;d+=step){
             float t=1f-d/spread;                      // 1 at the poster edge, 0 at the outside
-            int a=Math.round(150*t*t);
+            int a=Math.round(235*(float)Math.pow(t,1.6));
             if(a<=0)continue;
             paint.setColor((a<<24)|color);
             rect.set(b.left+spread-d,b.top+spread-d,b.right-spread+d,b.bottom-spread+d);

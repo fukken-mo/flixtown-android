@@ -20,7 +20,7 @@ import java.util.Locale;
 final class DemoData {
     private DemoData(){}
     /** Public test stream with several audio languages and subtitle tracks. */
-    static final String STREAM="https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8";
+    static final String STREAM="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8";
     private static final String[] A={"Silent","Crimson","Last","Midnight","Broken","Golden","Hidden","Northern","Electric","Lost","Wild","Paper","Iron","Distant","Hollow"};
     private static final String[] B={"Harbor","Frontier","Signal","Garden","Kingdom","Horizon","Letters","Station","Empire","Tide","Orchard","Protocol","Summer","Voyage","Circuit"};
     private static final String[] MOVIE_CATS={"Action","Drama","Comedy","Thriller","Family","Sci-Fi"};
@@ -30,8 +30,10 @@ final class DemoData {
     static String title(int i,int salt){String t=A[(i*7+salt)%A.length]+" "+B[(i*11+salt*3)%B.length];
         return i%9==4?"The "+t+" and the Long Road Home":i%5==0?"The "+t:t;}
 
+    static volatile boolean offline,slow;
     static String respond(String url,String body)throws Exception{
-        Thread.sleep(url.contains("get_vod_streams")?900:250);
+        if(offline){Thread.sleep(400);throw new java.io.IOException("Demo: network unreachable");}
+        Thread.sleep(url.contains("get_vod_streams")?(slow?21000:900):250);
         if(url.contains("config.php"))return new JSONObject().put("xtream_url","https://demo.flixtown.invalid").put("intro_enabled",false)
             .put("intro_url","").put("cashapp_url","https://cash.app/$FlixTownDemo")
             .put("plans",new JSONObject().put("1m","15").put("3m","40").put("6m","75").put("12m","140")).toString();
@@ -91,7 +93,7 @@ final class DemoData {
         boolean poster=url.contains("/poster/"),person=url.contains("/person/");
         int w=Math.max(64,Math.min(width,480)),h=poster?w*3/2:person?w:w*9/16;
         Bitmap bmp=Bitmap.createBitmap(w,h,Bitmap.Config.RGB_565);Canvas c=new Canvas(bmp);
-        int hash=url.hashCode();float hue=Math.abs(hash%360);
+        int hash=url.hashCode()*0x9E3779B1;hash^=hash>>>15;float hue=Math.abs(hash%360);
         int top=android.graphics.Color.HSVToColor(new float[]{hue,.55f,.55f}),bottom=android.graphics.Color.HSVToColor(new float[]{(hue+40)%360,.7f,.18f});
         Paint p=new Paint();p.setShader(new LinearGradient(0,0,w,h,top,bottom,Shader.TileMode.CLAMP));c.drawRect(0,0,w,h,p);
         if(poster){TextPaint t=new TextPaint(Paint.ANTI_ALIAS_FLAG);t.setColor(0xF0FFFFFF);t.setTextSize(w/8f);t.setFakeBoldText(true);

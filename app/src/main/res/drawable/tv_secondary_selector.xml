@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Secondary action: stays quiet even when focused (red outline, no solid fill), so the QR code remains the main path. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true"><shape android:shape="rectangle">
+        <corners android:radius="20dp"/><solid android:color="#26FFFFFF"/>
+        <stroke android:width="2dp" android:color="@color/flix_glow"/>
+    </shape></item>
+    <item><shape android:shape="rectangle">
+        <corners android:radius="20dp"/><solid android:color="#00000000"/>
+        <stroke android:width="1dp" android:color="#2EFFFFFF"/>
+    </shape></item>
+</selector>

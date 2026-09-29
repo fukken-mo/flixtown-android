@@ -120,8 +120,11 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         homeRows.setWindowAlignmentOffset(keyline);
         homeRows.setItemAlignmentOffsetPercent(0f);homeRows.setItemAlignmentOffset(0);
 
-        FrameLayout.LayoutParams bh=(FrameLayout.LayoutParams)browseHeader.getLayoutParams();bh.topMargin=safeY;browseHeader.setLayoutParams(bh);
-        FrameLayout.LayoutParams gp=(FrameLayout.LayoutParams)browseGrid.getLayoutParams();gp.topMargin=safeY+bh.height;browseGrid.setLayoutParams(gp);
+        // The header sits above the grid on a solid background, so posters scroll underneath it.
+        int headerHeight=Ui.dp(this,52);
+        FrameLayout.LayoutParams bh=(FrameLayout.LayoutParams)browseHeader.getLayoutParams();bh.topMargin=0;bh.height=safeY+headerHeight;browseHeader.setLayoutParams(bh);
+        browseHeader.setPadding(browseHeader.getPaddingLeft(),safeY,browseHeader.getPaddingRight(),0);
+        FrameLayout.LayoutParams gp=(FrameLayout.LayoutParams)browseGrid.getLayoutParams();gp.topMargin=safeY+headerHeight;browseGrid.setLayoutParams(gp);
         // Cards include an 8dp glow margin on each side, so cards sit edge to edge and artwork is 16dp apart.
         int cardSpace=m.widthPixels-Ui.dp(this,96)-browseGrid.getPaddingLeft()-browseGrid.getPaddingRight();
         int cardWidth=cardSpace/BROWSE_COLUMNS,glow=Ui.dp(this,PosterAdapter.GLOW_DP);
@@ -349,8 +352,14 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
     private void focusGrid(){
         if(browseGrid.getAdapter()==null || browseGrid.getAdapter().getItemCount()==0){
             if(filters.getChildCount()>0)filters.getChildAt(0).requestFocus();return;}
-        if(browseGrid.getChildCount()>0 && !browseGrid.isLayoutRequested())browseGrid.requestFocus();
-        else Ui.afterLayout(browseGrid,()->{if(!menuOpen && !overlayUp)browseGrid.requestFocus();});
+        focusGridCard(12);
+    }
+    /** Focuses the grid's selected card. Right after a tab switch it may not exist yet, so retry for a few frames. */
+    private void focusGridCard(int attempts){
+        if(menuOpen||overlayUp||!isBrowse())return;
+        RecyclerView.ViewHolder holder=browseGrid.findViewHolderForAdapterPosition(Math.max(0,browseGrid.getSelectedPosition()));
+        if(holder!=null && !browseGrid.isLayoutRequested() && holder.itemView.requestFocus())return;
+        if(attempts>0)browseGrid.postOnAnimation(()->focusGridCard(attempts-1));
     }
 
     /* ---------------- Rendering ---------------- */

@@ -56,6 +56,12 @@ public class LoginActivity extends Activity {
     private void applyDemoExtras(){
         if(getIntent().getBooleanExtra("demo_reset",false)){AccountStore.clear(this);Api.prefs(this).edit().clear().apply();}
         DemoData.expired=getIntent().getBooleanExtra("demo_expired",false);
+        DemoData.offline=getIntent().getBooleanExtra("demo_offline",false);
+        DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);
+        if(getIntent().getBooleanExtra("demo_clear_cache",false)){
+            java.io.File dir=new java.io.File(getFilesDir(),"catalog");java.io.File[] files=dir.listFiles();
+            if(files!=null)for(java.io.File f:files)f.delete();
+        }
     }
     private CharSequence steps(){
         String[] lines={"Point your phone's camera at the code","Sign in and approve this TV","Flix Town opens here automatically"};

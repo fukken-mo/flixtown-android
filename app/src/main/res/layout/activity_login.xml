@@ -23,7 +23,7 @@
                 android:lineSpacingMultiplier="1.45" />
             <Button android:id="@+id/remote_sign_in" android:layout_width="wrap_content" android:layout_height="40dp"
                 android:layout_marginTop="22dp" android:text="Sign in with remote instead" android:textAllCaps="false"
-                android:textSize="15sp" android:textColor="@color/flix_text_2" android:background="@drawable/tv_item_selector"
+                android:textSize="15sp" android:textColor="@color/flix_text" android:background="@drawable/tv_secondary_selector"
                 android:paddingStart="18dp" android:paddingEnd="18dp" android:minWidth="0dp" android:minHeight="0dp"
                 android:stateListAnimator="@null" android:focusable="true" android:focusableInTouchMode="true" />
         </LinearLayout>
@@ -35,8 +35,9 @@
                 <ImageView android:id="@+id/qr_image" android:layout_width="match_parent" android:layout_height="match_parent"
                     android:scaleType="fitCenter" android:contentDescription="Activation QR code" />
             </FrameLayout>
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp"
-                android:text="or go to myflixtown.com/activate.php and enter" android:textColor="@color/flix_text_3" android:textSize="13sp" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp"
+                android:gravity="center" android:text="Or visit myflixtown.com/activate.php\nand enter this code" android:textColor="@color/flix_text_3"
+                android:textSize="13sp" android:lineSpacingMultiplier="1.1" />
             <TextView android:id="@+id/activation_code" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="4dp" android:text="······" android:textColor="@color/flix_text"
                 android:textSize="28sp" android:fontFamily="sans-serif-medium" android:letterSpacing="0.18" />
