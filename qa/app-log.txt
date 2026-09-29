@@ -1,22 +1,22 @@
-09-29 08:13:37.058  7716  7736 W FlixTown: Startup refresh failed; cached titles remain
-09-29 08:13:37.058  7716  7736 W FlixTown: java.io.IOException: Demo: network unreachable
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at com.flixtown.tv.DemoData.respond(DemoData.java:35)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at com.flixtown.tv.Api.request(Api.java:28)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at com.flixtown.tv.Api.get(Api.java:22)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at com.flixtown.tv.StartupRefresh.run(StartupRefresh.java:63)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at com.flixtown.tv.StartupRefresh.lambda$start$0(StartupRefresh.java:51)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at com.flixtown.tv.StartupRefresh$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
-09-29 08:13:37.058  7716  7736 W FlixTown: 	at java.lang.Thread.run(Thread.java:920)
-09-29 08:13:43.333  7783  7803 W FlixTown: Startup refresh failed; cached titles remain
-09-29 08:13:43.333  7783  7803 W FlixTown: java.io.IOException: Demo: network unreachable
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at com.flixtown.tv.DemoData.respond(DemoData.java:35)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at com.flixtown.tv.Api.request(Api.java:28)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at com.flixtown.tv.Api.get(Api.java:22)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at com.flixtown.tv.StartupRefresh.run(StartupRefresh.java:63)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at com.flixtown.tv.StartupRefresh.lambda$start$0(StartupRefresh.java:51)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at com.flixtown.tv.StartupRefresh$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
-09-29 08:13:43.333  7783  7803 W FlixTown: 	at java.lang.Thread.run(Thread.java:920)
+09-29 08:23:08.072  8031  8051 W FlixTown: Startup refresh failed; cached titles remain
+09-29 08:23:08.072  8031  8051 W FlixTown: java.io.IOException: Demo: network unreachable
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at com.flixtown.tv.DemoData.respond(DemoData.java:35)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at com.flixtown.tv.Api.request(Api.java:28)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at com.flixtown.tv.Api.get(Api.java:22)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at com.flixtown.tv.StartupRefresh.run(StartupRefresh.java:63)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at com.flixtown.tv.StartupRefresh.lambda$start$0(StartupRefresh.java:51)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at com.flixtown.tv.StartupRefresh$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+09-29 08:23:08.072  8031  8051 W FlixTown: 	at java.lang.Thread.run(Thread.java:920)
+09-29 08:23:13.562  8091  8111 W FlixTown: Startup refresh failed; cached titles remain
+09-29 08:23:13.562  8091  8111 W FlixTown: java.io.IOException: Demo: network unreachable
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at com.flixtown.tv.DemoData.respond(DemoData.java:35)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at com.flixtown.tv.Api.request(Api.java:28)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at com.flixtown.tv.Api.get(Api.java:22)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at com.flixtown.tv.StartupRefresh.run(StartupRefresh.java:63)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at com.flixtown.tv.StartupRefresh.lambda$start$0(StartupRefresh.java:51)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at com.flixtown.tv.StartupRefresh$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+09-29 08:23:13.562  8091  8111 W FlixTown: 	at java.lang.Thread.run(Thread.java:920)
