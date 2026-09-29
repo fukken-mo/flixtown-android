@@ -37,9 +37,9 @@ final class Ui {
         d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),0x888B727B);return d;
     }
     static GradientDrawable focusSurface(Context c,boolean focused){
-        GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-            focused?new int[]{0xFF8B263B,0xFF4A1D2B,0xFF25151E}:new int[]{0xF23A3440,0xF221202A,0xF013151D});
-        d.setCornerRadius(dp(c,13));d.setStroke(dp(c,focused?2:1),focused?0xFFFF8295:0xFF655863);return d;
+        GradientDrawable d=new GradientDrawable();d.setColor(focused?RED:0xFF242A35);
+        d.setCornerRadius(dp(c,6));d.setStroke(dp(c,focused?2:1),focused?0xFFFF6970:0xFF363C47);
+        return d;
     }
     static GradientDrawable posterBorder(Context c,boolean focused){
         GradientDrawable d=new GradientDrawable();d.setColor(0xFF10131A);d.setCornerRadius(dp(c,9));

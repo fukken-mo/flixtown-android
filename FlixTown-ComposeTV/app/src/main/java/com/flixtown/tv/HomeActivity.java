@@ -192,15 +192,14 @@ public class HomeActivity extends Activity {
     private void buildFilters(){filters.removeAllViews();if(filters.getVisibility()!=View.VISIBLE)return;
         Button sort=chip("Sort By   ›",()->{
             String[] options={"Recently Added","Title A–Z","Top Rated"};
-            new android.app.AlertDialog.Builder(this).setTitle("Sort By").setSingleChoiceItems(options,sortMode,(dialog,which)->{
-                sortMode=which;dialog.dismiss();render();}).show();
+            Ui.picker(this,"Sort By",options,sortMode,which->{sortMode=which;render();});
         });LinearLayout.LayoutParams a=new LinearLayout.LayoutParams(Ui.dp(this,116),Ui.dp(this,44));filters.addView(sort,a);
         Button cats=chip("Categories   ›",()->{
             List<Category> list=tab.equals("Series")?seriesCategories:movieCategories;
             String[] options=new String[list.size()+1];options[0]="All "+(tab.equals("Series")?"Shows":"Movies");
             for(int i=0;i<list.size();i++)options[i+1]=list.get(i).name;
-            new android.app.AlertDialog.Builder(this).setTitle("Categories").setItems(options,(dialog,which)->{
-                category=which==0?"":list.get(which-1).id;render();}).show();
+            int selected=0;for(int i=0;i<list.size();i++)if(category.equals(list.get(i).id))selected=i+1;
+            Ui.picker(this,"Categories",options,selected,which->{category=which==0?"":list.get(which-1).id;render();});
         });LinearLayout.LayoutParams b=new LinearLayout.LayoutParams(Ui.dp(this,150),Ui.dp(this,44));b.leftMargin=Ui.dp(this,12);filters.addView(cats,b);
         View.OnKeyListener down=(v,key,event)->{
             if(event.getAction()==KeyEvent.ACTION_DOWN && key==KeyEvent.KEYCODE_DPAD_DOWN){focusGrid();return true;}return false;};

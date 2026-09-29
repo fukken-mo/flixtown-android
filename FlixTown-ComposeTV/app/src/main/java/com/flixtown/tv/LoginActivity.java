@@ -69,8 +69,7 @@ public class LoginActivity extends Activity {
     }catch(Exception e){handler.postDelayed(this::poll,4000);}});}
     private void saveAndGo(String server,String user,String pass){polling=false;try{AccountStore.save(this,user,pass,server);home();}
         catch(Exception e){message.setText("Could not save account securely");}}
-    private void home(){String intro=Api.prefs(this).getString("intro_url","");
-        Class<?> destination=Api.prefs(this).getBoolean("expired",false)?RenewalActivity.class:
-            (intro.isEmpty()?HomeActivity.class:IntroActivity.class);startActivity(new Intent(this,destination));finish();}
+    private void home(){Class<?> destination=Api.prefs(this).getBoolean("expired",false)?RenewalActivity.class:HomeActivity.class;
+        startActivity(new Intent(this,destination));finish();}
     @Override protected void onDestroy(){polling=false;handler.removeCallbacksAndMessages(null);super.onDestroy();}
 }

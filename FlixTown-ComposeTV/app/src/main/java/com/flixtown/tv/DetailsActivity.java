@@ -116,17 +116,16 @@ public class DetailsActivity extends Activity {
                     JSONObject episode=list.optJSONObject(i);if(episode!=null)ordered.add(episode);
                 }}
                 episodeArea.removeAllViews();
-                HorizontalScrollView seasonScroller=new HorizontalScrollView(this);seasonScroller.setHorizontalScrollBarEnabled(false);
-                seasonScroller.setClipToPadding(false);seasonScroller.setClipChildren(false);
-                episodeArea.addView(seasonScroller,new LinearLayout.LayoutParams(-1,Ui.dp(this,49)));
-                LinearLayout tabs=Ui.row(this);seasonScroller.addView(tabs);
                 seasonContent=Ui.column(this);episodeArea.addView(seasonContent);
-                for(String season:seasons){
-                    Button button=Ui.button(this,"Season "+season);button.setTextSize(15);
-                    LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,124),Ui.dp(this,43));sp.rightMargin=Ui.dp(this,10);tabs.addView(button,sp);
-                    button.setOnClickListener(v->showSeason(episodes,season,ordered));
+                if(!seasons.isEmpty()){
+                    Button select=Ui.button(this,"Season "+seasons.get(0)+"  ›");select.setTextSize(15);
+                    episodeArea.addView(select,0,new LinearLayout.LayoutParams(Ui.dp(this,150),Ui.dp(this,43)));
+                    String[] names=new String[seasons.size()];for(int i=0;i<seasons.size();i++)names[i]="Season "+seasons.get(i);
+                    select.setOnClickListener(v->Ui.picker(this,"Select season",names,0,index->{
+                        select.setText(names[index]+"  ›");showSeason(episodes,seasons.get(index),ordered);
+                    }));
+                    showSeason(episodes,seasons.get(0),ordered);
                 }
-                if(!seasons.isEmpty())showSeason(episodes,seasons.get(0),ordered);
             }
         }
     }
