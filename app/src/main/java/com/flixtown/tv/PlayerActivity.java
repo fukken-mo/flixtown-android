@@ -153,8 +153,9 @@ public class PlayerActivity extends Activity {
     };
     /** Keeps subtitles above the controls while they are shown, and at the normal height otherwise. */
     private void liftSubtitles(boolean up){
+        // Moving the whole layer also works for cues that carry their own position (common in WebVTT/ASS).
         androidx.media3.ui.SubtitleView subs=video.getSubtitleView();
-        if(subs!=null)subs.setBottomPaddingFraction(up?0.25f:androidx.media3.ui.SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION);
+        if(subs!=null)subs.animate().translationY(up?-Ui.dp(this,118):0).setDuration(150).start();
     }
     private void hideNow(){handler.removeCallbacks(hideControls);hideControls.run();}
     private void flash(String text){status.setText(text);status.setVisibility(View.VISIBLE);}
@@ -364,11 +365,13 @@ public class PlayerActivity extends Activity {
     private static String shortLanguage(Format f){
         if(f.language!=null && !f.language.isEmpty() && !"und".equals(f.language)){
             String name=new Locale(f.language).getDisplayLanguage(Locale.US);return name.isEmpty()?f.language:name;}
-        return f.label!=null&&!f.label.isEmpty()?f.label:"On";
+        return "On";
     }
     private static String trackLabel(Format f,int type,int number){
         String language=f.language==null||f.language.isEmpty()||"und".equals(f.language)?"":new Locale(f.language).getDisplayLanguage(Locale.US);
-        String name=f.label!=null&&!f.label.isEmpty()?f.label:!language.isEmpty()?language:(type==C.TRACK_TYPE_TEXT?"Subtitle ":"Track ")+number;
+        // Prefer the language; add the stream's own label only when it says something more (e.g. "Commentary").
+        boolean usefulLabel=f.label!=null && !f.label.isEmpty() && !f.label.matches("(?i)(stream|track|audio|sub(title)?s?)[ _-]?\\d*") && !f.label.equalsIgnoreCase(language);
+        String name=!language.isEmpty()?(usefulLabel?language+" ("+f.label+")":language):usefulLabel?f.label:(type==C.TRACK_TYPE_TEXT?"Subtitle ":"Track ")+number;
         StringBuilder out=new StringBuilder(name);
         if(type==C.TRACK_TYPE_AUDIO){
             int ch=f.channelCount;

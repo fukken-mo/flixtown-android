@@ -114,6 +114,17 @@ launch --ez demo_slow true --ez demo_clear_cache true; shot 78-slow-server-waiti
 sleep 13;                                   shot 79-slow-server-message 0.2
 sleep 6;                                    shot 80-slow-server-finished 0.2
 
+# --- Continue / Start over (leave at ~18 s so the 60 s clip is not counted as finished) ---
+launch;                                     sleep 4
+key DPAD_DOWN DPAD_RIGHT DPAD_CENTER;       shot 90-resume-details 2.5
+key DPAD_CENTER;                            sleep 20
+key BACK;                                   shot 91-left-player 1.5
+key DPAD_CENTER;                            shot 92-resume-card-continue-focused 2.5
+key DPAD_RIGHT;                             shot 93-resume-card-start-over-focused 0.2
+key DPAD_LEFT DPAD_CENTER;                  shot 94-continued-from-saved-time 1
+key DPAD_UP;                                shot 95-controls-show-resumed-time 0.3
+key BACK BACK;                              shot 96-back-to-details 1.5
+
 # --- Expired account ---
 launch --ez demo_expired true;              shot 81-renewal 6
 key DPAD_UP DPAD_UP;                        shot 82-renewal-plans-focus
