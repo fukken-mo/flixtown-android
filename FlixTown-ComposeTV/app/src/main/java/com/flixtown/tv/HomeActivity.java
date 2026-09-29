@@ -106,7 +106,7 @@ public class HomeActivity extends Activity {
             entry.setBackgroundResource(R.drawable.tv_rail_selector);
             entry.setOnFocusChangeListener((v,f)->bar.setVisibility(f||target.equals(tab)?View.VISIBLE:View.INVISIBLE));
             bar.setVisibility(target.equals(tab)?View.VISIBLE:View.INVISIBLE);
-            entry.setOnClickListener(v->{tab=target;category="";sortMode=0;closeMenu();render();});
+            entry.setOnClickListener(v->{tab=target;category="";sortMode=0;render();closeMenu();});
             entry.setOnKeyListener((v,key,event)->{
                 if(event.getAction()==KeyEvent.ACTION_DOWN && key==KeyEvent.KEYCODE_DPAD_RIGHT){closeMenu();return true;}
                 return false;
@@ -161,8 +161,8 @@ public class HomeActivity extends Activity {
             (featured.rating>0?String.format(Locale.US,"★ %.1f",featured.rating):"Movie"));
         overview.setText(featured.overview);Images.load(backdrop,featured.backdrop,960);
     }
-    private void render(){if(menuOpen)closeMenu();boolean browse=tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites");
-        boolean home=tab.equals("Home");hero.setVisibility(home||browse?View.VISIBLE:View.GONE);
+    private void render(){boolean browse=tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites");
+        boolean home=tab.equals("Home");hero.setVisibility(View.VISIBLE);
         homeRows.setVisibility(home?View.VISIBLE:View.GONE);browseGrid.setVisibility(browse?View.VISIBLE:View.GONE);
         TextView browseTitle=findViewById(R.id.browse_title);browseTitle.setVisibility(browse?View.VISIBLE:View.GONE);
         browseTitle.setText(tab.equals("Series")?"All TV Shows":tab.equals("Favorites")?"My List":"All Movies");

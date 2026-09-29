@@ -6,6 +6,6 @@
         android:textColor="#FFFFFF" android:textSize="22sp" android:fontFamily="sans-serif-medium"
         android:paddingTop="8dp" android:paddingBottom="8dp" />
     <androidx.recyclerview.widget.RecyclerView android:id="@+id/row_list"
-        android:layout_width="match_parent" android:layout_height="188dp"
+        android:layout_width="match_parent" android:layout_height="206dp"
         android:clipToPadding="false" android:clipChildren="false" android:overScrollMode="never" />
 </LinearLayout>

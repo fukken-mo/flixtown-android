@@ -14,11 +14,17 @@ import java.util.List;
 
 final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     interface Move { boolean move(int row,int position,int direction); }
+    interface Focus { void onFocus(Catalog.Item item); }
     private final Activity activity;
     private final List<Catalog.Item> items;
     private final boolean browse;
     private final int row;
     private final Move move;
+    private Focus legacyFocus;
+    static int rowHeight(Activity activity){return 206;}
+    PosterAdapter(Activity activity,List<Catalog.Item> items,Focus focus){
+        this(activity,items,false,-1,null);this.legacyFocus=focus;
+    }
     PosterAdapter(Activity activity,List<Catalog.Item> items,boolean browse,int row,Move move) {
         this.activity=activity;this.items=items;this.browse=browse;this.row=row;this.move=move;
         setHasStableIds(true);
@@ -55,6 +61,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         h.itemView.setOnFocusChangeListener((v,focused)->{
             v.setBackground(border(focused));
             v.animate().scaleX(focused?1.045f:1f).scaleY(focused?1.045f:1f).setDuration(110).start();
+            if(focused && legacyFocus!=null)legacyFocus.onFocus(item);
         });
         h.itemView.setOnKeyListener((v,key,event)->{
             if(event.getAction()!=KeyEvent.ACTION_DOWN || move==null)return false;
