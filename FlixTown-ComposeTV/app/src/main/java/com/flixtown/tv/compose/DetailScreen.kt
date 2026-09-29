@@ -88,7 +88,7 @@ fun DetailScreen(item: TvTitle, account: TvAccount, repo: FlixRepository,
                     fontSize = if (compact) 20.sp else 24.sp, fontWeight = FontWeight.SemiBold)
                 val rowState = rememberLazyListState()
                 PrefetchPosters(rowState, candidates)
-                LazyRow(state = rowState, modifier = Modifier.fillMaxWidth().graphicsLayer { clip = false },
+                LazyRow(state = rowState, modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(candidates, key = { it.id }) { title ->
@@ -100,7 +100,7 @@ fun DetailScreen(item: TvTitle, account: TvAccount, repo: FlixRepository,
                                 border = CardDefaults.border(focusedBorder = Border(
                                     border = androidx.compose.foundation.BorderStroke(2.dp, CinemaColor.Accent),
                                     shape = RoundedCornerShape(10.dp))),
-                                scale = CardDefaults.scale(focusedScale = 1.05f)) {
+                                scale = CardDefaults.scale(focusedScale = 1.08f)) {
                                 AsyncImage(posterRequest(title.posterUrl), contentDescription = title.name,
                                     contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
                                         .background(CinemaColor.Surface))

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.StateListDrawable
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
@@ -16,6 +17,8 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ArrayAdapter
+import android.widget.ListView
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
@@ -28,8 +31,7 @@ import kotlinx.coroutines.*
 internal class NativeBrowseController(private val activity: Activity, private val repo: FlixRepository) {
     private val bg = Color.rgb(7, 8, 11)
     private val surface = Color.rgb(18, 22, 32)
-    private val red = Color.rgb(211, 50, 68)
-    private val cyan = Color.rgb(0, 229, 255)
+    private val red = TvChrome.RED
     private val muted = Color.rgb(148, 163, 184)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val rail = LinearLayout(activity).apply {
@@ -168,11 +170,17 @@ internal class NativeBrowseController(private val activity: Activity, private va
         }
         scroll.addView(column); content.addView(scroll, FrameLayout.LayoutParams(-1, -1))
         catalog.featured?.let { featured ->
-            val hero = FrameLayout(activity).apply { background = TvChrome.panel(dp(14).toFloat()) }
+            val hero = FrameLayout(activity).apply {
+                setBackgroundColor(bg); clipChildren = false
+            }
             if (featured.backdropUrl.isNotBlank()) hero.addView(ImageView(activity).apply {
-                scaleType = ImageView.ScaleType.CENTER_CROP; alpha = .42f
+                scaleType = ImageView.ScaleType.CENTER_CROP
                 load(featured.backdropUrl) { size(780, 350); crossfade(false) }
             }, FrameLayout.LayoutParams(-1, -1))
+            hero.addView(View(activity).apply { background = TvChrome.heroSideScrim() },
+                FrameLayout.LayoutParams(-1, -1))
+            hero.addView(View(activity).apply { background = TvChrome.heroScrim() },
+                FrameLayout.LayoutParams(-1, -1))
             val info = LinearLayout(activity).apply {
                 orientation = 1; gravity = Gravity.BOTTOM
                 setPadding(dp(30), dp(18), dp(28), dp(28))
@@ -206,7 +214,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 LinearLayout.LayoutParams(-2, dp(48)).apply { marginStart = dp(12) })
             info.addView(actions, LinearLayout.LayoutParams(-2, dp(48)).apply { topMargin = dp(16) })
             hero.addView(info, FrameLayout.LayoutParams(-1, -1))
-            column.addView(hero, LinearLayout.LayoutParams(-1, dp(285)))
+            column.addView(hero, LinearLayout.LayoutParams(-1, dp(314)))
             primary.post { if (page == BrowsePage.Home && !root.hasFocus()) primary.requestFocus() }
         }
         catalog.rows.filter { it.second.isNotEmpty() }.forEach { (heading, titles) ->
@@ -215,10 +223,10 @@ internal class NativeBrowseController(private val activity: Activity, private va
                     topMargin = dp(28); bottomMargin = dp(10)
                 })
             val row = list(LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false)).apply {
-                adapter = Posters(titles, 176, 262, false)
+                adapter = Posters(titles, 198, 287, false)
             }
             homeRows.add(row)
-            column.addView(row, LinearLayout.LayoutParams(-1, dp(340)))
+            column.addView(row, LinearLayout.LayoutParams(-1, dp(378)))
         }
     }
 
@@ -434,22 +442,30 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 background = shape(surface, 10); clipToOutline = true
             }
-            val posterFrame = FrameLayout(activity).apply { clipChildren = false }
+            val posterFrame = object : FrameLayout(activity) {
+                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                    val actualHeight = if (isGrid) {
+                        (View.MeasureSpec.getSize(widthMeasureSpec) * 1.45f).toInt()
+                    } else dp(height)
+                    super.onMeasure(widthMeasureSpec,
+                        View.MeasureSpec.makeMeasureSpec(actualHeight, View.MeasureSpec.EXACTLY))
+                }
+            }.apply { clipChildren = false }
             posterFrame.addView(poster, FrameLayout.LayoutParams(-1, -1))
             val focusCover = View(activity).apply {
-                background = shape(Color.argb(92, 211, 50, 68), 10, red)
+                background = shape(Color.argb(54, 231, 21, 30), 10, red)
                 visibility = View.GONE
             }
             posterFrame.addView(focusCover, FrameLayout.LayoutParams(-1, -1))
-            outer.addView(posterFrame, LinearLayout.LayoutParams(-1, dp(height)))
+            outer.addView(posterFrame, LinearLayout.LayoutParams(-1, -2))
             val name = text("", 16, Color.WHITE, true).apply {
                 maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
             }
             outer.addView(name, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(9) })
             outer.setOnFocusChangeListener { view, focused ->
                 view.animate().cancel()
-                view.animate().scaleX(if (focused) 1.035f else 1f)
-                    .scaleY(if (focused) 1.035f else 1f).setDuration(100).start()
+                view.animate().scaleX(if (focused) 1.08f else 1f)
+                    .scaleY(if (focused) 1.08f else 1f).setDuration(120).start()
                 focusCover.visibility = if (focused) View.VISIBLE else View.GONE
             }
             return PosterHolder(outer, poster, name, focusCover)
@@ -481,7 +497,7 @@ internal class NativeBrowseController(private val activity: Activity, private va
                 }
             }
             holder.itemView.layoutParams = RecyclerView.LayoutParams(
-                if (isGrid) -1 else dp(width), dp(height + 82)).apply {
+                if (isGrid) -1 else dp(width), if (isGrid) -2 else dp(height + 82)).apply {
                 setMargins(dp(7), dp(6), dp(7), dp(4))
             }
         }
@@ -513,24 +529,38 @@ internal class NativeBrowseController(private val activity: Activity, private va
         }
         panel.addView(text(title, 24, Color.WHITE, true),
             LinearLayout.LayoutParams(-1, dp(45)))
-        val scroll = ScrollView(activity).apply {
-            isVerticalScrollBarEnabled = false; clipToPadding = false
+        val choices = ListView(activity).apply {
+            divider = null; isVerticalScrollBarEnabled = false
+            selector = StateListDrawable().apply {
+                addState(intArrayOf(android.R.attr.state_pressed),
+                    TvChrome.action(dp(10).toFloat(), true, dp(1)))
+                addState(intArrayOf(android.R.attr.state_selected),
+                    TvChrome.action(dp(10).toFloat(), true, dp(1)))
+                addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
+            }
+            adapter = object : ArrayAdapter<String>(activity, 0, options) {
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val label = (convertView as? TextView)
+                        ?: text("", 17, Color.WHITE, true).apply {
+                            gravity = Gravity.CENTER_VERTICAL
+                            setPadding(dp(18), 0, dp(18), 0)
+                            layoutParams = android.widget.AbsListView.LayoutParams(-1, dp(52))
+                        }
+                    label.text = getItem(position)
+                    return label
+                }
+            }
         }
-        val entries = LinearLayout(activity).apply { orientation = 1 }
-        scroll.addView(entries)
-        panel.addView(scroll, LinearLayout.LayoutParams(-1, dp(360)))
+        panel.addView(choices, LinearLayout.LayoutParams(-1, dp(360)))
         val dialog = AlertDialog.Builder(activity).setView(panel).create()
-        options.forEachIndexed { index, option ->
-            val choice = button(option) { dialog.dismiss(); selected(index) }
-            entries.addView(choice, LinearLayout.LayoutParams(-1, dp(48)).apply {
-                bottomMargin = dp(8)
-            })
+        choices.setOnItemClickListener { _, _, index, _ ->
+            dialog.dismiss(); selected(index)
         }
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.setOnShowListener {
             dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             dialog.window?.setLayout(dp(420), -2)
-            entries.getChildAt(0)?.requestFocus()
+            choices.requestFocus()
+            choices.setSelection(0)
         }
         dialog.show()
     }

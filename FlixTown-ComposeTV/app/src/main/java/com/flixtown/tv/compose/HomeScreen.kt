@@ -68,7 +68,7 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
         CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))
         .then(if (includeSafePadding) Modifier.padding(horizontal = 48.dp, vertical = 27.dp) else Modifier)) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().graphicsLayer { clip = false },
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(26.dp)
         ) {
@@ -82,8 +82,8 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
                     Text(heading, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     LazyRow(
                         state = rowState,
-                        modifier = Modifier.fillMaxWidth().graphicsLayer { clip = false },
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 17.dp),
                         horizontalArrangement = Arrangement.spacedBy(22.dp)
                     ) {
                         items(titles, key = { it.id }) { item -> PosterCard(item) { onDetails(item) } }
@@ -101,8 +101,8 @@ fun HomeScreen(onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit,
 @Composable
 private fun Hero(item: TvTitle?, playFocus: FocusRequester,
     onPlay: (TvTitle) -> Unit, onDetails: (TvTitle) -> Unit) {
-    Box(Modifier.fillMaxWidth().height(290.dp).clip(RoundedCornerShape(20.dp))
-        .background(CinemaColor.Surface)) {
+    Box(Modifier.fillMaxWidth().height(314.dp)
+        .background(CinemaColor.Background)) {
         if (item != null) {
             AsyncImage(
                 model = backdropRequest(item.backdropUrl),
@@ -144,10 +144,10 @@ private fun Hero(item: TvTitle?, playFocus: FocusRequester,
 
 @Composable
 private fun PosterCard(item: TvTitle, onClick: () -> Unit) {
-    Column(Modifier.width(174.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+    Column(Modifier.width(198.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
         Card(
             onClick = onClick,
-            modifier = Modifier.width(174.dp).height(252.dp),
+            modifier = Modifier.width(198.dp).height(287.dp),
             shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
             border = CardDefaults.border(
                 focusedBorder = androidx.tv.material3.Border(
@@ -155,7 +155,7 @@ private fun PosterCard(item: TvTitle, onClick: () -> Unit) {
                     shape = RoundedCornerShape(12.dp)
                 )
             ),
-            scale = CardDefaults.scale(focusedScale = 1.07f)
+            scale = CardDefaults.scale(focusedScale = 1.08f)
         ) {
             AsyncImage(
                 model = posterRequest(item.posterUrl),

@@ -66,7 +66,7 @@ fun BrowseShell(catalog: BrowseCatalog, repo: FlixRepository,
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
         CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))) {
       FlixNavigationDrawer(page, homeFocus, onSelect = { page = it }) {
-        Box(Modifier.fillMaxSize().padding(start = 104.dp, end = 48.dp,
+        Box(Modifier.fillMaxSize().padding(start = 48.dp, end = 48.dp,
             top = 27.dp, bottom = 27.dp)) {
             when (page) {
                 BrowsePage.Home -> HomeScreen(onPlay, onDetails, catalog, autoFocusHero = true,
@@ -108,7 +108,7 @@ private fun CatalogPage(title: String, source: List<TvTitle>, categories: List<T
         Text("${filtered.size} titles", color = CinemaColor.Muted, fontSize = 15.sp)
         if (filtered.isEmpty()) Text("No titles in this category.", color = Color.White, fontSize = 18.sp)
         else LazyVerticalGrid(columns = GridCells.Fixed(4), state = gridState,
-            modifier = Modifier.weight(1f).fillMaxWidth().graphicsLayer { clip = false },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -153,7 +153,7 @@ private fun SearchPage(all: List<TvTitle>, onDetails: (TvTitle) -> Unit) {
         Text(if (query.length < 2) "Enter at least two letters" else "${matches.size} results",
             color = CinemaColor.Muted, fontSize = 16.sp)
         LazyVerticalGrid(columns = GridCells.Fixed(4),
-            modifier = Modifier.weight(1f).fillMaxWidth().graphicsLayer { clip = false },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -171,7 +171,7 @@ private fun WatchlistPage(catalog: BrowseCatalog, repo: FlixRepository,
         if (saved.isEmpty()) Text("Titles you save will appear here.",
             color = CinemaColor.Muted, fontSize = 18.sp)
         else LazyVerticalGrid(columns = GridCells.Fixed(4),
-            modifier = Modifier.weight(1f).fillMaxWidth().graphicsLayer { clip = false },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -197,7 +197,7 @@ private fun GridPoster(item: TvTitle, onClick: () -> Unit) {
             border = CardDefaults.border(focusedBorder = androidx.tv.material3.Border(
                 border = androidx.compose.foundation.BorderStroke(2.dp, CinemaColor.Accent),
                 shape = RoundedCornerShape(11.dp))),
-            scale = CardDefaults.scale(focusedScale = 1.06f)) {
+            scale = CardDefaults.scale(focusedScale = 1.08f)) {
             AsyncImage(model = posterRequest(item.posterUrl), contentDescription = item.name,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
                     .background(CinemaColor.Surface))

@@ -61,23 +61,23 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
             }
         }
     }
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
-        CinemaColor.Surface, CinemaColor.Background, CinemaColor.Background)))
+    Box(Modifier.fillMaxSize().background(CinemaColor.Background)
         .padding(horizontal = 48.dp, vertical = 27.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(
+            CinemaColor.Accent.copy(alpha = 0.18f), Color.Transparent,
+            Color.Transparent))))
         Row(Modifier.fillMaxWidth().widthIn(max = 1050.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(Brush.horizontalGradient(listOf(CinemaColor.Surface,
-                CinemaColor.Surface.copy(alpha = 0.94f), CinemaColor.AccentDeep.copy(alpha = 0.18f))))
-            .border(1.dp, CinemaColor.Accent.copy(alpha = 0.44f), RoundedCornerShape(22.dp))
-            .padding(horizontal = 30.dp, vertical = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(34.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(58.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                Text("FLIX TOWN", color = CinemaColor.Accent, fontSize = 18.sp,
+            Column(Modifier.weight(1.1f), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                Text("FLIX TOWN", color = CinemaColor.Accent, fontSize = 19.sp,
                     fontWeight = FontWeight.ExtraBold)
-                Text("Your screen. Your movies.", color = CinemaColor.Text,
-                    fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                Text("Sign in with your account", color = CinemaColor.Muted, fontSize = 16.sp)
+                Text("Movies worth staying in for.", color = CinemaColor.Text,
+                    fontSize = 35.sp, lineHeight = 39.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 2)
+                Text("Sign in with your Flix Town account", color = CinemaColor.Muted,
+                    fontSize = 16.sp)
                 LoginField(username, "Username", false) { username = it }
                 LoginField(password, "Password", true) { password = it }
                 PremiumButton(modifier = Modifier.focusRequester(signInFocus), onClick = {
@@ -95,14 +95,18 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
                 if (error.isNotBlank()) Text(error, color = Color(0xFFFFA9A9),
                     fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text("OR ACTIVATE WITH YOUR PHONE", color = CinemaColor.Accent,
+            Column(Modifier.weight(0.9f)
+                .background(Brush.verticalGradient(listOf(Color(0xFF24202A),
+                    CinemaColor.Surface, CinemaColor.Background)), RoundedCornerShape(18.dp))
+                .border(1.dp, CinemaColor.Accent.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
+                .padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("ACTIVATE WITH YOUR PHONE", color = CinemaColor.Accent,
                     fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 val bitmap = remember(pair?.activationUrl) { pair?.activationUrl?.let(::qrBitmap) }
-                Box(Modifier.size(190.dp)
-                    .background(CinemaColor.Accent.copy(alpha = 0.12f), RoundedCornerShape(17.dp))
-                    .border(2.dp, CinemaColor.Accent, RoundedCornerShape(17.dp))
+                Box(Modifier.size(204.dp)
+                    .background(CinemaColor.Accent.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
+                    .border(2.dp, CinemaColor.Accent, RoundedCornerShape(12.dp))
                     .padding(9.dp), contentAlignment = Alignment.Center) {
                     if (bitmap != null) Image(bitmap.asImageBitmap(),
                         contentDescription = "Flix Town activation QR code",
@@ -110,8 +114,8 @@ fun LoginScreen(repo: FlixRepository, onAuthenticated: (TvAccount) -> Unit) {
                             .padding(8.dp))
                     else Text("Preparing code…", color = CinemaColor.Text, fontSize = 15.sp)
                 }
-                Text("1  Scan this code with your phone", color = CinemaColor.Text, fontSize = 16.sp)
-                Text("2  Enter your username and password", color = CinemaColor.Muted, fontSize = 15.sp)
+                Text("Scan the code, then sign in on your phone.",
+                    color = CinemaColor.Text, fontSize = 16.sp, maxLines = 2)
                 Text(pair?.let { "Code ${it.code}  •  myflixtown.com/activate.php" }
                     ?: "Waiting for activation code", color = CinemaColor.Muted, fontSize = 14.sp,
                     maxLines = 2)

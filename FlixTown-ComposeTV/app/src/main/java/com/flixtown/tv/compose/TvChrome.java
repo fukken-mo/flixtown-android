@@ -9,7 +9,7 @@ public final class TvChrome {
 
     public static final int BLACK = Color.rgb(7, 8, 11);
     public static final int PANEL = Color.rgb(18, 22, 32);
-    public static final int RED = Color.rgb(211, 50, 68);
+    public static final int RED = Color.rgb(231, 21, 30);
 
     public static GradientDrawable background() {
         return new GradientDrawable(GradientDrawable.Orientation.TL_BR,
@@ -24,6 +24,16 @@ public final class TvChrome {
         return drawable;
     }
 
+    public static GradientDrawable heroScrim() {
+        return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] { Color.TRANSPARENT, Color.argb(110, 7, 8, 11), BLACK });
+    }
+
+    public static GradientDrawable heroSideScrim() {
+        return new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[] { BLACK, Color.argb(195, 7, 8, 11), Color.TRANSPARENT });
+    }
+
     public static GradientDrawable panel(float radius) {
         GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
                 new int[] { Color.rgb(31, 35, 47), PANEL, Color.rgb(11, 13, 20) });
@@ -32,13 +42,13 @@ public final class TvChrome {
     }
 
     public static GradientDrawable action(float radius, boolean focused, int strokeWidth) {
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.LEFT_RIGHT,
-                focused
-                    ? new int[] { Color.rgb(241, 68, 82), RED, Color.rgb(146, 29, 51) }
-                    : new int[] { Color.rgb(42, 43, 54), Color.rgb(24, 27, 38) });
+        GradientDrawable drawable = focused
+                ? new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[] { RED, RED })
+                : new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[] { Color.rgb(42, 43, 54), Color.rgb(24, 27, 38) });
         drawable.setCornerRadius(radius);
-        drawable.setStroke(strokeWidth, focused ? Color.rgb(255, 151, 158) : Color.rgb(67, 72, 87));
+        drawable.setStroke(strokeWidth, focused ? RED : Color.rgb(67, 72, 87));
         return drawable;
     }
 }

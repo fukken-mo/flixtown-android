@@ -7,18 +7,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.material3.DrawerValue
 import androidx.tv.material3.Icon
-import androidx.tv.material3.ModalNavigationDrawer
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Border
@@ -36,16 +35,17 @@ enum class BrowsePage(val label: String, val icon: ImageVector) {
 @Composable
 fun FlixNavigationDrawer(selected: BrowsePage, homeFocus: FocusRequester,
     onSelect: (BrowsePage) -> Unit, content: @Composable () -> Unit) {
-    ModalNavigationDrawer(drawerContent = { drawerValue ->
-        val expanded = drawerValue == DrawerValue.Open
-        val width = animateDpAsState(if (expanded) 190.dp else 72.dp, label = "Drawer width")
-        Column(Modifier.width(width.value).fillMaxHeight()
+    var railFocused by remember { mutableStateOf(false) }
+    val width by animateDpAsState(if (railFocused) 190.dp else 72.dp, label = "Drawer width")
+    Row(Modifier.fillMaxSize()) {
+        Column(Modifier.width(width).fillMaxHeight()
             .background(Brush.verticalGradient(listOf(CinemaColor.Surface,
-                CinemaColor.Background)), RoundedCornerShape(16.dp))
-            .padding(horizontal = 6.dp, vertical = 16.dp),
+                CinemaColor.Background)))
+            .onFocusChanged { railFocused = it.hasFocus }
+            .padding(start = 0.dp, end = 6.dp, top = 27.dp, bottom = 27.dp),
             verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text(if (expanded) "FLIX TOWN" else "FT",
-                modifier = Modifier.padding(start = if (expanded) 16.dp else 14.dp,
+            Text(if (railFocused) "FLIX TOWN" else "FT",
+                modifier = Modifier.padding(start = if (railFocused) 16.dp else 14.dp,
                     top = 4.dp, bottom = 17.dp),
                 color = CinemaColor.Accent, fontSize = 18.sp)
             BrowsePage.entries.forEach { item ->
@@ -66,11 +66,11 @@ fun FlixNavigationDrawer(selected: BrowsePage, homeFocus: FocusRequester,
                         Box(Modifier.width(3.dp).height(24.dp)
                             .background(if (active) CinemaColor.Accent else Color.Transparent,
                                 RoundedCornerShape(50)))
-                        Spacer(Modifier.width(if (expanded) 15.dp else 13.dp))
+                        Spacer(Modifier.width(if (railFocused) 15.dp else 13.dp))
                         Icon(item.icon, contentDescription = item.label,
                             tint = if (active) CinemaColor.Accent else CinemaColor.Muted,
                             modifier = Modifier.size(25.dp))
-                        if (expanded) {
+                        if (railFocused) {
                             Spacer(Modifier.width(13.dp))
                             Text(item.label, color = CinemaColor.Text, fontSize = 16.sp)
                         }
@@ -78,5 +78,6 @@ fun FlixNavigationDrawer(selected: BrowsePage, homeFocus: FocusRequester,
                 }
             }
         }
-    }, modifier = Modifier.fillMaxSize(), content = content)
+        Box(Modifier.weight(1f).fillMaxHeight()) { content() }
+    }
 }
