@@ -1,3 +1,0 @@
--keep class com.flixtown.tv.** { *; }
--dontwarn okhttp3.**
--dontwarn okio.**

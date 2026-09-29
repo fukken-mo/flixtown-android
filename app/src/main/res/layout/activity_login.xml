@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#07080B">
+    <ImageView android:layout_width="150dp" android:layout_height="70dp" android:layout_gravity="top|start"
+        android:layout_marginStart="48dp" android:layout_marginTop="27dp" android:src="@drawable/flix_logo"
+        android:scaleType="fitCenter" android:contentDescription="Flix Town" />
+    <LinearLayout android:id="@+id/qr_panel" android:layout_width="520dp" android:layout_height="wrap_content"
+        android:layout_gravity="center" android:orientation="vertical" android:gravity="center_horizontal"
+        android:padding="20dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Your movies are waiting." android:textColor="#FFFFFF" android:textSize="31sp"
+            android:fontFamily="sans-serif-medium" android:gravity="center" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Scan with your phone to activate Flix Town" android:textColor="#A9ABB1"
+            android:textSize="16sp" android:gravity="center" android:layout_marginTop="5dp" />
+        <FrameLayout android:layout_width="244dp" android:layout_height="244dp"
+            android:background="@drawable/tv_poster_selector" android:layout_marginTop="18dp"
+            android:padding="7dp">
+            <ImageView android:id="@+id/qr_image" android:layout_width="match_parent" android:layout_height="match_parent"
+                android:background="#FFFFFF" android:padding="9dp" android:contentDescription="Activation QR code" />
+        </FrameLayout>
+        <TextView android:id="@+id/activation_code" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="Preparing activation…"
+            android:textColor="#FFFFFF" android:textSize="17sp" android:gravity="center"
+            android:layout_marginTop="14dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="myflixtown.com/activate.php" android:textColor="#A9ABB1"
+            android:textSize="14sp" android:gravity="center" />
+        <Button android:id="@+id/remote_sign_in" android:layout_width="220dp" android:layout_height="44dp"
+            android:layout_marginTop="20dp" android:text="Sign in with remote" android:textAllCaps="false"
+            android:textSize="15sp" android:focusable="true" android:focusableInTouchMode="true" />
+        <TextView android:id="@+id/login_message" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#FFB5BD" android:textSize="14sp"
+            android:gravity="center" android:layout_marginTop="12dp" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/remote_panel" android:layout_width="420dp" android:layout_height="wrap_content"
+        android:layout_gravity="center" android:orientation="vertical" android:padding="26dp"
+        android:background="#E5121620" android:visibility="gone">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Sign in with remote" android:textColor="#FFFFFF" android:textSize="27sp" />
+        <EditText android:id="@+id/username" android:layout_width="match_parent" android:layout_height="48dp"
+            android:layout_marginTop="20dp" android:singleLine="true" android:hint="Username"
+            android:inputType="text" android:textColor="#FFFFFF" android:textColorHint="#94A3B8" />
+        <EditText android:id="@+id/password" android:layout_width="match_parent" android:layout_height="48dp"
+            android:layout_marginTop="10dp" android:singleLine="true" android:hint="Password"
+            android:inputType="textPassword" android:textColor="#FFFFFF" android:textColorHint="#94A3B8" />
+        <Button android:id="@+id/sign_in" android:layout_width="match_parent" android:layout_height="48dp"
+            android:layout_marginTop="15dp" android:text="Sign in" android:textAllCaps="false" />
+        <Button android:id="@+id/back_to_qr" android:layout_width="match_parent" android:layout_height="42dp"
+            android:layout_marginTop="8dp" android:text="Back to QR code" android:textAllCaps="false" />
+    </LinearLayout>
+</FrameLayout>
