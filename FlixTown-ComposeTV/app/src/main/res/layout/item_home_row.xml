@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+    android:clipChildren="false" android:clipToPadding="false">
+    <TextView android:id="@+id/row_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textColor="#FFFFFF" android:textSize="22sp" android:fontFamily="sans-serif-medium"
+        android:paddingTop="8dp" android:paddingBottom="8dp" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/row_list"
+        android:layout_width="match_parent" android:layout_height="188dp"
+        android:clipToPadding="false" android:clipChildren="false" android:overScrollMode="never" />
+</LinearLayout>
