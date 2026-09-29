@@ -169,17 +169,17 @@ public class HomeActivity extends Activity {
         actions.setVisibility(home?View.VISIBLE:View.GONE);filters.setVisibility(tab.equals("Movies")||tab.equals("Series")?View.VISIBLE:View.GONE);
         if(home){if(actions.getChildCount()!=2 || !(actions.getChildAt(0) instanceof Button))buildActions();featured();rows.clear();
             List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);if(!continued.isEmpty())rows.add(new Row("Continue Watching",continued));
-            rows.add(new Row("Latest Movies",Catalog.recent(movies,30)));
-            rows.add(new Row("Latest TV Shows",Catalog.recent(series,30)));
-            rows.add(new Row("Top Rated Movies",Catalog.topRated(movies,30)));
+            if(!movies.isEmpty())rows.add(new Row("Latest Movies",Catalog.recent(movies,30)));
+            if(!series.isEmpty())rows.add(new Row("Latest TV Shows",Catalog.recent(series,30)));
+            if(!movies.isEmpty())rows.add(new Row("Top Rated Movies",Catalog.topRated(movies,30)));
             rowsAdapter.notifyDataSetChanged();
         }else if(browse){title.setText(tab.equals("Favorites")?"My List":tab.equals("Series")?"TV Shows":"Movies");
             overview.setText("");meta.setText("");featured();
             if(!home){title.setText(tab.equals("Favorites")?"My List":tab.equals("Series")?"TV Shows":"Movies");meta.setText("");overview.setText("");}
             buildFilters();List<Catalog.Item> source=tab.equals("Series")?series:movies;
             if(tab.equals("Favorites")){source=new ArrayList<>();String saved=Api.prefs(this).getString("favorites","");
-                for(Catalog.Item item:movies)if(saved.contains("movie:"+item.id))source.add(item);
-                for(Catalog.Item item:series)if(saved.contains("series:"+item.id))source.add(item);
+                for(Catalog.Item item:movies)if(saved.contains("|movie:"+item.id+"|"))source.add(item);
+                for(Catalog.Item item:series)if(saved.contains("|series:"+item.id+"|"))source.add(item);
             }
             ArrayList<Catalog.Item> filtered=new ArrayList<>();for(Catalog.Item item:source)if(category.isEmpty()||category.equals(item.categoryId))filtered.add(item);
             if(sortMode==0)filtered=new ArrayList<>(Catalog.recent(filtered,filtered.size()));
@@ -192,14 +192,14 @@ public class HomeActivity extends Activity {
     private void buildFilters(){filters.removeAllViews();if(filters.getVisibility()!=View.VISIBLE)return;
         Button sort=chip("Sort By   ›",()->{
             String[] options={"Recently Added","Title A–Z","Top Rated"};
-            Ui.picker(this,"Sort By",options,sortMode,which->{sortMode=which;render();});
+            Ui.picker(this,"Sort By",options,sortMode,which->{sortMode=which;render();restoreFilterFocus(0);});
         });LinearLayout.LayoutParams a=new LinearLayout.LayoutParams(Ui.dp(this,116),Ui.dp(this,44));filters.addView(sort,a);
         Button cats=chip("Categories   ›",()->{
             List<Category> list=tab.equals("Series")?seriesCategories:movieCategories;
             String[] options=new String[list.size()+1];options[0]="All "+(tab.equals("Series")?"Shows":"Movies");
             for(int i=0;i<list.size();i++)options[i+1]=list.get(i).name;
             int selected=0;for(int i=0;i<list.size();i++)if(category.equals(list.get(i).id))selected=i+1;
-            Ui.picker(this,"Categories",options,selected,which->{category=which==0?"":list.get(which-1).id;render();});
+            Ui.picker(this,"Categories",options,selected,which->{category=which==0?"":list.get(which-1).id;render();restoreFilterFocus(1);});
         });LinearLayout.LayoutParams b=new LinearLayout.LayoutParams(Ui.dp(this,150),Ui.dp(this,44));b.leftMargin=Ui.dp(this,12);filters.addView(cats,b);
         View.OnKeyListener down=(v,key,event)->{
             if(event.getAction()==KeyEvent.ACTION_DOWN && key==KeyEvent.KEYCODE_DPAD_DOWN){focusGrid();return true;}return false;};
@@ -223,7 +223,11 @@ public class HomeActivity extends Activity {
         RecyclerView.ViewHolder holder=browseGrid.findViewHolderForAdapterPosition(0);
         if(holder!=null){holder.itemView.requestFocus();lastContentFocus=holder.itemView;}
     });return true;}
-    private boolean focusRow(int index,int column){if(index<0||index>=rows.size())return false;
+    private void restoreFilterFocus(int index){filters.post(()->{
+        if(filters.getVisibility()==View.VISIBLE && filters.getChildCount()>index)
+            filters.getChildAt(index).requestFocus();
+    });}
+    private boolean focusRow(int index,int column){if(index<0||index>=rows.size()||rows.get(index).items.isEmpty())return false;
         homeRows.scrollToPosition(index);homeRows.post(()->{
             RecyclerView.ViewHolder outer=homeRows.findViewHolderForAdapterPosition(index);
             if(!(outer instanceof RowsAdapter.Holder))return;

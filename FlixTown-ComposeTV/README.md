@@ -1,9 +1,9 @@
-# Flix Town Compose TV starter
+# Flix Town native TV preview
 
-Fresh Kotlin + Compose for TV project. It reads the existing Flix Town panel configuration, supports direct Xtream credentials or QR pairing, refreshes movie and series lists on opening, and loads season/episode lists in Details. The player accepts HTTP(S) Xtream streams through its intent.
+This source is the traditional Android Views and Java build on the `codex/flix-compose-tv` branch. The folder name predates the native rebuild; the app no longer includes Compose UI code. It targets Chromecast with Google TV and installs separately as `com.myflixtown.tv.native`.
 
-This remains a preview. The side menu has Home, Movies, Series, Search, Watchlist, and Settings. Movies and Series use full catalog grids with Xtream categories and sorting. Continue Watching, subtitles, renewal, intro, panel-driven updates, and polished TV playback controls are not integrated yet. QR login needs a live panel, and panel endpoints must use HTTPS.
+The launcher opens QR activation first, with remote sign-in behind a smaller button. The home page uses a fixed icon rail, an overlay menu, a hero, and horizontal RecyclerView rows for Latest Movies and Latest TV Shows. Movies and Series use a six-column grid with category and sort pickers. The Media3 player includes D-pad seeking, play/pause, track selection, progress saving, and next episode playback. Renewal, cast, and details are carried from the earlier Java app; these screens still need visual QA on actual TV hardware.
 
-Open this directory as an Android Studio project or build with `./gradlew assembleDebug` and find the APK in `app/build/outputs/apk/debug/`.
+Build with JDK 17 and `./gradlew assembleDebug`. The debug APK is at `app/build/outputs/apk/debug/app-debug.apk`. The GitHub Actions workflow also uploads that APK on every push to the branch.
 
-The debug APK has CI-generated debug signing and is for testing. A production update flow requires a stable release signing key.
+The app reads `https://panelsandapps.com/panels/flixtown2027/api/` through `BuildConfig.PANEL_URL`. The panel update feed must publish an APK with this new package name and a version code above `10001`. This source contains no server credentials or signing key. GitHub's debug signing is for testing, not production distribution.

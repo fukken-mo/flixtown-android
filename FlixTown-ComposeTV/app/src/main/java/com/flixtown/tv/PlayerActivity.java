@@ -201,7 +201,10 @@ public class PlayerActivity extends Activity {
             if(key==KeyEvent.KEYCODE_DPAD_LEFT && !focusOnControl){previewSeek(-1,event.getRepeatCount());return true;}
             if(key==KeyEvent.KEYCODE_DPAD_RIGHT && !focusOnControl){previewSeek(1,event.getRepeatCount());return true;}
             if(key==KeyEvent.KEYCODE_DPAD_UP && !focusOnControl){showControls();playButton.requestFocus();return true;}
-            if((key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER) && !focusOnControl){showControls();playButton.requestFocus();return true;}
+            if((key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER) && !focusOnControl){
+                if(player.isPlaying())player.pause();else player.play();
+                showControls();return true;
+            }
         }
         return super.dispatchKeyEvent(event);
     }
