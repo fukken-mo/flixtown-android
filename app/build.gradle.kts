@@ -11,8 +11,8 @@ android {
         applicationId = "com.myflixtown.tv.native"
         minSdk = 23
         targetSdk = 35
-        versionCode = 10003
-        versionName = "3.1.0-native-preview"
+        versionCode = 10004
+        versionName = "3.2.0-native-preview"
         buildConfigField("String", "PANEL_URL", "\"https://panelsandapps.com/panels/flixtown2027/api/\"")
         buildConfigField("boolean", "PREVIEW", flixPreview.toString())
         buildConfigField("boolean", "DEMO", "false")
@@ -35,6 +35,7 @@ android {
         }
     }
     buildFeatures { buildConfig = true; resValues = true }
+    testOptions { unitTests.isReturnDefaultValues = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -50,4 +51,6 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer-dash:1.11.1")
     implementation("androidx.media3:media3-ui:1.11.1")
     implementation("com.google.zxing:core:3.5.3")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

@@ -23,11 +23,24 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build universal debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace -PflixPreview=${{ inputs.preview == true }}
+      - name: Unit tests, debug and release APKs
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --stacktrace -PflixPreview=${{ inputs.preview == true }}
+      - name: APK sizes and package ids
+        run: |
+          for f in app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/release/app-release-unsigned.apk; do
+            echo "SIZE $(stat -c %s "$f") bytes  $f"
+            "$ANDROID_HOME"/build-tools/*/aapt2 dump packagename "$f" 2>/dev/null | sed 's/^/PACKAGE /' | head -1 || true
+          done
+          grep -h -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' app/build/test-results/testDebugUnitTest/*.xml | sed 's/^/TESTS /'
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.preview == true && 'FlixTown-NativeTV-preview' || 'FlixTown-NativeTV-debug' }}
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-NativeTV-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 30

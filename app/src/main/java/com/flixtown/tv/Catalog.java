@@ -34,8 +34,15 @@ final class Catalog {
         return out;
     }
     static final class Item {
-        final String id,title,poster,backdrop,kind,extension,categoryId,overview;
+        final String id,title,poster,backdrop,kind,extension,categoryId,overview,genre;
         final int year,added; final double rating;
+        /** True when the server sent real landscape artwork (the backdrop field falls back to the poster). */
+        boolean hasBackdrop(){return !backdrop.isEmpty() && !backdrop.equals(poster);}
+        /** Added to the server within the last week. */
+        boolean isNew(){return added>0 && System.currentTimeMillis()/1000-added<7L*86400;}
+        /** "4K"/"UHD" in the title the server gave it. */
+        boolean isUhd(){String t=title.toUpperCase(java.util.Locale.US);return t.contains("4K")||t.contains("UHD")||t.contains("2160");}
+        String key(){return kind+":"+id;}
         Item(JSONObject j,String kind) {
             this.kind=kind; id=j.optString("stream_id",j.optString("series_id",""));
             title=j.optString("name",j.optString("title","Untitled"));
@@ -46,6 +53,7 @@ final class Catalog {
             extension=j.optString("container_extension","mp4");
             categoryId=j.optString("category_id","");
             overview=j.optString("plot",j.optString("description",""));
+            genre=j.optString("genre","").trim();
             year=j.optInt("year",0); added=j.optInt("added",j.optInt("last_modified",0));
             double parsed;try{parsed=Double.parseDouble(j.optString("rating","0"));}catch(Exception e){parsed=0;}rating=parsed;
         }
@@ -69,6 +77,39 @@ final class Catalog {
         for(Item item:original){if(queue.size()<limit)queue.add(item);
             else if(item.rating>queue.peek().rating){queue.poll();queue.add(item);}}
         ArrayList<Item> sorted=new ArrayList<>(queue);sorted.sort((a,b)->Double.compare(b.rating,a.rating));return sorted;
+    }
+    /**
+     * "Trending Now": there is no server-side view data, so this ranks the catalog by rating (60%)
+     * and how recently a title was added (40%). The same idea the earlier Compose build used.
+     */
+    static List<Item> trending(List<Item> movies,List<Item> series,int limit){
+        ArrayList<Item> all=new ArrayList<>(movies.size()+series.size());all.addAll(movies);all.addAll(series);
+        if(all.isEmpty())return all;
+        int newest=0,oldest=Integer.MAX_VALUE;
+        for(Item i:all)if(i.added>0){newest=Math.max(newest,i.added);oldest=Math.min(oldest,i.added);}
+        final int top=newest,span=Math.max(1,newest-(oldest==Integer.MAX_VALUE?newest:oldest));
+        // Plain comparators (no Comparator.reversed / List.sort) so this also runs on Android 6 boxes.
+        java.util.Comparator<Item> best=(a,b)->Double.compare(score(b,top,span),score(a,top,span));
+        java.util.Comparator<Item> worst=(a,b)->Double.compare(score(a,top,span),score(b,top,span));
+        java.util.PriorityQueue<Item> queue=new java.util.PriorityQueue<>(limit+1,worst);
+        for(Item i:all){queue.add(i);if(queue.size()>limit)queue.poll();}
+        ArrayList<Item> out=new ArrayList<>(queue);Collections.sort(out,best);return out;
+    }
+    private static double score(Item i,int newest,int span){
+        double rating=Math.max(0,Math.min(10,i.rating))/10.0;
+        double recency=i.added>0?1.0-Math.min(1.0,(newest-i.added)/(double)span):0;
+        return rating*0.6+recency*0.4;
+    }
+    /** Viewing progress saved by the player, used by the Continue Watching cards. */
+    static final class Progress {final long position,duration;final String label,art;final boolean upNext;
+        Progress(long p,long d,String l,String a,boolean n){position=p;duration=d;label=l;art=a;upNext=n;}
+        int percent(){return duration>0?(int)Math.max(0,Math.min(100,position*100/duration)):0;}
+        long remainingMinutes(){return duration>position?Math.max(1,(duration-position)/60000):0;}}
+    static Progress progress(Context c,Item item){
+        String key=item.key();android.content.SharedPreferences p=Api.prefs(c);
+        long pos=p.getLong("resume_position_"+key,0),dur=p.getLong("resume_duration_"+key,0);
+        boolean upNext="series".equals(item.kind) && pos<15000 && !p.getString("resume_episode_"+key,"").isEmpty();
+        return new Progress(pos,dur,p.getString("resume_label_"+key,""),p.getString("resume_art_"+key,""),upNext);
     }
     static List<Item> alphabetical(List<Item> original) {
         ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->a.title.compareToIgnoreCase(b.title));return sorted;
@@ -132,6 +173,7 @@ final class Catalog {
         for(String other:Api.prefs(c).getString("continue_ids","").split(","))
             if(!other.isEmpty()&&!other.equals(key)){if(updated.length()>0)updated.append(',');updated.append(other);}
         Api.prefs(c).edit().remove("resume_position_"+key).remove("resume_duration_"+key)
+            .remove("resume_label_"+key).remove("resume_art_"+key)
             .remove("resume_episode_"+key).remove("resume_extension_"+key)
             .remove("resume_next_"+key).remove("resume_next_ext_"+key)
             .putString("continue_ids",updated.toString()).apply();

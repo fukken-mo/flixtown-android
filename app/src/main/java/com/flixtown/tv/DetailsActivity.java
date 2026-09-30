@@ -48,7 +48,7 @@ public class DetailsActivity extends Activity {
     private Button trailerButton,watch,favorite;
     private boolean enrichedCast,movie;
     private final List<JSONObject> castPeople=new ArrayList<>();
-    private List<JSONObject> orderedEpisodes;private int seasonIndex;
+    private List<JSONObject> orderedEpisodes;private int seasonIndex;private boolean playedOnOpen;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -264,6 +264,7 @@ public class DetailsActivity extends Activity {
             seasonIndex=index;select.setText(names[index]+"  ›");showSeason(episodes,seasons.get(index),ordered);
         }));
         showSeason(episodes,seasons.get(seasonIndex),ordered);
+        playOnOpen();
     }
     private void focusFirstEpisode(){
         if(seasonContent!=null && seasonContent.getChildCount()>0 && seasonContent.getChildAt(0) instanceof HorizontalScrollView){
@@ -287,7 +288,7 @@ public class DetailsActivity extends Activity {
             FrameLayout card=episodeCard(ep,ep.optInt("episode_num",i+1),episodeId.equals(saved));
             LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,206),Ui.dp(this,116));bp.setMargins(i==0?0:Ui.dp(this,8),0,Ui.dp(this,12),0);row.addView(card,bp);
             String label=episodeLabel(ep),nextLabel=next==null?"":episodeLabel(next);
-            card.setOnClickListener(v->playEpisode(episodeId,ext,nextId,nextExt,label,nextLabel));
+            card.setOnClickListener(v->{rememberArt(ep);playEpisode(episodeId,ext,nextId,nextExt,label,nextLabel);});
             if(episodeId.equals(saved))resume=card;
         }
         // Bring the episode being watched into view (without taking focus away from Watch).
@@ -303,7 +304,7 @@ public class DetailsActivity extends Activity {
         String label="",nextLabel="";
         if(orderedEpisodes!=null)for(int i=0;i<orderedEpisodes.size();i++){JSONObject ep=orderedEpisodes.get(i);
             if(!episode.equals(ep.optString("id")))continue;
-            ext=extensionOf(ep,ext);label=episodeLabel(ep);
+            ext=extensionOf(ep,ext);label=episodeLabel(ep);rememberArt(ep);
             JSONObject next=i+1<orderedEpisodes.size()?orderedEpisodes.get(i+1):null;
             nextId=next==null?"":next.optString("id");nextExt=next==null?"mp4":extensionOf(next,"mp4");
             nextLabel=next==null?"":episodeLabel(next);break;}
@@ -413,6 +414,19 @@ public class DetailsActivity extends Activity {
     private void play(String streamId,String ext){
         String url=Api.stream(this,"movie",streamId,ext==null||ext.isEmpty()?"mp4":ext);
         playUrl(url,true);
+    }
+    /** Keeps the episode still for the Continue Watching card on Home. */
+    private void rememberArt(JSONObject ep){JSONObject info=ep.optJSONObject("info");String art=info==null?"":info.optString("movie_image","");
+        if(art.startsWith("http")||art.startsWith("demo:"))Api.prefs(this).edit().putString("resume_art_"+resumeKey(),art).apply();}
+    /** Home's "Watch Now" on a TV show: resume the saved episode, otherwise start the first one. */
+    private void playOnOpen(){
+        if(!getIntent().getBooleanExtra("play_on_open",false) || playedOnOpen || orderedEpisodes==null || orderedEpisodes.isEmpty())return;
+        playedOnOpen=true;
+        if(!Api.prefs(this).getString("resume_episode_"+resumeKey(),"").isEmpty()){resumeSeries();return;}
+        JSONObject first=orderedEpisodes.get(0),next=orderedEpisodes.size()>1?orderedEpisodes.get(1):null;
+        rememberArt(first);
+        playEpisode(first.optString("id"),extensionOf(first,"mp4"),next==null?"":next.optString("id"),next==null?"mp4":extensionOf(next,"mp4"),
+            episodeLabel(first),next==null?"":episodeLabel(next));
     }
     /** "S1 · E3  Title" for the player's title area and the Up next card. */
     private static String episodeLabel(JSONObject ep){

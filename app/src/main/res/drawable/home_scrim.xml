@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cinematic grading over the ambient artwork: readable left side, deep fade into the page,
+     a soft top shade for the navigation, and a faint crimson light low on the left. Static, no blur. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape><gradient android:angle="0" android:startColor="#F2060608" android:centerX="0.42" android:centerColor="#8C060608" android:endColor="#14060608" /></shape></item>
+    <item><shape><gradient android:angle="90" android:startColor="#FF060608" android:centerY="0.36" android:centerColor="#D9060608" android:endColor="#00060608" /></shape></item>
+    <item><shape><gradient android:angle="270" android:startColor="#99060608" android:centerY="0.18" android:centerColor="#1A060608" android:endColor="#00060608" /></shape></item>
+    <item><shape><gradient android:type="radial" android:gradientRadius="55%p" android:centerX="0.08" android:centerY="0.92"
+        android:startColor="#2EAB3A39" android:centerColor="#0DAB3A39" android:endColor="#00AB3A39" /></shape></item>
+</layer-list>

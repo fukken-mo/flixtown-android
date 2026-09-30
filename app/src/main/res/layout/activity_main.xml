@@ -1,70 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Sizes marked "runtime" are recomputed in HomeActivity from the real screen size so the first
-     row always fits inside the 5% overscan area. The XML values match a 960x540dp TV screen. -->
+<!-- Home shell. Sizes marked "runtime" are recomputed in HomeActivity from the real screen, so
+     everything interactive stays inside the 5% overscan area on any TV. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root" android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#07080B">
-    <ImageView android:id="@+id/backdrop" android:layout_width="match_parent" android:layout_height="380dp"
-        android:scaleType="centerCrop" android:contentDescription="@null" />
-    <View android:id="@+id/backdrop_scrim" android:layout_width="match_parent" android:layout_height="390dp"
-        android:background="@drawable/hero_scrim" />
+    android:background="#060608">
+    <!-- Ambient artwork (BackdropView is added here) and its cinematic grading. -->
+    <FrameLayout android:id="@+id/ambient_slot" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <View android:id="@+id/ambient_dim" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:background="#060608" android:alpha="0" />
+    <View android:id="@+id/home_scrim" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:background="@drawable/home_scrim" />
+
     <FrameLayout android:id="@+id/content" android:layout_width="match_parent" android:layout_height="match_parent"
         android:layout_marginStart="96dp" android:clipChildren="false" android:clipToPadding="false">
-        <!-- Hero text sits under the rows; it fades out once a lower row is selected. -->
-        <LinearLayout android:id="@+id/hero" android:layout_width="match_parent" android:layout_height="254dp"
-            android:layout_marginTop="27dp" android:orientation="vertical" android:gravity="bottom"
-            android:paddingStart="16dp" android:paddingEnd="48dp" android:paddingBottom="10dp">
-            <TextView android:id="@+id/hero_title" android:layout_width="480dp" android:layout_height="wrap_content"
-                android:textColor="#FFFFFF" android:textSize="30sp" android:fontFamily="sans-serif-medium"
-                android:maxLines="2" android:ellipsize="end" />
-            <TextView android:id="@+id/hero_meta" android:layout_width="480dp" android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" android:textColor="#C6C7CC" android:textSize="16sp"
-                android:singleLine="true" android:ellipsize="end" />
-            <TextView android:id="@+id/hero_overview" android:layout_width="480dp" android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" android:textColor="#A9ABB1" android:textSize="14sp"
-                android:maxLines="2" android:ellipsize="end" />
-            <LinearLayout android:id="@+id/hero_actions" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginTop="14dp"
-                android:clipChildren="false" android:clipToPadding="false" />
-        </LinearLayout>
-        <!-- runtime: paddingTop is the row keyline (top of the first row). -->
+        <!-- Home: item 0 is the hero, then the sections. runtime: window keyline. -->
         <androidx.leanback.widget.VerticalGridView android:id="@+id/home_rows"
             android:layout_width="match_parent" android:layout_height="match_parent"
-            android:paddingTop="281dp" android:paddingBottom="27dp"
-            android:clipToPadding="false" android:clipChildren="false"
+            android:paddingBottom="27dp" android:clipToPadding="false" android:clipChildren="false"
             app:focusOutFront="true" app:focusOutEnd="false" />
+        <!-- Rows mode: what the focused card is, above the focused row. runtime: top margin. -->
+        <LinearLayout android:id="@+id/preview" android:layout_width="600dp" android:layout_height="wrap_content"
+            android:layout_marginTop="27dp" android:paddingStart="16dp" android:orientation="vertical" android:alpha="0">
+            <TextView android:id="@+id/preview_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textColor="@color/flix_text" android:textSize="28sp" android:fontFamily="sans-serif-medium"
+                android:singleLine="true" android:ellipsize="end" android:shadowColor="#AA000000" android:shadowRadius="10" />
+            <TextView android:id="@+id/preview_meta" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="6dp" android:textColor="@color/flix_text_2" android:textSize="14sp"
+                android:singleLine="true" android:ellipsize="end" />
+            <TextView android:id="@+id/preview_desc" android:layout_width="540dp" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:textColor="#CCD9D4CF" android:textSize="14sp"
+                android:maxLines="2" android:ellipsize="end" android:lineSpacingMultiplier="1.12" />
+        </LinearLayout>
+        <TextView android:id="@+id/account_pill" android:layout_width="wrap_content" android:layout_height="32dp"
+            android:layout_gravity="top|end" android:layout_marginTop="27dp" android:layout_marginEnd="48dp"
+            android:background="@drawable/account_pill" android:gravity="center_vertical"
+            android:paddingStart="14dp" android:paddingEnd="16dp" android:textColor="@color/flix_text_2"
+            android:textSize="12sp" android:letterSpacing="0.06" android:visibility="gone" />
+
         <androidx.leanback.widget.VerticalGridView android:id="@+id/browse_grid"
             android:layout_width="match_parent" android:layout_height="match_parent"
             android:layout_marginTop="85dp" android:paddingStart="8dp" android:paddingEnd="40dp"
             android:paddingTop="10dp" android:paddingBottom="27dp"
             android:clipToPadding="false" android:clipChildren="false" android:visibility="gone"
             app:focusOutFront="true" app:focusOutEnd="false" />
-        <!-- Movies / TV Shows / My List: compact header, then a full-page grid. -->
+        <!-- Movies / TV Shows / My List: compact header over a full-page grid. -->
         <LinearLayout android:id="@+id/browse_header" android:layout_width="match_parent" android:layout_height="52dp"
             android:background="@color/flix_bg" android:paddingStart="16dp" android:paddingEnd="48dp"
             android:orientation="horizontal" android:gravity="center_vertical" android:visibility="gone"
             android:clipChildren="false" android:clipToPadding="false">
             <TextView android:id="@+id/browse_title" android:layout_width="0dp" android:layout_weight="1"
-                android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="26sp"
+                android:layout_height="wrap_content" android:textColor="@color/flix_text" android:textSize="26sp"
                 android:fontFamily="sans-serif-medium" android:singleLine="true" android:ellipsize="end" />
             <LinearLayout android:id="@+id/filters" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:clipChildren="false" android:clipToPadding="false" />
         </LinearLayout>
-        <!-- Soft fade so the next row's title or poster names never end in a hard cut at the screen edge. -->
         <View android:id="@+id/bottom_fade" android:layout_width="match_parent" android:layout_height="36dp"
             android:layout_gravity="bottom" android:background="@drawable/bottom_fade" />
         <TextView android:id="@+id/empty_message" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_gravity="center" android:textColor="#A9ABB1" android:textSize="17sp" android:visibility="gone" />
+            android:layout_gravity="center" android:textColor="@color/flix_text_2" android:textSize="17sp" android:visibility="gone" />
     </FrameLayout>
+
     <View android:id="@+id/dim" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:background="#B8000000" android:visibility="gone" android:focusable="false" />
-    <LinearLayout android:id="@+id/rail" android:layout_width="96dp" android:layout_height="match_parent"
-        android:background="#EB08080B" android:orientation="vertical" android:paddingTop="27dp"
-        android:paddingBottom="27dp" android:clipChildren="false" />
-    <LinearLayout android:id="@+id/expanded_menu" android:layout_width="240dp" android:layout_height="match_parent"
-        android:background="@drawable/menu_panel" android:orientation="vertical" android:paddingTop="27dp"
-        android:paddingBottom="27dp" android:visibility="gone" />
+        android:background="#C0000000" android:visibility="gone" android:focusable="false" />
+    <!-- Navigation (NavRail builds it): collapsed to icons, expands over the dimmed page. -->
+    <FrameLayout android:id="@+id/nav" android:layout_width="280dp" android:layout_height="match_parent" />
+
     <!-- Fresh-launch loading screen. Cached titles show underneath as soon as they are read. -->
     <FrameLayout android:id="@+id/startup_overlay" android:layout_width="match_parent" android:layout_height="match_parent"
         android:background="@color/flix_bg" android:visibility="gone" android:clickable="true">

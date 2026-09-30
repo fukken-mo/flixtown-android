@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home hero: the first item of the rows grid. Height is set at runtime so the first section
+     peeks in at the bottom of the screen. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="456dp"
+    android:clipChildren="false" android:clipToPadding="false">
+    <LinearLayout android:id="@+id/hero_block" android:layout_width="640dp" android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start" android:orientation="vertical"
+        android:paddingStart="16dp" android:paddingBottom="22dp" android:clipChildren="false" android:clipToPadding="false">
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <View android:layout_width="18dp" android:layout_height="3dp" android:background="@color/flix_glow" />
+            <TextView android:id="@+id/hero_eyebrow" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="10dp" android:textColor="@color/flix_text_2" android:textSize="12sp"
+                android:fontFamily="sans-serif-medium" android:letterSpacing="0.2" android:singleLine="true" />
+        </LinearLayout>
+        <TextView android:id="@+id/hero_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="@color/flix_text" android:textSize="42sp"
+            android:fontFamily="sans-serif-medium" android:maxLines="2" android:ellipsize="end"
+            android:lineSpacingMultiplier="0.94" android:shadowColor="#B3000000" android:shadowRadius="14" />
+        <TextView android:id="@+id/hero_meta" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="@color/flix_text_2" android:textSize="15sp"
+            android:singleLine="true" android:ellipsize="end" />
+        <TextView android:id="@+id/hero_desc" android:layout_width="540dp" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="#E0D9D4CF" android:textSize="15sp"
+            android:maxLines="2" android:ellipsize="end" android:lineSpacingMultiplier="1.15" />
+        <LinearLayout android:id="@+id/hero_actions" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:orientation="horizontal"
+            android:clipChildren="false" android:clipToPadding="false" />
+        <LinearLayout android:id="@+id/hero_dots" android:layout_width="wrap_content" android:layout_height="4dp"
+            android:layout_marginTop="22dp" android:orientation="horizontal" android:gravity="center_vertical" />
+    </LinearLayout>
+</FrameLayout>

@@ -412,11 +412,16 @@ public class PlayerActivity extends Activity {
         handler.postDelayed(this,500);
     }};
     private void saveProgress(long current,long duration){
-        if(!ended && kind!=null && contentId!=null && !contentId.isEmpty())
+        if(!ended && kind!=null && contentId!=null && !contentId.isEmpty()){
             Catalog.saveProgress(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,current,duration);
+            // "S2 · E4  Title" for the Continue Watching card on Home.
+            if("series".equals(kind) && subtitle!=null && current>=15000)Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,subtitle).apply();
+        }
     }
     /** A finished movie leaves Continue Watching; a finished episode queues the next one there. */
-    private void finishProgress(){if(kind!=null && contentId!=null && !contentId.isEmpty())Catalog.markFinished(this,kind,contentId,nextEpisodeId,nextEpisodeExt);}
+    private void finishProgress(){if(kind!=null && contentId!=null && !contentId.isEmpty()){
+        Catalog.markFinished(this,kind,contentId,nextEpisodeId,nextEpisodeExt);
+        if("series".equals(kind) && nextSubtitle!=null && !nextSubtitle.isEmpty())Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,nextSubtitle).apply();}}
     private void showNext(){
         hideNow();
         showCard("Up next","",new String[]{"Play now","Cancel"},0,i->{if(i==0)playNext();else nextCanceled=true;});

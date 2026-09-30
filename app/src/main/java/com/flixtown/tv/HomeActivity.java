@@ -5,23 +5,27 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.text.InputType;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,71 +34,87 @@ import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.OnChildViewHolderSelectedListener;
 import androidx.leanback.widget.VerticalGridView;
 import androidx.recyclerview.widget.RecyclerView;
+import org.json.JSONArray;
 import org.json.JSONObject;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * Native TV shell.
+ * Flix Town Home and the browse pages.
  *
- * Home rows and the Movies/TV grids are Leanback grids: every D-pad press moves exactly one card,
- * the focused row is scrolled smoothly to a fixed keyline, and each row remembers its selected
- * card. The catalog is refreshed once per fresh launch (see {@link StartupRefresh}); switching tabs
- * or coming back from Details or the player never downloads it again or rebuilds the visible list.
+ * Home is one vertical Leanback grid. Item 0 is a cinematic hero over full-screen ambient artwork;
+ * it rotates through five trending titles every 10 seconds while the viewer is idle on it. The
+ * sections below have their own card styles (landscape Continue Watching, ranked Trending,
+ * posters with titles, genre tiles). Moving into a section switches Home into "browse mode": the
+ * hero fades, a short preview of the focused title appears above the row, and the ambient artwork
+ * follows focus after a short pause. The focused row always sits on the same keyline, and every
+ * row remembers its position, so the D-pad moves exactly one card per press.
  */
-public class HomeActivity extends Activity implements StartupRefresh.Listener {
+public class HomeActivity extends Activity implements StartupRefresh.Listener, HomeCards.Listener, NavRail.Host {
     static final String EXTRA_FRESH="fresh_launch";
     private static final int BROWSE_COLUMNS=6;
-    private static final long CACHED_OVERLAY_MS=2500,SLOW_SERVER_MS=15000;
+    private static final long CACHED_OVERLAY_MS=2500,SLOW_SERVER_MS=15000,FOCUS_ART_DELAY_MS=280,HERO_ROTATE_MS=10000,HERO_IDLE_MS=8000;
+    private static final Object HERO="hero",UTILITY="utility";
+    /** Movie details fetched for the hero (runtime, genre, plot, backdrop), kept for this process. */
+    private static final Map<String,JSONObject> HERO_INFO=new HashMap<>();
+
     private final Handler handler=new Handler(Looper.getMainLooper());
-    private final RecyclerView.RecycledViewPool rowPool=new RecyclerView.RecycledViewPool();
+    private final Map<Integer,RecyclerView.RecycledViewPool> pools=new HashMap<>();
     private final List<Catalog.Item> movies=new ArrayList<>(),series=new ArrayList<>();
     private final List<Catalog.Category> movieCategories=new ArrayList<>(),seriesCategories=new ArrayList<>();
-    private final List<Row> rows=new ArrayList<>();
-    private VerticalGridView homeRows,browseGrid; private RowsAdapter rowsAdapter;
-    private ImageView backdrop;private TextView title,meta,overview,browseTitle,emptyMessage,startupStatus;
-    private LinearLayout rail,expandedMenu,filters,actions,hero,browseHeader,startupActions;private View dim,backdropScrim,startupOverlay,startupSweep;
+    private final Map<String,String> categoryNames=new HashMap<>();
+    private final List<Object> entries=new ArrayList<>();
+    private List<Catalog.Item> featured=new ArrayList<>();
+    private int heroIndex;
+    private VerticalGridView homeRows,browseGrid;private HomeAdapter homeAdapter;
+    private BackdropView ambient;private View ambientDim,homeScrim,ambientSlot,bottomFade;
+    private TextView previewTitle,previewMeta,previewDesc,accountPill,browseTitle,emptyMessage,startupStatus;
+    private View preview,startupOverlay,startupSweep,dim;
+    private LinearLayout filters,browseHeader,startupActions;
     private ViewGroup content;private View lastContentFocus;
-    private Button play,details;private Catalog.Item featured;
-    private String tab="Home",category="";private int sortMode;
-    private boolean menuOpen,rendered,pendingRender,cacheLoaded,heroShown=true,overlayUp,destroyed;
-    private int restoreGridPosition=-1;
-    private int artWidth,artHeight;
-    private long overlayShownAt;
+    private HeroHolder hero;
+    private NavRail nav;
+    private String tab="Home",category="",searchText="";private int sortMode;
+    private boolean rendered,pendingRender,cacheLoaded,overlayUp,destroyed,heroMode=true,resumed;
+    private int restoreGridPosition=-1,keyline,heroHeight,artWidth,artHeight;
+    private long overlayShownAt,lastKeyAt;
     private ValueAnimator sweep;
     private Dialog exitDialog;
-    private final List<View> railMarkers=new ArrayList<>(),menuBars=new ArrayList<>();
     private AppUpdates updates;
+    private Catalog.Item pendingFocusItem;
     private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Settings"};
+    private static final String[] TAB_NAMES={"Search","Home","Movies","TV Shows","My List","Settings"};
     private static final int[] ICONS={1,0,2,3,4,5};
     private static final String[] SORTS={"Recently Added","Title A–Z","Top Rated","Release Year"};
-    static final class Row {final String name;final List<Catalog.Item> items;int selected;PosterAdapter adapter;
-        Row(String name,List<Catalog.Item> items){this.name=name;this.items=new ArrayList<>(items);}}
 
     @Override public void onCreate(Bundle state){super.onCreate(state);
         if(Api.prefs(this).getBoolean("expired",false)){startActivity(new Intent(this,RenewalActivity.class));finish();return;}
         setContentView(R.layout.activity_main);updates=new AppUpdates(this);Images.init(this);
-        backdrop=findViewById(R.id.backdrop);backdropScrim=findViewById(R.id.backdrop_scrim);
-        title=findViewById(R.id.hero_title);meta=findViewById(R.id.hero_meta);overview=findViewById(R.id.hero_overview);
-        hero=findViewById(R.id.hero);actions=findViewById(R.id.hero_actions);filters=findViewById(R.id.filters);
-        browseHeader=findViewById(R.id.browse_header);browseTitle=findViewById(R.id.browse_title);emptyMessage=findViewById(R.id.empty_message);
-        homeRows=findViewById(R.id.home_rows);browseGrid=findViewById(R.id.browse_grid);content=findViewById(R.id.content);
-        rail=findViewById(R.id.rail);expandedMenu=findViewById(R.id.expanded_menu);dim=findViewById(R.id.dim);
+        ambientSlot=findViewById(R.id.ambient_slot);ambientDim=findViewById(R.id.ambient_dim);homeScrim=findViewById(R.id.home_scrim);
+        ambient=new BackdropView(this);((FrameLayout)ambientSlot).addView(ambient,new FrameLayout.LayoutParams(-1,-1));
+        preview=findViewById(R.id.preview);previewTitle=findViewById(R.id.preview_title);previewMeta=findViewById(R.id.preview_meta);previewDesc=findViewById(R.id.preview_desc);
+        accountPill=findViewById(R.id.account_pill);bottomFade=findViewById(R.id.bottom_fade);
+        filters=findViewById(R.id.filters);browseHeader=findViewById(R.id.browse_header);browseTitle=findViewById(R.id.browse_title);emptyMessage=findViewById(R.id.empty_message);
+        homeRows=findViewById(R.id.home_rows);browseGrid=findViewById(R.id.browse_grid);content=findViewById(R.id.content);dim=findViewById(R.id.dim);
         startupOverlay=findViewById(R.id.startup_overlay);startupStatus=findViewById(R.id.startup_status);
         startupActions=findViewById(R.id.startup_actions);startupSweep=findViewById(R.id.startup_sweep);
+        nav=new NavRail(this,findViewById(R.id.nav),dim,TABS,TAB_NAMES,ICONS,this);
         if(state!=null){
             tab=state.getString("tab","Home");category=state.getString("category","");
             sortMode=state.getInt("sort",0);restoreGridPosition=state.getInt("grid_position",-1);
         }
         layoutForScreen();
-        homeRows.setItemAnimator(null);rowsAdapter=new RowsAdapter();homeRows.setAdapter(rowsAdapter);
+        homeRows.setItemAnimator(null);homeAdapter=new HomeAdapter();homeRows.setAdapter(homeAdapter);
         homeRows.setOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener(){
-            @Override public void onChildViewHolderSelected(RecyclerView parent,RecyclerView.ViewHolder child,int position,int sub){updateHero();}
+            @Override public void onChildViewHolderSelected(RecyclerView parent,RecyclerView.ViewHolder child,int position,int sub){onRowSelected(position);}
         });
         browseGrid.setItemAnimator(null);
-        buildRail();buildActions();render();
-        if(tab.equals("Home"))play.requestFocus();
+        render();
         boolean fresh=state==null && getIntent().getBooleanExtra(EXTRA_FRESH,false);
         if(fresh)showOverlay();
         loadCache();
@@ -107,55 +127,34 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         if(isBrowse())out.putInt("grid_position",browseGrid.getSelectedPosition());
     }
 
-    /** Sizes the hero, keyline and grid from the real screen so nothing lands in the overscan area. */
+    /** Hero height, row keyline and grid sizes from the real screen, inside the 5% safe area. */
     private void layoutForScreen(){
         DisplayMetrics m=getResources().getDisplayMetrics();
-        int safeY=Ui.safeY(this),rowHeight=Ui.dp(this,36)+PosterAdapter.rowListHeight(this);
-        int keyline=m.heightPixels-safeY-rowHeight;
-        FrameLayout.LayoutParams hp=(FrameLayout.LayoutParams)hero.getLayoutParams();
-        hp.topMargin=safeY;hp.height=Math.max(Ui.dp(this,160),keyline-safeY);hero.setLayoutParams(hp);
-        homeRows.setPadding(0,keyline,0,safeY);
-        homeRows.setWindowAlignment(BaseGridView.WINDOW_ALIGN_NO_EDGE);
+        int safeY=Ui.safeY(this);
+        keyline=safeY+Ui.dp(this,170);                 // focused section's top edge in browse mode
+        heroHeight=m.heightPixels-Ui.dp(this,84);       // the first section peeks in below the hero
+        homeRows.setPadding(0,0,0,safeY);
+        homeRows.setWindowAlignment(BaseGridView.WINDOW_ALIGN_LOW_EDGE);
         homeRows.setWindowAlignmentOffsetPercent(BaseGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
         homeRows.setWindowAlignmentOffset(keyline);
         homeRows.setItemAlignmentOffsetPercent(0f);homeRows.setItemAlignmentOffset(0);
+        FrameLayout.LayoutParams pp=(FrameLayout.LayoutParams)preview.getLayoutParams();pp.topMargin=safeY;preview.setLayoutParams(pp);
+        FrameLayout.LayoutParams ap=(FrameLayout.LayoutParams)accountPill.getLayoutParams();ap.topMargin=safeY;accountPill.setLayoutParams(ap);
 
-        // The header sits above the grid on a solid background, so posters scroll underneath it.
         int headerHeight=Ui.dp(this,52);
         FrameLayout.LayoutParams bh=(FrameLayout.LayoutParams)browseHeader.getLayoutParams();bh.topMargin=0;bh.height=safeY+headerHeight;browseHeader.setLayoutParams(bh);
         browseHeader.setPadding(browseHeader.getPaddingLeft(),safeY,browseHeader.getPaddingRight(),0);
         FrameLayout.LayoutParams gp=(FrameLayout.LayoutParams)browseGrid.getLayoutParams();gp.topMargin=safeY+headerHeight;browseGrid.setLayoutParams(gp);
-        // Cards include an 8dp glow margin on each side, so cards sit edge to edge and artwork is 16dp apart.
-        int cardSpace=m.widthPixels-Ui.dp(this,96)-browseGrid.getPaddingLeft()-browseGrid.getPaddingRight();
+        int cardSpace=m.widthPixels-Ui.dp(this,NavRail.COLLAPSED_DP)-browseGrid.getPaddingLeft()-browseGrid.getPaddingRight();
         int cardWidth=cardSpace/BROWSE_COLUMNS,glow=Ui.dp(this,PosterAdapter.GLOW_DP);
         artWidth=cardWidth-2*glow;artHeight=artWidth*3/2;
         browseGrid.setNumColumns(BROWSE_COLUMNS);browseGrid.setHorizontalSpacing(0);browseGrid.setVerticalSpacing(Ui.dp(this,4));
         browseGrid.setPadding(browseGrid.getPaddingLeft(),Ui.dp(this,4),browseGrid.getPaddingRight(),safeY);
     }
 
-    @Override protected void onResume(){super.onResume();if(updates!=null)updates.installIfReady();}
-    @Override protected void onRestart(){super.onRestart();updateContinueRow();}
-
-    private TextView label(String value,int size,int color){TextView t=new TextView(this);t.setText(value);
-        t.setTextSize(size);t.setTextColor(color);t.setGravity(Gravity.CENTER_VERTICAL);t.setSingleLine(true);return t;}
-    private GradientDrawable chipBackground(boolean focused){return Ui.pill(this,focused,false,22);}
-    private Button chip(String name,Runnable click){Button b=new Button(this);b.setText(name);b.setAllCaps(false);
-        b.setTextSize(16);b.setTextColor(Ui.TEXT);b.setFocusable(true);b.setFocusableInTouchMode(true);
-        b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);b.setMinWidth(0);b.setMinimumWidth(0);
-        b.setMinHeight(0);b.setMinimumHeight(0);b.setStateListAnimator(null);
-        GradientDrawable normal=chipBackground(false),focused=chipBackground(true);
-        b.setBackground(normal);b.setPadding(Ui.dp(this,20),0,Ui.dp(this,20),0);
-        b.setOnFocusChangeListener((v,f)->{b.setBackground(f?focused:normal);b.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(110).start();
-            if(f){lastContentFocus=v;updateHero();}});
-        b.setOnClickListener(v->click.run());return b;}
-    private void buildActions(){actions.removeAllViews();play=chip("▶  Play",()->{
-        if(featured==null)return;if(!"movie".equals(featured.kind)){openDetails(featured);return;}
-        Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",Api.stream(this,"movie",featured.id,featured.extension));
-        i.putExtra("title",featured.title);i.putExtra("content_kind",featured.kind);i.putExtra("content_id",featured.id);startActivity(i);
-    });details=chip("More Info",()->{if(featured!=null)openDetails(featured);});
-        actions.addView(play,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,44)));
-        LinearLayout.LayoutParams d=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,44));d.leftMargin=Ui.dp(this,12);actions.addView(details,d);
-    }
+    @Override protected void onResume(){super.onResume();resumed=true;if(updates!=null)updates.installIfReady();scheduleRotation();}
+    @Override protected void onPause(){resumed=false;handler.removeCallbacks(rotateHero);super.onPause();}
+    @Override protected void onRestart(){super.onRestart();refreshAfterReturn();}
 
     /* ---------------- Startup loading screen ---------------- */
 
@@ -182,10 +181,11 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         overlayUp=false;handler.removeCallbacks(slowServer);handler.removeCallbacks(cachedTimeout);
         if(sweep!=null)sweep.cancel();
         content.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
-        startupOverlay.animate().alpha(0f).setDuration(220).withEndAction(()->startupOverlay.setVisibility(View.GONE)).start();
-        if(tab.equals("Home") && movies.isEmpty())featured(); // explains the empty page when continuing offline
+        startupOverlay.animate().alpha(0f).setDuration(260).withEndAction(()->startupOverlay.setVisibility(View.GONE)).start();
+        if(tab.equals("Home") && hero!=null)bindHero(false);
         View focus=getCurrentFocus();
         if(focus==null || !isDescendant(content,focus))focusDefault();
+        scheduleRotation();
     }
     private final Runnable cachedTimeout=()->{if(overlayUp && (!movies.isEmpty()||!series.isEmpty()))hideOverlay(true);};
     private final Runnable slowServer=new Runnable(){@Override public void run(){
@@ -208,7 +208,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         startupActions.getChildAt(0).requestFocus();
     }
 
-    /* ---------------- Startup refresh ---------------- */
+    /* ---------------- Catalog ---------------- */
 
     @Override public void onConfig(JSONObject config){
         if(!isFinishing() && !BuildConfig.PREVIEW)updates.check(config);
@@ -216,6 +216,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
     @Override public void onResult(StartupRefresh.Result r){
         if(isFinishing()||destroyed)return;
         if(r.state==StartupRefresh.EXPIRED){startActivity(new Intent(this,RenewalActivity.class));finish();return;}
+        updateAccountPill();
         if(r.state==StartupRefresh.DONE){
             applyCatalog(r.movies,r.series,r.movieCategories,r.seriesCategories);
             if(r.manual)toast("Your catalog is up to date");
@@ -246,7 +247,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
             }else if(overlayUp && !StartupRefresh.running()){
                 // The refresh already failed before the cache was read: show the offline choice now.
                 onResult(new StartupRefresh.Result(StartupRefresh.FAILED,false,null,null,null,null,null));
-            }
+            }else if(!haveTitles && hero!=null)bindHero(false);
         });
     });}
     private void toast(String text){if(!isFinishing())Toast.makeText(this,text,Toast.LENGTH_LONG).show();}
@@ -256,6 +257,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         long before=signature(movies)*7+signature(series);
         movies.clear();movies.addAll(m);series.clear();series.addAll(s);
         movieCategories.clear();movieCategories.addAll(mc);seriesCategories.clear();seriesCategories.addAll(sc);
+        categoryNames.clear();for(Catalog.Category c:mc)categoryNames.put(c.id,c.name);for(Catalog.Category c:sc)categoryNames.put(c.id,c.name);
         Catalog.Store.set(movies,series);
         boolean changed=before!=signature(movies)*7+signature(series);
         if(!changed && rendered && !pendingRender)return;
@@ -264,93 +266,51 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
     /** Re-render only when it cannot move focus or scroll position out from under the viewer. */
     private boolean canRenderNow(){
         if(!rendered || overlayUp)return true;
-        if(menuOpen)return false;
+        if(nav.isOpen())return false;
         View focus=getCurrentFocus();
         if(focus==null)return true;
         if(isBrowse())return restoreGridPosition>=0;
-        return tab.equals("Home") && actions.hasFocus();
-    }
-    private void featured(){if(movies.isEmpty()){featured=null;title.setText("Flix Town");
-            meta.setText(cacheLoaded?"No titles yet. They'll appear here as soon as the server is reachable.":"");
-            overview.setText(cacheLoaded?"Try Settings › Check for new titles, or reopen Flix Town once the TV is online.":"");return;}
-        if(featured==null){List<Catalog.Item> popular=Catalog.topRated(movies,Math.min(40,movies.size()));
-            featured=popular.get((int)(Math.random()*popular.size()));}
-        title.setText(featured.title);meta.setText((featured.year>1900?featured.year+"   ":"")+
-            (featured.rating>0?String.format(Locale.US,"★ %.1f",featured.rating):"Movie"));
-        overview.setText(featured.overview);Images.load(backdrop,featured.backdrop,960);
+        return tab.equals("Home") && heroMode;
     }
 
-    /* ---------------- Rail and overlay menu ---------------- */
+    /* ---------------- Navigation ---------------- */
 
-    private void buildRail(){rail.removeAllViews();expandedMenu.removeAllViews();railMarkers.clear();menuBars.clear();
-        ImageView compactLogo=new ImageView(this);compactLogo.setImageResource(R.drawable.flix_logo);
-        compactLogo.setScaleType(ImageView.ScaleType.FIT_CENTER);LinearLayout.LayoutParams cl=new LinearLayout.LayoutParams(Ui.dp(this,72),Ui.dp(this,50));cl.gravity=Gravity.CENTER_HORIZONTAL;cl.bottomMargin=Ui.dp(this,22);rail.addView(compactLogo,cl);
-        ImageView fullLogo=new ImageView(this);fullLogo.setImageResource(R.drawable.flix_logo);
-        fullLogo.setScaleType(ImageView.ScaleType.FIT_START);LinearLayout.LayoutParams fl=new LinearLayout.LayoutParams(Ui.dp(this,130),Ui.dp(this,50));fl.leftMargin=Ui.dp(this,24);fl.bottomMargin=Ui.dp(this,22);expandedMenu.addView(fullLogo,fl);
-        for(int i=0;i<TABS.length;i++){final String target=TABS[i];final int icon=ICONS[i];final int index=i;
-            // Compact rail icons are indicators only. They never take focus, so the D-pad cannot
-            // wander into the rail; Left from the content edge opens the overlay menu instead.
-            FrameLayout slot=new FrameLayout(this);slot.setFocusable(false);slot.setClickable(true);
-            slot.setContentDescription(target);LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,72),Ui.dp(this,42));sp.gravity=Gravity.CENTER_HORIZONTAL;sp.bottomMargin=Ui.dp(this,7);rail.addView(slot,sp);
-            NavIcon glyph=new NavIcon(this,icon);FrameLayout.LayoutParams gp=new FrameLayout.LayoutParams(Ui.dp(this,24),Ui.dp(this,24),Gravity.CENTER);slot.addView(glyph,gp);
-            View marker=new View(this);marker.setBackground(Ui.rounded(Ui.ACCENT,1,this));FrameLayout.LayoutParams mp=new FrameLayout.LayoutParams(Ui.dp(this,3),Ui.dp(this,20),Gravity.START|Gravity.CENTER_VERTICAL);slot.addView(marker,mp);
-            railMarkers.add(marker);
-            slot.setOnClickListener(v->{lastContentFocus=getCurrentFocus();openMenu(target);});
-            LinearLayout entry=new LinearLayout(this);entry.setGravity(Gravity.CENTER_VERTICAL);entry.setFocusable(true);entry.setFocusableInTouchMode(true);entry.setClickable(true);entry.setContentDescription(target);
-            LinearLayout.LayoutParams ep=new LinearLayout.LayoutParams(-1,Ui.dp(this,42));ep.bottomMargin=Ui.dp(this,7);ep.leftMargin=Ui.dp(this,10);ep.rightMargin=Ui.dp(this,12);expandedMenu.addView(entry,ep);
-            View bar=new View(this);bar.setBackground(Ui.rounded(Ui.ACCENT,1,this));entry.addView(bar,new LinearLayout.LayoutParams(Ui.dp(this,3),Ui.dp(this,20)));
-            menuBars.add(bar);
-            NavIcon fullIcon=new NavIcon(this,icon);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(Ui.dp(this,24),Ui.dp(this,24));ip.leftMargin=Ui.dp(this,22);entry.addView(fullIcon,ip);
-            TextView name=label(target.equals("Series")?"TV Shows":target.equals("Favorites")?"My List":target,17,Ui.TEXT);LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,-1);np.leftMargin=Ui.dp(this,16);entry.addView(name,np);
-            entry.setBackgroundResource(R.drawable.tv_rail_selector);
-            entry.setOnFocusChangeListener((v,f)->bar.setVisibility(f||target.equals(tab)?View.VISIBLE:View.INVISIBLE));
-            entry.setOnClickListener(v->selectTab(target));
-            entry.setOnKeyListener((v,key,event)->{
-                if(event.getAction()!=KeyEvent.ACTION_DOWN)return false;
-                if(key==KeyEvent.KEYCODE_DPAD_RIGHT){closeMenu();return true;}
-                // Keep focus inside the menu at both ends instead of letting it fall behind the dim layer.
-                if(key==KeyEvent.KEYCODE_DPAD_UP && index==0)return true;
-                if(key==KeyEvent.KEYCODE_DPAD_DOWN && index==TABS.length-1)return true;
-                return false;
-            });
-        }
-        updateRail();
-    }
-    private void updateRail(){for(int i=0;i<TABS.length;i++){boolean selected=TABS[i].equals(tab);
-        railMarkers.get(i).setVisibility(selected?View.VISIBLE:View.INVISIBLE);
-        View entry=expandedMenu.getChildAt(i+1);
-        menuBars.get(i).setVisibility(selected||(entry!=null&&entry.isFocused())?View.VISIBLE:View.INVISIBLE);}}
-    private void openMenu(String target){if(menuOpen||overlayUp)return;menuOpen=true;
-        dim.setVisibility(View.VISIBLE);dim.setAlpha(0f);dim.animate().alpha(1f).setDuration(140).start();
-        expandedMenu.setVisibility(View.VISIBLE);expandedMenu.setAlpha(0f);expandedMenu.animate().alpha(1f).setDuration(140).start();
-        for(int i=1;i<expandedMenu.getChildCount();i++)if(target.equals(expandedMenu.getChildAt(i).getContentDescription())){
-            expandedMenu.getChildAt(i).requestFocus();break;
-        }
+    @Override public void onSelect(String target){selectTab(target);}
+    @Override public void onClose(){closeMenu();}
+    private void openMenu(){if(nav.isOpen()||overlayUp)return;
+        lastContentFocus=getCurrentFocus();
+        handler.removeCallbacks(rotateHero);
+        nav.open(tab);
         // The page stays exactly where it is under the dim layer, but cannot take focus while the menu is open.
         content.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
     }
-    private void closeMenu(){if(!menuOpen)return;menuOpen=false;
+    private void closeMenu(){if(!nav.isOpen())return;
         content.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
-        expandedMenu.animate().cancel();dim.animate().cancel();
-        expandedMenu.setVisibility(View.GONE);dim.setVisibility(View.GONE);
-        if(lastContentFocus!=null && lastContentFocus.isAttachedToWindow() && lastContentFocus.isShown() && lastContentFocus.requestFocus())return;
-        focusDefault();
+        boolean restored=lastContentFocus!=null && lastContentFocus.isAttachedToWindow() && lastContentFocus.isShown() && lastContentFocus.requestFocus();
+        if(!restored)focusDefault();
+        nav.close();scheduleRotation();
     }
     private void selectTab(String target){
         if(target.equals(tab)){closeMenu();return;}
         tab=target;category="";sortMode=0;lastContentFocus=null;restoreGridPosition=-1;render();
         // An empty page (for example My List with no favorites) keeps the menu open so focus is never lost.
-        if(hasFocusableContent())closeMenu();else updateRail();
+        if(hasFocusableContent())closeMenu();else nav.setSelected(tab);
     }
     private boolean isBrowse(){return tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites");}
     private boolean hasFocusableContent(){
         if(isBrowse())return (browseGrid.getAdapter()!=null && browseGrid.getAdapter().getItemCount()>0)||filters.getChildCount()>0;
-        return actions.getChildCount()>0;
+        return !entries.isEmpty();
     }
     private void focusDefault(){
         if(overlayUp)return;
         if(isBrowse()){focusGrid();return;}
-        if(actions.getChildCount()>0)actions.getChildAt(0).requestFocus();
+        homeRows.setSelectedPosition(0);focusHomeItem(12);
+    }
+    private void focusHomeItem(int attempts){
+        if(nav.isOpen()||overlayUp||isBrowse())return;
+        RecyclerView.ViewHolder h=homeRows.findViewHolderForAdapterPosition(Math.max(0,homeRows.getSelectedPosition()));
+        if(h!=null && !homeRows.isLayoutRequested() && h.itemView.requestFocus())return;
+        if(attempts>0)homeRows.postOnAnimation(()->focusHomeItem(attempts-1));
     }
     private void focusGrid(){
         if(browseGrid.getAdapter()==null || browseGrid.getAdapter().getItemCount()==0){
@@ -359,7 +319,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
     }
     /** Focuses the grid's selected card. Right after a tab switch it may not exist yet, so retry for a few frames. */
     private void focusGridCard(int attempts){
-        if(menuOpen||overlayUp||!isBrowse())return;
+        if(nav.isOpen()||overlayUp||!isBrowse())return;
         RecyclerView.ViewHolder holder=browseGrid.findViewHolderForAdapterPosition(Math.max(0,browseGrid.getSelectedPosition()));
         if(holder!=null && !browseGrid.isLayoutRequested() && holder.itemView.requestFocus())return;
         if(attempts>0)browseGrid.postOnAnimation(()->focusGridCard(attempts-1));
@@ -369,51 +329,71 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
 
     private void render(){boolean browse=isBrowse(),home=tab.equals("Home");
         rendered=true;pendingRender=false;
-        hero.setVisibility(browse?View.GONE:View.VISIBLE);homeRows.setVisibility(browse?View.GONE:View.VISIBLE);
-        backdrop.setVisibility(browse?View.GONE:View.VISIBLE);backdropScrim.setVisibility(browse?View.GONE:View.VISIBLE);
+        homeRows.setVisibility(browse?View.GONE:View.VISIBLE);
+        ambientSlot.setVisibility(browse?View.GONE:View.VISIBLE);ambientDim.setVisibility(browse?View.GONE:View.VISIBLE);homeScrim.setVisibility(browse?View.GONE:View.VISIBLE);
         browseHeader.setVisibility(browse?View.VISIBLE:View.GONE);browseGrid.setVisibility(browse?View.VISIBLE:View.GONE);
         emptyMessage.setVisibility(View.GONE);
-        if(home){if(actions.getChildCount()!=2 || actions.getChildAt(0)!=play)buildActions();
-            featured();rows.clear();
-            List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);if(!continued.isEmpty())rows.add(new Row("Continue Watching",continued));
-            if(!movies.isEmpty())rows.add(new Row("Latest Movies",Catalog.recent(movies,30)));
-            if(!series.isEmpty())rows.add(new Row("Latest TV Shows",Catalog.recent(series,30)));
-            if(!movies.isEmpty())rows.add(new Row("Top Rated Movies",Catalog.topRated(movies,30)));
-            rowsAdapter.notifyDataSetChanged();homeRows.setSelectedPosition(0);
+        entries.clear();
+        if(home){
+            HomeFeed.Result feed=HomeFeed.build(this,movies,series,movieCategories);
+            featured=feed.featured;heroIndex=featured.isEmpty()?0:heroIndex%featured.size();
+            entries.add(HERO);entries.addAll(feed.sections);
+            homeAdapter.notifyDataSetChanged();homeRows.setSelectedPosition(0);
+            setMode(true,true);
+            if(hero!=null)bindHero(false);
         }else if(browse){
-            browseTitle.setText(tab.equals("Favorites")?"My List":tab.equals("Series")?"All TV Shows":"All Movies");
-            buildFilters();List<Catalog.Item> source=tab.equals("Series")?series:movies;
-            if(tab.equals("Favorites")){source=new ArrayList<>();String saved=Api.prefs(this).getString("favorites","");
-                for(Catalog.Item item:movies)if(saved.contains("|movie:"+item.id+"|"))source.add(item);
-                for(Catalog.Item item:series)if(saved.contains("|series:"+item.id+"|"))source.add(item);
-            }
-            ArrayList<Catalog.Item> filtered=new ArrayList<>();for(Catalog.Item item:source)if(category.isEmpty()||category.equals(item.categoryId))filtered.add(item);
-            if(sortMode==0)filtered=new ArrayList<>(Catalog.recent(filtered,filtered.size()));
-            if(sortMode==1)filtered.sort((a,b)->a.title.compareToIgnoreCase(b.title));
-            if(sortMode==2)filtered.sort((a,b)->Double.compare(b.rating,a.rating));
-            if(sortMode==3)filtered.sort((a,b)->Integer.compare(b.year,a.year));
-            browseGrid.setAdapter(new PosterAdapter(this,filtered,artWidth,artHeight,true,null));
-            int start=0;
-            // After the activity was recreated, go back to the poster the viewer had selected.
-            if(restoreGridPosition>=0 && !filtered.isEmpty()){start=Math.min(restoreGridPosition,filtered.size()-1);restoreGridPosition=-1;
-                if(!overlayUp)focusGrid();}
-            browseGrid.setSelectedPosition(start);
-            if(filtered.isEmpty()){emptyMessage.setVisibility(View.VISIBLE);
-                emptyMessage.setText(tab.equals("Favorites")?"Titles you add to My List appear here":movies.isEmpty()&&series.isEmpty()?"Your titles will appear here once they load":"No titles in this category");}
-        }else{title.setText(tab);meta.setText("");overview.setText("");renderUtility();}
-        applyHero(true);updateRail();
+            renderBrowse();
+            homeAdapter.notifyDataSetChanged();
+        }else{
+            entries.add(UTILITY);
+            if(tab.equals("Search") && searchText.trim().length()>1)entries.add(searchSection(searchText));
+            homeAdapter.notifyDataSetChanged();homeRows.setSelectedPosition(0);
+            setMode(true,true);ambientDim.animate().alpha(.55f).setDuration(200).start();
+        }
+        updateAccountPill();
+        nav.setSelected(tab);
+        scheduleRotation();
     }
-    private void updateHero(){applyHero(false);}
-    private void applyHero(boolean force){
-        boolean show=!tab.equals("Home") || actions.hasFocus() || homeRows.getSelectedPosition()<=0;
-        if(show==heroShown && !force)return;heroShown=show;
-        hero.animate().alpha(show?1f:0f).setDuration(180).start();
-        backdrop.animate().alpha(show?1f:.35f).setDuration(180).start();
+    private void renderBrowse(){
+        browseTitle.setText(tab.equals("Favorites")?"My List":tab.equals("Series")?"All TV Shows":"All Movies");
+        buildFilters();List<Catalog.Item> source=tab.equals("Series")?series:movies;
+        if(tab.equals("Favorites")){source=new ArrayList<>();String saved=Api.prefs(this).getString("favorites","");
+            for(Catalog.Item item:movies)if(saved.contains("|movie:"+item.id+"|"))source.add(item);
+            for(Catalog.Item item:series)if(saved.contains("|series:"+item.id+"|"))source.add(item);
+        }
+        ArrayList<Catalog.Item> filtered=new ArrayList<>();for(Catalog.Item item:source)if(category.isEmpty()||category.equals(item.categoryId))filtered.add(item);
+        if(sortMode==0)filtered=new ArrayList<>(Catalog.recent(filtered,filtered.size()));
+        if(sortMode==1)filtered.sort((a,b)->a.title.compareToIgnoreCase(b.title));
+        if(sortMode==2)filtered.sort((a,b)->Double.compare(b.rating,a.rating));
+        if(sortMode==3)filtered.sort((a,b)->Integer.compare(b.year,a.year));
+        browseGrid.setAdapter(new PosterAdapter(this,filtered,artWidth,artHeight,true,null));
+        int start=0;
+        // After the activity was recreated, go back to the poster the viewer had selected.
+        if(restoreGridPosition>=0 && !filtered.isEmpty()){start=Math.min(restoreGridPosition,filtered.size()-1);restoreGridPosition=-1;
+            if(!overlayUp)focusGrid();}
+        browseGrid.setSelectedPosition(start);
+        if(filtered.isEmpty()){emptyMessage.setVisibility(View.VISIBLE);
+            emptyMessage.setText(tab.equals("Favorites")?"Titles you add to My List appear here":movies.isEmpty()&&series.isEmpty()?"Your titles will appear here once they load":"No titles in this category");}
+    }
+    private HomeFeed.Section searchSection(String query){
+        ArrayList<Catalog.Item> results=new ArrayList<>();String needle=query.trim().toLowerCase(Locale.US);
+        for(Catalog.Item item:movies)if(results.size()<40 && item.title.toLowerCase(Locale.US).contains(needle))results.add(item);
+        for(Catalog.Item item:series)if(results.size()<60 && item.title.toLowerCase(Locale.US).contains(needle))results.add(item);
+        return new HomeFeed.Section(HomeFeed.POSTERS,"results",results.isEmpty()?"No matches":"Results",null,results,null,null);
     }
     private String sortLabel(){return "Sort: "+SORTS[sortMode];}
     private String categoryLabel(){if(category.isEmpty())return "Category: All";
         for(Catalog.Category c:tab.equals("Series")?seriesCategories:movieCategories)if(c.id.equals(category))return c.name;
         return "Category";}
+    private Button chip(String name,Runnable click){Button b=new Button(this);b.setText(name);b.setAllCaps(false);
+        b.setTextSize(16);b.setTextColor(Ui.TEXT);b.setFocusable(true);b.setFocusableInTouchMode(true);
+        b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);b.setMinWidth(0);b.setMinimumWidth(0);
+        b.setMinHeight(0);b.setMinimumHeight(0);b.setStateListAnimator(null);
+        GradientDrawable normal=Ui.pill(this,false,false,22),focused=Ui.pill(this,true,false,22);
+        b.setBackground(normal);b.setPadding(Ui.dp(this,20),0,Ui.dp(this,20),0);
+        b.setOnFocusChangeListener((v,f)->{b.setBackground(f?focused:normal);b.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(120).start();
+            if(f)lastContentFocus=v;});
+        b.setOnClickListener(v->click.run());return b;}
     private void buildFilters(){filters.removeAllViews();if(!tab.equals("Movies") && !tab.equals("Series"))return;
         Button sort=chip(sortLabel(),()->
             Ui.picker(this,"Sort by",SORTS,sortMode,which->{sortMode=which;render();restoreFilterFocus(0);}));
@@ -427,82 +407,327 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         });cats.setMaxWidth(Ui.dp(this,280));
         LinearLayout.LayoutParams b=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,42));b.leftMargin=Ui.dp(this,12);filters.addView(cats,b);
     }
-    private void renderUtility(){rows.clear();rowsAdapter.notifyDataSetChanged();actions.removeAllViews();
-        if(tab.equals("Search")){EditText query=new EditText(this);query.setHint("Search movies and TV shows");query.setTextColor(Ui.TEXT);
-            query.setHintTextColor(Ui.TEXT_3);query.setSingleLine(true);query.setInputType(InputType.TYPE_CLASS_TEXT);
-            query.setBackgroundResource(R.drawable.edit_field);query.setPadding(Ui.dp(this,16),0,Ui.dp(this,16),0);query.setTextSize(17);
-            query.setOnFocusChangeListener((v,f)->{if(f)lastContentFocus=v;});
-            actions.addView(query,new LinearLayout.LayoutParams(Ui.dp(this,420),Ui.dp(this,50)));
-            query.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}
-                public void onTextChanged(CharSequence s,int start,int before,int count){rows.clear();ArrayList<Catalog.Item> results=new ArrayList<>();
-                    String needle=s.toString().trim().toLowerCase(Locale.US);
-                    if(needle.length()>1){for(Catalog.Item item:movies)if(results.size()<40 && item.title.toLowerCase(Locale.US).contains(needle))results.add(item);
-                        for(Catalog.Item item:series)if(results.size()<60 && item.title.toLowerCase(Locale.US).contains(needle))results.add(item);}
-                    if(!results.isEmpty())rows.add(new Row("Results",results));rowsAdapter.notifyDataSetChanged();}
-                public void afterTextChanged(android.text.Editable e){} });
-        }else if(tab.equals("Settings")){
-            Button update=chip("Check for new titles",()->{
-                if(StartupRefresh.running()){toast("Already checking…");return;}
-                Toast.makeText(this,"Checking for new titles…",Toast.LENGTH_SHORT).show();StartupRefresh.start(this,true);});
-            actions.addView(update,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46)));
-        }
-    }
     private void restoreFilterFocus(int index){filters.post(()->{
         if(filters.getChildCount()>index)filters.getChildAt(index).requestFocus();
     });}
 
-    /** Keeps Continue Watching current after playback without disturbing the row the viewer is in. */
-    private void updateContinueRow(){
-        if(!tab.equals("Home") || !rendered || menuOpen)return;
-        if(pendingRender && canRenderNow()){render();return;}
-        List<Catalog.Item> continued=Catalog.continueWatching(this,movies,series);
-        int index=-1;for(int i=0;i<rows.size();i++)if(rows.get(i).name.equals("Continue Watching")){index=i;break;}
-        boolean focusHere=index>=0 && homeRows.hasFocus() && homeRows.getSelectedPosition()==index;
-        if(index>=0){Row row=rows.get(index);
-            if(sameTitles(row.items,continued))return;
-            if(continued.isEmpty()){if(focusHere)return;rows.remove(index);rowsAdapter.notifyItemRemoved(index);}
-            else{row.items.clear();row.items.addAll(continued);row.selected=0;if(row.adapter!=null)row.adapter.notifyDataSetChanged();}
-        }else if(!continued.isEmpty()){
-            boolean heroFocused=actions.hasFocus();
-            rows.add(0,new Row("Continue Watching",continued));rowsAdapter.notifyItemInserted(0);
-            if(heroFocused)homeRows.setSelectedPosition(0);
-        }
-        updateHero();
+    /** After Details or the player: refresh Continue Watching without moving the viewer. */
+    private void refreshAfterReturn(){
+        if(!tab.equals("Home") || !rendered || nav.isOpen())return;
+        if(heroMode && canRenderNow()){int keep=heroIndex;render();heroIndex=keep;if(hero!=null)bindHero(false);return;}
+        for(Object e:entries)if(e instanceof HomeFeed.Section && ((HomeFeed.Section)e).type==HomeFeed.CONTINUE && ((HomeFeed.Section)e).adapter!=null)
+            ((HomeFeed.Section)e).adapter.notifyDataSetChanged();   // progress bars; same holders, focus kept
+        pendingRender=true;                                          // rows added/removed apply back at the hero
     }
-    private static boolean sameTitles(List<Catalog.Item> a,List<Catalog.Item> b){if(a.size()!=b.size())return false;
-        for(int i=0;i<a.size();i++)if(!a.get(i).id.equals(b.get(i).id)||!a.get(i).kind.equals(b.get(i).kind))return false;return true;}
-    private void openDetails(Catalog.Item item){Intent i=new Intent(this,DetailsActivity.class);
-        i.putExtra("id",item.id);i.putExtra("kind",item.kind);i.putExtra("title",item.title);i.putExtra("poster",item.poster);
-        i.putExtra("backdrop",item.backdrop);i.putExtra("year",item.year);i.putExtra("extension",item.extension);
-        i.putExtra("category",item.categoryId);startActivity(i);}
 
-    private final class RowsAdapter extends RecyclerView.Adapter<RowsAdapter.Holder>{
-        RowsAdapter(){setHasStableIds(true);} @Override public long getItemId(int p){return rows.get(p).name.hashCode();}
-        final class Holder extends RecyclerView.ViewHolder{final TextView heading;final HorizontalGridView list;Row row;
-            Holder(View view){super(view);heading=view.findViewById(R.id.row_title);list=view.findViewById(R.id.row_list);
-                heading.setTextColor(Ui.TEXT);
-                list.getLayoutParams().height=PosterAdapter.rowListHeight(HomeActivity.this);
-                list.setRecycledViewPool(rowPool);list.setItemAnimator(null);list.setHorizontalSpacing(0);
-                // The selected card stays at the left edge of the row; the row slides under it.
-                list.setWindowAlignment(BaseGridView.WINDOW_ALIGN_BOTH_EDGE);
-                list.setWindowAlignmentOffsetPercent(BaseGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
-                list.setWindowAlignmentOffset(list.getPaddingLeft());
-                list.setItemAlignmentOffsetPercent(0f);list.setItemAlignmentOffset(0);
-                list.setOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener(){
-                    @Override public void onChildViewHolderSelected(RecyclerView parent,RecyclerView.ViewHolder child,int position,int sub){
-                        if(row!=null && position>=0)row.selected=position;}
-                });
-            }}
-        @Override public Holder onCreateViewHolder(ViewGroup parent,int type){return new Holder(getLayoutInflater().inflate(R.layout.item_home_row,parent,false));}
-        @Override public void onBindViewHolder(Holder h,int position){Row row=rows.get(position);h.heading.setText(row.name);
-            int selected=Math.min(row.selected,Math.max(0,row.items.size()-1));
-            h.row=null;
-            if(row.adapter==null)row.adapter=new PosterAdapter(HomeActivity.this,row.items,item->lastContentFocus=getCurrentFocus());
-            if(h.list.getAdapter()!=row.adapter)h.list.setAdapter(row.adapter);
-            h.list.setSelectedPosition(selected);h.row=row;row.selected=selected;
+    /* ---------------- Home modes: hero vs browsing sections ---------------- */
+
+    private void onRowSelected(int position){
+        boolean hasHero=!entries.isEmpty() && entries.get(0)==HERO;
+        setMode(position<=0,false);
+        fadeRowsAbove(position);
+        if(position<=0 && hasHero && pendingRender && tab.equals("Home"))handler.post(()->{if(heroMode && pendingRender){int keep=heroIndex;render();heroIndex=keep;if(hero!=null)bindHero(false);}});
+    }
+    private void setMode(boolean heroAtTop,boolean force){
+        boolean isHome=tab.equals("Home");
+        if(heroAtTop==heroMode && !force)return;heroMode=heroAtTop;
+        preview.animate().alpha(heroAtTop||!isHome?0f:1f).setDuration(200).start();
+        if(isHome)ambientDim.animate().alpha(heroAtTop?0f:.42f).setDuration(260).start();
+        accountPill.animate().alpha(heroAtTop?1f:0f).setDuration(200).start();
+        if(heroAtTop){handler.removeCallbacks(focusArt);if(hero!=null && isHome)showHeroArt();scheduleRotation();}
+        else handler.removeCallbacks(rotateHero);
+    }
+    /** Sections above the focused one fade out so the preview text above the keyline stays clean. */
+    private void fadeRowsAbove(int selected){
+        for(int i=0;i<homeRows.getChildCount();i++){View child=homeRows.getChildAt(i);
+            int pos=homeRows.getChildAdapterPosition(child);if(pos<0)continue;
+            float target=pos<selected?0f:1f;
+            if(child.getAlpha()!=target)child.animate().alpha(target).setDuration(180).start();}
+    }
+
+    /* ---------------- Cards ---------------- */
+
+    @Override public void onFocus(Catalog.Item item){
+        lastContentFocus=getCurrentFocus();
+        pendingFocusItem=item;handler.removeCallbacks(focusArt);
+        // Wait for the D-pad to settle so fast scrolling never flashes artwork.
+        handler.postDelayed(focusArt,FOCUS_ART_DELAY_MS);
+    }
+    private final Runnable focusArt=()->{
+        Catalog.Item item=pendingFocusItem;if(item==null||heroMode||!tab.equals("Home")&&!tab.equals("Search"))return;
+        previewTitle.setText(item.title);
+        previewMeta.setText(metaLine(item,null));
+        String desc=item.overview;JSONObject info=HERO_INFO.get(item.key());
+        if(desc.isEmpty() && info!=null)desc=info.optString("plot","");
+        previewDesc.setText(desc);previewDesc.setVisibility(desc.isEmpty()?View.GONE:View.VISIBLE);
+        showArtFor(item);
+    };
+    private void showArtFor(Catalog.Item item){
+        Catalog.Progress p=Catalog.progress(this,item);
+        if(!p.art.isEmpty()){ambient.show(p.art,false);return;}
+        String infoArt=heroBackdrop(item);
+        if(infoArt!=null)ambient.show(infoArt,false);
+        else ambient.show(item.poster,true);
+    }
+    @Override public void onOpen(Catalog.Item item,HomeFeed.Section section){
+        if(section.type==HomeFeed.CONTINUE){watch(item);return;}
+        openDetails(item,false);
+    }
+    @Override public void onCategory(Catalog.Category cat){
+        tab="Movies";category=cat.id;sortMode=0;restoreGridPosition=-1;lastContentFocus=null;render();focusGrid();
+    }
+    /** Movies go straight to the player (it offers Continue / Start over); shows resume the right episode. */
+    private void watch(Catalog.Item item){
+        if("movie".equals(item.kind)){
+            Catalog.remember(this,item);
+            Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",Api.stream(this,"movie",item.id,item.extension));
+            i.putExtra("title",item.title);i.putExtra("content_kind",item.kind);i.putExtra("content_id",item.id);startActivity(i);
+        }else openDetails(item,true);
+    }
+    private void openDetails(Catalog.Item item,boolean play){Intent i=new Intent(this,DetailsActivity.class);
+        i.putExtra("id",item.id);i.putExtra("kind",item.kind);i.putExtra("title",item.title);i.putExtra("poster",item.poster);
+        String art=heroBackdrop(item);i.putExtra("backdrop",art!=null?art:item.backdrop);i.putExtra("year",item.year);i.putExtra("extension",item.extension);
+        i.putExtra("category",item.categoryId);if(play)i.putExtra("play_on_open",true);startActivity(i);}
+
+    /** "2019  ·  ★ 7.6  ·  1h 54m  ·  Drama" with a gold star, from whatever is known. */
+    private CharSequence metaLine(Catalog.Item item,JSONObject info){
+        if(info==null)info=HERO_INFO.get(item.key());
+        List<String> parts=new ArrayList<>();
+        if(item.year>1900)parts.add(String.valueOf(item.year));
+        if(item.rating>0)parts.add(String.format(Locale.US,"★ %.1f",item.rating));
+        if("series".equals(item.kind))parts.add("Series");
+        else if(info!=null){int secs=info.optInt("duration_secs",0);
+            if(secs<=0){String[] hms=info.optString("duration","").split(":");try{if(hms.length==3)secs=Integer.parseInt(hms[0])*3600+Integer.parseInt(hms[1])*60+Integer.parseInt(hms[2]);}catch(Exception ignored){}}
+            if(secs>=60)parts.add(secs>=3600?(secs/3600)+"h "+((secs/60)%60)+"m":(secs/60)+"m");}
+        String genre=info!=null?info.optString("genre","").trim():"";
+        if(genre.isEmpty())genre=item.genre;
+        if(genre.isEmpty()){String c=categoryNames.get(item.categoryId);if(c!=null)genre=c;}
+        if(!genre.isEmpty())parts.add(genre.split("[,/]")[0].trim());
+        SpannableStringBuilder out=new SpannableStringBuilder();
+        for(String p:parts){if(out.length()>0)out.append("   ·   ");int start=out.length();out.append(p);
+            if(p.startsWith("★"))out.setSpan(new ForegroundColorSpan(Ui.GOLD),start,start+1,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);}
+        return out;
+    }
+
+    /* ---------------- Hero ---------------- */
+
+    private final class HeroHolder extends RecyclerView.ViewHolder{
+        final TextView eyebrow,title,meta,desc,primaryLabel;final LinearLayout dots,block;final View primary,info;
+        HeroHolder(View v){super(v);
+            eyebrow=v.findViewById(R.id.hero_eyebrow);title=v.findViewById(R.id.hero_title);meta=v.findViewById(R.id.hero_meta);
+            desc=v.findViewById(R.id.hero_desc);dots=v.findViewById(R.id.hero_dots);block=v.findViewById(R.id.hero_block);
+            LinearLayout actions=v.findViewById(R.id.hero_actions);
+            primary=heroButton(actions,"Watch Now",true);primaryLabel=(TextView)((LinearLayout)primary).getChildAt(1);
+            info=heroButton(actions,"More Info",false);
+            primary.setOnClickListener(x->{Catalog.Item item=current();if(item!=null)watch(item);});
+            info.setOnClickListener(x->{Catalog.Item item=current();if(item!=null)openDetails(item,false);});
+            // The hero is entered from below with FOCUS_UP; always land on the primary action.
+            v.setFocusable(true);v.setFocusableInTouchMode(true);
+            ((ViewGroup)v).setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
+            v.setOnFocusChangeListener((x,f)->{if(f)primary.requestFocus();});
         }
-        @Override public void onViewRecycled(Holder h){h.row=null;h.list.setAdapter(null);}
-        @Override public int getItemCount(){return rows.size();}
+    }
+    private View heroButton(LinearLayout parent,String label,boolean primary){
+        LinearLayout b=new LinearLayout(this);b.setOrientation(LinearLayout.HORIZONTAL);b.setGravity(Gravity.CENTER_VERTICAL);
+        b.setFocusable(true);b.setFocusableInTouchMode(true);b.setClickable(true);
+        b.setPadding(Ui.dp(this,primary?20:22),0,Ui.dp(this,24),0);
+        GradientDrawable normal=new GradientDrawable();normal.setCornerRadius(Ui.dp(this,24));
+        normal.setColor(primary?0x33FFFFFF:0x1FFFFFFF);normal.setStroke(Ui.dp(this,1),primary?0x40FFFFFF:0x2EFFFFFF);
+        GradientDrawable focused=new GradientDrawable();focused.setCornerRadius(Ui.dp(this,24));focused.setColor(Ui.ACCENT_FOCUS);focused.setStroke(Ui.dp(this,1),0x66FFFFFF);
+        b.setBackground(normal);
+        if(primary){PlayerIcon icon=new PlayerIcon(this,PlayerIcon.PLAY);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(Ui.dp(this,18),Ui.dp(this,18));ip.rightMargin=Ui.dp(this,10);b.addView(icon,ip);}
+        TextView t=Ui.heading(this,label,17);t.setSingleLine(true);b.addView(t);
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));
+        if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,14);parent.addView(b,p);
+        b.setOnFocusChangeListener((v,f)->{v.setBackground(f?focused:normal);v.animate().scaleX(f?1.05f:1f).scaleY(f?1.05f:1f).setDuration(140).start();
+            if(f){lastContentFocus=v;lastKeyAt=SystemClock.uptimeMillis();}});
+        return b;
+    }
+    private Catalog.Item current(){return featured.isEmpty()?null:featured.get(heroIndex%featured.size());}
+    private void bindHero(boolean animate){
+        if(hero==null)return;
+        Catalog.Item item=current();
+        // Only focusable when there is something to press, so focus can never sit on an empty hero.
+        hero.itemView.setFocusable(item!=null);
+        if(item==null){
+            hero.eyebrow.setText("FLIX TOWN");hero.title.setText(cacheLoaded||!overlayUp?"Your titles are on the way":"");
+            hero.meta.setText(cacheLoaded?"They'll appear here as soon as the server is reachable.":"");
+            hero.desc.setText(cacheLoaded?"Try Settings › Check for new titles, or reopen Flix Town once the TV is online.":"");
+            hero.primary.setVisibility(View.GONE);hero.info.setVisibility(View.GONE);hero.dots.removeAllViews();return;
+        }
+        hero.primary.setVisibility(View.VISIBLE);hero.info.setVisibility(View.VISIBLE);
+        Runnable fill=()->{
+            int rank=-1;for(Object e:entries)if(e instanceof HomeFeed.Section && ((HomeFeed.Section)e).type==HomeFeed.TRENDING)rank=((HomeFeed.Section)e).items.indexOf(item);
+            String kind="series".equals(item.kind)?"SERIES":"MOVIE";
+            hero.eyebrow.setText(rank>=0?"#"+(rank+1)+" TRENDING  ·  "+kind:item.isNew()?"NEW ON FLIX TOWN  ·  "+kind:"FEATURED  ·  "+kind);
+            hero.title.setText(item.title);
+            hero.meta.setText(metaLine(item,null));
+            JSONObject info=HERO_INFO.get(item.key());
+            String desc=item.overview.isEmpty()&&info!=null?info.optString("plot",""):item.overview;
+            hero.desc.setText(desc);hero.desc.setVisibility(desc.isEmpty()?View.GONE:View.VISIBLE);
+            hero.primaryLabel.setText(hasProgress(item)?"Continue":"Watch Now");
+            buildDots();
+        };
+        if(animate){hero.block.animate().alpha(0f).translationX(-Ui.dp(this,10)).setDuration(160).withEndAction(()->{fill.run();
+            hero.block.setTranslationX(Ui.dp(this,14));hero.block.animate().alpha(1f).translationX(0).setDuration(240).start();}).start();}
+        else fill.run();
+        if(heroMode && tab.equals("Home"))showHeroArt();
+        fetchHeroInfo(item);
+        // Warm only the next hero backdrop; nothing else is preloaded.
+        if(featured.size()>1){Catalog.Item next=featured.get((heroIndex+1)%featured.size());String art=heroBackdrop(next);
+            if(art!=null)Images.prefetch(art,960);}
+    }
+    private boolean hasProgress(Catalog.Item item){
+        if("series".equals(item.kind))return !Api.prefs(this).getString("resume_episode_"+item.key(),"").isEmpty();
+        return Api.prefs(this).getLong("resume_position_"+item.key(),0)>=15000;
+    }
+    private void buildDots(){
+        hero.dots.removeAllViews();if(featured.size()<2)return;
+        for(int i=0;i<featured.size();i++){boolean on=i==heroIndex%featured.size();View d=new View(this);
+            d.setBackground(Ui.rounded(on?Ui.GLOW:0x4DFFFFFF,2,this));
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(Ui.dp(this,on?26:12),Ui.dp(this,3));if(i>0)p.leftMargin=Ui.dp(this,6);
+            hero.dots.addView(d,p);}
+    }
+    private String heroBackdrop(Catalog.Item item){
+        JSONObject info=HERO_INFO.get(item.key());
+        if(info!=null){JSONArray list=info.optJSONArray("backdrop_path");String url=list!=null&&list.length()>0?list.optString(0,""):info.optString("backdrop_path","");
+            if(url.startsWith("http")||url.startsWith("demo:"))return url;}
+        return item.hasBackdrop()?item.backdrop:null;
+    }
+    private void showHeroArt(){Catalog.Item item=current();if(item==null)return;
+        String art=heroBackdrop(item);if(art!=null)ambient.show(art,false);else ambient.show(item.poster,true);}
+    /** Movies' runtime, genre, plot and backdrop come from one details call per hero title, kept for the session. */
+    private void fetchHeroInfo(Catalog.Item item){
+        if(!"movie".equals(item.kind) || HERO_INFO.containsKey(item.key()))return;
+        Api.IO.execute(()->{try{
+            JSONObject data=Api.get(Api.xtream(this,"get_vod_info","&vod_id="+Api.enc(item.id)));
+            JSONObject info=data.optJSONObject("info");if(info==null)return;
+            runOnUiThread(()->{HERO_INFO.put(item.key(),info);
+                if(!destroyed && item==current() && hero!=null){hero.meta.setText(metaLine(item,info));
+                    if(item.overview.isEmpty()){String plot=info.optString("plot","");hero.desc.setText(plot);hero.desc.setVisibility(plot.isEmpty()?View.GONE:View.VISIBLE);}
+                    if(heroMode && tab.equals("Home"))showHeroArt();}});
+        }catch(Exception ignored){}});
+    }
+    private final Runnable rotateHero=new Runnable(){@Override public void run(){
+        if(!canRotate())return;
+        // Viewer just pressed a key on the hero: wait until they have been idle a moment.
+        long idle=SystemClock.uptimeMillis()-lastKeyAt;
+        if(idle<HERO_IDLE_MS){handler.postDelayed(this,HERO_IDLE_MS-idle);return;}
+        heroIndex=(heroIndex+1)%featured.size();bindHero(true);
+        handler.postDelayed(this,HERO_ROTATE_MS);
+    }};
+    private boolean canRotate(){return resumed && heroMode && tab.equals("Home") && !overlayUp && !nav.isOpen() && featured.size()>1 && hero!=null;}
+    private void scheduleRotation(){handler.removeCallbacks(rotateHero);if(canRotate())handler.postDelayed(rotateHero,HERO_ROTATE_MS);}
+
+    /* ---------------- Account ---------------- */
+
+    /** "● Active · Expires Dec 31, 2027" from the real account response; hidden when unknown. */
+    private void updateAccountPill(){
+        String status=Api.prefs(this).getString("account_status","");String exp=Api.prefs(this).getString("account_exp_date","");
+        if(!tab.equals("Home") || status.isEmpty()){accountPill.setVisibility(View.GONE);return;}
+        SpannableStringBuilder s=new SpannableStringBuilder("●  ");
+        boolean active="Active".equalsIgnoreCase(status);
+        s.setSpan(new ForegroundColorSpan(active?0xFF6FCF97:Ui.GLOW),0,1,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        s.append(active?"ACTIVE":status.toUpperCase(Locale.US));
+        try{long secs=Long.parseLong(exp.trim());if(secs>0)s.append("   ·   Expires ").append(DateFormat.getDateInstance(DateFormat.MEDIUM,Locale.getDefault()).format(new Date(secs*1000)));}catch(Exception ignored){}
+        accountPill.setText(s);accountPill.setVisibility(View.VISIBLE);accountPill.setAlpha(heroMode?1f:0f);
+    }
+
+    /* ---------------- Home adapter ---------------- */
+
+    private static final int TYPE_HERO=100,TYPE_UTILITY=101;
+    private final class SectionHolder extends RecyclerView.ViewHolder{final TextView title,tag;final HorizontalGridView list;HomeFeed.Section section;
+        SectionHolder(LinearLayout v,TextView title,TextView tag,HorizontalGridView list){super(v);this.title=title;this.tag=tag;this.list=list;}}
+    private final class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
+        HomeAdapter(){setHasStableIds(true);}
+        @Override public int getItemCount(){return entries.size();}
+        @Override public long getItemId(int p){Object e=entries.get(p);return e==HERO?1:e==UTILITY?2:((HomeFeed.Section)e).id.hashCode();}
+        @Override public int getItemViewType(int p){Object e=entries.get(p);return e==HERO?TYPE_HERO:e==UTILITY?TYPE_UTILITY:((HomeFeed.Section)e).type;}
+        @Override public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent,int type){
+            if(type==TYPE_HERO){View v=LayoutInflater.from(HomeActivity.this).inflate(R.layout.item_home_hero,parent,false);
+                v.getLayoutParams().height=heroHeight;hero=new HeroHolder(v);return hero;}
+            if(type==TYPE_UTILITY)return new RecyclerView.ViewHolder(utilityHeader()){};
+            LinearLayout row=new LinearLayout(HomeActivity.this);row.setOrientation(LinearLayout.VERTICAL);row.setClipChildren(false);row.setClipToPadding(false);
+            row.setLayoutParams(new RecyclerView.LayoutParams(-1,-2));
+            LinearLayout header=new LinearLayout(HomeActivity.this);header.setOrientation(LinearLayout.HORIZONTAL);header.setGravity(Gravity.CENTER_VERTICAL);
+            header.setPadding(Ui.dp(HomeActivity.this,16),0,0,0);row.addView(header,new LinearLayout.LayoutParams(-1,Ui.dp(HomeActivity.this,34)));
+            TextView title=Ui.heading(HomeActivity.this,"",20);title.setSingleLine(true);title.setEllipsize(TextUtils.TruncateAt.END);header.addView(title);
+            TextView tag=new TextView(HomeActivity.this);tag.setTextSize(10);tag.setTextColor(0xFFE8736F);tag.setLetterSpacing(0.16f);
+            tag.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));tag.setBackground(outline());Ui.pad(tag,HomeActivity.this,7,2,7,2);
+            LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(HomeActivity.this,12);header.addView(tag,tp);
+            HorizontalGridView list=new HorizontalGridView(HomeActivity.this);
+            list.setClipChildren(false);list.setClipToPadding(false);list.setItemAnimator(null);list.setHorizontalSpacing(Ui.dp(HomeActivity.this,type==HomeFeed.CATEGORIES?6:2));
+            int pad=Ui.dp(HomeActivity.this,16-HomeCards.GLOW);
+            list.setPadding(pad,Ui.dp(HomeActivity.this,5),Ui.dp(HomeActivity.this,40),Ui.dp(HomeActivity.this,5));
+            RecyclerView.RecycledViewPool pool=pools.get(type);if(pool==null){pool=new RecyclerView.RecycledViewPool();pools.put(type,pool);}
+            list.setRecycledViewPool(pool);
+            // The selected card stays at the left edge; the row slides under it.
+            list.setWindowAlignment(BaseGridView.WINDOW_ALIGN_BOTH_EDGE);
+            list.setWindowAlignmentOffsetPercent(BaseGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
+            list.setWindowAlignmentOffset(pad);list.setItemAlignmentOffsetPercent(0f);list.setItemAlignmentOffset(0);
+            row.addView(list,new LinearLayout.LayoutParams(-1,HomeCards.listHeight(HomeActivity.this,type)+Ui.dp(HomeActivity.this,10)));
+            SectionHolder h=new SectionHolder(row,title,tag,list);
+            list.setOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener(){
+                @Override public void onChildViewHolderSelected(RecyclerView parent,RecyclerView.ViewHolder child,int position,int sub){
+                    if(h.section!=null && position>=0)h.section.selected=position;}
+            });
+            return h;
+        }
+        @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
+            int selected=homeRows.getSelectedPosition();
+            holder.itemView.setAlpha(!heroMode && position<selected?0f:1f);
+            if(holder instanceof HeroHolder){bindHero(false);return;}
+            if(!(holder instanceof SectionHolder)){bindUtility(holder.itemView);return;}
+            SectionHolder h=(SectionHolder)holder;HomeFeed.Section s=(HomeFeed.Section)entries.get(position);
+            h.title.setText(s.title);h.tag.setVisibility(s.tag==null?View.GONE:View.VISIBLE);if(s.tag!=null)h.tag.setText(s.tag);
+            int keep=Math.min(s.selected,Math.max(0,(s.type==HomeFeed.CATEGORIES?s.categories.size():s.items.size())-1));
+            h.section=null;
+            if(s.adapter==null)s.adapter=HomeCards.adapter(HomeActivity.this,s,HomeActivity.this);
+            if(h.list.getAdapter()!=s.adapter)h.list.setAdapter(s.adapter);
+            h.list.setSelectedPosition(keep);h.section=s;s.selected=keep;
+        }
+        @Override public void onViewRecycled(RecyclerView.ViewHolder holder){
+            if(holder instanceof SectionHolder){((SectionHolder)holder).section=null;((SectionHolder)holder).list.setAdapter(null);}
+        }
+    }
+    private GradientDrawable outline(){GradientDrawable d=new GradientDrawable();d.setCornerRadius(Ui.dp(this,3));d.setStroke(Ui.dp(this,1),0x99CE4B4A);return d;}
+
+    /* ---------------- Search and Settings header ---------------- */
+
+    private View utilityHeader(){
+        LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.VERTICAL);v.setGravity(Gravity.BOTTOM);
+        v.setPadding(Ui.dp(this,16),Ui.safeY(this),Ui.dp(this,48),Ui.dp(this,18));
+        v.setLayoutParams(new RecyclerView.LayoutParams(-1,keyline));return v;
+    }
+    private void bindUtility(View view){
+        LinearLayout v=(LinearLayout)view;v.removeAllViews();
+        TextView title=Ui.heading(this,tab.equals("Search")?"Search":"Settings",34);v.addView(title);
+        if(tab.equals("Search")){
+            TextView hint=Ui.text(this,"Find any movie or TV show in Flix Town. Select the field and press OK to type.",15);hint.setTextColor(Ui.TEXT_2);
+            LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-2,-2);hp.topMargin=Ui.dp(this,4);v.addView(hint,hp);
+            EditText query=new EditText(this);query.setHint("Movie or show title");query.setTextColor(Ui.TEXT);query.setText(searchText);
+            query.setHintTextColor(Ui.TEXT_3);query.setSingleLine(true);query.setInputType(InputType.TYPE_CLASS_TEXT);
+            query.setBackgroundResource(R.drawable.edit_field);query.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);query.setTextSize(18);
+            query.setOnFocusChangeListener((x,f)->{if(f)lastContentFocus=x;});
+            LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(Ui.dp(this,460),Ui.dp(this,52));qp.topMargin=Ui.dp(this,16);v.addView(query,qp);
+            query.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}
+                public void onTextChanged(CharSequence s,int start,int before,int count){searchText=s.toString();
+                    // Only the results row changes; the header (and the field being typed in) is never rebound.
+                    boolean had=entries.size()>1,has=searchText.trim().length()>1;
+                    while(entries.size()>1)entries.remove(entries.size()-1);
+                    if(has)entries.add(searchSection(searchText));
+                    if(had && has)homeAdapter.notifyItemChanged(1);else if(has)homeAdapter.notifyItemInserted(1);else if(had)homeAdapter.notifyItemRemoved(1);}
+                public void afterTextChanged(android.text.Editable e){} });
+        }else{
+            String[] account=AccountStore.read(this);String status=Api.prefs(this).getString("account_status","");
+            TextView line=Ui.text(this,(account==null?"":"Signed in as "+account[0])+(status.isEmpty()?"":"   ·   "+status)+"   ·   Version "+BuildConfig.VERSION_NAME,15);
+            line.setTextColor(Ui.TEXT_2);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.topMargin=Ui.dp(this,4);v.addView(line,lp);
+            LinearLayout row=Ui.row(this);row.setClipChildren(false);LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-2,-2);rp.topMargin=Ui.dp(this,18);v.addView(row,rp);
+            Button update=chip("Check for new titles",()->{
+                if(StartupRefresh.running()){toast("Already checking…");return;}
+                Toast.makeText(this,"Checking for new titles…",Toast.LENGTH_SHORT).show();StartupRefresh.start(this,true);});
+            row.addView(update,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46)));
+        }
     }
 
     /* ---------------- Keys ---------------- */
@@ -516,6 +741,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
         int key=event.getKeyCode();
         if(key==KeyEvent.KEYCODE_BACK && event.getAction()==KeyEvent.ACTION_UP)return true; // handled on key down
         if(event.getAction()==KeyEvent.ACTION_DOWN){
+            lastKeyAt=SystemClock.uptimeMillis();
             if(overlayUp){
                 if(key==KeyEvent.KEYCODE_BACK){if(event.getRepeatCount()==0)confirmExit();return true;}
                 if(startupActions.getVisibility()!=View.VISIBLE)return true;
@@ -523,17 +749,18 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener {
             }
             if(key==KeyEvent.KEYCODE_BACK){
                 if(event.getRepeatCount()>0)return true;
-                if(menuOpen){closeMenu();return true;}
+                if(nav.isOpen()){closeMenu();return true;}
                 if(!tab.equals("Home")){selectTab("Home");focusDefault();return true;}
-                if(homeRows.hasFocus() && play!=null && play.isShown()){play.requestFocus();homeRows.setSelectedPositionSmooth(0);updateHero();return true;}
+                // Browsing sections: Back glides up to the hero first.
+                if(!heroMode && homeRows.hasFocus()){homeRows.setSelectedPositionSmooth(0);return true;}
                 confirmExit();return true;
             }
-            if(key==KeyEvent.KEYCODE_DPAD_LEFT && !menuOpen){View focus=getCurrentFocus();
+            if(key==KeyEvent.KEYCODE_DPAD_LEFT && !nav.isOpen()){View focus=getCurrentFocus();
                 boolean editing=focus instanceof EditText && ((EditText)focus).getSelectionStart()>0;
                 if(focus!=null && !editing){View left=focus.focusSearch(View.FOCUS_LEFT);
                     boolean firstFilter=filters.getChildCount()>0 && focus==filters.getChildAt(0);
-                    if(left==null || left==focus || firstFilter || !isDescendant(content,left)){lastContentFocus=focus;openMenu(tab);return true;}}
-                else if(focus==null){openMenu(tab);return true;}
+                    if(left==null || left==focus || firstFilter || !isDescendant(content,left)){openMenu();return true;}}
+                else if(focus==null){openMenu();return true;}
             }
         }
         return super.dispatchKeyEvent(event);

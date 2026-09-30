@@ -57,7 +57,7 @@ final class DemoData {
             for(int i=0;i<72;i++)list.put(new JSONObject().put("stream_id",String.valueOf(1000+i)).put("name",title(i,1))
                 .put("stream_icon","demo://poster/m"+i).put("category_id",String.valueOf(1+i%MOVIE_CATS.length))
                 .put("container_extension","mp4").put("added",String.valueOf(1760000000-i*86400)).put("rating",String.format(Locale.US,"%.1f",5+(i*37%45)/10.0))
-                .put("year",1998+(i*5)%27).put("backdrop_path",new JSONArray().put("demo://backdrop/m"+i))
+                .put("year",1998+(i*5)%27).put("backdrop_path",i%3==1?new JSONArray():new JSONArray().put("demo://backdrop/m"+i))
                 .put("plot","A demo title used to check layouts. "+(i%2==0?"When an old signal returns from the past, a small crew must decide how much of the truth to share before the storm reaches the coast.":"Two strangers share one long night on the road.")));
             return list.toString();}
         if(url.contains("action=get_series_info")){JSONObject episodes=new JSONObject();
@@ -71,19 +71,22 @@ final class DemoData {
         if(url.contains("action=get_vod_info"))return new JSONObject().put("info",new JSONObject()
                 .put("plot","When an old signal returns from the past, a small crew must decide how much of the truth to share before the storm reaches the coast. A demo synopsis long enough to wrap onto three lines on a TV screen.")
                 .put("genre","Drama, Thriller").put("duration_secs",6840).put("rating","7.6").put("releasedate","2019-09-14")
-                .put("backdrop_path",new JSONArray().put("demo://backdrop/detail")).put("cast","Ava Moreno, Daniel Okafor"))
+                .put("backdrop_path",new JSONArray().put("demo://backdrop/detail"+param(url,"vod_id"))).put("cast","Ava Moreno, Daniel Okafor"))
             .put("movie_data",new JSONObject().put("container_extension","mp4")).toString();
         if(url.contains("action=get_series")){JSONArray list=new JSONArray();
             for(int i=0;i<30;i++)list.put(new JSONObject().put("series_id",String.valueOf(5000+i)).put("name",title(i,5))
                 .put("cover","demo://poster/s"+i).put("category_id",String.valueOf(50+i%SERIES_CATS.length))
                 .put("last_modified",String.valueOf(1760000000-i*43200)).put("rating",String.format(Locale.US,"%.1f",6+(i*13%38)/10.0))
-                .put("year",2005+i%19).put("backdrop_path",new JSONArray().put("demo://backdrop/s"+i)).put("plot","A demo series."));
+                .put("year",2005+i%19).put("backdrop_path",new JSONArray().put("demo://backdrop/s"+i)).put("genre",i%2==0?"Crime, Drama":"Documentary")
+                .put("plot","A demo series about a small town, its secrets and the people who keep them. Used to check the Home preview."));
             return list.toString();}
         if(url.contains("player_api.php"))return new JSONObject().put("user_info",new JSONObject()
             .put("status",Boolean.getBoolean("flix.demo.expired")||expired?"Expired":"Active").put("exp_date","1756684800").put("username","demo")).toString();
         throw new IllegalStateException("No demo response for "+url);
     }
     static volatile boolean expired;
+    private static String param(String url,String name){int at=url.indexOf(name+"=");if(at<0)return "";int end=url.indexOf('&',at);
+        return url.substring(at+name.length()+1,end<0?url.length():end);}
     private static String categories(String[] names,int first)throws Exception{JSONArray list=new JSONArray();
         for(int i=0;i<names.length;i++)list.put(new JSONObject().put("category_id",String.valueOf(first+i)).put("category_name",names[i]));
         return list.toString();}
@@ -96,6 +99,8 @@ final class DemoData {
         int hash=url.hashCode()*0x9E3779B1;hash^=hash>>>15;float hue=Math.abs(hash%360);
         int top=android.graphics.Color.HSVToColor(new float[]{hue,.55f,.55f}),bottom=android.graphics.Color.HSVToColor(new float[]{(hue+40)%360,.7f,.18f});
         Paint p=new Paint();p.setShader(new LinearGradient(0,0,w,h,top,bottom,Shader.TileMode.CLAMP));c.drawRect(0,0,w,h,p);
+        if(!poster && !person){Paint glow=new Paint(Paint.ANTI_ALIAS_FLAG);glow.setColor(android.graphics.Color.HSVToColor(90,new float[]{(hue+180)%360,.5f,.9f}));
+            c.drawCircle(w*.72f,h*.4f,h*.45f,glow);}
         if(poster){TextPaint t=new TextPaint(Paint.ANTI_ALIAS_FLAG);t.setColor(0xF0FFFFFF);t.setTextSize(w/8f);t.setFakeBoldText(true);
             String key=url.substring(url.lastIndexOf('/')+1);int i=Integer.parseInt(key.substring(1));
             String name=key.startsWith("m")?title(i,1):title(i,5);
