@@ -1,15 +1,11 @@
-09-30 23:24:47.983  2855  2855 I FlixTown: Refresh started
-09-30 23:24:50.019  2855  2855 I FlixTown: Refresh finished: updated
-09-30 23:25:59.834  2855  2855 I FlixTown: Refresh started
-09-30 23:25:59.896  2855  2855 I FlixTown: Back from background
-09-30 23:26:01.896  2855  2855 I FlixTown: Refresh finished: updated
-09-30 23:26:18.554  2855  2855 I FlixTown: Refresh started (from Settings)
-09-30 23:26:20.060  2855  2855 I FlixTown: Refresh finished: updated
-09-30 23:26:41.367  2855  2855 I FlixTown: Refresh started (from Settings)
-09-30 23:26:42.818  2855  2855 I FlixTown: Refresh finished: updated
-09-30 23:26:44.654  2855  2855 I FlixTown: Refresh started (from Settings)
-09-30 23:26:46.077  2855  2855 I FlixTown: Refresh finished: updated
-09-30 23:27:29.117  5222  5222 I FlixTown: Refresh started
-09-30 23:27:31.934  5222  5222 I FlixTown: Refresh finished: updated
-09-30 23:28:05.813  5427  5427 I FlixTown: Refresh started
-09-30 23:28:06.870  5427  5427 I FlixTown: Refresh finished: account expired
+09-30 23:34:01.626  2176  2176 I FlixTown: Refresh started
+09-30 23:34:03.824  2176  2176 I FlixTown: Refresh finished: updated
+09-30 23:35:21.069  2176  2176 I FlixTown: Back from background
+09-30 23:35:21.069  2176  2176 I FlixTown: Refresh started
+09-30 23:35:22.694  2176  2176 I FlixTown: Refresh finished: updated
+09-30 23:36:04.910  2176  2176 I FlixTown: Refresh started (from Settings)
+09-30 23:36:06.366  2176  2176 I FlixTown: Refresh finished: updated
+09-30 23:36:50.973  5230  5230 I FlixTown: Refresh started
+09-30 23:36:53.064  5230  5230 I FlixTown: Refresh finished: updated
+09-30 23:37:28.005  5465  5465 I FlixTown: Refresh started
+09-30 23:37:28.875  5465  5465 I FlixTown: Refresh finished: account expired
