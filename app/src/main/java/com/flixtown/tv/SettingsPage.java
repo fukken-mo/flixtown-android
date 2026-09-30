@@ -130,8 +130,10 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
                 return (account==null?"":"Signed in as "+account[0]+". ")+"Select to check your subscription now.";}
             case REFRESH:{if(StartupRefresh.running())return "Checking now…";
                 long at=prefs.getLong(LAST_REFRESH,0);
-                return at<=0?"Updates your account and the full catalog":"Last updated "+DateUtils.getRelativeTimeSpanString(at,System.currentTimeMillis(),DateUtils.MINUTE_IN_MILLIS);}
-            case IMAGES:return imageBytes<0?"Posters and artwork saved on this TV":
+                if(at<=0)return "Updates your account and the full catalog";
+                long now=System.currentTimeMillis();
+                return now-at<DateUtils.MINUTE_IN_MILLIS?"Last updated just now":"Last updated "+DateUtils.getRelativeTimeSpanString(at,now,DateUtils.MINUTE_IN_MILLIS);}
+            case IMAGES:return imageBytes<0?"Posters and artwork saved on this TV":imageBytes==0?"No artwork is saved on this TV right now":
                 "Posters and artwork use "+megabytes(imageBytes)+". They download again as you browse.";
             case AUTOPLAY_ROW:return "Starts the next episode when one ends, with a countdown you can cancel";
             case AUDIO:return "Used when a title has more than one audio track";
@@ -150,7 +152,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case AUDIO:{String code=prefs.getString(AUDIO_LANGUAGE,"");return code.isEmpty()?"Stream default  ›":languageName(code)+"  ›";}
             case SUBTITLE_LANG:{String code=prefs.getString(SUBTITLE_LANGUAGE,"");return code.isEmpty()?"Device language  ›":languageName(code)+"  ›";}
             case VERSION:return BuildConfig.VERSION_NAME+"  ("+BuildConfig.VERSION_CODE+")";
-            case IMAGES:return imageBytes<0?"":megabytes(imageBytes);
+            case IMAGES:return imageBytes<=0?"":megabytes(imageBytes);
             default:return "";
         }
     }

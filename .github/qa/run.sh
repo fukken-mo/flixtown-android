@@ -15,9 +15,11 @@ adb logcat -c
 
 shot(){ sleep "${2:-0.8}"; adb shell screencap -p "/sdcard/qa/$1.png"; echo "shot $1"; }
 key(){ for k in "$@"; do adb shell input keyevent "KEYCODE_$k"; sleep 0.6; done; }
-launch(){ adb shell am start -S -W -n "$PKG/com.flixtown.tv.LoginActivity" "$@" > /dev/null; }
-# Brings the existing task back to the front, as the TV launcher does after the Home button.
-resume(){ adb shell am start -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -f 0x10200000 -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null; }
+# Both use the TV launcher's own intent. Android only brings an existing task back when the intent
+# matches the one that started it, exactly as when the viewer picks Flix Town on the home screen.
+LAUNCHER="-a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -f 0x10200000"
+launch(){ adb shell am start -S -W $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" "$@" > /dev/null; }
+resume(){ adb shell am start -W $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null; }
 # The focused view: class, flags, bounds and id from the live hierarchy (" .F" = focused).
 focus(){ { echo "== $1"; adb shell dumpsys activity top | grep -E ' [.R]F[.S][.H]' | grep -v 'DecorView' | head -3; } >> qa/focus.txt; }
 
