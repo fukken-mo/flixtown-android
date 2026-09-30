@@ -11,8 +11,8 @@ android {
         applicationId = "com.myflixtown.tv.native"
         minSdk = 23
         targetSdk = 35
-        versionCode = 10004
-        versionName = "3.2.0-native-preview"
+        versionCode = 10005
+        versionName = "3.3.0-native-preview"
         buildConfigField("String", "PANEL_URL", "\"https://panelsandapps.com/panels/flixtown2027/api/\"")
         buildConfigField("boolean", "PREVIEW", flixPreview.toString())
         buildConfigField("boolean", "DEMO", "false")

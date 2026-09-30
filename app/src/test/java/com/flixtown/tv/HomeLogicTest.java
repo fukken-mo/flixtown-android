@@ -67,4 +67,12 @@ public class HomeLogicTest {
         assertEquals("2019  ·  ★ 7.6",HomeCards.join("2019","","★ 7.6",null));
         assertEquals("",HomeCards.join("",null));
     }
+    @Test public void settingsLanguageNamesAreReadable(){
+        java.util.Locale saved=java.util.Locale.getDefault();
+        try{java.util.Locale.setDefault(java.util.Locale.US);
+            assertEquals("Spanish",SettingsPage.languageName("es"));
+            assertEquals("English",SettingsPage.languageName("en"));
+            for(String code:SettingsPage.LANGUAGE_CODES)assertNotEquals(code,SettingsPage.languageName(code));
+        }finally{java.util.Locale.setDefault(saved);}
+    }
 }

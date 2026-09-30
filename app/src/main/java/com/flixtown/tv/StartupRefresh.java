@@ -1,6 +1,11 @@
 package com.flixtown.tv;
 
+import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.util.Log;
 import android.os.Handler;
 import android.os.Looper;
 import org.json.JSONObject;
@@ -11,12 +16,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * One catalog refresh per fresh app launch.
+ * Account and catalog refresh.
  *
- * It starts from the launcher activity, before any intro video, so new titles are fetched while
- * the intro plays. Screens attach as listeners and get the result on the main thread, even if it
- * finished before they attached. Switching screens or returning from playback never starts
- * another full download; only a new launch or "Check for updates" does.
+ * It runs on a fresh launch (from the launcher activity, before any intro video, so new titles are
+ * fetched while the intro plays), when the app comes back from the background, and from Settings.
+ * Screens attach as listeners and get the result on the main thread, even if it finished before
+ * they attached. Only one refresh runs at a time, and an automatic one is skipped if the last
+ * successful refresh was under a minute ago. Switching screens or returning from playback never
+ * starts one.
  */
 final class StartupRefresh {
     static final int DONE=1,FAILED=2,EXPIRED=3;
@@ -36,8 +43,13 @@ final class StartupRefresh {
     private static final List<Listener> listeners=new ArrayList<>();
     private static JSONObject config;
     private static Result result;
-    private static boolean running,started;
+    private static boolean running,started,watching,refreshAfterPlayer;
     private static int generation;
+    /** Activities currently started; ones started before watching began are never counted or removed. */
+    private static final java.util.Set<Integer> visible=new java.util.HashSet<>();
+    private static long lastDoneAt,backgroundSince;
+    private static final long MIN_INTERVAL_MS=60_000;
+    private static final String TAG="FlixTown";
 
     static boolean startedThisProcess(){return started;}
     static boolean running(){return running;}
@@ -45,6 +57,10 @@ final class StartupRefresh {
     /** Starts a refresh unless one is already running. Call on the main thread. */
     static void start(Context context,boolean manual){
         if(running)return;
+        // A result this recent is still delivered to new listeners; no second download is needed.
+        if(!manual && result!=null && result.state==DONE && SystemClock.elapsedRealtime()-lastDoneAt<MIN_INTERVAL_MS){
+            Log.i(TAG,"Refresh skipped: the last one finished under a minute ago");return;}
+        Log.i(TAG,"Refresh started"+(manual?" (from Settings)":""));
         Context app=context.getApplicationContext();
         running=true;started=true;result=null;if(!manual)config=null;
         final int token=++generation;
@@ -56,6 +72,41 @@ final class StartupRefresh {
         if(result!=null)listener.onResult(result);
     }
     static void unlisten(Listener listener){listeners.remove(listener);}
+
+    /** After signing out: forget everything so the next account starts with a fresh refresh. */
+    static void reset(){
+        generation++;running=false;started=false;result=null;config=null;lastDoneAt=0;refreshAfterPlayer=false;
+    }
+
+    /**
+     * Refreshes when the app returns from the background (Home button, screensaver, another app).
+     * Returning from a Flix Town screen is not a return from the background, so it does not count.
+     * If the app comes back straight into the player, the refresh waits until playback is left, so
+     * it never competes with the video for bandwidth.
+     */
+    static void watchForeground(Application app){
+        if(watching)return;watching=true;
+        app.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks(){
+            @Override public void onActivityStarted(Activity a){
+                visible.add(System.identityHashCode(a));
+                boolean returning=visible.size()==1 && backgroundSince>0;
+                if(returning)backgroundSince=0;
+                if(!(returning || refreshAfterPlayer))return;
+                if(a instanceof LoginActivity || a instanceof RenewalActivity || AccountStore.read(a)==null)return;
+                if(a instanceof PlayerActivity){refreshAfterPlayer=true;Log.i(TAG,"Back from background in the player: refresh waits");return;}
+                Log.i(TAG,"Back from background");
+                refreshAfterPlayer=false;start(a,false);
+            }
+            @Override public void onActivityStopped(Activity a){
+                if(visible.remove(System.identityHashCode(a)) && visible.isEmpty())backgroundSince=SystemClock.elapsedRealtime();
+            }
+            @Override public void onActivityCreated(Activity a,Bundle b){}
+            @Override public void onActivityResumed(Activity a){}
+            @Override public void onActivityPaused(Activity a){}
+            @Override public void onActivitySaveInstanceState(Activity a,Bundle b){}
+            @Override public void onActivityDestroyed(Activity a){}
+        });
+    }
     static JSONObject config(){return config;}
 
     private static void run(Context c,boolean manual,int token){
@@ -86,6 +137,7 @@ final class StartupRefresh {
             }
             Api.cache(c,"movies",ms);Api.cache(c,"series",ss);
             Api.cache(c,"movie_categories",mcs);Api.cache(c,"series_categories",scs);
+            Api.prefs(c).edit().putLong(SettingsPage.LAST_REFRESH,System.currentTimeMillis()).apply();
             finish(token,new Result(DONE,manual,null,movies,series,Catalog.parseCategories(mcs),Catalog.parseCategories(scs)));
         }catch(Exception e){
             android.util.Log.w("FlixTown","Startup refresh failed; cached titles remain",e);
@@ -94,6 +146,8 @@ final class StartupRefresh {
     }
     private static void finish(int token,Result r){
         MAIN.post(()->{if(token!=generation)return;running=false;result=r;
+            if(r.state==DONE)lastDoneAt=SystemClock.elapsedRealtime();
+            Log.i(TAG,"Refresh finished: "+(r.state==DONE?"updated":r.state==EXPIRED?"account expired":"failed"));
             for(Listener l:new ArrayList<>(listeners))l.onResult(r);});
     }
 }

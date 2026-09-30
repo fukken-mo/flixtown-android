@@ -31,6 +31,8 @@ final class DemoData {
         return i%9==4?"The "+t+" and the Long Road Home":i%5==0?"The "+t:t;}
 
     static volatile boolean offline,slow;
+    /** Catalog downloads in this process; from the second one on, the demo server has one new movie. */
+    private static int movieFetches;
     static String respond(String url,String body)throws Exception{
         if(offline){Thread.sleep(400);throw new java.io.IOException("Demo: network unreachable");}
         Thread.sleep(url.contains("get_vod_streams")?(slow?21000:900):250);
@@ -54,6 +56,10 @@ final class DemoData {
         if(url.contains("action=get_vod_categories"))return categories(MOVIE_CATS,1);
         if(url.contains("action=get_series_categories"))return categories(SERIES_CATS,50);
         if(url.contains("action=get_vod_streams")){JSONArray list=new JSONArray();
+            if(++movieFetches>=2)list.put(new JSONObject().put("stream_id","1999").put("name","The Late Arrival")
+                .put("stream_icon","demo://poster/m99").put("category_id","1").put("container_extension","mp4")
+                .put("added",String.valueOf(1760000000+86400)).put("rating","8.4").put("year",2026)
+                .put("backdrop_path",new JSONArray().put("demo://backdrop/m99")).put("plot","Added to the demo server after launch, to check that new titles appear without a restart."));
             for(int i=0;i<72;i++)list.put(new JSONObject().put("stream_id",String.valueOf(1000+i)).put("name",title(i,1))
                 .put("stream_icon","demo://poster/m"+i).put("category_id",String.valueOf(1+i%MOVIE_CATS.length))
                 .put("container_extension","mp4").put("added",String.valueOf(1760000000-i*86400)).put("rating",String.format(Locale.US,"%.1f",5+(i*37%45)/10.0))
@@ -81,7 +87,7 @@ final class DemoData {
                 .put("plot","A demo series about a small town, its secrets and the people who keep them. Used to check the Home preview."));
             return list.toString();}
         if(url.contains("player_api.php"))return new JSONObject().put("user_info",new JSONObject()
-            .put("status",Boolean.getBoolean("flix.demo.expired")||expired?"Expired":"Active").put("exp_date","1756684800").put("username","demo")).toString();
+            .put("status",Boolean.getBoolean("flix.demo.expired")||expired?"Expired":"Active").put("exp_date","1830254400").put("username","demo")).toString();
         throw new IllegalStateException("No demo response for "+url);
     }
     static volatile boolean expired;

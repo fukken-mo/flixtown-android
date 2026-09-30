@@ -55,10 +55,10 @@ import java.util.Map;
  * follows focus after a short pause. The focused row always sits on the same keyline, and every
  * row remembers its position, so the D-pad moves exactly one card per press.
  */
-public class HomeActivity extends Activity implements StartupRefresh.Listener, HomeCards.Listener, NavRail.Host {
+public class HomeActivity extends Activity implements StartupRefresh.Listener, HomeCards.Listener, NavRail.Host, SettingsPage.Host {
     static final String EXTRA_FRESH="fresh_launch";
     private static final int BROWSE_COLUMNS=6;
-    private static final long CACHED_OVERLAY_MS=2500,SLOW_SERVER_MS=15000,FOCUS_ART_DELAY_MS=280,HERO_ROTATE_MS=10000,HERO_IDLE_MS=8000;
+    private static final long SLOW_SERVER_MS=15000,FOCUS_ART_DELAY_MS=280,HERO_ROTATE_MS=10000,HERO_IDLE_MS=8000;
     private static final Object HERO="hero",UTILITY="utility";
     /** Movie details fetched for the hero (runtime, genre, plot, backdrop), kept for this process. */
     private static final Map<String,JSONObject> HERO_INFO=new HashMap<>();
@@ -87,6 +87,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private Dialog exitDialog;
     private AppUpdates updates;
     private Catalog.Item pendingFocusItem;
+    private SettingsPage settingsPage;
     private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Settings"};
     private static final String[] TAB_NAMES={"Search","Home","Movies","TV Shows","My List","Settings"};
     private static final int[] ICONS={1,0,2,3,4,5};
@@ -121,6 +122,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         // A fresh launch already started the refresh (before the intro); a restored process starts one here.
         if(!StartupRefresh.startedThisProcess())StartupRefresh.start(this,false);
         StartupRefresh.listen(this);
+        StartupRefresh.watchForeground(getApplication());
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
         out.putString("tab",tab);out.putString("category",category);out.putInt("sort",sortMode);
@@ -178,7 +180,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(!overlayUp)return;
         long elapsed=SystemClock.uptimeMillis()-overlayShownAt;
         if(!immediately && elapsed<600){handler.postDelayed(()->hideOverlay(true),600-elapsed);return;}
-        overlayUp=false;handler.removeCallbacks(slowServer);handler.removeCallbacks(cachedTimeout);
+        overlayUp=false;handler.removeCallbacks(slowServer);
         if(sweep!=null)sweep.cancel();
         content.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         startupOverlay.animate().alpha(0f).setDuration(260).withEndAction(()->startupOverlay.setVisibility(View.GONE)).start();
@@ -187,7 +189,6 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(focus==null || !isDescendant(content,focus))focusDefault();
         scheduleRotation();
     }
-    private final Runnable cachedTimeout=()->{if(overlayUp && (!movies.isEmpty()||!series.isEmpty()))hideOverlay(true);};
     private final Runnable slowServer=new Runnable(){@Override public void run(){
         if(!overlayUp)return;
         if(!movies.isEmpty()||!series.isEmpty()){hideOverlay(true);return;}
@@ -217,6 +218,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(isFinishing()||destroyed)return;
         if(r.state==StartupRefresh.EXPIRED){startActivity(new Intent(this,RenewalActivity.class));finish();return;}
         updateAccountPill();
+        if(settingsPage!=null)settingsPage.refreshStatus();
         if(r.state==StartupRefresh.DONE){
             applyCatalog(r.movies,r.series,r.movieCategories,r.seriesCategories);
             if(r.manual)toast("Your catalog is up to date");
@@ -241,10 +243,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             // A network result that already arrived is newer than the file cache.
             if(movies.isEmpty() && series.isEmpty())applyCatalog(m,s,mc,sc);
             boolean haveTitles=!movies.isEmpty()||!series.isEmpty();
-            if(overlayUp && haveTitles){
-                long wait=CACHED_OVERLAY_MS-(SystemClock.uptimeMillis()-overlayShownAt);
-                handler.postDelayed(cachedTimeout,Math.max(0,wait));
-            }else if(overlayUp && !StartupRefresh.running()){
+            // Saved titles show at once; the refresh that is already running updates them in place.
+            if(overlayUp && haveTitles)hideOverlay(false);
+            else if(overlayUp && !StartupRefresh.running()){
                 // The refresh already failed before the cache was read: show the offline choice now.
                 onResult(new StartupRefresh.Result(StartupRefresh.FAILED,false,null,null,null,null,null));
             }else if(!haveTitles && hero!=null)bindHero(false);
@@ -261,7 +262,36 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         Catalog.Store.set(movies,series);
         boolean changed=before!=signature(movies)*7+signature(series);
         if(!changed && rendered && !pendingRender)return;
-        if(canRenderNow())render();else pendingRender=true;
+        if(canRenderNow())renderKeepingFocus();
+        else if(isBrowse() && !nav.isOpen())updateBrowseInPlace();
+        else pendingRender=true;   // Home sections and Search apply it when the viewer is back at the top
+    }
+    /** Re-renders, then puts focus back if the rebuild took it away (hero buttons keep it via stable ids). */
+    private void renderKeepingFocus(){
+        boolean hadFocus=getCurrentFocus()!=null;render();
+        if(hadFocus)content.post(()->{View f=getCurrentFocus();if(!overlayUp && !nav.isOpen() && (f==null||!isDescendant(content,f)))focusDefault();});
+    }
+    /**
+     * New catalog data while a poster page is open: the grid keeps the same adapter and the same
+     * selected title (found by id, since new titles can shift positions), so neither focus nor the
+     * scroll position jumps. Filters keep their focus too.
+     */
+    private void updateBrowseInPlace(){
+        if(tab.equals("Settings")){if(settingsPage!=null)settingsPage.refreshStatus();return;}
+        RecyclerView.Adapter<?> current=browseGrid.getAdapter();
+        if(!(current instanceof PosterAdapter)){render();return;}
+        PosterAdapter grid=(PosterAdapter)current;
+        View focus=getCurrentFocus();boolean inGrid=focus!=null && isDescendant(browseGrid,focus);
+        int chip=-1;for(int i=0;i<filters.getChildCount();i++)if(filters.getChildAt(i)==focus)chip=i;
+        int position=browseGrid.getSelectedPosition();
+        String key=position>=0 && position<grid.getItemCount()?grid.itemAt(position).key():null;
+        List<Catalog.Item> next=browseItems();
+        grid.replace(next);
+        int target=key==null?-1:grid.indexOf(key);
+        if(target<0)target=Math.max(0,Math.min(position,next.size()-1));
+        if(!next.isEmpty())browseGrid.setSelectedPosition(target);
+        emptyMessage.setVisibility(next.isEmpty()?View.VISIBLE:View.GONE);
+        if(inGrid)focusGrid();else if(chip>=0)restoreFilterFocus(chip);
     }
     /** Re-render only when it cannot move focus or scroll position out from under the viewer. */
     private boolean canRenderNow(){
@@ -284,11 +314,16 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         // The page stays exactly where it is under the dim layer, but cannot take focus while the menu is open.
         content.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
     }
-    private void closeMenu(){if(!nav.isOpen())return;
+    private void closeMenu(){
+        View current=getCurrentFocus();
+        // Also recovers the case where the menu is closed but focus was left on one of its entries.
+        if(!nav.isOpen() && current!=null && isDescendant(content,current))return;
+        // Close first: the focus helpers below deliberately do nothing while the menu counts as open.
+        nav.close();
         content.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         boolean restored=lastContentFocus!=null && lastContentFocus.isAttachedToWindow() && lastContentFocus.isShown() && lastContentFocus.requestFocus();
         if(!restored)focusDefault();
-        nav.close();scheduleRotation();
+        scheduleRotation();
     }
     private void selectTab(String target){
         if(target.equals(tab)){closeMenu();return;}
@@ -296,7 +331,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         // An empty page (for example My List with no favorites) keeps the menu open so focus is never lost.
         if(hasFocusableContent())closeMenu();else nav.setSelected(tab);
     }
-    private boolean isBrowse(){return tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites");}
+    /** Pages drawn as a header over the full-page grid: the poster tabs, and Settings as a single column. */
+    private boolean isBrowse(){return tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites")||tab.equals("Settings");}
     private boolean hasFocusableContent(){
         if(isBrowse())return (browseGrid.getAdapter()!=null && browseGrid.getAdapter().getItemCount()>0)||filters.getChildCount()>0;
         return !entries.isEmpty();
@@ -311,6 +347,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         RecyclerView.ViewHolder h=homeRows.findViewHolderForAdapterPosition(Math.max(0,homeRows.getSelectedPosition()));
         if(h!=null && !homeRows.isLayoutRequested() && h.itemView.requestFocus())return;
         if(attempts>0)homeRows.postOnAnimation(()->focusHomeItem(attempts-1));
+        else homeRows.requestFocus();   // the grid hands focus to its selected row once it has laid out
     }
     private void focusGrid(){
         if(browseGrid.getAdapter()==null || browseGrid.getAdapter().getItemCount()==0){
@@ -323,6 +360,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         RecyclerView.ViewHolder holder=browseGrid.findViewHolderForAdapterPosition(Math.max(0,browseGrid.getSelectedPosition()));
         if(holder!=null && !browseGrid.isLayoutRequested() && holder.itemView.requestFocus())return;
         if(attempts>0)browseGrid.postOnAnimation(()->focusGridCard(attempts-1));
+        else browseGrid.requestFocus();   // the grid hands focus to its selected card once it has laid out
     }
 
     /* ---------------- Rendering ---------------- */
@@ -356,17 +394,10 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         scheduleRotation();
     }
     private void renderBrowse(){
+        if(tab.equals("Settings")){renderSettings();return;}
+        browseGrid.setNumColumns(BROWSE_COLUMNS);
         browseTitle.setText(tab.equals("Favorites")?"My List":tab.equals("Series")?"All TV Shows":"All Movies");
-        buildFilters();List<Catalog.Item> source=tab.equals("Series")?series:movies;
-        if(tab.equals("Favorites")){source=new ArrayList<>();String saved=Api.prefs(this).getString("favorites","");
-            for(Catalog.Item item:movies)if(saved.contains("|movie:"+item.id+"|"))source.add(item);
-            for(Catalog.Item item:series)if(saved.contains("|series:"+item.id+"|"))source.add(item);
-        }
-        ArrayList<Catalog.Item> filtered=new ArrayList<>();for(Catalog.Item item:source)if(category.isEmpty()||category.equals(item.categoryId))filtered.add(item);
-        if(sortMode==0)filtered=new ArrayList<>(Catalog.recent(filtered,filtered.size()));
-        if(sortMode==1)filtered.sort((a,b)->a.title.compareToIgnoreCase(b.title));
-        if(sortMode==2)filtered.sort((a,b)->Double.compare(b.rating,a.rating));
-        if(sortMode==3)filtered.sort((a,b)->Integer.compare(b.year,a.year));
+        buildFilters();List<Catalog.Item> filtered=browseItems();
         browseGrid.setAdapter(new PosterAdapter(this,filtered,artWidth,artHeight,true,null));
         int start=0;
         // After the activity was recreated, go back to the poster the viewer had selected.
@@ -375,6 +406,45 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         browseGrid.setSelectedPosition(start);
         if(filtered.isEmpty()){emptyMessage.setVisibility(View.VISIBLE);
             emptyMessage.setText(tab.equals("Favorites")?"Titles you add to My List appear here":movies.isEmpty()&&series.isEmpty()?"Your titles will appear here once they load":"No titles in this category");}
+    }
+    /** The current poster page's titles, after My List, category and sort. */
+    private List<Catalog.Item> browseItems(){
+        List<Catalog.Item> source=tab.equals("Series")?series:movies;
+        if(tab.equals("Favorites")){source=new ArrayList<>();String saved=Api.prefs(this).getString("favorites","");
+            for(Catalog.Item item:movies)if(saved.contains("|movie:"+item.id+"|"))source.add(item);
+            for(Catalog.Item item:series)if(saved.contains("|series:"+item.id+"|"))source.add(item);
+        }
+        ArrayList<Catalog.Item> filtered=new ArrayList<>();for(Catalog.Item item:source)if(category.isEmpty()||category.equals(item.categoryId))filtered.add(item);
+        if(sortMode==0)filtered=new ArrayList<>(Catalog.recent(filtered,filtered.size()));
+        if(sortMode==1)java.util.Collections.sort(filtered,(a,b)->a.title.compareToIgnoreCase(b.title));
+        if(sortMode==2)java.util.Collections.sort(filtered,(a,b)->Double.compare(b.rating,a.rating));
+        if(sortMode==3)java.util.Collections.sort(filtered,(a,b)->Integer.compare(b.year,a.year));
+        return filtered;
+    }
+    private void renderSettings(){
+        browseTitle.setText("Settings");filters.removeAllViews();
+        browseGrid.setNumColumns(1);
+        if(settingsPage==null)settingsPage=new SettingsPage(this,this);
+        browseGrid.setAdapter(settingsPage);
+        int start=0;
+        if(restoreGridPosition>=0){start=Math.min(restoreGridPosition,settingsPage.getItemCount()-1);restoreGridPosition=-1;if(!overlayUp)focusGrid();}
+        browseGrid.setSelectedPosition(start);
+    }
+
+    /* ---------------- Settings actions ---------------- */
+
+    @Override public void refreshCatalog(){
+        if(StartupRefresh.running()){toast("Already checking…");return;}
+        Toast.makeText(this,"Checking your account and catalog…",Toast.LENGTH_SHORT).show();
+        StartupRefresh.start(this,true);
+    }
+    @Override public void checkForUpdates(){updates.checkNow();}
+    @Override public void signOut(){
+        Ui.dialog(this,"Sign out of Flix Town?","This TV will forget your account. Your settings stay. To watch again, scan the code or sign in with your remote.",
+            new String[]{"Cancel","Sign out"},0,i->{if(i!=1)return;
+                SignOut.run(this);HERO_INFO.clear();
+                Intent login=new Intent(this,LoginActivity.class);login.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(login);finish();},null);
     }
     private HomeFeed.Section searchSection(String query){
         ArrayList<Catalog.Item> results=new ArrayList<>();String needle=query.trim().toLowerCase(Locale.US);
@@ -394,7 +464,13 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         b.setBackground(normal);b.setPadding(Ui.dp(this,20),0,Ui.dp(this,20),0);
         b.setOnFocusChangeListener((v,f)->{b.setBackground(f?focused:normal);b.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(120).start();
             if(f)lastContentFocus=v;});
-        b.setOnClickListener(v->click.run());return b;}
+        b.setOnClickListener(v->click.run());
+        // Down from Sort or Categories always lands on the grid's selected poster.
+        b.setOnKeyListener((v,key,e)->{
+            if(e.getAction()!=KeyEvent.ACTION_DOWN || key!=KeyEvent.KEYCODE_DPAD_DOWN || !isBrowse())return false;
+            if(browseGrid.getAdapter()==null || browseGrid.getAdapter().getItemCount()==0)return false;
+            focusGrid();return true;});
+        return b;}
     private void buildFilters(){filters.removeAllViews();if(!tab.equals("Movies") && !tab.equals("Series"))return;
         Button sort=chip(sortLabel(),()->
             Ui.picker(this,"Sort by",SORTS,sortMode,which->{sortMode=which;render();restoreFilterFocus(0);}));
@@ -706,7 +782,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
     private GradientDrawable outline(){GradientDrawable d=new GradientDrawable();d.setCornerRadius(Ui.dp(this,3));d.setStroke(Ui.dp(this,1),0x99CE4B4A);return d;}
 
-    /* ---------------- Search and Settings header ---------------- */
+    /* ---------------- Search header ---------------- */
 
     private View utilityHeader(){
         LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.VERTICAL);v.setGravity(Gravity.BOTTOM);
@@ -715,33 +791,22 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
     private void bindUtility(View view){
         LinearLayout v=(LinearLayout)view;v.removeAllViews();
-        TextView title=Ui.heading(this,tab.equals("Search")?"Search":"Settings",34);v.addView(title);
-        if(tab.equals("Search")){
-            TextView hint=Ui.text(this,"Find any movie or TV show in Flix Town. Select the field and press OK to type.",15);hint.setTextColor(Ui.TEXT_2);
-            LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-2,-2);hp.topMargin=Ui.dp(this,4);v.addView(hint,hp);
-            EditText query=new EditText(this);query.setHint("Movie or show title");query.setTextColor(Ui.TEXT);query.setText(searchText);
-            query.setHintTextColor(Ui.TEXT_3);query.setSingleLine(true);query.setInputType(InputType.TYPE_CLASS_TEXT);
-            query.setBackgroundResource(R.drawable.edit_field);query.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);query.setTextSize(18);
-            query.setOnFocusChangeListener((x,f)->{if(f)lastContentFocus=x;});
-            LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(Ui.dp(this,460),Ui.dp(this,52));qp.topMargin=Ui.dp(this,16);v.addView(query,qp);
-            query.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}
-                public void onTextChanged(CharSequence s,int start,int before,int count){searchText=s.toString();
-                    // Only the results row changes; the header (and the field being typed in) is never rebound.
-                    boolean had=entries.size()>1,has=searchText.trim().length()>1;
-                    while(entries.size()>1)entries.remove(entries.size()-1);
-                    if(has)entries.add(searchSection(searchText));
-                    if(had && has)homeAdapter.notifyItemChanged(1);else if(has)homeAdapter.notifyItemInserted(1);else if(had)homeAdapter.notifyItemRemoved(1);}
-                public void afterTextChanged(android.text.Editable e){} });
-        }else{
-            String[] account=AccountStore.read(this);String status=Api.prefs(this).getString("account_status","");
-            TextView line=Ui.text(this,(account==null?"":"Signed in as "+account[0])+(status.isEmpty()?"":"   ·   "+status)+"   ·   Version "+BuildConfig.VERSION_NAME,15);
-            line.setTextColor(Ui.TEXT_2);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.topMargin=Ui.dp(this,4);v.addView(line,lp);
-            LinearLayout row=Ui.row(this);row.setClipChildren(false);LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-2,-2);rp.topMargin=Ui.dp(this,18);v.addView(row,rp);
-            Button update=chip("Check for new titles",()->{
-                if(StartupRefresh.running()){toast("Already checking…");return;}
-                Toast.makeText(this,"Checking for new titles…",Toast.LENGTH_SHORT).show();StartupRefresh.start(this,true);});
-            row.addView(update,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46)));
-        }
+        TextView title=Ui.heading(this,"Search",34);v.addView(title);
+        TextView hint=Ui.text(this,"Find any movie or TV show in Flix Town. Select the field and press OK to type.",15);hint.setTextColor(Ui.TEXT_2);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-2,-2);hp.topMargin=Ui.dp(this,4);v.addView(hint,hp);
+        EditText query=new EditText(this);query.setHint("Movie or show title");query.setTextColor(Ui.TEXT);query.setText(searchText);
+        query.setHintTextColor(Ui.TEXT_3);query.setSingleLine(true);query.setInputType(InputType.TYPE_CLASS_TEXT);
+        query.setBackgroundResource(R.drawable.edit_field);query.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);query.setTextSize(18);
+        query.setOnFocusChangeListener((x,f)->{if(f)lastContentFocus=x;});
+        LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(Ui.dp(this,460),Ui.dp(this,52));qp.topMargin=Ui.dp(this,16);v.addView(query,qp);
+        query.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}
+            public void onTextChanged(CharSequence s,int start,int before,int count){searchText=s.toString();
+                // Only the results row changes; the header (and the field being typed in) is never rebound.
+                boolean had=entries.size()>1,has=searchText.trim().length()>1;
+                while(entries.size()>1)entries.remove(entries.size()-1);
+                if(has)entries.add(searchSection(searchText));
+                if(had && has)homeAdapter.notifyItemChanged(1);else if(has)homeAdapter.notifyItemInserted(1);else if(had)homeAdapter.notifyItemRemoved(1);}
+            public void afterTextChanged(android.text.Editable e){} });
     }
 
     /* ---------------- Keys ---------------- */

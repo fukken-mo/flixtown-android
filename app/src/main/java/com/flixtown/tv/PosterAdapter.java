@@ -34,7 +34,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     static final float FOCUS_SCALE=1.05f;
 
     private final Activity activity;
-    private final List<Catalog.Item> items;
+    private List<Catalog.Item> items;
     private final int artWidth,artHeight,glow;
     private final boolean names;
     private final Focus focus;
@@ -125,4 +125,8 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     }
     @Override public void onViewRecycled(Holder h){showFocus(h,false,false);}
     @Override public int getItemCount(){return items.size();}
+    Catalog.Item itemAt(int position){return items.get(position);}
+    int indexOf(String key){for(int i=0;i<items.size();i++)if(items.get(i).key().equals(key))return i;return -1;}
+    /** New data for the same grid (a background catalog update); stable ids keep the cards that did not change. */
+    void replace(List<Catalog.Item> next){items=new java.util.ArrayList<>(next);notifyDataSetChanged();}
 }

@@ -214,6 +214,7 @@ public class PlayerActivity extends Activity {
         player=new ExoPlayer.Builder(this,new DefaultRenderersFactory(this).setEnableDecoderFallback(true))
             .setMediaSourceFactory(new DefaultMediaSourceFactory(new DefaultDataSource.Factory(this,http))).build();
         video.setPlayer(player);
+        applyPreferences(this,player);
         player.addListener(new Player.Listener(){
             @Override public void onPlaybackStateChanged(int state){
                 if(state==Player.STATE_ENDED){ended=true;finishProgress();
@@ -311,6 +312,29 @@ public class PlayerActivity extends Activity {
     }
 
     /* ---------------- Audio and subtitles ---------------- */
+
+    /**
+     * Settings › Preferred audio language, Subtitles and Subtitle language. They only set
+     * preferences: a stream without that language plays its default track, and choices made in
+     * the player's Audio and Subtitles menus still override them for the current video.
+     */
+    static void applyPreferences(android.content.Context c,ExoPlayer player){
+        android.content.SharedPreferences p=Api.prefs(c);
+        TrackSelectionParameters.Builder b=player.getTrackSelectionParameters().buildUpon();
+        String audio=p.getString(SettingsPage.AUDIO_LANGUAGE,"");
+        b.setPreferredAudioLanguage(audio.isEmpty()?null:audio);
+        if(p.getBoolean(SettingsPage.SUBTITLES_ON,false)){
+            String text=p.getString(SettingsPage.SUBTITLE_LANGUAGE,"");
+            if(text.isEmpty())text=Locale.getDefault().getLanguage();
+            b.setTrackTypeDisabled(C.TRACK_TYPE_TEXT,false).setPreferredTextLanguage(text)
+                .setSelectUndeterminedTextLanguage(true).setIgnoredTextSelectionFlags(0);
+        }else{
+            // Off: no subtitles unless the stream marks them forced (for example, foreign-language lines).
+            b.setPreferredTextLanguage(null).setSelectUndeterminedTextLanguage(false)
+                .setIgnoredTextSelectionFlags(C.SELECTION_FLAG_DEFAULT);
+        }
+        player.setTrackSelectionParameters(b.build());
+    }
 
     private void showTracks(int type){
         if(player==null)return;

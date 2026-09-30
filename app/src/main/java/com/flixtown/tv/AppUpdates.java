@@ -23,10 +23,30 @@ final class AppUpdates {
     private File pendingFile;
     private long downloadId=-1;
     AppUpdates(HomeActivity activity){this.activity=activity;}
-    void check(JSONObject config){
+    /** Settings › Check for app updates: asks the panel now and always reports what it found. */
+    void checkNow(){
+        Toast.makeText(activity,"Checking for updates…",Toast.LENGTH_SHORT).show();
+        Api.IO.execute(()->{
+            try{JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");
+                handler.post(()->{if(!activity.isFinishing())report(config);});
+            }catch(Exception e){handler.post(()->{if(!activity.isFinishing())
+                Ui.message(activity,"Couldn't check for updates","The Flix Town panel couldn't be reached. Check the TV's internet connection and try again.");});}
+        });
+    }
+    private void report(JSONObject config){
+        int latest=config.optInt("update_version_code",0);
+        if(latest<=BuildConfig.VERSION_CODE){
+            Ui.message(activity,"Flix Town is up to date","You have version "+BuildConfig.VERSION_NAME+".");return;}
+        if(BuildConfig.PREVIEW){
+            Ui.message(activity,"An update is on your panel","Version "+latest+" is available for the main Flix Town app. This preview build doesn't install panel updates.");return;}
+        promptedVersion=0;
+        if(!check(config))Ui.message(activity,"Update not available","Your panel lists version "+latest+", but its download link isn't a secure https link.");
+    }
+    /** Offers the panel's update when it is newer; returns whether the offer was shown. */
+    boolean check(JSONObject config){
         int latest=config.optInt("update_version_code",0);
         String url=config.optString("update_apk_url","");
-        if(latest<=BuildConfig.VERSION_CODE || latest<=promptedVersion || !url.startsWith("https://"))return;
+        if(latest<=BuildConfig.VERSION_CODE || latest<=promptedVersion || !url.startsWith("https://"))return false;
         promptedVersion=latest;
         String notes=config.optString("update_notes","").trim();
         String title=notes.isEmpty()?"A new Flix Town update is ready":"Flix Town update: "+notes;
@@ -34,6 +54,7 @@ final class AppUpdates {
         Ui.options(activity,title,required?new String[]{"Update now"}:new String[]{"Update now","Later"},selection->{
             if(selection==0)download(url,latest);
         });
+        return true;
     }
     private void download(String url,int version){
         if(downloadId!=-1)return;

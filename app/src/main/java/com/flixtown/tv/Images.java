@@ -115,6 +115,27 @@ final class Images {
         catch (Exception e) { temp.delete(); return; }
         if (!temp.renameTo(file)) temp.delete();
     }
+    /** Bytes used by the poster disk cache. Call off the main thread. */
+    static long diskBytes() {
+        File dir = diskDir;
+        File[] files = dir == null ? null : dir.listFiles();
+        long total = 0;
+        if (files != null) for (File f : files) total += f.length();
+        return total;
+    }
+    /** Empties the memory and disk caches; {@code done} runs on the main thread with the bytes freed. */
+    interface Cleared { void done(long bytesFreed); }
+    static void clearCache(android.os.Handler main, Cleared done) {
+        MEMORY.evictAll();
+        IMAGE_IO.execute(() -> {
+            File dir = diskDir;
+            File[] files = dir == null ? null : dir.listFiles();
+            long freed = 0;
+            if (files != null) for (File f : files) { long size = f.length(); if (f.delete()) freed += size; }
+            long result = freed;
+            main.post(() -> done.done(result));
+        });
+    }
     private static void trimDisk() {
         File dir = diskDir;
         File[] files = dir == null ? null : dir.listFiles();
