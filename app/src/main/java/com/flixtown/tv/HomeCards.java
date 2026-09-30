@@ -34,6 +34,7 @@ final class HomeCards {
         void onFocus(Catalog.Item item);
         void onOpen(Catalog.Item item,HomeFeed.Section section);
         void onCategory(Catalog.Category category);
+        void onCategoryFocus(Catalog.Category category,int count);
     }
     static final int GLOW=8;
     // Artwork sizes in dp (the card adds the glow margin around the art).
@@ -219,14 +220,16 @@ final class HomeCards {
             TextView count=Ui.text(c,"",12);count.setTextColor(Ui.TEXT_3);tile.addView(count);
             GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(Ui.dp(c,10));ring.setStroke(Ui.dp(c,2),0xFFE8736F);ring.setColor(0);
             card.setOnFocusChangeListener((v,f)->{g.setOn(f);tile.setForeground(f?ring:null);name.setTextColor(f?Ui.TEXT:0xFFE4DFDA);
-                box.animate().scaleX(f?1.06f:1f).scaleY(f?1.06f:1f).setDuration(150).start();});
+                box.animate().scaleX(f?1.06f:1f).scaleY(f?1.06f:1f).setDuration(150).start();
+                Object cat=v.getTag(R.id.tile_category);
+                if(f && cat instanceof Catalog.Category){Integer n=section.counts.get(((Catalog.Category)cat).id);listener.onCategoryFocus((Catalog.Category)cat,n==null?0:n);}});
             card.setTag(new TextView[]{name,count});
             return new RecyclerView.ViewHolder(card){};
         }
         @Override public void onBindViewHolder(RecyclerView.ViewHolder h,int position){
             Catalog.Category cat=section.categories.get(position);TextView[] t=(TextView[])h.itemView.getTag();
             t[0].setText(cat.name);Integer n=section.counts.get(cat.id);t[1].setText(n==null?"":n+(n==1?" title":" titles"));
-            h.itemView.setContentDescription(cat.name);
+            h.itemView.setContentDescription(cat.name);h.itemView.setTag(R.id.tile_category,cat);
             h.itemView.setOnClickListener(v->listener.onCategory(cat));
         }
     }

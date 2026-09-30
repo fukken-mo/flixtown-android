@@ -333,6 +333,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         ambientSlot.setVisibility(browse?View.GONE:View.VISIBLE);ambientDim.setVisibility(browse?View.GONE:View.VISIBLE);homeScrim.setVisibility(browse?View.GONE:View.VISIBLE);
         browseHeader.setVisibility(browse?View.VISIBLE:View.GONE);browseGrid.setVisibility(browse?View.VISIBLE:View.GONE);
         emptyMessage.setVisibility(View.GONE);
+        if(browse){handler.removeCallbacks(focusArt);preview.animate().cancel();preview.setAlpha(0f);}   // Home's preview never shows over a grid
         entries.clear();
         if(home){
             HomeFeed.Result feed=HomeFeed.build(this,movies,series,movieCategories);
@@ -473,6 +474,14 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(section.type==HomeFeed.CONTINUE){watch(item);return;}
         openDetails(item,false);
     }
+    /** Genre tiles have no artwork of their own: show what the tile opens instead of the last title. */
+    @Override public void onCategoryFocus(Catalog.Category cat,int count){
+        lastContentFocus=getCurrentFocus();pendingFocusItem=null;handler.removeCallbacks(focusArt);
+        if(heroMode||!tab.equals("Home"))return;
+        previewTitle.setText(cat.name);
+        previewMeta.setText(count>0?count+(count==1?" movie":" movies"):"Movies");
+        previewDesc.setText("Open the full "+cat.name+" collection, sorted by what was added most recently.");previewDesc.setVisibility(View.VISIBLE);
+    }
     @Override public void onCategory(Catalog.Category cat){
         tab="Movies";category=cat.id;sortMode=0;restoreGridPosition=-1;lastContentFocus=null;render();focusGrid();
     }
@@ -568,9 +577,14 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             hero.primaryLabel.setText(hasProgress(item)?"Continue":"Watch Now");
             buildDots();
         };
-        if(animate){hero.block.animate().alpha(0f).translationX(-Ui.dp(this,10)).setDuration(160).withEndAction(()->{fill.run();
-            hero.block.setTranslationX(Ui.dp(this,14));hero.block.animate().alpha(1f).translationX(0).setDuration(240).start();}).start();}
-        else fill.run();
+        // Only the words change; buttons and pager stay put, so the hero is never empty mid-rotation
+        // and focus on Watch Now / More Info is untouched.
+        View[] words={hero.eyebrow,hero.title,hero.meta,hero.desc};
+        if(animate){for(View w:words)w.animate().cancel();
+            for(int i=0;i<words.length;i++){View w=words[i];boolean last=i==words.length-1;
+                w.animate().alpha(0.15f).translationX(-Ui.dp(this,8)).setStartDelay(0).setDuration(150).withEndAction(last?()->{fill.run();
+                    for(View x:words){x.setTranslationX(Ui.dp(this,12));x.animate().alpha(1f).translationX(0).setDuration(260).start();}}:null).start();}}
+        else{fill.run();for(View w:words){w.animate().cancel();w.setAlpha(1f);w.setTranslationX(0);}}
         if(heroMode && tab.equals("Home"))showHeroArt();
         fetchHeroInfo(item);
         // Warm only the next hero backdrop; nothing else is preloaded.

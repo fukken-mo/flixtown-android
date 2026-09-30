@@ -23,7 +23,8 @@ sleep 16;                                   shot 02-first-launch-loading 0.1
 sleep 4;                                    shot 03-home-hero 1.5
 
 # --- Hero ---
-sleep 11;                                   shot 04-hero-rotated 0.2
+sleep 11;                                   shot 04-hero-rotating 0.2
+                                            shot 04b-hero-rotated 1.0
 key DPAD_RIGHT;                             shot 05-hero-more-info-focus 0.3
 key DPAD_LEFT;                              shot 06-hero-watch-focus 0.3
 
