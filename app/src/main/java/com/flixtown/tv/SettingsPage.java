@@ -180,7 +180,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case IMAGES:
                 Images.clearCache(new android.os.Handler(android.os.Looper.getMainLooper()),freed->{
                     imageBytes=0;notifyItemChanged(indexOf(IMAGES));
-                    android.widget.Toast.makeText(a,"Cleared "+megabytes(freed)+" of saved artwork",android.widget.Toast.LENGTH_SHORT).show();});
+                    android.widget.Toast.makeText(a,freed>0?"Cleared "+megabytes(freed)+" of saved artwork":"There was no saved artwork to clear",android.widget.Toast.LENGTH_SHORT).show();});
                 break;
             case AUTOPLAY_ROW:prefs.edit().putBoolean(AUTOPLAY,!prefs.getBoolean(AUTOPLAY,true)).apply();notifyItemChanged(indexOf(AUTOPLAY_ROW));break;
             case SUBTITLES:prefs.edit().putBoolean(SUBTITLES_ON,!prefs.getBoolean(SUBTITLES_ON,false)).apply();
