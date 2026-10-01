@@ -1,0 +1,36 @@
+PASS  hero shows a real trending title (#n TRENDING; it rotates)
+PASS  no provider '★ 10.0' anywhere on Home
+PASS  Trending shows TMDB trending matched by TMDB ID (Northern Letters)
+PASS  Trending: title + year within one (The Paper Empire)
+PASS  trending rank #1 is not shown as a rating
+FAIL  trending title with too few TMDB votes shows no rating (The Hidden Voyage)
+PASS  Trending cards show TMDB ratings ★ x.x
+PASS  no provider '★ 10.0' in Trending
+PASS  Latest Movies: NEW for movies added this week
+PASS  Latest Movies: some titles without a TMDB rating show none
+  The Golden Harbor: The Golden Harbor|NEW EPISODES|The Golden Harbor|2005  ·  ★ 8.9  ·  Series
+  Iron Protocol: Iron Protocol|NEW SERIES|Iron Protocol|2006  ·  ★ 6.5  ·  Series
+  Broken Station: Broken Station|Broken Station|2007  ·  ★ 8.6  ·  Series
+  Paper Garden: 
+PASS  older series with a new episode: NEW EPISODES (The Golden Harbor)
+PASS  recently added series: NEW SERIES (Iron Protocol)
+PASS  unchanged series with touched last_modified: no badge (Broken Station)
+PASS  series without episode times, first check: no badge (Paper Garden)
+PASS  first import: not every poster is NEW
+FAIL  badged series lead Latest TV Shows
+PASS  no provider '★ 10.0' on TV cards
+PASS  details page shows the TMDB rating ★ x.x
+PASS  details page never shows the provider 10
+PASS  browse cards show year · ★ rating
+PASS  browse cards without a rating show only the year
+  The Night Shift Files: 
+  Paper Garden: 
+FAIL  series that appeared after the first import: NEW SERIES
+FAIL  series without episode times, new episode ID: NEW EPISODES (Paper Garden)
+PASS  earlier badges kept (The Golden Harbor NEW EPISODES)
+PASS  unchanged series still without badge (Broken Station)
+PASS  after restart: badges come from saved state (The Golden Harbor)
+PASS  after restart: unchanged series still without badge (Broken Station)
+PASS  after restart: ratings shown from the saved cache
+PASS  no crash
+ratings & badges: 25 passed, 4 failed
