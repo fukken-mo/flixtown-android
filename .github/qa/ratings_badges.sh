@@ -58,9 +58,11 @@ key DPAD_DOWN;                               shot 03-trending-row 2.5; dump tren
 check "Trending shows TMDB trending matched by TMDB ID ($M3)" '[ -n "$(card "$M3")" ]'
 check "Trending: title + year within one ($M10)" '[ -n "$(card "$M10")" ]'
 check "trending rank #1 is not shown as a rating" '! card "$M3" | grep -q "★ 1\.0"'
-check "trending title with too few TMDB votes shows no rating ($M20)" '[ -n "$(card "$M20")" ] && ! card "$M20" | grep -q "★"'
 check "Trending cards show TMDB ratings ★ x.x" 'grep -q "★ [0-9]\.[0-9]" "$OUT/ui.xml"'
 check "no provider '★ 10.0' in Trending" '! has "★ 10.0"'
+key DPAD_RIGHT DPAD_RIGHT DPAD_RIGHT DPAD_RIGHT; shot 03b-trending-row-right 2; dump trending2
+check "trending title with too few TMDB votes shows no rating ($M20)" '[ -n "$(card "$M20")" ] && ! card "$M20" | grep -q "★"'
+key DPAD_LEFT DPAD_LEFT DPAD_LEFT DPAD_LEFT; sleep 0.5
 key DPAD_DOWN;                               shot 04-latest-movies 2.5; dump movies
 check "Latest Movies: NEW for movies added this week" 'has "text=\"NEW\""'
 check "Latest Movies: some titles without a TMDB rating show none" 'python3 - "$OUT/ui.xml" <<EOF
@@ -77,7 +79,8 @@ check "series without episode times, first check: no badge ($S3)" '! card "$S3" 
 check "first import: not every poster is NEW" '[ "$(grep -o "text=\"NEW [A-Z]*\"" "$OUT/ui.xml" | wc -l)" -le 2 ]'
 check "badged series lead Latest TV Shows" 'python3 - "$OUT/ui.xml" "$S0" "$S1" <<EOF
 import sys, xml.etree.ElementTree as ET
-r=ET.parse(sys.argv[1]).getroot(); order=[n.get("content-desc") for n in r.iter("node") if n.get("content-desc")]
+menu={"Search","Home","Movies","TV Shows","My List","Settings"}
+r=ET.parse(sys.argv[1]).getroot(); order=[n.get("content-desc") for n in r.iter("node") if n.get("content-desc") and n.get("content-desc") not in menu]
 sys.exit(0 if sys.argv[2] in order[:4] and sys.argv[3] in order[:4] else 1)
 EOF'
 check "no provider '★ 10.0' on TV cards" '! has "★ 10.0"'
@@ -104,7 +107,8 @@ for n in ET.parse(sys.argv[1]).getroot().iter('node'):
     if re.search('Check for new movies and shows', n.get('text','')):
         x1,y1,x2,y2=map(int,re.findall(r'\d+',n.get('bounds'))); print((x1+x2)//2,(y1+y2)//2); break
 EOF
-if [ -s "$OUT/refresh-xy" ]; then adb shell input tap $(cat "$OUT/refresh-xy"); else note "  (refresh row not found by text)"; fi
+if [ -s "$OUT/refresh-xy" ]; then adb shell input tap $(cat "$OUT/refresh-xy"); sleep 0.6; else note "  (refresh row not found by text)"; fi
+key DPAD_CENTER                               # a tap only focuses the row on a TV; the remote's OK starts the check
 sleep 5;                                     shot 08-refreshed 0.3
 sleep 22                                      # episode checks for the changed series
 key DPAD_LEFT DPAD_UP DPAD_UP DPAD_UP DPAD_UP DPAD_CENTER; sleep 2.5   # menu on Settings → Home
