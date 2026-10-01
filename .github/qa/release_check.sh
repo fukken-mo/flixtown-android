@@ -193,6 +193,14 @@ e="$(qaf elapsed)"
 key DPAD_UP;                                 shot 18-player-controls 0.5
 wait_qa controls true 3 && ok "Up shows the player controls" || bad "controls not shown ($(qa_line))"
 wait_qa controls false 8 && ok "controls hide by themselves" || bad "controls stay on screen ($(qa_line))"
+key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.8                # controls, then the progress bar
+t0="$(qaf elapsed)"
+adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 2.5; t1="$(qaf elapsed)"
+adb shell input keyevent KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT; sleep 2.5; t2="$(qaf elapsed)"
+[ -n "$t0" ] && [ -n "$t1" ] && [ -n "$t2" ] && [ "$t1" -ge $((t0+8)) ] && [ "$t2" -le $((t1-15)) ] \
+  && ok "seeking: Right +10s, Left ×2 −20s (${t0}s → ${t1}s → ${t2}s)" || bad "seeking (${t0}s → ${t1}s → ${t2}s)"
+shot 19-seeked 0.1
+wait_qa controls false 8
 wait_qa controls false 8
 key DPAD_UP; sleep 0.8
 player_focus audio DPAD_RIGHT || note "INFO  player focus: $(qa_line)"
@@ -216,14 +224,6 @@ shot 21-subtitle-picker 0.2
 key DPAD_DOWN DPAD_CENTER;                   sleep 2
 subs2="$(qaf subs)"
 [ "$subs1" != "$subs2" ] && ok "subtitles changed ($subs1 → $subs2)" || bad "subtitle label unchanged ($subs1)"
-wait_qa controls false 8
-key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.8                # controls, then the progress bar
-start="$(qaf elapsed)"
-adb shell input keyevent KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT; sleep 2.5
-after="$(qaf elapsed)"
-# The demo clip is about a minute long, so this seeks back (forward seeking is checked in Up next below).
-[ -n "$start" ] && [ -n "$after" ] && [ "$start" -ge 15 ] && [ "$after" -le $((start-12)) ] && ok "seeking: 2 × Left goes back ~20s (${start}s → ${after}s)" || bad "seeking did not move (${start}s → ${after}s)"
-shot 19-seeked 0.1
 wait_qa controls false 8
 key DPAD_UP; sleep 0.8
 key BACK; sleep 1.2
