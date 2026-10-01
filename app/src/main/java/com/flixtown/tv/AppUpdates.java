@@ -28,20 +28,23 @@ import java.util.Locale;
 /**
  * App updates from the Flix Town panel (app-update.php).
  *
- * The panel reads the version from inside the APK at its update link. This class asks it once in
- * the background after launch and whenever Settings › Check for app updates is selected, offers
- * the update only when its versionCode is higher than this app's, downloads it fresh (never from a
- * cache), checks its SHA-256, package ID, versionCode and signing key, and then hands it to
- * Android's installer, which asks the viewer to confirm.
+ * The panel reads the version from inside the APK it publishes. On every fresh launch this class
+ * asks it in the background (no catalog reload, no delay to Home); when the published versionCode
+ * is higher than this app's and the package matches, an "Update available" (or "Update required")
+ * prompt appears once Home is on screen. Settings › Check for app updates asks on demand and
+ * also answers "You're up to date" or "Unable to check". Automatic checks that fail stay silent.
  *
- * State is kept for the whole process, so Settings shows it and a download continues when the
- * screen changes. A failed check is always reported as failed, never as "up to date".
+ * Downloads are fresh (never from a cache) and verified (SHA-256, package ID, versionCode,
+ * signing key) before Android's installer asks the viewer to confirm. State is kept for the
+ * process, so Settings shows it and a download continues when the screen changes.
  */
 final class AppUpdates {
     enum State { IDLE, CHECKING, UP_TO_DATE, AVAILABLE, DOWNLOADING, READY, FAILED }
     interface Listener { void onUpdateState(); }
 
-    private static final long STARTUP_DELAY_MS=6000;
+    /** Back from the background after this long counts as a new visit: check again. */
+    private static final long AUTO_RECHECK_MS=6L*60*60*1000;
+    private static final String TAG="FlixTown";
     private static final Handler MAIN=new Handler(Looper.getMainLooper());
     private static State state=State.IDLE;
     private static UpdateInfo info;          // the newer release, while AVAILABLE / DOWNLOADING / READY
@@ -49,8 +52,10 @@ final class AppUpdates {
     private static int percent;
     private static File ready;
     private static long checkedAt;
-    private static boolean startupDone,downloadRunning;
-    private static long laterFor;            // versionCode the viewer postponed this session
+    private static boolean startupDone,downloadRunning,pendingPrompt,awaitingPermission,installFailed;
+    private static long laterFor;            // versionCode the viewer postponed with "Later" (this launch)
+    private static long lastAutoCheck;
+    private android.app.Dialog prompt;       // the one update dialog on screen, if any
 
     private final HomeActivity activity;
     private Listener listener;
@@ -63,47 +68,68 @@ final class AppUpdates {
     /* ---------------- What Settings shows ---------------- */
 
     static State state(){return state;}
+    /** Settings › Check for app updates, right-hand value. Customer wording only. */
     String rowValue(){
         switch(state){
             case CHECKING:return "Checking…";
             case UP_TO_DATE:return "Up to date";
-            case AVAILABLE:return "Version "+info.versionName+" available";
+            case AVAILABLE:return "Update available";
             case DOWNLOADING:return "Downloading "+percent+"%";
             case READY:return "Ready to install";
-            case FAILED:return "Check failed";
+            case FAILED:return installFailed?"Couldn't update":"Couldn't check";
             default:return "";
         }
     }
     String rowDetail(){
         switch(state){
-            case CHECKING:return "Asking your Flix Town panel for the newest version";
-            case UP_TO_DATE:return "Version "+BuildConfig.VERSION_NAME+" is the newest on your panel · checked "+ago(checkedAt);
-            case AVAILABLE:return "Select to download and install"+(info.sizeLabel().isEmpty()?"":" ("+info.sizeLabel()+")");
-            case DOWNLOADING:return "Downloading version "+info.versionName+". You can keep watching.";
-            case READY:return "Downloaded and verified. Select to open the installer.";
-            case FAILED:return failure;
-            default:return "Checks your Flix Town panel for a newer version";
+            case UP_TO_DATE:return "You have the latest version of Flix Town";
+            case AVAILABLE:return "Select to download and install the new version";
+            case DOWNLOADING:return "You can keep watching while it downloads";
+            case READY:return "Select to install the update";
+            case FAILED:return "Please check your connection and try again";
+            default:return "See if a newer version of Flix Town is available";
         }
     }
-    private static String ago(long at){long s=(SystemClock.elapsedRealtime()-at)/1000;
-        return s<60?"just now":s<3600?(s/60)+" min ago":(s/3600)+" h ago";}
 
-    /** Settings › Check for app updates. */
+    /** Settings › Check for app updates (manual: always answers, including "up to date"). */
     void select(){
         switch(state){
             case CHECKING:toast("Checking for updates…");return;
             case DOWNLOADING:showProgress();return;
             case READY:install();return;
-            case AVAILABLE:offer(true);return;
+            case AVAILABLE:offer();return;
             default:check(true);
         }
     }
 
-    /** Once per launch, in the background, after the catalog has had its head start. */
-    void checkOnStartup(){
+    /**
+     * Automatic check on a fresh launch: in the background, without waiting for or touching the
+     * catalog. Silent unless a newer version exists; the prompt waits until Home is on screen.
+     */
+    void checkOnLaunch(){
         if(startupDone)return;startupDone=true;
-        MAIN.postDelayed(()->{if(!activity.isFinishing() && state!=State.CHECKING && state!=State.DOWNLOADING && state!=State.READY)check(false);},STARTUP_DELAY_MS);
+        autoCheck();
     }
+    /** Coming back to Home after hours in the background is treated like a new launch. */
+    void checkIfStale(){
+        if(startupDone && SystemClock.elapsedRealtime()-lastAutoCheck>=AUTO_RECHECK_MS)autoCheck();
+    }
+    private void autoCheck(){
+        if(state==State.CHECKING || state==State.DOWNLOADING || state==State.READY)return;
+        lastAutoCheck=SystemClock.elapsedRealtime();
+        check(false);
+    }
+
+    /**
+     * Shows a waiting automatic prompt once Home is ready for it: resumed, focused (so no other
+     * dialog, intro or loading screen is in front) and not already showing an update dialog.
+     */
+    void showPendingIfReady(){
+        if(!pendingPrompt || info==null || (state!=State.AVAILABLE && state!=State.READY))return;
+        if(!activity.readyForUpdatePrompt() || isPromptShowing())return;
+        pendingPrompt=false;offer();
+    }
+    private boolean isPromptShowing(){return prompt!=null && prompt.isShowing();}
 
     /* ---------------- Checking ---------------- */
 
@@ -120,7 +146,7 @@ final class AppUpdates {
                 if(found!=null && !found.signerSha256.isEmpty()){
                     String mine=installedSigner(activity);
                     if(mine!=null && !mine.equals(found.signerSha256))
-                        problem="Version "+found.versionName+" on the panel is signed with a different key than this app, so Android would refuse to install it over Flix Town.";
+                        problem="Published APK "+found.versionCode+" is signed with a different key than the installed app";
                 }
             }catch(UpdateInfo.Problem p){problem=p.getMessage();}
             catch(PanelProblem p){problem=p.getMessage();}
@@ -132,22 +158,53 @@ final class AppUpdates {
     }
     private void finishCheck(UpdateInfo found,String error){
         checkedAt=SystemClock.elapsedRealtime();
-        if(error!=null){failure=error;setState(State.FAILED);
-            if(manualCheck && !activity.isFinishing())Ui.message(activity,"Couldn't check for updates",error);return;}
-        if(found==null){info=null;setState(State.UP_TO_DATE);
-            if(manualCheck && !activity.isFinishing())Ui.message(activity,"Flix Town is up to date","You have version "+BuildConfig.VERSION_NAME+", the newest on your panel.");return;}
+        if(error!=null){
+            android.util.Log.w(TAG,"Update check failed: "+error);
+            failure=error;installFailed=false;setState(State.FAILED);
+            if(manualCheck)showCheckFailed();             // automatic checks stay silent
+            return;
+        }
+        if(found==null){info=null;pendingPrompt=false;setState(State.UP_TO_DATE);
+            if(manualCheck)showUpToDate();                // never shown automatically
+            return;}
         info=found;setState(State.AVAILABLE);
-        if(manualCheck || found.required || laterFor!=found.versionCode)offer(manualCheck);
+        if(manualCheck){offer();return;}
+        if(found.required || laterFor!=found.versionCode){pendingPrompt=true;showPendingIfReady();}
     }
 
-    private void offer(boolean fromSettings){
-        if(activity.isFinishing() || info==null)return;
+    /* ---------------- Customer dialogs ---------------- */
+
+    private void offer(){
+        if(activity.isFinishing() || info==null || isPromptShowing())return;
         UpdateInfo u=info;
-        String title="Flix Town "+u.versionName+" is available";
-        String message=(u.notes.isEmpty()?"A new version of Flix Town is ready.":u.notes)
-            +"\n\nYou have "+BuildConfig.VERSION_NAME+". Your sign-in and settings stay as they are."+(u.sizeLabel().isEmpty()?"":" Download: "+u.sizeLabel()+".");
-        String[] buttons=u.required?new String[]{"Update now"}:new String[]{"Update now","Later"};
-        Ui.dialog(activity,title,message,buttons,0,i->{if(i==0)download();else laterFor=u.versionCode;},()->{if(!u.required)laterFor=u.versionCode;});
+        String notes=u.notes.isEmpty()?null:"What’s new: "+u.notes;
+        Ui.Choice start=i->{if(i!=0){laterFor=u.versionCode;return;}
+            if(state==State.READY && ready!=null && ready.isFile())install();else download();};
+        if(u.required)
+            prompt=Ui.notice(activity,"Update required","A new version of Flix Town is needed to continue. Update now to keep watching.",
+                notes,new String[]{"Update now"},0,false,start,null);
+        else
+            prompt=Ui.notice(activity,"Update available","A new version of Flix Town is ready. Update now for the latest improvements.",
+                notes,new String[]{"Update now","Later"},0,true,start,()->laterFor=u.versionCode);
+    }
+    private void showUpToDate(){
+        if(activity.isFinishing() || isPromptShowing())return;
+        prompt=Ui.notice(activity,"You’re up to date","You have the latest version of Flix Town.","Version "+BuildConfig.VERSION_NAME,
+            new String[]{"Done"},0,true,i->{},null);
+    }
+    private void showCheckFailed(){
+        if(activity.isFinishing() || isPromptShowing())return;
+        prompt=Ui.notice(activity,"Unable to check for updates","Please check your connection and try again.",null,
+            new String[]{"Try again","Close"},0,true,i->{if(i==0)check(true);},null);
+    }
+    private void showInstallFailed(){
+        if(activity.isFinishing() || isPromptShowing())return;
+        boolean required=info!=null && info.required;
+        prompt=Ui.notice(activity,"Unable to update","The update couldn’t be completed. Please check your connection and try again.",null,
+            new String[]{"Try again","Close"},0,!required,i->{
+                if(i==0){download();return;}
+                if(required){pendingPrompt=true;MAIN.post(this::showPendingIfReady);}   // a required update stays required
+            },null);
     }
 
     /* ---------------- Downloading ---------------- */
@@ -167,7 +224,7 @@ final class AppUpdates {
                 try{digest=fetch(UpdateInfo.cacheBusted(u.apkUrl,String.valueOf(System.currentTimeMillis())),target,u.size);}
                 catch(HttpStatus e){if(e.code<400 || e.code>=500)throw e;digest=fetch(u.apkUrl,target,u.size);}
                 if(!digest.equals(u.sha256))
-                    throw new Verify("The downloaded file doesn't match the checksum on the panel. If a new APK was just uploaded, try again in a few minutes.");
+                    throw new Verify("Checksum mismatch: downloaded "+digest+", published "+u.sha256);
                 verifyPackage(app,target,pkg,u);
             }catch(Verify v){problem=v.getMessage();}
             catch(HttpStatus e){problem="The update link returned HTTP "+e.code+".";}
@@ -176,8 +233,8 @@ final class AppUpdates {
             if(problem!=null)target.delete();
             String error=problem;
             MAIN.post(()->{downloadRunning=false;
-                if(error!=null){failure=error;setState(State.FAILED);dismissProgress();
-                    if(!activity.isFinishing())Ui.message(activity,"Update failed",error);return;}
+                if(error!=null){android.util.Log.w(TAG,"Update download failed: "+error);
+                    failure=error;installFailed=true;setState(State.FAILED);dismissProgress();showInstallFailed();return;}
                 ready=target;setState(State.READY);dismissProgress();install();});
         });
     }
@@ -275,10 +332,12 @@ final class AppUpdates {
     void install(){
         if(ready==null || !ready.isFile()){ready=null;if(state==State.READY){info=null;setState(State.IDLE);}return;}
         if(Build.VERSION.SDK_INT>=26 && !activity.getPackageManager().canRequestPackageInstalls()){
-            Ui.dialog(activity,"Allow Flix Town to install its update","Android asks once. On the next screen, turn on \"Allow from this source\", then press Back.",
-                new String[]{"Continue","Not now"},0,i->{if(i!=0)return;
+            if(isPromptShowing())return;
+            prompt=Ui.notice(activity,"Allow updates","To install the update, allow Flix Town to install apps. On the next screen, turn on “Allow from this source”, then press Back.",
+                null,new String[]{"Continue","Not now"},0,true,i->{if(i!=0)return;
+                    awaitingPermission=true;
                     try{activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+activity.getPackageName())));}
-                    catch(Exception e){toast("Allow installing unknown apps for Flix Town in the TV's settings.");}},null);
+                    catch(Exception e){awaitingPermission=false;toast("Allow Flix Town to install apps in the TV’s settings.");}},null);
             return;
         }
         try{
@@ -287,10 +346,18 @@ final class AppUpdates {
             intent.setDataAndType(content,"application/vnd.android.package-archive");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK);
             activity.startActivity(intent);
-        }catch(Exception e){failure="Android's installer could not be opened.";setState(State.FAILED);}
+        }catch(Exception e){android.util.Log.w(TAG,"Installer could not be opened",e);
+            failure="installer";installFailed=true;setState(State.FAILED);showInstallFailed();}
     }
-    /** Back from the "install unknown apps" screen: continue where the viewer left off. */
-    void resume(){if(state==State.READY && Build.VERSION.SDK_INT>=26 && activity.getPackageManager().canRequestPackageInstalls())install();}
+    /**
+     * Back on Home: continue after the "install apps" permission screen, and bring back a required
+     * update the viewer left (for example by cancelling Android's installer).
+     */
+    void resume(){
+        if(state==State.READY && awaitingPermission && Build.VERSION.SDK_INT>=26 && activity.getPackageManager().canRequestPackageInstalls()){
+            awaitingPermission=false;install();return;}
+        if(info!=null && info.required && (state==State.READY || state==State.AVAILABLE))pendingPrompt=true;
+    }
 
     /** Earlier downloads are of no use once this version (or newer) is installed. */
     private static void cleanOldDownloads(Context c){
@@ -307,7 +374,7 @@ final class AppUpdates {
     private void showProgress(){
         if(activity.isFinishing() || info==null)return;
         if(progress!=null && progress.isShowing())return;
-        progress=Ui.progress(activity,"Downloading Flix Town "+info.versionName,"Hide",null);
+        progress=Ui.progress(activity,"Downloading update","Hide",null);
         progress.set("Starting…",percent);
     }
     private void updateProgress(long done,long total){
@@ -318,7 +385,7 @@ final class AppUpdates {
     private void setState(State s){state=s;notifyState();}
     private void notifyState(){if(listener!=null)listener.onUpdateState();}
     private void toast(String text){if(!activity.isFinishing())Toast.makeText(activity,text,Toast.LENGTH_SHORT).show();}
-    void destroy(){dismissProgress();listener=null;}
+    void destroy(){dismissProgress();if(isPromptShowing())prompt.dismiss();listener=null;}
 
     private static final class Verify extends IOException { Verify(String m){super(m);} }
     private static final class HttpStatus extends IOException { final int code;HttpStatus(int code){super("HTTP "+code);this.code=code;} }

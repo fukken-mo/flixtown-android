@@ -148,6 +148,47 @@ final class Ui {
         return dialog(activity,title,message,new String[]{"OK"},0,i->{},null);
     }
 
+    /**
+     * Branded notice card for app updates: the Flix Town mark, a short title, one line of copy,
+     * an optional muted line (version, what's new) and compact pill buttons sized to their text.
+     * {@code cancelable=false} keeps it on screen until a button is chosen (required updates).
+     */
+    static Dialog notice(Activity activity,String title,String message,String muted,String[] labels,int focusIndex,
+                         boolean cancelable,Choice action,Runnable onCancel){
+        Dialog dialog=newDialog(activity);
+        LinearLayout body=column(activity);pad(body,activity,30,24,30,24);body.setBackground(glass(activity,18));
+        LinearLayout top=row(activity);top.setGravity(Gravity.CENTER_VERTICAL);
+        android.widget.ImageView mark=new android.widget.ImageView(activity);mark.setImageResource(R.drawable.flix_logo);
+        mark.setScaleType(android.widget.ImageView.ScaleType.FIT_START);mark.setAdjustViewBounds(true);
+        top.addView(mark,new LinearLayout.LayoutParams(dp(activity,62),dp(activity,40)));
+        View accent=new View(activity);accent.setBackground(rounded(ACCENT,2,activity));
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(activity,28),dp(activity,3));ap.leftMargin=dp(activity,14);top.addView(accent,ap);
+        body.addView(top);
+        TextView heading=heading(activity,title,22);heading.setMaxLines(2);heading.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,16);body.addView(heading,hp);
+        TextView m=text(activity,message,16);m.setTextColor(TEXT_2);m.setLineSpacing(0,1.18f);m.setMaxLines(4);m.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,8);body.addView(m,mp);
+        if(muted!=null && !muted.isEmpty()){
+            TextView q=text(activity,muted,13);q.setTextColor(TEXT_3);q.setMaxLines(3);q.setEllipsize(TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(-1,-2);qp.topMargin=dp(activity,10);body.addView(q,qp);
+        }
+        LinearLayout buttons=row(activity);buttons.setClipChildren(false);buttons.setClipToPadding(false);
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.topMargin=dp(activity,22);body.addView(buttons,bp);
+        Button focus=null;final boolean[] chosen={false};
+        for(int i=0;i<labels.length;i++){final int index=i;
+            Button b=button(activity,labels[i]);b.setTextSize(16);b.setMinWidth(dp(activity,124));
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,46));
+            if(i>0)p.leftMargin=dp(activity,12);buttons.addView(b,p);
+            b.setOnClickListener(v->{chosen[0]=true;dialog.dismiss();action.select(index);});
+            if(i==Math.max(0,Math.min(focusIndex,labels.length-1)))focus=b;
+        }
+        dialog.setContentView(body);dialog.setCancelable(cancelable);dialog.setCanceledOnTouchOutside(false);
+        dialog.setOnCancelListener(d->{if(!chosen[0] && onCancel!=null)onCancel.run();});
+        showWindow(activity,dialog,500,false,0);
+        if(focus!=null){Button f=focus;f.post(f::requestFocus);}
+        return dialog;
+    }
+
     /** A dialog whose message and bar can change while it is open (update download). */
     static final class Progress {
         final Dialog dialog;private final TextView message;private final View bar;private final int track;

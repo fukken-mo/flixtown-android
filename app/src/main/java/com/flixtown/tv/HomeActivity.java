@@ -124,7 +124,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         StartupRefresh.listen(this);
         StartupRefresh.watchForeground(getApplication());
         updates.setListener(()->{if(settingsPage!=null)settingsPage.updateRowChanged();});
-        updates.checkOnStartup();
+        updates.checkOnLaunch();
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
         out.putString("tab",tab);out.putString("category",category);out.putInt("sort",sortMode);
@@ -156,7 +156,17 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         browseGrid.setPadding(browseGrid.getPaddingLeft(),Ui.dp(this,4),browseGrid.getPaddingRight(),safeY);
     }
 
-    @Override protected void onResume(){super.onResume();resumed=true;if(updates!=null)updates.resume();scheduleRotation();}
+    @Override protected void onResume(){super.onResume();resumed=true;scheduleRotation();
+        if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}}
+    @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkIfStale();}
+    /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
+    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);
+        if(hasFocus && updates!=null)handler.post(updates::showPendingIfReady);}
+    /** An update prompt only appears over Home itself: in front, focused, past the loading screen. */
+    boolean readyForUpdatePrompt(){
+        return resumed && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
+            && (exitDialog==null || !exitDialog.isShowing());
+    }
     @Override protected void onPause(){resumed=false;handler.removeCallbacks(rotateHero);super.onPause();}
     @Override protected void onRestart(){super.onRestart();refreshAfterReturn();}
 
@@ -185,7 +195,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         overlayUp=false;handler.removeCallbacks(slowServer);
         if(sweep!=null)sweep.cancel();
         content.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
-        startupOverlay.animate().alpha(0f).setDuration(260).withEndAction(()->startupOverlay.setVisibility(View.GONE)).start();
+        startupOverlay.animate().alpha(0f).setDuration(260).withEndAction(()->{startupOverlay.setVisibility(View.GONE);
+            if(updates!=null)updates.showPendingIfReady();}).start();
         if(tab.equals("Home") && hero!=null)bindHero(false);
         View focus=getCurrentFocus();
         if(focus==null || !isDescendant(content,focus))focusDefault();

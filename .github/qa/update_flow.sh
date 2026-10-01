@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# App update flow on the Android TV emulator, against the real panel module running on this
-# machine. One APK link (apk/flixtown.apk) is replaced in place, exactly as on the real panel.
+# Automatic update flow on the Android TV emulator, against the real panel update module running
+# on this machine. One APK link (apk/flixtown.apk) is replaced in place, as on the real panel:
+# an older installed build must be offered the newer one automatically on launch (no Settings),
+# update, keep sign-in and settings, and stop prompting once current.
 # Results: qa/update-flow/screens/*.png, qa/update-flow/report.txt
 set -u
 PKG=com.myflixtown.tv.native.qa
@@ -56,83 +58,86 @@ for node in re.findall(r"<node [^>]*>",xml):
 # Settings rows: 0 Subscription … 3 Autoplay … 7 Check for app updates, 8 App version, 9 Sign out
 open_settings(){ key DPAD_LEFT; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.2; }
 
+OLD=10010; NEW=10011
+popup(){ screen_has "Update available" || screen_has "Update required"; }
 adb logcat -c
-adb install -r dist/qa-10006.apk > /dev/null && ok "installed QA build 10006" || bad "install 10006 failed"
+adb install -r dist/qa-$OLD.apk > /dev/null && ok "installed the older build ($OLD)" || bad "install $OLD failed"
 
-# ---------- 1. Panel: publish version 10006 at the link ----------
-place dist/qa-10006.apk
+# ---------- 1. Panel publishes the same version that is installed ----------
+place dist/qa-$OLD.apk
 admin --data-urlencode action=login --data-urlencode password=qa-pass
-admin --data-urlencode action=save --data-urlencode slot=test --data-urlencode "url=$APK_URL" --data-urlencode "notes=Update-flow test release."
-[ "$(code_on_panel)" = "10006" ] && ok "panel detected 10006 from the APK" || bad "panel did not detect 10006 ($(api))"
+admin --data-urlencode action=save --data-urlencode slot=test --data-urlencode "url=$APK_URL" --data-urlencode "notes=Faster start-up and smoother menus."
+[ "$(code_on_panel)" = "$OLD" ] && ok "panel detected $OLD from the APK" || bad "panel did not detect $OLD ($(api))"
 
-# ---------- 2. Sign in, set a preference, check: up to date ----------
+# ---------- 2. Fresh launch while current: no automatic popup ----------
 launch --ez demo_reset true
-sleep 26;                                   shot 01-home-signed-in 1
-open_settings;                              shot 02-settings 0.5
-key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; shot 03-autoplay-off 0.5
-key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN; shot 04-updates-row 0.5
-key DPAD_CENTER;                            shot 05-checking 0.3
-sleep 2;                                    shot 06-up-to-date 0.3
-screen_has "is up to date" && ok "same version on the panel: 'up to date'" || bad "no 'up to date' answer"
-key DPAD_CENTER;                            shot 07-row-up-to-date 0.5
+sleep 32;                                   shot 01-home-current 1
+popup && bad "popup shown although the app is current" || ok "current version: no automatic popup"
 
-# ---------- 3. Panel unreachable: failure, never 'up to date' ----------
+# ---------- 3. Settings: manual check says up to date (and set a preference to keep) ----------
+open_settings
+key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; shot 02-autoplay-off 0.5
+key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 3; shot 03-manual-up-to-date 0.3
+screen_has "up to date" && screen_has "Version 3.5.0" && screen_has 'text="Done"' && ok "manual check: 'You’re up to date', version shown, Done" || bad "manual up-to-date dialog wrong"
+key DPAD_CENTER
+
+# ---------- 4. Offline start: silent; manual check reports the failure ----------
 kill $PANEL; sleep 1
-key DPAD_CENTER;                            sleep 3; shot 08-network-error 0.3
-screen_has "check for updates" && ! screen_has "is up to date" && ok "panel unreachable: 'Couldn't check for updates'" || bad "network error not reported as a failure"
-key DPAD_CENTER;                            shot 09-row-check-failed 0.5
+adb shell am force-stop $PKG; launch --ez demo_offline true
+sleep 16;                                   shot 04-offline-start 0.5
+popup || screen_has "Unable to check" && bad "offline start showed an update dialog" || ok "offline start: no update dialog (silent)"
+open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+sleep 4;                                    shot 05-manual-check-offline 0.3
+screen_has "Unable to check for updates" && screen_has "Try again" && screen_has 'text="Close"' && ok "manual check offline: 'Unable to check for updates', Try again / Close" || bad "offline manual check dialog wrong"
+! screen_has "up to date" && ok "offline is never reported as up to date" || bad "offline reported as up to date"
+key DPAD_RIGHT DPAD_CENTER                  # Close
 start_panel
 
-# ---------- 4. Same link, new file: 10007 (no button pressed on the panel) ----------
-place dist/qa-10007.apk
-[ "$(code_on_panel)" = "10007" ] && ok "same link replaced: panel detected 10007 by itself" || bad "panel did not notice the replaced file"
+# ---------- 5. Publish a newer APK at the same link (Detect) ----------
+place dist/qa-$NEW.apk
+admin --data-urlencode action=detect --data-urlencode slot=test
+[ "$(code_on_panel)" = "$NEW" ] && ok "same link, newer APK detected ($NEW)" || bad "panel did not detect $NEW"
 
-# ---------- 5. Background check on launch offers the update ----------
+# ---------- 6. Fresh launch: popup appears by itself on Home ----------
 adb shell am force-stop $PKG; launch
-sleep 16;                                   shot 10-startup-offer 0.5
-screen_has "3.4.1 is available" && ok "startup check offered 3.4.1" || bad "no update offer after launch"
-key DPAD_RIGHT DPAD_CENTER;                 shot 11-later 0.5      # "Later"
+sleep 16;                                   shot 06-automatic-popup 0.5
+screen_has "Update available" && screen_has "Update now" && screen_has 'text="Later"' && ok "fresh launch: 'Update available' popup with Update now / Later" || bad "no automatic popup on launch"
+screen_has "Faster start-up" && ok "release notes shown" || bad "release notes missing"
 
-# ---------- 6. Checksum protection: the panel says 10007 but the link now serves other bytes ----------
-settings 60
-place dist/qa-10006.apk                     # panel still announces 10007 and its checksum
-open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN
-shot 12-row-available 0.5
-key DPAD_CENTER;                            shot 13-offer-from-settings 0.5
-key DPAD_CENTER;                            sleep 6; shot 14-checksum-failed 0.3
-screen_has "checksum" && ok "wrong file at the link refused by checksum" || bad "checksum mismatch not reported"
+# ---------- 7. Later, then navigate: no duplicate popups ----------
+key DPAD_RIGHT DPAD_CENTER;                 shot 07-after-later 0.6
+key DPAD_LEFT DPAD_DOWN DPAD_CENTER;        sleep 2; shot 08-movies 0.3
+key BACK;                                   sleep 2; shot 09-back-home 0.3
+popup && bad "popup came back during navigation" || ok "after Later: no duplicate popup while navigating"
+
+# ---------- 8. Required update: no Later, Back keeps it ----------
+admin --data-urlencode action=save --data-urlencode slot=test --data-urlencode "url=$APK_URL" --data-urlencode "notes=Faster start-up and smoother menus." --data-urlencode required=1
+api | grep -q '"update_required":true' && ok "panel marks the update required" || bad "required flag not published"
+adb shell am force-stop $PKG; launch
+sleep 16;                                   shot 10-required-popup 0.5
+screen_has "Update required" && ! screen_has 'text="Later"' && ok "required update: 'Update required', only Update now" || bad "required popup wrong"
+key BACK;                                   shot 11-back-on-required 0.6
+screen_has "Update required" && ok "Back does not dismiss a required update" || bad "required popup dismissed by Back"
+
+# ---------- 9. Update now: verified download, Android installer ----------
+adb shell appops set $PKG REQUEST_INSTALL_PACKAGES allow
+key DPAD_CENTER;                            shot 12-downloading 0.8
+sleep 8;                                    shot 13-android-installer 0.5
+tap_text "Update|Install" && ok "Android's installer confirmation accepted" || bad "installer button not found"
+sleep 15;                                   shot 14-installed 0.5
+[ "$(installed_code)" = "$NEW" ] && ok "installed version is now $NEW" || bad "installed version is $(installed_code)"
+
+# ---------- 10. After the update: signed in, settings kept, no popup ----------
+launch;                                     sleep 16; shot 15-after-update 0.5
+screen_has "Your movies are waiting" && bad "sign-in lost" || ok "still signed in after the update"
+popup && bad "popup shown although now current" || ok "now current: no automatic popup"
+adb shell run-as $PKG cat shared_prefs/flix.xml 2>/dev/null | grep -q 'name="autoplay_next" value="false"' && ok "autoplay setting kept (Off)" || bad "autoplay setting lost"
+open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+sleep 3;                                    shot 16-manual-up-to-date-new 0.3
+screen_has "Version 3.5.1" && ok "manual check after update: up to date, version 3.5.1" || bad "manual check after update wrong"
 key DPAD_CENTER
-[ "$(installed_code)" = "10006" ] && ok "nothing installed after a failed check" || bad "version changed unexpectedly"
-
-# ---------- 7. Real update: download, verify, installer ----------
-place dist/qa-10007.apk; settings 0
-key DPAD_CENTER;                            sleep 3; shot 15-available-again 0.3
-key DPAD_CENTER;                            shot 16-downloading 1.2
-sleep 8;                                    shot 17-after-download 0.5
-if screen_has "Allow Flix Town to install"; then
-  ok "asks for the install permission first"
-  key DPAD_RIGHT DPAD_CENTER                # "Not now"; grant it as the viewer would in Settings
-  adb shell appops set $PKG REQUEST_INSTALL_PACKAGES allow
-  shot 18-ready-to-install 0.5
-  screen_has "Ready to install" && ok "row shows 'Ready to install'" || bad "row does not show 'Ready to install'"
-  key DPAD_CENTER;                          sleep 3
-fi
-shot 19-android-installer 1
-if tap_text "Update|Install"; then ok "Android's installer confirmation shown and accepted"; else bad "installer button not found"; fi
-sleep 15;                                   shot 20-after-install 0.5
-CODE="$(installed_code)"
-[ "$CODE" = "10007" ] && ok "installed version is now 10007" || bad "installed version is $CODE, expected 10007"
-
-# ---------- 8. Sign-in and settings kept ----------
-launch;                                     sleep 12; shot 21-relaunch-home 0.5
-screen_has "Your movies are waiting" && bad "sign-in was lost" || ok "still signed in after the update"
-open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN; shot 22-settings-after-update 0.5
-screen_has 'text="Off"' && ok "autoplay row still Off" || bad "autoplay row not Off"
-adb shell run-as $PKG cat shared_prefs/flix.xml 2>/dev/null | grep -q 'name="autoplay_next" value="false"' && ok "autoplay preference kept (off)" || bad "autoplay preference lost"
-key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN; shot 23-version-after-update 0.5
-screen_has "3.4.1" && ok "Settings shows version 3.4.1" || bad "Settings does not show 3.4.1"
-key DPAD_CENTER; sleep 3; shot 24-up-to-date-after-update 0.3
-screen_has "is up to date" && ok "after updating: up to date" || bad "after updating: not 'up to date'"
+adb shell am force-stop $PKG; launch;       sleep 16; shot 17-next-launch 0.5
+popup && bad "popup on a later launch" || ok "later launch: still no popup"
 
 adb logcat -d | grep -E "FlixTown|AndroidRuntime|FATAL" | tail -n 200 > "$OUT/app-log.txt" || true
 note "update flow: $PASS passed, $FAIL failed"

@@ -151,7 +151,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case SUBTITLES:return prefs.getBoolean(SUBTITLES_ON,false)?"On":"Off";
             case AUDIO:{String code=prefs.getString(AUDIO_LANGUAGE,"");return code.isEmpty()?"Stream default  ›":languageName(code)+"  ›";}
             case SUBTITLE_LANG:{String code=prefs.getString(SUBTITLE_LANGUAGE,"");return code.isEmpty()?"Device language  ›":languageName(code)+"  ›";}
-            case VERSION:return BuildConfig.VERSION_NAME+"  ("+BuildConfig.VERSION_CODE+")";
+            case VERSION:return BuildConfig.VERSION_NAME;
             case UPDATES:return host.updateValue();
             case IMAGES:return imageBytes<=0?"":megabytes(imageBytes);
             default:return "";

@@ -85,11 +85,11 @@ jobs:
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: "17" }
       - uses: gradle/actions/setup-gradle@v4
-      - name: QA builds 10006 and 10007 that check a panel on this machine
+      - name: QA builds 10010 and 10011 that check a panel on this machine
         run: |
           HOST_IP="$(hostname -I | awk '{print $1}')"; echo "HOST_IP=$HOST_IP" >> "$GITHUB_ENV"
           mkdir -p dist
-          for v in "10006 3.4.0" "10007 3.4.1"; do set -- $v
+          for v in "10010 3.5.0" "10011 3.5.1"; do set -- $v
             ./gradlew :app:assembleQa -PflixVersionCode=$1 -PflixVersionName=$2 -PflixQaUpdateUrl="http://$HOST_IP:8787/api/app-update.php" -q
             cp app/build/outputs/apk/qa/app-qa.apk "dist/qa-$1.apk"
           done
