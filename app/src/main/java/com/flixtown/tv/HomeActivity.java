@@ -125,7 +125,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         StartupRefresh.listen(this);
         StartupRefresh.watchForeground(getApplication());
         updates.setListener(()->{if(settingsPage!=null)settingsPage.updateRowChanged();});
-        updates.checkOnLaunch();
+        updates.checkOnLaunch(state==null);   // a re-created screen (state!=null) is not a new launch
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
         out.putString("tab",tab);out.putString("category",category);out.putInt("sort",sortMode);
@@ -159,7 +159,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
 
     @Override protected void onResume(){super.onResume();resumed=true;scheduleRotation();
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}}
-    @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkIfStale();}
+    /** super.onStart() lets the foreground tracker flag a return from the background first. */
+    @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
     /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
     @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);
         if(hasFocus && updates!=null)handler.post(updates::showPendingIfReady);}

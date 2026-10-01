@@ -28,11 +28,17 @@ import java.util.Locale;
 /**
  * App updates from the Flix Town panel (app-update.php).
  *
- * The panel reads the version from inside the APK it publishes. On every fresh launch this class
- * asks it in the background (no catalog reload, no delay to Home); when the published versionCode
- * is higher than this app's and the package matches, an "Update available" (or "Update required")
- * prompt appears once Home is on screen. Settings › Check for app updates asks on demand and
- * also answers "You're up to date" or "Unable to check". Automatic checks that fail stay silent.
+ * The panel reads the version from inside the APK it publishes. On every fresh launch and every
+ * return from the background this class asks it in the background (no catalog reload, no delay to
+ * Home); when the published versionCode is higher than this app's and the package matches, an
+ * "Update available" (or "Update required") prompt appears once Home is on screen and nothing else
+ * (intro, loading screen, player, another dialog) is in front. "Later" lasts until the next launch.
+ *
+ * A TV keeps the process alive after Exit, so a new launch is a new Home screen, not a new process:
+ * nothing here may depend on process-wide "already checked" flags.
+ *
+ * Settings › Check for app updates asks on demand with the same request and version comparison,
+ * and also answers "You're up to date" or "Unable to check". Automatic checks that fail stay silent.
  *
  * Downloads are fresh (never from a cache) and verified (SHA-256, package ID, versionCode,
  * signing key) before Android's installer asks the viewer to confirm. State is kept for the
@@ -42,8 +48,8 @@ final class AppUpdates {
     enum State { IDLE, CHECKING, UP_TO_DATE, AVAILABLE, DOWNLOADING, READY, FAILED }
     interface Listener { void onUpdateState(); }
 
-    /** Back from the background after this long counts as a new visit: check again. */
-    private static final long AUTO_RECHECK_MS=6L*60*60*1000;
+    /** Two automatic triggers this close together (launch + foreground) make one request. */
+    private static final long AUTO_DEBOUNCE_MS=5_000;
     private static final String TAG="FlixTown";
     private static final Handler MAIN=new Handler(Looper.getMainLooper());
     private static State state=State.IDLE;
@@ -52,9 +58,13 @@ final class AppUpdates {
     private static int percent;
     private static File ready;
     private static long checkedAt;
-    private static boolean startupDone,downloadRunning,pendingPrompt,awaitingPermission,installFailed;
+    private static boolean downloadRunning,pendingPrompt,awaitingPermission,installFailed;
     private static long laterFor;            // versionCode the viewer postponed with "Later" (this launch)
-    private static long lastAutoCheck;
+    private static long lastAutoCheck=-AUTO_DEBOUNCE_MS;
+    /** Set when the app comes back from the background; Home checks when it is next started. */
+    private static boolean foregroundDue;
+    /** The Home screen on display: a check started by an earlier (now closed) Home reports here. */
+    private static java.lang.ref.WeakReference<AppUpdates> current=new java.lang.ref.WeakReference<>(null);
     private android.app.Dialog prompt;       // the one update dialog on screen, if any
 
     private final HomeActivity activity;
@@ -62,7 +72,7 @@ final class AppUpdates {
     private Ui.Progress progress;
     private boolean manualCheck;
 
-    AppUpdates(HomeActivity activity){this.activity=activity;cleanOldDownloads(activity);}
+    AppUpdates(HomeActivity activity){this.activity=activity;cleanOldDownloads(activity);current=new java.lang.ref.WeakReference<>(this);}
     void setListener(Listener l){listener=l;}
 
     /* ---------------- What Settings shows ---------------- */
@@ -103,22 +113,33 @@ final class AppUpdates {
     }
 
     /**
-     * Automatic check on a fresh launch: in the background, without waiting for or touching the
-     * catalog. Silent unless a newer version exists; the prompt waits until Home is on screen.
+     * A new Home screen. {@code newLaunch} is false when Android only re-created it (rotation,
+     * memory): that is not a new visit. A new launch forgets "Later" and checks in the background,
+     * without waiting for or touching the catalog; the prompt waits until Home is ready.
      */
-    void checkOnLaunch(){
-        if(startupDone)return;startupDone=true;
+    void checkOnLaunch(boolean newLaunch){
+        if(!newLaunch)return;
+        laterFor=0;foregroundDue=false;
         autoCheck();
     }
-    /** Coming back to Home after hours in the background is treated like a new launch. */
-    void checkIfStale(){
-        if(startupDone && SystemClock.elapsedRealtime()-lastAutoCheck>=AUTO_RECHECK_MS)autoCheck();
+    /** Called by the app's foreground tracker (StartupRefresh) when the app returns from the background. */
+    static void onAppForeground(){foregroundDue=true;}
+    /** Home started: if the app came back from the background since the last check, check now. */
+    void checkOnReturn(){
+        if(!foregroundDue)return;
+        foregroundDue=false;
+        autoCheck();
     }
     private void autoCheck(){
-        if(state==State.CHECKING || state==State.DOWNLOADING || state==State.READY)return;
+        // An update already found is offered again on this visit (unless postponed with "Later").
+        if(info!=null && (state==State.AVAILABLE || state==State.READY) && (info.required || laterFor!=info.versionCode))pendingPrompt=true;
+        if(state==State.CHECKING || state==State.DOWNLOADING || state==State.READY){showPendingIfReady();return;}
+        if(SystemClock.elapsedRealtime()-lastAutoCheck<AUTO_DEBOUNCE_MS){showPendingIfReady();return;}
         lastAutoCheck=SystemClock.elapsedRealtime();
         check(false);
     }
+    /** The Home screen that should show prompts now (this one if it is still the current one). */
+    private AppUpdates live(){AppUpdates c=current.get();return c!=null?c:this;}
 
     /**
      * Shows a waiting automatic prompt once Home is ready for it: resumed, focused (so no other
@@ -169,7 +190,8 @@ final class AppUpdates {
             return;}
         info=found;setState(State.AVAILABLE);
         if(manualCheck){offer();return;}
-        if(found.required || laterFor!=found.versionCode){pendingPrompt=true;showPendingIfReady();}
+        // The Home that started this check may have closed meanwhile: the current one shows it.
+        if(found.required || laterFor!=found.versionCode){pendingPrompt=true;live().showPendingIfReady();}
     }
 
     /* ---------------- Customer dialogs ---------------- */
@@ -383,9 +405,10 @@ final class AppUpdates {
     }
     private void dismissProgress(){if(progress!=null)progress.dismiss();progress=null;}
     private void setState(State s){state=s;notifyState();}
-    private void notifyState(){if(listener!=null)listener.onUpdateState();}
+    private void notifyState(){AppUpdates c=live();if(c.listener!=null)c.listener.onUpdateState();}
     private void toast(String text){if(!activity.isFinishing())Toast.makeText(activity,text,Toast.LENGTH_SHORT).show();}
-    void destroy(){dismissProgress();if(isPromptShowing())prompt.dismiss();listener=null;}
+    void destroy(){dismissProgress();if(isPromptShowing())prompt.dismiss();listener=null;
+        if(current.get()==this)current=new java.lang.ref.WeakReference<>(null);}
 
     private static final class Verify extends IOException { Verify(String m){super(m);} }
     private static final class HttpStatus extends IOException { final int code;HttpStatus(int code){super("HTTP "+code);this.code=code;} }

@@ -90,7 +90,7 @@ final class StartupRefresh {
             @Override public void onActivityStarted(Activity a){
                 visible.add(System.identityHashCode(a));
                 boolean returning=visible.size()==1 && backgroundSince>0;
-                if(returning)backgroundSince=0;
+                if(returning){backgroundSince=0;AppUpdates.onAppForeground();}   // Home checks for an app update when next shown
                 if(!(returning || refreshAfterPlayer))return;
                 if(a instanceof LoginActivity || a instanceof RenewalActivity || AccountStore.read(a)==null)return;
                 if(a instanceof PlayerActivity){refreshAfterPlayer=true;Log.i(TAG,"Back from background in the player: refresh waits");return;}

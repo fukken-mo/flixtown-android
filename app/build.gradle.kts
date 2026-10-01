@@ -4,8 +4,8 @@ plugins { id("com.android.application") }
 // so it can be installed next to the working app without replacing it.
 val flixPreview = (project.findProperty("flixPreview") as String?) == "true"
 // -PflixVersionCode / -PflixVersionName build the same source as another release (update tests).
-val flixVersionCode = (project.findProperty("flixVersionCode") as String?)?.toInt() ?: 10012
-val flixVersionName = (project.findProperty("flixVersionName") as String?) ?: "3.6.0"
+val flixVersionCode = (project.findProperty("flixVersionCode") as String?)?.toInt() ?: 10013
+val flixVersionName = (project.findProperty("flixVersionName") as String?) ?: "3.6.1"
 val panelUrl = "https://panelsandapps.com/panels/flixtown2027/api/"
 // The permanent release key is never stored in the repository: CI decodes it from repository
 // secrets into a file and passes its location and passwords through these environment variables.

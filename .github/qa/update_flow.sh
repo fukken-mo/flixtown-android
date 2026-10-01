@@ -40,6 +40,10 @@ shot(){ sleep "${2:-0.8}"; adb shell screencap -p "/sdcard/$1.png"; adb pull "/s
 key(){ for k in "$@"; do adb shell input keyevent "KEYCODE_$k"; sleep 0.7; done; }
 LAUNCHER="-a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -f 0x10200000"
 launch(){ adb shell am start -W $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" "$@" > /dev/null; }
+resumed(){ adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | head -1; }
+alive(){ [ -n "$(adb shell pidof $PKG | tr -d '\r')" ]; }
+# Back until Home is the screen in front (the player and Details close one step at a time).
+back_to_home(){ for i in 1 2 3 4; do resumed | grep -q HomeActivity && return 0; key BACK; sleep 1.5; done; resumed | grep -q HomeActivity; }
 installed_code(){ adb shell dumpsys package "$PKG" | sed -n 's/.*versionCode=\([0-9]*\).*/\1/p' | head -1; }
 screen_has(){ adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb shell cat /sdcard/ui.xml | grep -q "$1"; }
 # Taps the first on-screen element whose text matches (Android's installer buttons).
@@ -93,15 +97,38 @@ screen_has "Unable to check for updates" && screen_has "Try again" && screen_has
 key DPAD_RIGHT DPAD_CENTER                  # Close
 start_panel
 
-# ---------- 5. Publish a newer APK at the same link (Detect) ----------
+# ---------- 5. In the player, a newer APK is published at the same link (Detect) ----------
+key BACK;                                   sleep 1.5            # Settings → Home
+key DPAD_LEFT DPAD_DOWN DPAD_CENTER;        sleep 2              # menu → Movies
+key DPAD_CENTER;                            sleep 3              # first movie → Details
+key DPAD_CENTER;                            sleep 6              # Play → player
+resumed | grep -q PlayerActivity && ok "playing a title before the update is published" || bad "player did not open ($(resumed))"
 place dist/qa-$NEW.apk
 admin --data-urlencode action=detect --data-urlencode slot=test
 [ "$(code_on_panel)" = "$NEW" ] && ok "same link, newer APK detected ($NEW)" || bad "panel did not detect $NEW"
 
-# ---------- 6. Fresh launch: popup appears by itself on Home ----------
-adb shell am force-stop $PKG; launch
-sleep 16;                                   shot 06-automatic-popup 0.5
-screen_has "Update available" && screen_has "Update now" && screen_has 'text="Later"' && ok "fresh launch: 'Update available' popup with Update now / Later" || bad "no automatic popup on launch"
+# ---------- 6. Return from the background into the player: deferred, then shown on Home ----------
+adb shell input keyevent KEYCODE_HOME;      sleep 3
+launch;                                     sleep 12; shot 06a-back-into-player 0.5
+resumed | grep -q PlayerActivity && ok "back from the background straight into the player" || bad "not in the player ($(resumed))"
+popup && bad "update popup shown over the player" || ok "no update popup while the player is open"
+back_to_home && ok "left the player back to Home" || bad "could not get back to Home ($(resumed))"
+sleep 3;                                    shot 06b-popup-after-player 0.3
+screen_has "Update available" && screen_has "Update now" && screen_has 'text="Later"' && ok "return from background: popup appears once Home is in front" || bad "no popup after returning from the background"
+
+# Later lasts for this launch: Home button and back again does not ask again.
+key DPAD_RIGHT DPAD_CENTER;                 sleep 1
+adb shell input keyevent KEYCODE_HOME;      sleep 3
+launch;                                     sleep 10; shot 06c-return-after-later 0.3
+popup && bad "popup came back after Later in the same launch" || ok "after Later: returning from the background does not ask again"
+
+# ---------- 6d. Exit and reopen: the process stays alive on a TV (the reported case) ----------
+for i in 1 2 3; do screen_has "Exit Flix Town" && break; key BACK; sleep 1; done
+screen_has "Exit Flix Town" && ok "exit confirmation shown" || bad "exit confirmation not shown"
+key DPAD_RIGHT DPAD_CENTER;                 sleep 3
+alive && ok "after Exit the app process is still running (no force-stop)" || note "INFO  process was not kept alive by Android this time"
+launch;                                     sleep 16; shot 06-automatic-popup 0.5
+screen_has "Update available" && screen_has "Update now" && screen_has 'text="Later"' && ok "reopened after Exit: 'Update available' popup with Update now / Later" || bad "no automatic popup when reopening after Exit"
 screen_has "Faster start-up" && ok "release notes shown" || bad "release notes missing"
 
 # ---------- 7. Later, then navigate: no duplicate popups ----------
