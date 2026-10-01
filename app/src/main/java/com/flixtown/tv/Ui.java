@@ -276,6 +276,7 @@ final class Ui {
 
     /** Scrollable single-choice list (sort, categories, seasons, audio, subtitles). */
     static Dialog picker(Activity activity,String title,String[] labels,int selected,Choice action){
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","picker "+title+": "+TextUtils.join("|",labels)+" selected="+selected);
         Dialog dialog=newDialog(activity);
         LinearLayout body=sheet(activity,title,null);pad(body,activity,26,22,26,20);
         RecyclerView list=new RecyclerView(activity);list.setClipToPadding(false);list.setClipChildren(false);

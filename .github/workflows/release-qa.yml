@@ -1,12 +1,12 @@
 name: Release check
 
 # Full release check of the QA build on a 1080p Android TV emulator:
-#  - run.sh: screen tour (Home rows, grids, sort/categories, details, Settings, refresh, player prefs)
 #  - ratings_badges.sh: TMDB ratings, real Trending, NEW SERIES / NEW EPISODES (asserted)
 #  - release_check.sh: QR + remote sign-in with keyboard, saved login, intro, focus restoration,
 #    cast/trailer/My List, seasons/episodes/resume, player controls/seek/tracks/Back, Up next,
 #    renewal, no refresh during navigation (asserted)
-# The update flow has its own workflow (update-flow.yml). Results are committed to qa/.
+# The screen tour (run.sh, qa-emulator.yml) and the update flow (update-flow.yml) have their own
+# workflows. Results are committed to qa/release-check and qa/ratings-badges only.
 on:
   workflow_dispatch:
   push:
@@ -46,7 +46,6 @@ jobs:
           script: |
             bash .github/qa/release_check.sh || true
             bash .github/qa/ratings_badges.sh || true
-            bash .github/qa/run.sh || true
       - name: Result
         if: always()
         run: |
@@ -57,7 +56,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add qa
+          git add qa/release-check qa/ratings-badges
           git commit -m "Release check from TV emulator (${GITHUB_SHA::7})" || exit 0
           git pull --rebase origin ${GITHUB_REF_NAME} || true
           git push origin HEAD:${GITHUB_REF_NAME}

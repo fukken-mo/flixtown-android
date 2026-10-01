@@ -52,6 +52,14 @@ for n in ET.parse(sys.argv[1]).getroot().iter('node'):
     if n.get('resource-id','').endswith(':id/'+sys.argv[2]): print(n.get('text','')); break
 EOF
 }
+# QA-build state lines (UI dumps do not work while video is playing).
+qa_line(){ adb logcat -d -s FlixTownQA:I | grep " player " | tail -1; }
+qaf(){ qa_line | python3 -c 'import re,sys
+l=sys.stdin.read();k=sys.argv[1]
+m=re.search(k+r"=\[([^\]]*)\]",l) or re.search(k+r"=(.*)$" if k=="subtitle" else k+r"=(\S+)",l)
+print(m.group(1).strip() if m else "")' "$1"; }
+picker_line(){ adb logcat -d -s FlixTownQA:I | grep " picker $1" | tail -1; }
+wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && return 0; sleep 1; t=$((t+1)); done; return 1; }
 secs(){ python3 -c 'import sys;p=sys.argv[1].lstrip("-").split(":");print(sum(int(x)*60**i for i,x in enumerate(reversed(p))) if all(x.isdigit() for x in p) else -1)' "$1"; }
 refreshes(){ adb logcat -d -s FlixTown:I | grep -c "Refresh started" ; }
 
@@ -109,7 +117,8 @@ key DPAD_DOWN DPAD_CENTER;                   sleep 1.5
 check "sorted by title" 'has "Sort: Title A–Z"'
 order="$(dump; python3 - "$OUT/ui.xml" <<'EOF'
 import sys, xml.etree.ElementTree as ET
-names=[n.get('content-desc') for n in ET.parse(sys.argv[1]).getroot().iter('node') if n.get('content-desc') and n.get('clickable')=='true' and n.get('class','').endswith('LinearLayout')]
+menu={"Search","Home","Movies","TV Shows","My List","Settings"}
+names=[n.get('content-desc') for n in ET.parse(sys.argv[1]).getroot().iter('node') if n.get('content-desc') and n.get('content-desc') not in menu and n.get('clickable')=='true' and n.get('class','').endswith('LinearLayout')]
 print("ok" if len(names)>=4 and [x.lower() for x in names[:6]]==sorted(x.lower() for x in names[:6]) else "bad "+"|".join(names[:6]))
 EOF
 )"
@@ -174,36 +183,44 @@ focus_to DPAD_UP "Continue" 4; key DPAD_CENTER
 wait_for "Continue watching?" 15 && ok "resume prompt: 'Continue watching?'" || bad "no resume prompt"
 check "resume prompt offers Continue from … and Start over" 'has "Continue from" && has "Start over"'
 shot 17-resume-prompt 0.2
-key DPAD_RIGHT DPAD_CENTER;                  sleep 4
-e="$(secs "$(text_of_id player_elapsed)")"
-key DPAD_UP;                                 sleep 0.5
-e="$(secs "$(text_of_id player_elapsed)")"
-[ "$e" -ge 0 ] && [ "$e" -lt 20 ] && ok "Start over plays from the beginning (${e}s)" || bad "Start over position ${e}s"
+key DPAD_RIGHT DPAD_CENTER;                  sleep 5
+e="$(qaf elapsed)"
+[ -n "$e" ] && [ "$e" -lt 20 ] && ok "Start over plays from the beginning (${e}s)" || bad "Start over position '${e}'s ($(qa_line))"
 
 # ---------------- 7. Player: controls, seeking, audio, subtitles, Back ----------------
-shot 18-player-controls 0.3
-check "player controls: play, Audio, Subtitles" 'has "Audio" && has "Subtitles"'
-sleep 5
-check "controls hide by themselves" '! has "Subtitles"'
-start="$(secs "$(text_of_id player_elapsed)")"
-key DPAD_UP; sleep 0.4; start="$(secs "$(text_of_id player_elapsed)")"
-key DPAD_DOWN;                               sleep 0.4
-adb shell input keyevent KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT; sleep 1.5
-after="$(secs "$(text_of_id player_elapsed)")"
-[ "$after" -ge $((start+20)) ] && ok "seeking: 3 × Right moves ~30s (${start}s → ${after}s)" || bad "seeking did not move (${start}s → ${after}s)"
+key DPAD_UP;                                 shot 18-player-controls 0.5
+wait_qa controls true 3 && ok "Up shows the player controls" || bad "controls not shown ($(qa_line))"
+wait_qa controls false 8 && ok "controls hide by themselves" || bad "controls stay on screen ($(qa_line))"
+key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.8                # controls, then the progress bar
+start="$(qaf elapsed)"
+adb shell input keyevent KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT; sleep 2.5
+after="$(qaf elapsed)"
+[ -n "$start" ] && [ -n "$after" ] && [ "$after" -ge $((start+20)) ] && ok "seeking: 3 × Right moves ~30s (${start}s → ${after}s)" || bad "seeking did not move (${start}s → ${after}s)"
 shot 19-seeked 0.1
-key DPAD_UP;                                 sleep 0.4
-focus_to DPAD_RIGHT "Audio" 3; key DPAD_CENTER; sleep 1
-check "audio picker lists the tracks (current one ticked)" 'has "✓"'
+wait_qa controls false 8
+key DPAD_UP; sleep 0.6; key DPAD_RIGHT; sleep 0.4               # play → Audio
+audio1="$(qaf audio)"
+key DPAD_CENTER;                             sleep 1.5
+pl="$(picker_line Audio)"; note "INFO  $pl"
+echo "$pl" | grep -q "|" && ok "audio picker lists the stream's audio tracks" || bad "audio picker missing or one track ($pl)"
 shot 20-audio-picker 0.2
-key DPAD_DOWN DPAD_CENTER;                   sleep 1.5
-key DPAD_UP;                                 sleep 0.4
-focus_to DPAD_RIGHT "Subtitles" 3; key DPAD_CENTER; sleep 1
-check "subtitle picker offers Off and languages" 'has "Off"'
+key DPAD_DOWN DPAD_CENTER;                   sleep 2
+audio2="$(qaf audio)"
+[ "$audio1" != "$audio2" ] && ok "audio track changed ($audio1 → $audio2)" || bad "audio track label unchanged ($audio1)"
+wait_qa controls false 8
+key DPAD_UP; sleep 0.6; key DPAD_RIGHT DPAD_RIGHT; sleep 0.4    # play → Audio → Subtitles
+subs1="$(qaf subs)"
+key DPAD_CENTER;                             sleep 1.5
+pl="$(picker_line Subtitles)"; note "INFO  $pl"
+echo "$pl" | grep -q "Off" && echo "$pl" | grep -q "|" && ok "subtitle picker offers Off and the stream's languages" || bad "subtitle picker wrong ($pl)"
 shot 21-subtitle-picker 0.2
-key DPAD_DOWN DPAD_CENTER;                   sleep 1.5
-key DPAD_UP;                                 sleep 0.5
-check "Back with controls shown: hides them, stays in the player" 'key BACK; sleep 0.8; in_activity PlayerActivity && ! has "Subtitles"'
+key DPAD_DOWN DPAD_CENTER;                   sleep 2
+subs2="$(qaf subs)"
+[ "$subs1" != "$subs2" ] && ok "subtitles changed ($subs1 → $subs2)" || bad "subtitle label unchanged ($subs1)"
+wait_qa controls false 8
+key DPAD_UP; sleep 0.8
+key BACK; sleep 1.2
+in_activity PlayerActivity && [ "$(qaf controls)" = "false" ] && ok "Back with controls shown: hides them, stays in the player" || bad "Back with controls: $(resumed) $(qa_line)"
 key BACK;                                    sleep 1.5
 check "Back again leaves the player" '! in_activity PlayerActivity'
 
@@ -211,15 +228,16 @@ check "Back again leaves the player" '! in_activity PlayerActivity'
 in_activity DetailsActivity || key BACK
 focus_to DPAD_DOWN "Season" 4; key DPAD_DOWN; sleep 0.6
 key DPAD_RIGHT DPAD_RIGHT;                   sleep 0.5        # a later episode
+adb logcat -c
 key DPAD_CENTER;                             sleep 6
-if has "Continue watching?"; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi
-key DPAD_UP; sleep 0.4; sub1="$(text_of_id player_subtitle)"; note "INFO  playing: $sub1"
+if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi
+sub1="$(qaf subtitle)"; note "INFO  playing: $sub1"
+key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.5
 for i in 1 2 3 4; do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.2; done
-wait_for "Up next" 120 && ok "next episode offered near the end ('Up next')" || bad "no 'Up next' card"
-check "Up next offers Play now and Cancel, with a countdown" 'has "Play now" && has "Cancel" && has "Starts in"'
+wait_qa card "Up next" 150 && ok "next episode offered near the end ('Up next')" || bad "no 'Up next' card ($(qa_line))"
 shot 22-up-next 0.2
-key DPAD_CENTER;                             sleep 4
-key DPAD_UP; sleep 0.4; sub="$(text_of_id player_subtitle)"
+key DPAD_CENTER;                             sleep 5
+sub="$(qaf subtitle)"
 [ -n "$sub" ] && [ "$sub" != "$sub1" ] && ok "Play now starts the next episode ($sub1 → $sub)" || bad "next episode not started ($sub1 → $sub)"
 key BACK; sleep 1; in_activity PlayerActivity && key BACK; sleep 1
 
@@ -229,7 +247,8 @@ wait_for "Your subscription has ended" 30 && ok "expired account opens the renew
 shot 23-renewal 0.3
 check "renewal shows plans with panel prices" 'has "\$15"'
 check "renewal shows the panel's Cash App details" 'has "FlixTownDemo"'
-focus_to DPAD_DOWN "Send renewal request" 8; key DPAD_CENTER; sleep 2
+focus_to DPAD_DOWN "Send renewal request" 8 || note "INFO  renewal focus is on: $(focused)"
+key DPAD_CENTER; sleep 3
 check "renewal request is sent" 'has "Request sent"'
 shot 24-renewal-sent 0.2
 launch;                                      sleep 4

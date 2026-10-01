@@ -419,6 +419,7 @@ public class PlayerActivity extends Activity {
 
     private final Runnable progress=new Runnable(){@Override public void run(){
         if(player==null)return;
+        qaState();
         long duration=player.getDuration(),current=player.getCurrentPosition();
         if(player.isPlaying() && current>=15000 && current/5000!=lastSavedAt/5000){saveProgress(current,duration);lastSavedAt=current;}
         if(controlsVisible())updateProgressUi();
@@ -432,6 +433,15 @@ public class PlayerActivity extends Activity {
         }
         handler.postDelayed(this,500);
     }};
+    /** QA build only: the player's visible state for the emulator test (UI dumps fail while video plays). */
+    private String qaLast="";
+    private void qaState(){
+        if(!BuildConfig.DEMO || player==null)return;
+        String s="controls="+controlsVisible()+" elapsed="+player.getCurrentPosition()/1000
+            +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
+            +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
+        if(!s.equals(qaLast)){qaLast=s;android.util.Log.i("FlixTownQA","player "+s);}
+    }
     private void saveProgress(long current,long duration){
         if(!ended && kind!=null && contentId!=null && !contentId.isEmpty()){
             Catalog.saveProgress(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,current,duration);
