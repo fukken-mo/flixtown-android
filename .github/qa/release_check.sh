@@ -193,12 +193,6 @@ e="$(qaf elapsed)"
 key DPAD_UP;                                 shot 18-player-controls 0.5
 wait_qa controls true 3 && ok "Up shows the player controls" || bad "controls not shown ($(qa_line))"
 wait_qa controls false 8 && ok "controls hide by themselves" || bad "controls stay on screen ($(qa_line))"
-key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.8                # controls, then the progress bar
-start="$(qaf elapsed)"
-adb shell input keyevent KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT; sleep 2.5
-after="$(qaf elapsed)"
-[ -n "$start" ] && [ -n "$after" ] && [ "$after" -ge $((start+20)) ] && ok "seeking: 3 × Right moves ~30s (${start}s → ${after}s)" || bad "seeking did not move (${start}s → ${after}s)"
-shot 19-seeked 0.1
 wait_qa controls false 8
 key DPAD_UP; sleep 0.8
 player_focus audio DPAD_RIGHT || note "INFO  player focus: $(qa_line)"
@@ -223,6 +217,14 @@ key DPAD_DOWN DPAD_CENTER;                   sleep 2
 subs2="$(qaf subs)"
 [ "$subs1" != "$subs2" ] && ok "subtitles changed ($subs1 → $subs2)" || bad "subtitle label unchanged ($subs1)"
 wait_qa controls false 8
+key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.8                # controls, then the progress bar
+start="$(qaf elapsed)"
+adb shell input keyevent KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT; sleep 2.5
+after="$(qaf elapsed)"
+# The demo clip is about a minute long, so this seeks back (forward seeking is checked in Up next below).
+[ -n "$start" ] && [ -n "$after" ] && [ "$start" -ge 15 ] && [ "$after" -le $((start-12)) ] && ok "seeking: 2 × Left goes back ~20s (${start}s → ${after}s)" || bad "seeking did not move (${start}s → ${after}s)"
+shot 19-seeked 0.1
+wait_qa controls false 8
 key DPAD_UP; sleep 0.8
 key BACK; sleep 1.2
 in_activity PlayerActivity && [ "$(qaf controls)" = "false" ] && ok "Back with controls shown: hides them, stays in the player" || bad "Back with controls: $(resumed) $(qa_line)"
@@ -238,7 +240,10 @@ key DPAD_CENTER;                             sleep 6
 if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi
 sub1="$(qaf subtitle)"; note "INFO  playing: $sub1"
 key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.5
+f1="$(qaf elapsed)"
 for i in 1 2 3 4; do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.2; done
+sleep 2; f2="$(qaf elapsed)"
+[ -n "$f1" ] && [ -n "$f2" ] && [ "$f2" -ge $((f1+20)) ] && ok "seeking: Right × 4 jumps forward (${f1}s → ${f2}s)" || note "INFO  forward seek ${f1}s → ${f2}s"
 wait_qa card "Up next" 150 && ok "next episode offered near the end ('Up next')" || bad "no 'Up next' card ($(qa_line))"
 sleep 1.5; qaf cardmsg | grep -q "Starts in" && ok "Up next shows the countdown ($(qaf cardmsg))" || bad "Up next countdown not visible ($(qa_line))"
 shot 22-up-next 0.2
