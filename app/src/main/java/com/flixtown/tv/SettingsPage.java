@@ -98,7 +98,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     private void styleValue(Holder h,boolean focused){
         boolean toggle=h.row==AUTOPLAY_ROW||h.row==SUBTITLES;
         if(toggle){boolean on=prefs.getBoolean(h.row==AUTOPLAY_ROW?AUTOPLAY:SUBTITLES_ON,h.row==AUTOPLAY_ROW);
-            GradientDrawable pill=Ui.rounded(on?(focused?0x40FFFFFF:0x33CE4B4A):0x1AFFFFFF,14,a);
+            GradientDrawable pill=Ui.rounded(on?(focused?0x40FFFFFF:0x33CE4B4A):0x1AFFFFFF,8,a);
             pill.setStroke(Ui.dp(a,1),on?(focused?0x80FFFFFF:0x80CE4B4A):0x33FFFFFF);
             h.value.setBackground(pill);Ui.pad(h.value,a,14,4,14,4);h.value.setMinWidth(Ui.dp(a,64));
             h.value.setTextColor(on||focused?Ui.TEXT:Ui.TEXT_2);

@@ -85,7 +85,7 @@ public class RenewalActivity extends Activity {
         LinearLayout.LayoutParams php=new LinearLayout.LayoutParams(-1,Ui.dp(this,48));php.topMargin=Ui.dp(this,12);left.addView(phone,php);
 
         LinearLayout actions=Ui.row(this);actions.setClipChildren(false);left.addView(actions);
-        Button submit=Ui.button(this,"Send renewal request");actions.addView(submit,buttonParams(0,0));
+        Button submit=Ui.primaryButton(this,"Send renewal request");actions.addView(submit,buttonParams(0,0));
         submit.setOnClickListener(v->{
             String[] account=AccountStore.read(this);if(account==null){status.setText("Please sign in again.");return;}
             status.setTextColor(Ui.TEXT_2);status.setText("Sending your request…");
@@ -121,8 +121,8 @@ public class RenewalActivity extends Activity {
         submit.requestFocus();
     }
     private LinearLayout.LayoutParams buttonParams(int width,int leftMargin){
-        LinearLayout.LayoutParams p=width==0?new LinearLayout.LayoutParams(0,Ui.dp(this,48),1):new LinearLayout.LayoutParams(width==-2?ViewGroup.LayoutParams.WRAP_CONTENT:width,Ui.dp(this,48));
-        p.topMargin=Ui.dp(this,10);p.leftMargin=Ui.dp(this,leftMargin);return p;
+        LinearLayout.LayoutParams p=width==0?new LinearLayout.LayoutParams(0,Ui.dp(this,50),1):new LinearLayout.LayoutParams(width==-2?ViewGroup.LayoutParams.WRAP_CONTENT:width,Ui.dp(this,50));
+        p.topMargin=Ui.dp(this,8);p.leftMargin=Ui.dp(this,leftMargin);return p;
     }
     /** Account line from the real Xtream response saved by sign-in or the startup refresh. */
     private void showAccount(){
@@ -146,10 +146,8 @@ public class RenewalActivity extends Activity {
             if(i%2==0){line=Ui.row(this);line.setClipChildren(false);plans.addView(line);}
             boolean chosen=choice[0].equals(selected);
             Button b=Ui.button(this,(chosen?"✓  ":"")+choice[1]+(price.isEmpty()?"":"  ·  $"+price));b.setTextSize(16);
-            if(chosen && !b.isFocused())b.setBackground(Ui.pill(this,false,true,24));
+            if(chosen)Ui.styleButton(b,Ui.SELECTED);
             Button self=b;
-            b.setOnFocusChangeListener((v,f)->{v.setBackground(Ui.pill(this,f,chosen,24));
-                v.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(120).start();});
             line.addView(b,buttonParams(0,i%2==0?0:12));
             b.setTag(choice[0]);
             b.setOnClickListener(v->{selected=choice[0];status.setTextColor(Ui.TEXT_2);status.setText(choice[1]+" selected");showPlans();updatePayment();

@@ -37,6 +37,11 @@ final class Ui {
     static final int GOLD=0xFFB99254;          // logo rim, used sparingly (ratings)
     static final int TEXT=0xFFF4F1EE,TEXT_2=0xFFBDB7B2,TEXT_3=0xFF8C8782;
     static final int HAIRLINE=0x2EFFFFFF;
+    /* Buttons: dark charcoal surfaces, a light hairline, modest corners. Red marks focus; a solid red
+       fill is only for the one primary action on a screen. */
+    static final int SURFACE=0xFF1D1C21,SURFACE_EDGE=0x33FFFFFF,FOCUS_FILL=0xFF3B1C1E,PRIMARY_FOCUS=0xFFC4423F;
+    static final int BUTTON_RADIUS=10,HALO=3;
+    static final int SECONDARY=0,PRIMARY=1,SELECTED=2;
     /** Kept for older call sites. */
     static final int RED=ACCENT,CARD=0xFF15161C;
 
@@ -57,29 +62,76 @@ final class Ui {
         d.setCornerRadius(dp(c,radius));d.setStroke(dp(c,1),HAIRLINE);return d;
     }
     static GradientDrawable panel(Context c,int radius){return glass(c,radius);}
-    /** Pill background for buttons and list rows. */
+    /** Background for list rows and pickers (no halo): charcoal, red-tinted with a red edge when focused. */
     static GradientDrawable pill(Context c,boolean focused,boolean selected,int radius){
-        GradientDrawable d=new GradientDrawable();d.setCornerRadius(dp(c,radius));
-        if(focused){d.setColor(ACCENT_FOCUS);d.setStroke(dp(c,1),0x66FFFFFF);}
-        else if(selected){d.setColor(0x33AB3A39);d.setStroke(dp(c,1),0x55CE4B4A);}
-        else{d.setColor(0x1AFFFFFF);d.setStroke(dp(c,1),HAIRLINE);}
+        GradientDrawable d=new GradientDrawable();d.setCornerRadius(dp(c,Math.min(radius,12)));
+        if(focused){d.setColor(FOCUS_FILL);d.setStroke(dp(c,2),GLOW);}
+        else if(selected){d.setColor(0xFF2A1B1D);d.setStroke(dp(c,1),0x99CE4B4A);}
+        else{d.setColor(SURFACE);d.setStroke(dp(c,1),SURFACE_EDGE);}
         return d;
     }
     static GradientDrawable focusSurface(Context c,boolean focused){return pill(c,focused,false,10);}
 
-    /** Standard TV button. Callers set the height (48–52dp); width may be WRAP_CONTENT. */
+    /**
+     * Button background as one state list (no swapping on focus): the surface sits {@link #HALO}dp
+     * inside the view, and when focused a faint red ring fills that margin as a restrained glow.
+     * Plain shapes only (no blur or shadow layers), so it is cheap on TV sticks.
+     */
+    static android.graphics.drawable.Drawable buttonBackground(Context c,int kind){
+        android.graphics.drawable.StateListDrawable states=new android.graphics.drawable.StateListDrawable();
+        states.addState(new int[]{android.R.attr.state_focused},haloed(c,kind,true));
+        states.addState(new int[]{},haloed(c,kind,false));
+        states.setExitFadeDuration(90);
+        return states;
+    }
+    private static android.graphics.drawable.Drawable haloed(Context c,int kind,boolean focused){
+        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));
+        if(kind==PRIMARY){surface.setColor(focused?PRIMARY_FOCUS:ACCENT);surface.setStroke(dp(c,focused?2:1),focused?0xE6FFFFFF:0x33FFFFFF);}
+        else if(focused){surface.setColor(FOCUS_FILL);surface.setStroke(dp(c,2),GLOW);}
+        else if(kind==SELECTED){surface.setColor(0xFF2A1B1D);surface.setStroke(dp(c,1),0x99CE4B4A);}
+        else{surface.setColor(SURFACE);surface.setStroke(dp(c,1),SURFACE_EDGE);}
+        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,BUTTON_RADIUS+HALO));
+        halo.setColor(focused?0x3DCE4B4A:0x00000000);
+        android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
+        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);
+        return layers;
+    }
+    static android.content.res.ColorStateList buttonText(int kind){
+        return new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused},{}},
+            new int[]{Color.WHITE,kind==PRIMARY?Color.WHITE:0xFFE4DFDA});
+    }
+    /** Small, quick scale on focus; layout size never changes, so nothing reflows. */
+    static void focusScale(View v,boolean focused){v.animate().scaleX(focused?1.04f:1f).scaleY(focused?1.04f:1f).setDuration(120).start();}
+    /**
+     * Applies the Flix Town button look to any view (Button, or a row holding an icon and label).
+     * Keeps a focus listener the caller adds later working by chaining through {@link #focusScale}.
+     */
+    static void styleButton(View v,int kind){
+        Context c=v.getContext();
+        int l=v.getPaddingLeft(),t=v.getPaddingTop(),r=v.getPaddingRight(),b=v.getPaddingBottom();
+        v.setBackground(buttonBackground(c,kind));v.setPadding(l,t,r,b);
+        if(v instanceof TextView)((TextView)v).setTextColor(buttonText(kind));
+        v.setOnFocusChangeListener((x,f)->focusScale(x,f));
+    }
+
+    /** Standard TV button (secondary). Callers set the height (46–52dp; {@link #HALO} of it is focus margin). */
     static Button button(Context c, String label) {
-        Button b = new Button(c); b.setText(label); b.setTextColor(TEXT); b.setTextSize(17);
+        Button b = new Button(c); b.setText(label); b.setTextSize(17);
         b.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
         b.setAllCaps(false);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);
         b.setStateListAnimator(null);b.setGravity(Gravity.CENTER);
         b.setPadding(dp(c,24),0,dp(c,24),0);b.setSingleLine(true);
         b.setEllipsize(TextUtils.TruncateAt.END);b.setFocusable(true);b.setFocusableInTouchMode(true);b.setClickable(true);
-        GradientDrawable normal=pill(c,false,false,24),focused=pill(c,true,false,24);
-        b.setBackground(normal);
-        b.setOnFocusChangeListener((v,f)->{v.setBackground(f?focused:normal);
-            v.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(120).start();});
+        styleButton(b,SECONDARY);
         return b;
+    }
+    /** The screen's main action: solid logo red. */
+    static Button primaryButton(Context c,String label){Button b=button(c,label);styleButton(b,PRIMARY);return b;}
+    /** Dismissive choices (Cancel, Stay, Later…) are never shown as the primary action. */
+    static boolean dismissive(String label){
+        String l=label.trim().toLowerCase(java.util.Locale.ROOT);
+        return l.equals("cancel")||l.equals("stay")||l.equals("close")||l.equals("later")||l.equals("not now")||l.equals("no")
+            ||l.equals("ok")||l.equals("done")||l.equals("hide")||l.equals("continue");
     }
 
     /* ---------------- Dialogs ---------------- */
@@ -121,16 +173,19 @@ final class Ui {
         LinearLayout body=sheet(activity,title,message);
         int longest=0;for(String l:labels)longest=Math.max(longest,l.length());
         boolean horizontal=labels.length<=3 && longest<=20;
-        LinearLayout buttons=horizontal?row(activity):column(activity);
-        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,-2);bp.topMargin=dp(activity,22);body.addView(buttons,bp);
+        // Actions are sized to their labels (a stacked list takes the width of its longest label).
+        LinearLayout buttons=horizontal?row(activity):column(activity);buttons.setClipChildren(false);buttons.setClipToPadding(false);
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.topMargin=dp(activity,20);body.addView(buttons,bp);
         Button focus=null;final boolean[] chosen={false};
+        int primary=Math.max(0,Math.min(focusIndex,labels.length-1));
         for(int i=0;i<labels.length;i++){
             final int index=i;
-            Button b=button(activity,labels[i]);b.setTextSize(17);
-            LinearLayout.LayoutParams p=horizontal?new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,48))
-                :new LinearLayout.LayoutParams(-1,dp(activity,48));
-            if(horizontal){if(i>0)p.leftMargin=dp(activity,12);b.setMinWidth(dp(activity,120));}
-            else if(i>0)p.topMargin=dp(activity,8);
+            Button b=i==primary && !dismissive(labels[i])?primaryButton(activity,labels[i]):button(activity,labels[i]);b.setTextSize(17);
+            LinearLayout.LayoutParams p=horizontal?new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,50))
+                :new LinearLayout.LayoutParams(-1,dp(activity,50));
+            b.setMinWidth(dp(activity,120));
+            if(horizontal){if(i>0)p.leftMargin=dp(activity,10);}
+            else if(i>0)p.topMargin=dp(activity,6);
             buttons.addView(b,p);
             b.setOnClickListener(v->{chosen[0]=true;dialog.dismiss();action.select(index);});
             if(i==Math.max(0,Math.min(focusIndex,labels.length-1)))focus=b;
@@ -179,9 +234,10 @@ final class Ui {
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.topMargin=dp(activity,22);body.addView(buttons,bp);
         Button focus=null;final boolean[] chosen={false};
         for(int i=0;i<labels.length;i++){final int index=i;
-            Button b=button(activity,labels[i]);b.setTextSize(16);b.setMinWidth(dp(activity,124));
-            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,46));
-            if(i>0)p.leftMargin=dp(activity,12);buttons.addView(b,p);
+            Button b=i==Math.max(0,Math.min(focusIndex,labels.length-1)) && !dismissive(labels[i])?primaryButton(activity,labels[i]):button(activity,labels[i]);
+            b.setTextSize(16);b.setMinWidth(dp(activity,124));
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,50));
+            if(i>0)p.leftMargin=dp(activity,10);buttons.addView(b,p);
             b.setOnClickListener(v->{chosen[0]=true;dialog.dismiss();action.select(index);});
             if(i==Math.max(0,Math.min(focusIndex,labels.length-1)))focus=b;
         }
@@ -212,7 +268,7 @@ final class Ui {
         View bar=new View(activity);bar.setBackground(rounded(GLOW,2,activity));bars.addView(bar,new android.widget.FrameLayout.LayoutParams(0,-1));
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(track,dp(activity,4));bp.topMargin=dp(activity,16);body.addView(bars,bp);
         Button b=button(activity,button);b.setTextSize(17);b.setMinWidth(dp(activity,120));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,48));lp.topMargin=dp(activity,22);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,50));lp.topMargin=dp(activity,22);
         body.addView(b,lp);b.setOnClickListener(v->{dialog.dismiss();if(onButton!=null)onButton.run();});
         dialog.setContentView(body);showWindow(activity,dialog,470,false,0);b.post(b::requestFocus);
         return new Progress(dialog,message,bar,track);

@@ -30,7 +30,7 @@ final class DemoData {
     static String title(int i,int salt){String t=A[(i*7+salt)%A.length]+" "+B[(i*11+salt*3)%B.length];
         return i%9==4?"The "+t+" and the Long Road Home":i%5==0?"The "+t:t;}
 
-    static volatile boolean offline,slow;
+    static volatile boolean offline,slow,intro,holdPairing;
     /** Catalog downloads in this process; from the second one on, the demo server has one new movie,
      *  one new series and a new episode for series 5003. */
     private static int movieFetches,seriesFetches;
@@ -42,20 +42,20 @@ final class DemoData {
     static String respond(String url,String body)throws Exception{
         if(offline){Thread.sleep(400);throw new java.io.IOException("Demo: network unreachable");}
         Thread.sleep(url.contains("get_vod_streams")?(slow?21000:900):250);
-        if(url.contains("config.php"))return new JSONObject().put("xtream_url","https://demo.flixtown.invalid").put("intro_enabled",false)
-            .put("intro_url","").put("cashapp_url","https://cash.app/$FlixTownDemo")
+        if(url.contains("config.php"))return new JSONObject().put("xtream_url","https://demo.flixtown.invalid").put("intro_enabled",intro)
+            .put("intro_url",intro?STREAM:"").put("cashapp_url","https://cash.app/$FlixTownDemo")
             .put("plans",new JSONObject().put("1m","15").put("3m","40").put("6m","75").put("12m","140")).toString();
         if(url.contains("pair-start")){polls=0;return new JSONObject().put("code","FT4K2Q").put("verifier","demo")
             .put("activation_url","https://myflixtown.com/activate.php?code=FT4K2Q").toString();}
         if(url.contains("pair-poll")){polls++;
             // Stays pending long enough to capture the QR screen, then approves.
-            return polls<5?new JSONObject().put("status","pending").toString()
+            return polls<5||holdPairing?new JSONObject().put("status","pending").toString()
                 :new JSONObject().put("status","approved").put("account",new JSONObject().put("username","demo").put("password","demo")).toString();}
         if(url.contains("renewal-request"))return new JSONObject().put("ok",true).toString();
         if(url.contains("tmdb.php")){JSONArray cast=new JSONArray();
             String[] names={"Ava Moreno","Daniel Okafor","Mia Laurent","Jonah Reyes","Priya Nair","Leo Hart","Nora Quinn","Sam Whitaker"};
             for(int i=0;i<names.length;i++)cast.put(new JSONObject().put("name",names[i]).put("id",100+i).put("image",i%3==2?"":"demo://person/"+i));
-            return new JSONObject().put("cast",cast).toString();}
+            return new JSONObject().put("cast",cast).put("trailer",STREAM).toString();}
         if(url.contains("ratings.php"))return ratings(body);
         if(url.contains("trending.php"))return trending();
         if(url.contains("actor.php")){JSONArray titles=new JSONArray();

@@ -95,7 +95,7 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
         handler.postDelayed(loadTimeout,LOAD_TIMEOUT_MS);
         Button skip=Ui.button(this,"Skip intro  ›");skip.setTextSize(16);
-        FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,Ui.dp(this,46),Gravity.END|Gravity.BOTTOM);
+        FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,Ui.dp(this,50),Gravity.END|Gravity.BOTTOM);
         bp.setMargins(0,0,Ui.safeX(this),Ui.safeY(this));root.addView(skip,bp);
         skip.setOnClickListener(v->openHome());skip.requestFocus();
     }

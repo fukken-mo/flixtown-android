@@ -6,7 +6,7 @@ set -u
 PKG=com.myflixtown.tv.native.qa
 APK=app/build/outputs/apk/qa/app-qa.apk
 OUT=qa/screenshots
-rm -rf qa && mkdir -p "$OUT"
+rm -rf "$OUT" qa/focus.txt qa/device.txt && mkdir -p "$OUT"
 { adb shell wm size; adb shell wm density; adb shell getprop ro.build.version.release; } > qa/device.txt
 adb install -r "$APK" || exit 1
 adb shell settings put system screen_off_timeout 1800000 || true

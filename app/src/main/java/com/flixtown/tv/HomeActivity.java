@@ -217,7 +217,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(sweep!=null)sweep.cancel();startupSweep.setVisibility(View.INVISIBLE);
         startupStatus.setText(text);startupActions.removeAllViews();startupActions.setVisibility(View.VISIBLE);
         for(int i=0;i<labels.length;i++){final int index=i;
-            Button b=Ui.button(this,labels[i]);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));
+            Button b=i==0 && !Ui.dismissive(labels[i])?Ui.primaryButton(this,labels[i]):Ui.button(this,labels[i]);
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,52));
             if(i>0)p.leftMargin=Ui.dp(this,14);b.setMinWidth(Ui.dp(this,150));startupActions.addView(b,p);
             b.setOnClickListener(v->choice.select(index));
         }
@@ -502,9 +503,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         b.setTextSize(16);b.setTextColor(Ui.TEXT);b.setFocusable(true);b.setFocusableInTouchMode(true);
         b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);b.setMinWidth(0);b.setMinimumWidth(0);
         b.setMinHeight(0);b.setMinimumHeight(0);b.setStateListAnimator(null);
-        GradientDrawable normal=Ui.pill(this,false,false,22),focused=Ui.pill(this,true,false,22);
-        b.setBackground(normal);b.setPadding(Ui.dp(this,20),0,Ui.dp(this,20),0);
-        b.setOnFocusChangeListener((v,f)->{b.setBackground(f?focused:normal);b.animate().scaleX(f?1.04f:1f).scaleY(f?1.04f:1f).setDuration(120).start();
+        b.setPadding(Ui.dp(this,22),0,Ui.dp(this,22),0);Ui.styleButton(b,Ui.SECONDARY);
+        b.setOnFocusChangeListener((v,f)->{Ui.focusScale(v,f);
             if(f)lastContentFocus=v;});
         b.setOnClickListener(v->click.run());
         // Down from Sort or Categories always lands on the grid's selected poster.
@@ -516,7 +516,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private void buildFilters(){filters.removeAllViews();if(!tab.equals("Movies") && !tab.equals("Series"))return;
         Button sort=chip(sortLabel(),()->
             Ui.picker(this,"Sort by",SORTS,sortMode,which->{sortMode=which;render();restoreFilterFocus(0);}));
-        filters.addView(sort,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,42)));
+        filters.addView(sort,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46)));
         Button cats=chip(categoryLabel(),()->{
             List<Catalog.Category> list=tab.equals("Series")?seriesCategories:movieCategories;
             String[] options=new String[list.size()+1];options[0]="All "+(tab.equals("Series")?"TV Shows":"Movies");
@@ -524,7 +524,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             int selected=0;for(int i=0;i<list.size();i++)if(category.equals(list.get(i).id))selected=i+1;
             Ui.picker(this,"Categories",options,selected,which->{category=which==0?"":list.get(which-1).id;render();restoreFilterFocus(1);});
         });cats.setMaxWidth(Ui.dp(this,280));
-        LinearLayout.LayoutParams b=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,42));b.leftMargin=Ui.dp(this,12);filters.addView(cats,b);
+        LinearLayout.LayoutParams b=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46));b.leftMargin=Ui.dp(this,10);filters.addView(cats,b);
     }
     private void restoreFilterFocus(int index){filters.post(()->{
         if(filters.getChildCount()>index)filters.getChildAt(index).requestFocus();
@@ -646,16 +646,13 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private View heroButton(LinearLayout parent,String label,boolean primary){
         LinearLayout b=new LinearLayout(this);b.setOrientation(LinearLayout.HORIZONTAL);b.setGravity(Gravity.CENTER_VERTICAL);
         b.setFocusable(true);b.setFocusableInTouchMode(true);b.setClickable(true);
-        b.setPadding(Ui.dp(this,primary?20:22),0,Ui.dp(this,24),0);
-        GradientDrawable normal=new GradientDrawable();normal.setCornerRadius(Ui.dp(this,24));
-        normal.setColor(primary?0x33FFFFFF:0x1FFFFFFF);normal.setStroke(Ui.dp(this,1),primary?0x40FFFFFF:0x2EFFFFFF);
-        GradientDrawable focused=new GradientDrawable();focused.setCornerRadius(Ui.dp(this,24));focused.setColor(Ui.ACCENT_FOCUS);focused.setStroke(Ui.dp(this,1),0x66FFFFFF);
-        b.setBackground(normal);
+        b.setPadding(Ui.dp(this,primary?22:24),0,Ui.dp(this,26),0);
+        Ui.styleButton(b,primary?Ui.PRIMARY:Ui.SECONDARY);
         if(primary){PlayerIcon icon=new PlayerIcon(this,PlayerIcon.PLAY);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(Ui.dp(this,18),Ui.dp(this,18));ip.rightMargin=Ui.dp(this,10);b.addView(icon,ip);}
         TextView t=Ui.heading(this,label,17);t.setSingleLine(true);b.addView(t);
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));
-        if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,14);parent.addView(b,p);
-        b.setOnFocusChangeListener((v,f)->{v.setBackground(f?focused:normal);v.animate().scaleX(f?1.05f:1f).scaleY(f?1.05f:1f).setDuration(140).start();
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,52));
+        if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,10);parent.addView(b,p);
+        b.setOnFocusChangeListener((v,f)->{Ui.focusScale(v,f);
             if(f){lastContentFocus=v;lastKeyAt=SystemClock.uptimeMillis();}});
         return b;
     }

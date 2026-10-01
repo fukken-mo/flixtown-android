@@ -45,6 +45,8 @@ public class LoginActivity extends Activity {
         status=findViewById(R.id.login_status);
         ((TextView)findViewById(R.id.steps)).setText(steps());
         Button remote=findViewById(R.id.remote_sign_in);
+        // Shared Flix Town buttons: the remote form's Sign in is its one primary action.
+        Ui.styleButton(remote,Ui.SECONDARY);Ui.styleButton(findViewById(R.id.sign_in),Ui.PRIMARY);Ui.styleButton(findViewById(R.id.back_to_qr),Ui.SECONDARY);
         remote.setOnClickListener(v->{qrPanel.setVisibility(View.GONE);remotePanel.setVisibility(View.VISIBLE);
             findViewById(R.id.username).requestFocus();});
         findViewById(R.id.back_to_qr).setOnClickListener(v->showQr());
@@ -59,6 +61,8 @@ public class LoginActivity extends Activity {
         DemoData.expired=getIntent().getBooleanExtra("demo_expired",false);
         DemoData.offline=getIntent().getBooleanExtra("demo_offline",false);
         DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);
+        DemoData.intro=getIntent().getBooleanExtra("demo_intro",false);
+        DemoData.holdPairing=getIntent().getBooleanExtra("demo_hold_qr",false);
         if(getIntent().getBooleanExtra("demo_clear_cache",false)){
             java.io.File dir=new java.io.File(getFilesDir(),"catalog");java.io.File[] files=dir.listFiles();
             if(files!=null)for(java.io.File f:files)f.delete();

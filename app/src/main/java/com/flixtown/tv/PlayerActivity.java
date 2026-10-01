@@ -122,19 +122,16 @@ public class PlayerActivity extends Activity {
         LinearLayout b=new LinearLayout(this);b.setOrientation(LinearLayout.HORIZONTAL);b.setGravity(Gravity.CENTER);
         b.setFocusable(true);b.setFocusableInTouchMode(true);b.setClickable(true);
         boolean round=label==null;
-        GradientDrawable normal=Ui.pill(this,false,false,23),focused=Ui.pill(this,true,false,23);
-        b.setBackground(normal);
         PlayerIcon glyph=new PlayerIcon(this,icon);
         b.addView(glyph,new LinearLayout.LayoutParams(Ui.dp(this,round?22:20),Ui.dp(this,round?22:20)));
         if(!round){TextView t=Ui.text(this,label,15);t.setTextColor(Ui.TEXT);t.setSingleLine(true);
             LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(this,8);b.addView(t,tp);
-            b.setPadding(Ui.dp(this,16),0,Ui.dp(this,18),0);}
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(round?Ui.dp(this,46):ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46));
-        if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,12);
+            b.setPadding(Ui.dp(this,18),0,Ui.dp(this,20),0);}
+        Ui.styleButton(b,Ui.SECONDARY);
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(round?Ui.dp(this,50):ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,50));
+        if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,8);
         parent.addView(b,p);
         b.setOnClickListener(v->{click.run();showControls(null);});
-        b.setOnFocusChangeListener((v,f)->{v.setBackground(f?focused:normal);
-            v.animate().scaleX(f?1.06f:1f).scaleY(f?1.06f:1f).setDuration(110).start();});
         return b;
     }
     private boolean controlsVisible(){return controls.getVisibility()==View.VISIBLE;}
@@ -259,9 +256,9 @@ public class PlayerActivity extends Activity {
         cardTitle.setText(heading);cardMessage.setText(message==null?"":message);cardMessage.setVisibility(message==null||message.isEmpty()?View.GONE:View.VISIBLE);
         cardActions.removeAllViews();
         for(int i=0;i<labels.length;i++){final int index=i;
-            Button b=Ui.button(this,labels[i]);b.setTextSize(16);
-            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,44));
-            if(i>0)p.leftMargin=Ui.dp(this,12);cardActions.addView(b,p);
+            Button b=i==focusIndex && !Ui.dismissive(labels[i])?Ui.primaryButton(this,labels[i]):Ui.button(this,labels[i]);b.setTextSize(16);
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));
+            if(i>0)p.leftMargin=Ui.dp(this,10);cardActions.addView(b,p);
             b.setOnClickListener(v->{hideCard();choice.select(index);});
         }
         card.setVisibility(View.VISIBLE);

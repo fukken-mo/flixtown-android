@@ -112,8 +112,8 @@ public class DetailsActivity extends Activity {
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,580),movie?Ui.dp(this,SUMMARY_DP):-2);sp.topMargin=Ui.dp(this,8);content.addView(summary,sp);
 
         LinearLayout actions=Ui.row(this);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setClipChildren(false);actions.setClipToPadding(false);
-        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-2,-2);ap.topMargin=Ui.dp(this,14);content.addView(actions,ap);
-        watch=Ui.button(this,watchLabel());actions.addView(watch,actionParams(false));
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-2,-2);ap.topMargin=Ui.dp(this,12);ap.leftMargin=-Ui.dp(this,Ui.HALO);content.addView(actions,ap);
+        watch=Ui.primaryButton(this,watchLabel());actions.addView(watch,actionParams(false));
         watch.setOnClickListener(v->{
             if(movie)play(id,extension);
             else if(!Api.prefs(this).getString("resume_episode_series:"+id,"").isEmpty()) resumeSeries();
@@ -158,8 +158,8 @@ public class DetailsActivity extends Activity {
         watch.requestFocus();
     }
     private LinearLayout.LayoutParams actionParams(boolean gap){
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46));
-        if(gap)p.leftMargin=Ui.dp(this,12);return p;}
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,50));
+        if(gap)p.leftMargin=Ui.dp(this,8);return p;}
     private String favoriteLabel(){return isFavorite()?"✓  My List":"+  My List";}
     private String yearText(){int year=getIntent().getIntExtra("year",0);return year>1900?String.valueOf(year):"";}
     /** Rows keep the selected item at the left edge, lined up with the text above. */
@@ -270,8 +270,8 @@ public class DetailsActivity extends Activity {
         if(!saved.isEmpty())for(int i=0;i<seasons.size();i++){JSONArray list=episodes.optJSONArray(seasons.get(i));
             if(list!=null)for(int j=0;j<list.length();j++){JSONObject ep=list.optJSONObject(j);if(ep!=null && saved.equals(ep.optString("id")))seasonIndex=i;}}
         String[] names=new String[seasons.size()];for(int i=0;i<seasons.size();i++)names[i]="Season "+seasons.get(i);
-        Button select=Ui.button(this,names[seasonIndex]+"  ›");select.setTextSize(15);
-        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,42));sp.bottomMargin=Ui.dp(this,4);
+        Button select=Ui.button(this,names[seasonIndex]+"  ›");select.setTextSize(16);
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46));sp.bottomMargin=Ui.dp(this,4);
         episodeArea.addView(select,0,sp);
         select.setOnClickListener(v->Ui.picker(this,"Select season",names,seasonIndex,index->{
             seasonIndex=index;select.setText(names[index]+"  ›");showSeason(episodes,seasons.get(index),ordered);
