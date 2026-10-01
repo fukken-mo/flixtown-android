@@ -1,0 +1,122 @@
+name: Production release (signed)
+
+# Builds the customer app com.myflixtown.tv.native signed with the PERMANENT Flix Town release key.
+# Run it from the tested branch: Actions › "Production release (signed)" › Run workflow.
+#
+# Needs these repository secrets (Settings › Secrets and variables › Actions › Secrets):
+#   FLIXTOWN_RELEASE_KEYSTORE_BASE64   the release .p12 keystore, base64-encoded (one line)
+#   FLIXTOWN_RELEASE_KEYSTORE_PASSWORD
+#   FLIXTOWN_RELEASE_KEY_ALIAS
+#   FLIXTOWN_RELEASE_KEY_PASSWORD
+# If any is missing the run stops before building and names it. The Preview/test key is never
+# used: the build is accepted only if its certificate is the permanent release certificate below
+# (or the repository variable FLIXTOWN_RELEASE_CERT_SHA256, if set). Fingerprints are public; the
+# key and passwords never leave the secrets and the keystore file is deleted after the build.
+#
+# Every future update: run again with a HIGHER version_code. Same package, same key, always.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "versionCode (must be higher than the version customers have)"
+        required: true
+        default: "10015"
+      version_name:
+        description: "versionName shown in Settings"
+        required: true
+        default: "3.7.0"
+  # Also runs once when this file changes on a working branch (with the defaults above), so the
+  # first production build does not depend on the workflow being on the default branch yet.
+  push:
+    branches: ["claude/**"]
+    paths: [".github/workflows/release-production.yml", ".github/release/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.FLIXTOWN_RELEASE_KEYSTORE_BASE64 }}
+      FLIXTOWN_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.FLIXTOWN_RELEASE_KEYSTORE_PASSWORD }}
+      FLIXTOWN_RELEASE_KEY_ALIAS: ${{ secrets.FLIXTOWN_RELEASE_KEY_ALIAS }}
+      FLIXTOWN_RELEASE_KEY_PASSWORD: ${{ secrets.FLIXTOWN_RELEASE_KEY_PASSWORD }}
+      EXPECTED_CERT: ${{ vars.FLIXTOWN_RELEASE_CERT_SHA256 || 'd026a69e07fcdff3a2067ed86f248d91ba4d5d8b0e42d65ec046841089b54e4e' }}
+      PREVIEW_CERT: 426f5dda091757c0e4f6adc8d4a5adeff1f0c6d448cab643a92833b5b9ff11b7
+      PACKAGE: com.myflixtown.tv.native
+      PANEL_UPDATE_URL: https://panelsandapps.com/panels/flixtown2027/api/app-update.php
+      VERSION_CODE: ${{ inputs.version_code || '10015' }}
+      VERSION_NAME: ${{ inputs.version_name || '3.7.0' }}
+    steps:
+      - name: Release signing secrets present
+        run: |
+          missing=0
+          for name in FLIXTOWN_RELEASE_KEYSTORE_BASE64:KEYSTORE_B64 FLIXTOWN_RELEASE_KEYSTORE_PASSWORD:FLIXTOWN_RELEASE_KEYSTORE_PASSWORD \
+                      FLIXTOWN_RELEASE_KEY_ALIAS:FLIXTOWN_RELEASE_KEY_ALIAS FLIXTOWN_RELEASE_KEY_PASSWORD:FLIXTOWN_RELEASE_KEY_PASSWORD; do
+            secret="${name%%:*}"; var="${name##*:}"
+            if [ -z "${!var}" ]; then echo "::error::Missing repository secret $secret (GitHub › fukken-mo/flixtown-android › Settings › Secrets and variables › Actions › New repository secret)"; missing=1
+            else echo "present: $secret"; fi
+          done
+          [ "$missing" = 0 ] || { echo "No production APK was built: the permanent release key is not configured."; exit 1; }
+          echo "$VERSION_CODE" | grep -Eq '^[0-9]+$' || { echo "::error::version_code must be a number"; exit 1; }
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Keystore opens and is the permanent release key
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore" || { echo "::error::FLIXTOWN_RELEASE_KEYSTORE_BASE64 is not valid base64"; exit 1; }
+          echo "FLIXTOWN_RELEASE_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          cert="$(keytool -list -v -keystore "$RUNNER_TEMP/release.keystore" -storepass "$FLIXTOWN_RELEASE_KEYSTORE_PASSWORD" -alias "$FLIXTOWN_RELEASE_KEY_ALIAS" 2>&1)" \
+            || { echo "::error::The keystore did not open with FLIXTOWN_RELEASE_KEYSTORE_PASSWORD and FLIXTOWN_RELEASE_KEY_ALIAS"; exit 1; }
+          sha="$(echo "$cert" | sed -n 's/.*SHA256: *//p' | head -1 | tr -d ':' | tr 'A-F' 'a-f')"
+          echo "keystore certificate SHA-256: $sha"
+          [ "$sha" != "$PREVIEW_CERT" ] || { echo "::error::This is the Preview/test key. Production must use the permanent release key."; exit 1; }
+          [ "$sha" = "$EXPECTED_CERT" ] || { echo "::error::Keystore certificate $sha is not the permanent release certificate $EXPECTED_CERT"; exit 1; }
+      - name: Unit tests and signed release APK
+        run: |
+          ./gradlew :app:testDebugUnitTest :app:assembleRelease --stacktrace -PflixVersionCode="$VERSION_CODE" -PflixVersionName="$VERSION_NAME"
+          rm -f "$RUNNER_TEMP/release.keystore"
+      - name: Verify package, version, certificate and panel update address
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          APK="$(ls app/build/outputs/apk/release/*.apk | head -1)"
+          echo "built: $APK"
+          case "$APK" in *unsigned*) echo "::error::Release APK is unsigned"; exit 1;; esac
+          mkdir -p dist; OUT="dist/FlixTown-${VERSION_NAME}-${VERSION_CODE}-production-signed.apk"; cp "$APK" "$OUT"
+          badging="$("$BT/aapt2" dump badging "$OUT")"; line="$(echo "$badging" | head -1)"; echo "$line"
+          pkg="$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" <<< "$line")"
+          code="$(sed -n "s/.* versionCode='\([^']*\)'.*/\1/p" <<< "$line")"
+          name="$(sed -n "s/.* versionName='\([^']*\)'.*/\1/p" <<< "$line")"
+          certs="$("$BT/apksigner" verify --verbose --print-certs "$OUT" 2>&1)"; echo "$certs" | grep -E "Verified using|certificate SHA-256" | head -6
+          cert="$(grep -m1 "certificate SHA-256 digest" <<< "$certs" | sed 's/.*: *//' | tr -d ' ')"
+          fail=0
+          [ "$pkg" = "$PACKAGE" ] && echo "PASS  package $pkg" || { echo "::error::package is $pkg, expected $PACKAGE"; fail=1; }
+          [ "$code" = "$VERSION_CODE" ] && echo "PASS  versionCode $code" || { echo "::error::versionCode $code"; fail=1; }
+          [ "$name" = "$VERSION_NAME" ] && echo "PASS  versionName $name" || { echo "::error::versionName $name"; fail=1; }
+          "$BT/apksigner" verify "$OUT" && echo "PASS  apksigner verify" || { echo "::error::signature does not verify"; fail=1; }
+          [ "$cert" = "$EXPECTED_CERT" ] && echo "PASS  signed with the permanent release key ($cert)" || { echo "::error::certificate $cert"; fail=1; }
+          echo "$badging" | grep -q "application-debuggable" && { echo "::error::APK is debuggable"; fail=1; } || echo "PASS  not debuggable"
+          echo "$badging" | grep -q "application-label:'Flix Town'" && echo "PASS  app name Flix Town" || { echo "::error::app name is not Flix Town"; fail=1; }
+          rm -rf dex && mkdir dex && unzip -q -o "$OUT" 'classes*.dex' -d dex
+          grep -aq "$PANEL_UPDATE_URL" dex/*.dex && echo "PASS  update check address $PANEL_UPDATE_URL" || { echo "::error::panel update address not found in the app"; fail=1; }
+          { echo "Flix Town production release"; echo "package=$pkg"; echo "versionCode=$code"; echo "versionName=$name";
+            echo "signing certificate SHA-256=$cert"; echo "apk SHA-256=$(sha256sum "$OUT" | cut -c1-64)"; echo "size=$(stat -c %s "$OUT") bytes";
+            echo "update check=$PANEL_UPDATE_URL"; echo "commit=$GITHUB_SHA"; } > dist/RELEASE-INFO.txt
+          cat dist/RELEASE-INFO.txt
+          exit $fail
+      - name: Panel reads it as the live panel would (local copy of the update module)
+        run: |
+          APK="$(ls dist/*.apk)"
+          php panel/tests/inspect.php "$APK"; echo
+          bash .github/release/panel_check.sh "$APK" "$PACKAGE" "$VERSION_CODE" "$EXPECTED_CERT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.7.0' }}-${{ inputs.version_code || '10015' }}
+          path: |
+            dist/*.apk
+            dist/RELEASE-INFO.txt
+          if-no-files-found: error
+          retention-days: 90
