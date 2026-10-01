@@ -7,7 +7,7 @@ tested without the Android SDK. Real Gradle-built APKs are tested in CI.
 
 usage: make_fixture_apk.py OUT.apk PACKAGE VERSION_CODE VERSION_NAME [--utf16] [--cert cert.der]
 """
-import struct, sys, zipfile, io, argparse
+import struct, sys, zipfile, io, argparse, os
 
 ANDROID_NS = "http://schemas.android.com/apk/res/android"
 RES = {"versionCode": 0x0101021b, "versionName": 0x0101021c, "minSdkVersion": 0x0101020c}
@@ -76,7 +76,9 @@ def build(out, package, version_code, version_name, utf8=True, cert=None, paddin
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("AndroidManifest.xml", manifest(package, version_code, version_name, utf8))
-        z.writestr("classes.dex", b"dex\n035\x00" + b"\x00" * (64 + padding))
+        z.writestr("classes.dex", b"dex\n035\x00" + b"\x00" * 64)
+        if padding:  # incompressible payload, for realistic file sizes
+            z.writestr(zipfile.ZipInfo("assets/payload.bin"), os.urandom(padding), zipfile.ZIP_STORED)
     data = buf.getvalue()
     if cert:
         # Insert the signing block right before the central directory and fix the EOCD offset.

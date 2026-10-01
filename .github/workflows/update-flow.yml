@@ -40,10 +40,13 @@ jobs:
           fail=0
           for f in dist/*.apk; do
             line="$("$BT/aapt2" dump badging "$f" | head -1)"
-            pkg="$(sed -n "s/.*name='\([^']*\)'.*/\1/p" <<< "$line")"
-            code="$(sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" <<< "$line")"
-            name="$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$line")"
-            cert="$("$BT/apksigner" verify --print-certs "$f" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+            # The badging line also has platformBuildVersionName='…', so match " name=" etc. exactly.
+            pkg="$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" <<< "$line")"
+            code="$(sed -n "s/.* versionCode='\([^']*\)'.*/\1/p" <<< "$line")"
+            name="$(sed -n "s/.* versionName='\([^']*\)'.*/\1/p" <<< "$line")"
+            certs="$("$BT/apksigner" verify --print-certs "$f" 2>&1)"
+            cert="$(grep -i "certificate SHA-256 digest" <<< "$certs" | head -1 | sed 's/.*: *//' | tr -d ' ')"
+            [ -n "$cert" ] || echo "$certs"
             got="$(php panel/tests/inspect.php "$f")"
             want="$(php -r 'echo json_encode(array("package"=>$argv[1],"version_code"=>(int)$argv[2],"version_name"=>$argv[3],"signer_sha256"=>$argv[4],"sha256"=>$argv[5]));' "$pkg" "$code" "$name" "$cert" "$(sha256sum "$f" | cut -c1-64)")"
             same="$(php -r '$g=json_decode($argv[1],true);$w=json_decode($argv[2],true);foreach($w as $k=>$v)if($g[$k]!==$v){echo "$k: panel=".json_encode($g[$k])." android=".json_encode($v);exit;}echo "ok";' "$got" "$want")"
