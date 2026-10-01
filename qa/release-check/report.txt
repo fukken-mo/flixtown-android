@@ -1,0 +1,62 @@
+PASS  QR activation: code shown next to the QR
+PASS  QR activation: QR image drawn
+PASS  QR screen: 'Sign in with remote instead' focused (keyboard closed)
+PASS  keyboard does not open by itself
+PASS  remote sign-in form opens with Username focused
+PASS  OK on a field opens the on-screen keyboard
+PASS  signed in with the remote keyboard (Home opened)
+PASS  saved login: relaunch goes straight to Home
+PASS  startup: one catalog refresh on launch
+PASS  no catalog refresh during normal navigation
+PASS  intro plays when the panel enables it, with Skip
+PASS  Skip intro opens Home
+PASS  intro disabled in the panel: no intro
+PASS  Sort chip reachable from the grid
+PASS  sort picker lists Title A–Z and Top Rated
+PASS  sorted by title
+PASS  grid titles are in A–Z order
+PASS  category filter applied (chip shows the category)
+PASS  details page opens for the chosen title
+PASS  Back returns focus to the same poster (The Golden Horizon and the Long Road Home)
+PASS  details: Play is the focused primary action
+PASS  details: cast row with names and portraits
+PASS  details: More Like This row
+PASS  trailer button enabled
+PASS  trailer plays in the player
+PASS  Back from the trailer returns to details
+PASS  My List toggles on details ('+ My List' → '✓ My List')
+PASS  My List page shows the saved title (The Golden Horizon and the Long Road Home)
+PASS  series details: season selector
+PASS  season picker lists every season
+PASS  season 2 selected
+PASS  episode plays from the episode row
+PASS  details now offers Continue for the show
+PASS  resume prompt: 'Continue watching?'
+PASS  resume prompt offers Continue from … and Start over
+PASS  Start over plays from the beginning (5s)
+PASS  Up shows the player controls
+PASS  controls hide by themselves
+PASS  seeking: 3 × Right moves ~30s (11s → 42s)
+INFO  
+FAIL  audio picker missing or one track ()
+FAIL  audio track label unchanged (Audio · English)
+INFO  10-01 21:54:33.957  5030  5030 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+PASS  subtitle picker offers Off and the stream's languages
+PASS  subtitles changed (Subtitles · Off → Subtitles · English)
+PASS  Back with controls shown: hides them, stays in the player
+PASS  Back again leaves the player
+INFO  playing: S2 · E3   Chapter 3: Tide
+PASS  next episode offered near the end ('Up next')
+PASS  Play now starts the next episode (S2 · E3   Chapter 3: Tide → S2 · E4   Chapter 4: Orchard)
+PASS  expired account opens the renewal screen
+PASS  renewal shows plans with panel prices
+PASS  renewal shows the panel's Cash App details
+FAIL  renewal request is sent
+PASS  after the payment is confirmed (account active) Flix Town reopens
+INFO  emulator frames: Total frames rendered: 101
+INFO  emulator frames: Janky frames: 101 (100.00%)
+INFO  emulator frames: Janky frames (legacy): 101 (100.00%)
+INFO  emulator frames: 50th percentile: 150ms
+INFO  emulator frames: 90th percentile: 200ms
+PASS  no crash during the run
+release check: 50 passed, 3 failed
