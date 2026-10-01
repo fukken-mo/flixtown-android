@@ -50,7 +50,7 @@ import java.util.Map;
  * Home is one vertical Leanback grid. Item 0 is a cinematic hero over full-screen ambient artwork;
  * it rotates through five trending titles every 10 seconds while the viewer is idle on it. The
  * sections below have their own card styles (landscape Continue Watching, ranked Trending,
- * posters with titles, genre tiles). Moving into a section switches Home into "browse mode": the
+ * posters with titles). Moving into a section switches Home into "browse mode": the
  * hero fades, a short preview of the focused title appears above the row, and the ambient artwork
  * follows focus after a short pause. The focused row always sits on the same keyline, and every
  * row remembers its position, so the D-pad moves exactly one card per press.
@@ -375,7 +375,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(browse){handler.removeCallbacks(focusArt);preview.animate().cancel();preview.setAlpha(0f);}   // Home's preview never shows over a grid
         entries.clear();
         if(home){
-            HomeFeed.Result feed=HomeFeed.build(this,movies,series,movieCategories);
+            HomeFeed.Result feed=HomeFeed.build(this,movies,series);
             featured=feed.featured;heroIndex=featured.isEmpty()?0:heroIndex%featured.size();
             entries.add(HERO);entries.addAll(feed.sections);
             homeAdapter.notifyDataSetChanged();homeRows.setSelectedPosition(0);
@@ -453,7 +453,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         ArrayList<Catalog.Item> results=new ArrayList<>();String needle=query.trim().toLowerCase(Locale.US);
         for(Catalog.Item item:movies)if(results.size()<40 && item.title.toLowerCase(Locale.US).contains(needle))results.add(item);
         for(Catalog.Item item:series)if(results.size()<60 && item.title.toLowerCase(Locale.US).contains(needle))results.add(item);
-        return new HomeFeed.Section(HomeFeed.POSTERS,"results",results.isEmpty()?"No matches":"Results",null,results,null,null);
+        return new HomeFeed.Section(HomeFeed.POSTERS,"results",results.isEmpty()?"No matches":"Results",null,results);
     }
     private String sortLabel(){return "Sort: "+SORTS[sortMode];}
     private String categoryLabel(){if(category.isEmpty())return "Category: All";
@@ -552,17 +552,6 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     @Override public void onOpen(Catalog.Item item,HomeFeed.Section section){
         if(section.type==HomeFeed.CONTINUE){watch(item);return;}
         openDetails(item,false);
-    }
-    /** Genre tiles have no artwork of their own: show what the tile opens instead of the last title. */
-    @Override public void onCategoryFocus(Catalog.Category cat,int count){
-        lastContentFocus=getCurrentFocus();pendingFocusItem=null;handler.removeCallbacks(focusArt);
-        if(heroMode||!tab.equals("Home"))return;
-        previewTitle.setText(cat.name);
-        previewMeta.setText(count>0?count+(count==1?" movie":" movies"):"Movies");
-        previewDesc.setText("Open the full "+cat.name+" collection, sorted by what was added most recently.");previewDesc.setVisibility(View.VISIBLE);
-    }
-    @Override public void onCategory(Catalog.Category cat){
-        tab="Movies";category=cat.id;sortMode=0;restoreGridPosition=-1;lastContentFocus=null;render();focusGrid();
     }
     /** Movies go straight to the player (it offers Continue / Start over); shows resume the right episode. */
     private void watch(Catalog.Item item){
@@ -749,7 +738,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             tag.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));tag.setBackground(outline());Ui.pad(tag,HomeActivity.this,7,2,7,2);
             LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(HomeActivity.this,12);header.addView(tag,tp);
             HorizontalGridView list=new HorizontalGridView(HomeActivity.this);
-            list.setClipChildren(false);list.setClipToPadding(false);list.setItemAnimator(null);list.setHorizontalSpacing(Ui.dp(HomeActivity.this,type==HomeFeed.CATEGORIES?6:2));
+            list.setClipChildren(false);list.setClipToPadding(false);list.setItemAnimator(null);list.setHorizontalSpacing(Ui.dp(HomeActivity.this,2));
             int pad=Ui.dp(HomeActivity.this,16-HomeCards.GLOW);
             list.setPadding(pad,Ui.dp(HomeActivity.this,5),Ui.dp(HomeActivity.this,40),Ui.dp(HomeActivity.this,5));
             RecyclerView.RecycledViewPool pool=pools.get(type);if(pool==null){pool=new RecyclerView.RecycledViewPool();pools.put(type,pool);}
@@ -773,7 +762,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             if(!(holder instanceof SectionHolder)){bindUtility(holder.itemView);return;}
             SectionHolder h=(SectionHolder)holder;HomeFeed.Section s=(HomeFeed.Section)entries.get(position);
             h.title.setText(s.title);h.tag.setVisibility(s.tag==null?View.GONE:View.VISIBLE);if(s.tag!=null)h.tag.setText(s.tag);
-            int keep=Math.min(s.selected,Math.max(0,(s.type==HomeFeed.CATEGORIES?s.categories.size():s.items.size())-1));
+            int keep=Math.min(s.selected,Math.max(0,s.items.size()-1));
             h.section=null;
             if(s.adapter==null)s.adapter=HomeCards.adapter(HomeActivity.this,s,HomeActivity.this);
             if(h.list.getAdapter()!=s.adapter)h.list.setAdapter(s.adapter);

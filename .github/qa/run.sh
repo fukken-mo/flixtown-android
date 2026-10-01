@@ -29,6 +29,13 @@ shot 01-login-qr 4
 sleep 16;                                   shot 02-first-launch-loading 0.1
 sleep 4;                                    shot 03-home 1.5;                focus home
 
+# --- Home rows (no "Browse by Genre"): Down through every row, Down at the end stays, Up back to the hero ---
+key DPAD_DOWN;                              shot 03a-row-trending 0.8;       focus row-1
+key DPAD_DOWN;                              shot 03b-row-latest-movies 0.8;  focus row-2
+key DPAD_DOWN;                              shot 03c-row-latest-tv 0.8;      focus row-3
+key DPAD_DOWN;                              shot 03d-down-at-last-row 0.8;   focus row-last-down
+key DPAD_UP DPAD_UP DPAD_UP;                shot 03e-back-at-hero 1.2;       focus hero-again
+
 # --- Movies from the menu (the reported D-pad bug) ---
 key DPAD_LEFT;                              shot 04-menu-open 0.5
 key DPAD_DOWN;                              shot 05-menu-movies-focus 0.3

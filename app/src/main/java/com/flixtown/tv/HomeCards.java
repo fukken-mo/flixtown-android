@@ -25,33 +25,30 @@ import java.util.Locale;
 
 /**
  * Home card styles. Each section type has its own size so the page has a clear hierarchy:
- * landscape Continue Watching cards, larger ranked Trending posters, standard posters with a title
- * underneath, and genre tiles. Focus never changes a card's layout size: it only scales the art,
+ * landscape Continue Watching cards, larger ranked Trending posters and standard posters with a
+ * title underneath. Focus never changes a card's layout size: it only scales the art,
  * turns on the glow, lifts the dimming and brightens the title, all in about 150 ms.
  */
 final class HomeCards {
     interface Listener {
         void onFocus(Catalog.Item item);
         void onOpen(Catalog.Item item,HomeFeed.Section section);
-        void onCategory(Catalog.Category category);
-        void onCategoryFocus(Catalog.Category category,int count);
     }
     static final int GLOW=8;
     // Artwork sizes in dp (the card adds the glow margin around the art).
-    static final int POSTER_W=124,POSTER_H=186,TREND_W=132,TREND_H=198,TREND_RANK=58,WIDE_W=240,WIDE_H=135,TILE_W=196,TILE_H=92,TEXT_H=40;
+    static final int POSTER_W=124,POSTER_H=186,TREND_W=132,TREND_H=198,TREND_RANK=58,WIDE_W=240,WIDE_H=135,TEXT_H=40;
 
     /** Height of a section's card list, including room for the focus scale. */
     static int listHeight(Context c,int type){
         switch(type){
             case HomeFeed.CONTINUE:return Ui.dp(c,WIDE_H+2*GLOW+TEXT_H+10);
             case HomeFeed.TRENDING:return Ui.dp(c,TREND_H+2*GLOW+TEXT_H+10);
-            case HomeFeed.CATEGORIES:return Ui.dp(c,TILE_H+2*GLOW+10);
             default:return Ui.dp(c,POSTER_H+2*GLOW+TEXT_H+10);
         }
     }
 
     static RecyclerView.Adapter<?> adapter(Activity a,HomeFeed.Section section,Listener listener){
-        return section.type==HomeFeed.CATEGORIES?new TileAdapter(a,section,listener):new CardAdapter(a,section,listener);
+        return new CardAdapter(a,section,listener);
     }
 
     /* ---------------- Poster, Trending and Continue Watching cards ---------------- */
@@ -197,40 +194,6 @@ final class HomeCards {
             float x=getWidth()-bounds.width()-bounds.left-getResources().getDisplayMetrics().density*4,y=h-getResources().getDisplayMetrics().density*6;
             fill.setShader(new LinearGradient(0,y-bounds.height(),0,y,0x33FFFFFF,0x0DFFFFFF,Shader.TileMode.CLAMP));
             canvas.drawText(text,x,y,fill);canvas.drawText(text,x,y,stroke);
-        }
-    }
-
-    /* ---------------- Genre tiles ---------------- */
-
-    private static final class TileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
-        private final Activity a;private final HomeFeed.Section section;private final Listener listener;
-        TileAdapter(Activity a,HomeFeed.Section section,Listener listener){this.a=a;this.section=section;this.listener=listener;setHasStableIds(true);}
-        @Override public long getItemId(int p){return section.categories.get(p).id.hashCode();}
-        @Override public int getItemCount(){return section.categories.size();}
-        @Override public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent,int type){
-            Context c=a;int glow=Ui.dp(c,GLOW);
-            FrameLayout card=new FrameLayout(c);card.setFocusable(true);card.setFocusableInTouchMode(true);card.setClickable(true);card.setClipChildren(false);
-            card.setLayoutParams(new RecyclerView.LayoutParams(Ui.dp(c,TILE_W)+2*glow,Ui.dp(c,TILE_H)+2*glow));
-            FrameLayout box=new FrameLayout(c);box.setPadding(glow,glow,glow,glow);GlowDrawable g=new GlowDrawable(glow,Ui.dp(c,10),Ui.GLOW);box.setBackground(g);
-            card.addView(box,new FrameLayout.LayoutParams(-1,-1));
-            LinearLayout tile=new LinearLayout(c);tile.setOrientation(LinearLayout.VERTICAL);tile.setGravity(Gravity.BOTTOM);
-            tile.setBackgroundResource(R.drawable.genre_tile);Ui.pad(tile,c,16,10,14,12);
-            box.addView(tile,new FrameLayout.LayoutParams(-1,-1));
-            TextView name=Ui.heading(c,"",17);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);tile.addView(name);
-            TextView count=Ui.text(c,"",12);count.setTextColor(Ui.TEXT_3);tile.addView(count);
-            GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(Ui.dp(c,10));ring.setStroke(Ui.dp(c,2),0xFFE8736F);ring.setColor(0);
-            card.setOnFocusChangeListener((v,f)->{g.setOn(f);tile.setForeground(f?ring:null);name.setTextColor(f?Ui.TEXT:0xFFE4DFDA);
-                box.animate().scaleX(f?1.06f:1f).scaleY(f?1.06f:1f).setDuration(150).start();
-                Object cat=v.getTag(R.id.tile_category);
-                if(f && cat instanceof Catalog.Category){Integer n=section.counts.get(((Catalog.Category)cat).id);listener.onCategoryFocus((Catalog.Category)cat,n==null?0:n);}});
-            card.setTag(new TextView[]{name,count});
-            return new RecyclerView.ViewHolder(card){};
-        }
-        @Override public void onBindViewHolder(RecyclerView.ViewHolder h,int position){
-            Catalog.Category cat=section.categories.get(position);TextView[] t=(TextView[])h.itemView.getTag();
-            t[0].setText(cat.name);Integer n=section.counts.get(cat.id);t[1].setText(n==null?"":n+(n==1?" title":" titles"));
-            h.itemView.setContentDescription(cat.name);h.itemView.setTag(R.id.tile_category,cat);
-            h.itemView.setOnClickListener(v->listener.onCategory(cat));
         }
     }
 }
