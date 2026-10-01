@@ -5,8 +5,16 @@ PASS  manual check: 'You’re up to date', version shown, Done
 PASS  offline start: no update dialog (silent)
 PASS  manual check offline: 'Unable to check for updates', Try again / Close
 PASS  offline is never reported as up to date
+PASS  playing a title before the update is published
 PASS  same link, newer APK detected (10011)
-PASS  fresh launch: 'Update available' popup with Update now / Later
+PASS  back from the background straight into the player
+PASS  no update popup while the player is open
+PASS  left the player back to Home
+PASS  return from background: popup appears once Home is in front
+PASS  after Later: returning from the background does not ask again
+PASS  exit confirmation shown
+PASS  after Exit the app process is still running (no force-stop)
+PASS  reopened after Exit: 'Update available' popup with Update now / Later
 PASS  release notes shown
 PASS  after Later: no duplicate popup while navigating
 PASS  panel marks the update required
@@ -19,4 +27,4 @@ PASS  now current: no automatic popup
 PASS  autoplay setting kept (Off)
 PASS  manual check after update: up to date, version 3.5.1
 PASS  later launch: still no popup
-update flow: 21 passed, 0 failed
+update flow: 29 passed, 0 failed
