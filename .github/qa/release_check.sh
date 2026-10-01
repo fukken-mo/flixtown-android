@@ -240,6 +240,7 @@ sub1="$(qaf subtitle)"; note "INFO  playing: $sub1"
 key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.5
 for i in 1 2 3 4; do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.2; done
 wait_qa card "Up next" 150 && ok "next episode offered near the end ('Up next')" || bad "no 'Up next' card ($(qa_line))"
+sleep 1.5; qaf cardmsg | grep -q "Starts in" && ok "Up next shows the countdown ($(qaf cardmsg))" || bad "Up next countdown not visible ($(qa_line))"
 shot 22-up-next 0.2
 key DPAD_CENTER;                             sleep 5
 sub="$(qaf subtitle)"

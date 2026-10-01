@@ -428,8 +428,9 @@ public class PlayerActivity extends Activity {
             long left=duration-current;
             if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && left>0){
                 if(left<=25000 && !promptShown && player.isPlaying()){promptShown=true;showNext();}
-                if(cardForNext && card.getVisibility()==View.VISIBLE)
+                if(cardForNext && card.getVisibility()==View.VISIBLE){
                     cardMessage.setText("Starts in "+Math.max(1,(left+999)/1000)+" seconds"+(nextSubtitle!=null&&!nextSubtitle.isEmpty()?"  ·  "+nextSubtitle:""));
+                    cardMessage.setVisibility(View.VISIBLE);}   // the card opens with an empty (hidden) message line
             }
         }
         handler.postDelayed(this,500);
@@ -442,7 +443,7 @@ public class PlayerActivity extends Activity {
         String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==progressLine?"progress":"other";
         String s="controls="+controlsVisible()+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
             +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
-            +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
+            +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] cardmsg=["+(card.getVisibility()==View.VISIBLE && cardMessage.getVisibility()==View.VISIBLE?cardMessage.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
         if(!s.equals(qaLast)){qaLast=s;android.util.Log.i("FlixTownQA","player "+s);}
     }
     private void saveProgress(long current,long duration){
