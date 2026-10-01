@@ -1,0 +1,18 @@
+PASS  installed QA build 10006
+PASS  panel detected 10006 from the APK
+PASS  same version on the panel: 'up to date'
+PASS  panel unreachable: 'Couldn't check for updates'
+PASS  same link replaced: panel detected 10007 by itself
+PASS  startup check offered 3.4.1
+PASS  wrong file at the link refused by checksum
+PASS  nothing installed after a failed check
+PASS  asks for the install permission first
+PASS  row shows 'Ready to install'
+PASS  Android's installer confirmation shown and accepted
+PASS  installed version is now 10007
+PASS  still signed in after the update
+PASS  autoplay row still Off
+PASS  autoplay preference kept (off)
+PASS  Settings shows version 3.4.1
+PASS  after updating: up to date
+update flow: 17 passed, 0 failed
