@@ -68,13 +68,13 @@ public class RenewalActivity extends Activity {
         LinearLayout left=Ui.column(this);left.setClipChildren(false);left.setPadding(Ui.dp(this,4),Ui.dp(this,4),Ui.dp(this,28),Ui.dp(this,4));
         leftScroll.addView(left);
         ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.flix_logo);logo.setScaleType(ImageView.ScaleType.FIT_START);
-        left.addView(logo,new LinearLayout.LayoutParams(Ui.dp(this,120),Ui.dp(this,64)));
+        left.addView(logo,new LinearLayout.LayoutParams(Ui.dp(this,96),Ui.dp(this,50)));
         TextView heading=Ui.heading(this,"Your subscription has ended",28);
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=Ui.dp(this,8);left.addView(heading,hp);
         accountLine=Ui.text(this,"",16);accountLine.setTextColor(Ui.TEXT_2);left.addView(accountLine);
-        TextView how=Ui.text(this,"",15);how.setTextColor(Ui.TEXT);how.setLineSpacing(0,1.35f);
-        how.setText("1   Choose a plan below\n2   Pay with Cash App using the code on the right\n3   Send your renewal request. Flix Town reopens once your payment is confirmed.");
-        LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,-2);wp.topMargin=Ui.dp(this,14);left.addView(how,wp);
+        TextView how=Ui.text(this,"",15);how.setTextColor(Ui.TEXT);how.setLineSpacing(0,1.2f);
+        how.setText("1   Choose a plan below\n2   Pay with Cash App using the code on the right\n3   Send your request. Flix Town reopens once payment is confirmed.");
+        LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,-2);wp.topMargin=Ui.dp(this,10);left.addView(how,wp);
 
         plans=Ui.column(this);plans.setClipChildren(false);
         LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,-2);pp.topMargin=Ui.dp(this,6);left.addView(plans,pp);showPlans();
@@ -82,7 +82,7 @@ public class RenewalActivity extends Activity {
         EditText phone=new EditText(this);phone.setHint("Phone number (so we can reach you)");phone.setTextColor(Ui.TEXT);phone.setHintTextColor(Ui.TEXT_3);
         phone.setSingleLine(true);phone.setInputType(InputType.TYPE_CLASS_PHONE);phone.setTextSize(16);
         phone.setBackgroundResource(R.drawable.edit_field);phone.setPadding(Ui.dp(this,16),0,Ui.dp(this,16),0);
-        LinearLayout.LayoutParams php=new LinearLayout.LayoutParams(-1,Ui.dp(this,48));php.topMargin=Ui.dp(this,12);left.addView(phone,php);
+        LinearLayout.LayoutParams php=new LinearLayout.LayoutParams(-1,Ui.dp(this,48));php.topMargin=Ui.dp(this,8);left.addView(phone,php);
 
         LinearLayout actions=Ui.row(this);actions.setClipChildren(false);left.addView(actions);
         Button submit=Ui.primaryButton(this,"Send renewal request");actions.addView(submit,buttonParams(0,0));
@@ -95,13 +95,14 @@ public class RenewalActivity extends Activity {
             }catch(Exception e){runOnUiThread(()->{status.setTextColor(0xFFF0A29F);status.setText("Couldn't send the request: "+e.getMessage());});}});
         });
         Button check=Ui.button(this,"Check again");actions.addView(check,buttonParams(0,12));check.setOnClickListener(v->checkAccount(true));
+        // The answer to "Send" / "Check again" sits right under those buttons, inside the safe area.
+        status=Ui.text(this,"",15);status.setTextColor(Ui.TEXT_2);status.setMaxLines(3);
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=Ui.dp(this,8);left.addView(status,sp);
         Button logout=Ui.button(this,"Use a different account");
         LinearLayout.LayoutParams lp=buttonParams(-2,0);left.addView(logout,lp);logout.setTextSize(15);
         logout.setOnClickListener(v->Ui.dialog(this,"Sign out of this account?","You can sign in with another account on the next screen.",
             new String[]{"Cancel","Sign out"},0,i->{if(i==1){AccountStore.clear(this);Api.prefs(this).edit().remove("expired").apply();
                 startActivity(new Intent(this,LoginActivity.class));finish();}},null));
-        status=Ui.text(this,"",15);status.setTextColor(Ui.TEXT_2);status.setMaxLines(3);
-        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=Ui.dp(this,10);left.addView(status,sp);
 
         // Cash App card
         LinearLayout card=Ui.column(this);card.setGravity(Gravity.CENTER_HORIZONTAL);card.setBackground(Ui.glass(this,20));

@@ -110,9 +110,9 @@ public class PlayerActivity extends Activity {
         LinearLayout actions=findViewById(R.id.player_actions);
         playButton=controlButton(actions,PlayerIcon.PAUSE,null,this::togglePlay);
         playIcon=(PlayerIcon)playButton.getChildAt(0);
-        LinearLayout audio=controlButton(actions,PlayerIcon.AUDIO,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));
+        LinearLayout audio=controlButton(actions,PlayerIcon.AUDIO,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));audioButton=audio;
         audioLabel=(TextView)audio.getChildAt(1);
-        LinearLayout subs=controlButton(actions,PlayerIcon.SUBTITLES,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));
+        LinearLayout subs=controlButton(actions,PlayerIcon.SUBTITLES,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));subsButton=subs;
         subtitleLabel=(TextView)subs.getChildAt(1);
     }
     private void showSubtitle(){TextView sub=findViewById(R.id.player_subtitle);
@@ -352,6 +352,7 @@ public class PlayerActivity extends Activity {
                 labels.add(label);groups.add(group);indexes.add(i);
             }
         }
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","tracks type="+type+" count="+labels.size()+" "+labels);
         if(labels.isEmpty() || (type==C.TRACK_TYPE_TEXT && labels.size()==1)){
             flash(type==C.TRACK_TYPE_TEXT?"This video has no subtitles":"This stream has only one audio track");scheduleHide();return;}
         handler.removeCallbacks(hideControls);
@@ -434,10 +435,12 @@ public class PlayerActivity extends Activity {
         handler.postDelayed(this,500);
     }};
     /** QA build only: the player's visible state for the emulator test (UI dumps fail while video plays). */
-    private String qaLast="";
+    private String qaLast="";private View audioButton,subsButton;
     private void qaState(){
         if(!BuildConfig.DEMO || player==null)return;
-        String s="controls="+controlsVisible()+" elapsed="+player.getCurrentPosition()/1000
+        View f=getCurrentFocus();
+        String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==progressLine?"progress":"other";
+        String s="controls="+controlsVisible()+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
             +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
             +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
         if(!s.equals(qaLast)){qaLast=s;android.util.Log.i("FlixTownQA","player "+s);}

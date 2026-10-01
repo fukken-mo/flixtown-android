@@ -59,6 +59,8 @@ l=sys.stdin.read();k=sys.argv[1]
 m=re.search(k+r"=\[([^\]]*)\]",l) or re.search(k+r"=(.*)$" if k=="subtitle" else k+r"=(\S+)",l)
 print(m.group(1).strip() if m else "")' "$1"; }
 picker_line(){ adb logcat -d -s FlixTownQA:I | grep " picker $1" | tail -1; }
+# Moves through the player controls until the QA state reports the wanted control focused.
+player_focus(){ for i in 1 2 3 4; do [ "$(qaf focus)" = "$1" ] && return 0; key "$2"; sleep 0.6; done; [ "$(qaf focus)" = "$1" ]; }
 wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && return 0; sleep 1; t=$((t+1)); done; return 1; }
 secs(){ python3 -c 'import sys;p=sys.argv[1].lstrip("-").split(":");print(sum(int(x)*60**i for i,x in enumerate(reversed(p))) if all(x.isdigit() for x in p) else -1)' "$1"; }
 refreshes(){ adb logcat -d -s FlixTown:I | grep -c "Refresh started" ; }
@@ -198,9 +200,11 @@ after="$(qaf elapsed)"
 [ -n "$start" ] && [ -n "$after" ] && [ "$after" -ge $((start+20)) ] && ok "seeking: 3 × Right moves ~30s (${start}s → ${after}s)" || bad "seeking did not move (${start}s → ${after}s)"
 shot 19-seeked 0.1
 wait_qa controls false 8
-key DPAD_UP; sleep 0.6; key DPAD_RIGHT; sleep 0.4               # play → Audio
+key DPAD_UP; sleep 0.8
+player_focus audio DPAD_RIGHT || note "INFO  player focus: $(qa_line)"
 audio1="$(qaf audio)"
 key DPAD_CENTER;                             sleep 1.5
+note "INFO  $(adb logcat -d -s FlixTownQA:I | grep ' tracks type=1' | tail -1)"
 pl="$(picker_line Audio)"; note "INFO  $pl"
 echo "$pl" | grep -q "|" && ok "audio picker lists the stream's audio tracks" || bad "audio picker missing or one track ($pl)"
 shot 20-audio-picker 0.2
@@ -208,7 +212,8 @@ key DPAD_DOWN DPAD_CENTER;                   sleep 2
 audio2="$(qaf audio)"
 [ "$audio1" != "$audio2" ] && ok "audio track changed ($audio1 → $audio2)" || bad "audio track label unchanged ($audio1)"
 wait_qa controls false 8
-key DPAD_UP; sleep 0.6; key DPAD_RIGHT DPAD_RIGHT; sleep 0.4    # play → Audio → Subtitles
+key DPAD_UP; sleep 0.8
+player_focus subs DPAD_RIGHT || note "INFO  player focus: $(qa_line)"
 subs1="$(qaf subs)"
 key DPAD_CENTER;                             sleep 1.5
 pl="$(picker_line Subtitles)"; note "INFO  $pl"
