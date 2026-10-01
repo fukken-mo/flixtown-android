@@ -1,0 +1,22 @@
+PASS  installed the older build (10010)
+PASS  panel detected 10010 from the APK
+PASS  current version: no automatic popup
+PASS  manual check: 'You’re up to date', version shown, Done
+PASS  offline start: no update dialog (silent)
+PASS  manual check offline: 'Unable to check for updates', Try again / Close
+PASS  offline is never reported as up to date
+PASS  same link, newer APK detected (10011)
+PASS  fresh launch: 'Update available' popup with Update now / Later
+PASS  release notes shown
+PASS  after Later: no duplicate popup while navigating
+PASS  panel marks the update required
+PASS  required update: 'Update required', only Update now
+PASS  Back does not dismiss a required update
+PASS  Android's installer confirmation accepted
+PASS  installed version is now 10011
+PASS  still signed in after the update
+PASS  now current: no automatic popup
+PASS  autoplay setting kept (Off)
+PASS  manual check after update: up to date, version 3.5.1
+PASS  later launch: still no popup
+update flow: 21 passed, 0 failed
