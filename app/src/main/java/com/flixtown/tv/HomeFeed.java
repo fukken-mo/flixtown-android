@@ -30,11 +30,12 @@ final class HomeFeed {
         List<Catalog.Item> continued=Catalog.continueWatching(c,movies,series);
         if(!continued.isEmpty())out.add(new Section(CONTINUE,"continue","Continue Watching",null,continued));
 
-        List<Catalog.Item> trending=Catalog.trending(movies,series,10);
-        if(trending.size()>=3)out.add(new Section(TRENDING,"trending","Trending Now","TOP 10",trending));
+        // This week's TMDB trending titles that are on this server, in TMDB's order (see Trending).
+        List<Catalog.Item> trending=Trending.current(movies,series);
+        if(trending.size()>=Trending.MIN_ROW)out.add(new Section(TRENDING,"trending","Trending Now",trending.size()==10?"TOP 10":null,trending));
 
         if(!movies.isEmpty())out.add(new Section(POSTERS,"latest_movies","Latest Movies",null,Catalog.recent(movies,24)));
-        if(!series.isEmpty())out.add(new Section(POSTERS,"latest_series","Latest TV Shows",null,Catalog.recent(series,24)));
+        if(!series.isEmpty())out.add(new Section(POSTERS,"latest_series","Latest TV Shows",null,SeriesNews.latest(series,24)));
 
         // Real history only: the most recent movie in Continue Watching, and titles from its category.
         for(Catalog.Item seed:continued){
@@ -46,9 +47,12 @@ final class HomeFeed {
             break;
         }
 
-        // Hero: the top of Trending, preferring titles that have real landscape artwork.
+        // Hero: Trending titles, otherwise the newest movies and the series with proven new episodes,
+        // preferring titles that have real landscape artwork.
         List<Catalog.Item> featured=new ArrayList<>();
-        List<Catalog.Item> pool=Catalog.trending(movies,series,30);
+        List<Catalog.Item> pool=new ArrayList<>(trending);
+        for(Catalog.Item i:Catalog.recent(movies,20))if(!pool.contains(i))pool.add(i);
+        for(Catalog.Item i:SeriesNews.latest(series,10))if(SeriesNews.badge(i).type!=SeriesNews.NONE && !pool.contains(i))pool.add(i);
         for(Catalog.Item i:pool)if(i.hasBackdrop() && featured.size()<HERO_COUNT)featured.add(i);
         for(Catalog.Item i:pool)if(!featured.contains(i) && featured.size()<HERO_COUNT)featured.add(i);
         return new Result(featured,out);

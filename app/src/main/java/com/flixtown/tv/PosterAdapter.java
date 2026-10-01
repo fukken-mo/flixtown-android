@@ -29,7 +29,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     static final int GLOW_DP=8;
     /** Artwork width for horizontal rows, in dp. Height is 1.5× (2:3 artwork). */
     static final int ROW_POSTER_DP=120;
-    /** Two lines of 14sp title under grid posters. */
+    /** Under grid posters: one line of 14sp title and one line of 12sp year · ★ rating. */
     static final int NAME_DP=42;
     static final float FOCUS_SCALE=1.05f;
 
@@ -57,9 +57,9 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         return "series".equals(item.kind)?-1-id:id;
     }
     static final class Holder extends RecyclerView.ViewHolder {
-        final FrameLayout poster;final ImageView image;final TextView fallback,name;final GlowDrawable glow;final GradientDrawable ring;Catalog.Item item;
-        Holder(View card,FrameLayout poster,ImageView image,TextView fallback,TextView name,GlowDrawable glow,GradientDrawable ring){
-            super(card);this.poster=poster;this.image=image;this.fallback=fallback;this.name=name;this.glow=glow;this.ring=ring;}
+        final FrameLayout poster;final ImageView image;final TextView fallback,name,meta;final GlowDrawable glow;final GradientDrawable ring;Catalog.Item item;
+        Holder(View card,FrameLayout poster,ImageView image,TextView fallback,TextView name,TextView meta,GlowDrawable glow,GradientDrawable ring){
+            super(card);this.poster=poster;this.image=image;this.fallback=fallback;this.name=name;this.meta=meta;this.glow=glow;this.ring=ring;}
     }
     @Override public Holder onCreateViewHolder(ViewGroup parent,int type) {
         LinearLayout card=new LinearLayout(activity);card.setOrientation(LinearLayout.VERTICAL);
@@ -84,14 +84,18 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         art.addView(image,new FrameLayout.LayoutParams(-1,-1));
         GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(radius);ring.setStroke(Ui.dp(activity,2),0xFFE06A66);ring.setColor(0);
 
-        TextView name=null;
+        TextView name=null,meta=null;
         if(names){
-            name=new TextView(activity);name.setTextColor(Ui.TEXT_2);name.setTextSize(14);name.setMaxLines(2);
-            name.setEllipsize(TextUtils.TruncateAt.END);name.setLineSpacing(0,1.05f);name.setGravity(Gravity.CENTER_HORIZONTAL);
-            name.setPadding(glow,Ui.dp(activity,2),glow,0);
-            card.addView(name,new LinearLayout.LayoutParams(-1,Ui.dp(activity,NAME_DP)));
+            LinearLayout text=new LinearLayout(activity);text.setOrientation(LinearLayout.VERTICAL);text.setPadding(glow,Ui.dp(activity,2),glow,0);
+            card.addView(text,new LinearLayout.LayoutParams(-1,Ui.dp(activity,NAME_DP)));
+            name=new TextView(activity);name.setTextColor(Ui.TEXT_2);name.setTextSize(14);name.setSingleLine(true);
+            name.setEllipsize(TextUtils.TruncateAt.END);name.setGravity(Gravity.CENTER_HORIZONTAL);
+            text.addView(name,new LinearLayout.LayoutParams(-1,-2));
+            meta=new TextView(activity);meta.setTextColor(Ui.TEXT_3);meta.setTextSize(12);meta.setSingleLine(true);
+            meta.setEllipsize(TextUtils.TruncateAt.END);meta.setGravity(Gravity.CENTER_HORIZONTAL);
+            text.addView(meta,new LinearLayout.LayoutParams(-1,-2));
         }
-        Holder holder=new Holder(card,poster,image,fallback,name,glowDrawable,ring);
+        Holder holder=new Holder(card,poster,image,fallback,name,meta,glowDrawable,ring);
         card.setOnFocusChangeListener((v,hasFocus)->{
             showFocus(holder,hasFocus,true);
             if(hasFocus && focus!=null && holder.item!=null)focus.onFocus(holder.item);
@@ -111,6 +115,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         h.glow.setOn(focused);
         ((FrameLayout)h.poster.getChildAt(0)).setForeground(focused?h.ring:null);
         if(h.name!=null)h.name.setTextColor(focused?Ui.TEXT:Ui.TEXT_2);
+        if(h.meta!=null)h.meta.setTextColor(focused?Ui.TEXT_2:Ui.TEXT_3);
         float s=focused?FOCUS_SCALE:1f;
         if(animate)h.poster.animate().scaleX(s).scaleY(s).setDuration(120).start();
         else{h.poster.animate().cancel();h.poster.setScaleX(s);h.poster.setScaleY(s);}
@@ -119,10 +124,21 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         Catalog.Item item=items.get(position);h.item=item;
         h.fallback.setText(item.title);
         if(h.name!=null)h.name.setText(item.title);
+        if(h.meta!=null){h.meta.setText(meta(item));Ratings.want(item);}
         h.itemView.setContentDescription(item.title);
         Images.load(h.image,item.poster,artWidth);
         showFocus(h,h.itemView.isFocused(),false);
     }
+    /** A rating arrived: only the text line changes, so artwork and focus stay as they are. */
+    @Override public void onBindViewHolder(Holder h,int position,List<Object> payloads){
+        if(!payloads.contains(HomeCards.TEXT) || h.meta==null){onBindViewHolder(h,position);return;}
+        h.meta.setText(meta(items.get(position)));
+    }
+    private static String meta(Catalog.Item item){
+        return HomeCards.join(item.year>1900?String.valueOf(item.year):"",Ratings.label(item));
+    }
+    /** Ratings changed: refresh the text of every card without rebuilding the grid. */
+    void refreshText(){notifyItemRangeChanged(0,getItemCount(),HomeCards.TEXT);}
     @Override public void onViewRecycled(Holder h){showFocus(h,false,false);}
     @Override public int getItemCount(){return items.size();}
     Catalog.Item itemAt(int position){return items.get(position);}

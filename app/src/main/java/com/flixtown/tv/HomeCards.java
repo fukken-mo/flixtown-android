@@ -21,7 +21,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Home card styles. Each section type has its own size so the page has a clear hierarchy:
@@ -111,7 +110,7 @@ final class HomeCards {
             }
             View dim=new View(c);dim.setBackgroundColor(0x38000000);art.addView(dim,new FrameLayout.LayoutParams(-1,-1));
             TextView badge=new TextView(c);badge.setTextSize(10);badge.setTextColor(Ui.TEXT);badge.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
-            badge.setLetterSpacing(0.12f);badge.setBackground(Ui.rounded(0xE6AB3A39,3,c));badge.setPadding(Ui.dp(c,6),Ui.dp(c,2),Ui.dp(c,6),Ui.dp(c,2));
+            badge.setLetterSpacing(0.12f);badge.setSingleLine(true);badge.setBackground(Ui.rounded(0xE6AB3A39,3,c));badge.setPadding(Ui.dp(c,6),Ui.dp(c,2),Ui.dp(c,6),Ui.dp(c,2));
             FrameLayout.LayoutParams gp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.START);gp.setMargins(Ui.dp(c,8),Ui.dp(c,8),0,0);
             art.addView(badge,gp);
             GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(radius);ring.setStroke(Ui.dp(c,2),0xFFE8736F);ring.setColor(0);
@@ -146,15 +145,33 @@ final class HomeCards {
                     meta="series".equals(item.kind)?join(p.label,left):join(item.year>1900?String.valueOf(item.year):"",left);}
             }else{
                 Images.load(h.image,item.poster,artW);
-                if(item.isNew())badge="NEW";else if(item.isUhd())badge="4K";
-                String kind="series".equals(item.kind)?"Series":"";
-                meta=join(item.year>1900?String.valueOf(item.year):"",item.rating>0?String.format(Locale.US,"★ %.1f",item.rating):"",kind);
+                badge=badge(item);meta=meta(item);
+                Ratings.want(item);
             }
             h.meta.setText(meta);
             h.badge.setVisibility(badge==null?View.GONE:View.VISIBLE);if(badge!=null)h.badge.setText(badge);
             applyFocus(h,h.itemView.isFocused(),false,focusScale);
         }
+        /** A rating or badge arrived: update the words only (same card, artwork and focus untouched). */
+        @Override public void onBindViewHolder(Holder h,int position,List<Object> payloads){
+            if(!payloads.contains(TEXT) || section.type==HomeFeed.CONTINUE){onBindViewHolder(h,position);return;}
+            Catalog.Item item=section.items.get(position);
+            String badge=badge(item);h.meta.setText(meta(item));
+            h.badge.setVisibility(badge==null?View.GONE:View.VISIBLE);if(badge!=null)h.badge.setText(badge);
+        }
         @Override public void onViewRecycled(Holder h){applyFocus(h,false,false,focusScale);}
+    }
+    /** Payload for {@code notifyItemRangeChanged}: only ratings/badges changed. */
+    static final Object TEXT="text";
+    /** Series: NEW EPISODES / NEW SERIES only with proof (SeriesNews). Movies: NEW (added this week) or 4K. */
+    static String badge(Catalog.Item item){
+        if("series".equals(item.kind)){String b=SeriesNews.badge(item).label();if(b!=null)return b;}
+        else if(item.isNew())return "NEW";
+        return item.isUhd()?"4K":null;
+    }
+    /** "2019  ·  ★ 8.2  ·  Series": the star is TMDB's rating, left out when there is none. */
+    static String meta(Catalog.Item item){
+        return join(item.year>1900?String.valueOf(item.year):"",Ratings.label(item),"series".equals(item.kind)?"Series":"");
     }
     static String join(String... parts){StringBuilder out=new StringBuilder();
         for(String p:parts)if(p!=null && !p.isEmpty()){if(out.length()>0)out.append("  ·  ");out.append(p);}return out.toString();}

@@ -49,6 +49,9 @@ public class DetailsActivity extends Activity {
     private boolean enrichedCast,movie;
     private final List<JSONObject> castPeople=new ArrayList<>();
     private List<JSONObject> orderedEpisodes;private int seasonIndex;private boolean playedOnOpen;
+    /** This title as the catalog knows it (for its TMDB rating), and the server's details once loaded. */
+    private Catalog.Item self;private JSONObject lastInfo;
+    private final Runnable ratingChanged=()->{if(!isFinishing() && metaLine!=null)metaLine.setText(lastInfo!=null?metaText(lastInfo):join(yearText(),Ratings.label(self)));};
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -57,8 +60,17 @@ public class DetailsActivity extends Activity {
         if(id==null||kind==null){finish();return;}
         if(title==null)title="";if(categoryId==null)categoryId="";
         movie="movie".equals(kind);
-        Images.init(this);draw();details();cast();if(movie)loadSimilar();
+        Images.init(this);self=catalogItem();draw();details();cast();if(movie)loadSimilar();
+        Ratings.init(this);Ratings.listen(ratingChanged);Ratings.want(self);
     }
+    @Override protected void onDestroy(){Ratings.unlisten(ratingChanged);super.onDestroy();}
+    private Catalog.Item catalogItem(){
+        for(Catalog.Item i:movie?Catalog.Store.movies:Catalog.Store.series)if(i.id.equals(id))return i;
+        JSONObject j=new JSONObject();
+        try{j.put(movie?"stream_id":"series_id",id).put("name",title).put("category_id",categoryId).put("year",getIntent().getIntExtra("year",0));}catch(Exception ignored){}
+        return new Catalog.Item(j,kind);
+    }
+    private static String join(String a,String b){return a.isEmpty()?b:b.isEmpty()?a:a+"   ·   "+b;}
     @Override protected void onRestart(){super.onRestart();if(watch!=null)watch.setText(watchLabel());}
     private String resumeKey(){return kind+":"+id;}
     private String watchLabel(){
@@ -93,7 +105,7 @@ public class DetailsActivity extends Activity {
         TextView titleView=Ui.heading(this,title,32);titleView.setMaxLines(movie?1:2);titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setShadowLayer(12,0,2,0xAA000000);
         content.addView(titleView,new LinearLayout.LayoutParams(Ui.dp(this,640),movie?Ui.dp(this,TITLE_DP):-2));
-        metaLine=Ui.text(this,yearText(),16);metaLine.setTextColor(Ui.TEXT_2);metaLine.setSingleLine(true);metaLine.setEllipsize(TextUtils.TruncateAt.END);
+        metaLine=Ui.text(this,join(yearText(),Ratings.label(self)),16);metaLine.setTextColor(Ui.TEXT_2);metaLine.setSingleLine(true);metaLine.setEllipsize(TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,640),movie?Ui.dp(this,META_DP):-2);mp.topMargin=Ui.dp(this,4);content.addView(metaLine,mp);
         summary=Ui.text(this,"Loading details…",15);summary.setTextColor(0xFFD9D4CF);summary.setMaxLines(3);summary.setEllipsize(TextUtils.TruncateAt.END);
         summary.setLineSpacing(0,1.12f);
@@ -176,6 +188,7 @@ public class DetailsActivity extends Activity {
     private void renderDetails(JSONObject data) {
         JSONObject info=data.optJSONObject("info");
         if(info==null)info=new JSONObject();
+        lastInfo=info;
         String trailer=info.optString("youtube_trailer","");
         if(!trailer.isEmpty())enableTrailer(trailer);
         String plot=info.optString("plot",info.optString("description","")).trim();
@@ -211,8 +224,8 @@ public class DetailsActivity extends Activity {
         String genre=info.optString("genre","").trim();
         if(!genre.isEmpty()){String[] g=genre.split("[,/]");StringBuilder out=new StringBuilder();
             for(int i=0;i<Math.min(2,g.length);i++){if(out.length()>0)out.append(", ");out.append(g[i].trim());}parts.add(out.toString());}
-        double rating=0;try{rating=Double.parseDouble(info.optString("rating","0"));}catch(Exception ignored){}
-        if(rating>0)parts.add(String.format(Locale.US,"★ %.1f",rating));
+        // TMDB's rating for this exact title (Ratings), never the provider's own "rating" field.
+        String rating=Ratings.label(self);if(!rating.isEmpty())parts.add(rating);
         return TextUtils.join("   ·   ",parts);
     }
     private static String firstBackdrop(JSONObject info){

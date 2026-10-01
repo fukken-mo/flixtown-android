@@ -31,8 +31,14 @@ final class DemoData {
         return i%9==4?"The "+t+" and the Long Road Home":i%5==0?"The "+t:t;}
 
     static volatile boolean offline,slow;
-    /** Catalog downloads in this process; from the second one on, the demo server has one new movie. */
-    private static int movieFetches;
+    /** Catalog downloads in this process; from the second one on, the demo server has one new movie,
+     *  one new series and a new episode for series 5003. */
+    private static int movieFetches,seriesFetches;
+    private static final long DAY=86400;
+    /** Today at 00:00 UTC, so demo times move only once a day (the catalog looks unchanged between refreshes). */
+    static long base(){return System.currentTimeMillis()/1000/DAY*DAY;}
+    static int movieYear(int i){return 1998+(i*5)%27;}
+    static int seriesYear(int i){return 2005+i%19;}
     static String respond(String url,String body)throws Exception{
         if(offline){Thread.sleep(400);throw new java.io.IOException("Demo: network unreachable");}
         Thread.sleep(url.contains("get_vod_streams")?(slow?21000:900):250);
@@ -50,6 +56,8 @@ final class DemoData {
             String[] names={"Ava Moreno","Daniel Okafor","Mia Laurent","Jonah Reyes","Priya Nair","Leo Hart","Nora Quinn","Sam Whitaker"};
             for(int i=0;i<names.length;i++)cast.put(new JSONObject().put("name",names[i]).put("id",100+i).put("image",i%3==2?"":"demo://person/"+i));
             return new JSONObject().put("cast",cast).toString();}
+        if(url.contains("ratings.php"))return ratings(body);
+        if(url.contains("trending.php"))return trending();
         if(url.contains("actor.php")){JSONArray titles=new JSONArray();
             for(int i=0;i<6;i++)titles.put(new JSONObject().put("kind","movie").put("title",title(i*3,1)));
             return new JSONObject().put("titles",titles).toString();}
@@ -58,39 +66,102 @@ final class DemoData {
         if(url.contains("action=get_vod_streams")){JSONArray list=new JSONArray();
             if(++movieFetches>=2)list.put(new JSONObject().put("stream_id","1999").put("name","The Late Arrival")
                 .put("stream_icon","demo://poster/m99").put("category_id","1").put("container_extension","mp4")
-                .put("added",String.valueOf(1760000000+86400)).put("rating","8.4").put("year",2026)
+                .put("added",String.valueOf(base()-3600)).put("rating","10").put("year",2026)
                 .put("backdrop_path",new JSONArray().put("demo://backdrop/m99")).put("plot","Added to the demo server after launch, to check that new titles appear without a restart."));
             for(int i=0;i<72;i++)list.put(new JSONObject().put("stream_id",String.valueOf(1000+i)).put("name",title(i,1))
                 .put("stream_icon","demo://poster/m"+i).put("category_id",String.valueOf(1+i%MOVIE_CATS.length))
-                .put("container_extension","mp4").put("added",String.valueOf(1760000000-i*86400)).put("rating",String.format(Locale.US,"%.1f",5+(i*37%45)/10.0))
-                .put("year",1998+(i*5)%27).put("backdrop_path",i%3==1?new JSONArray():new JSONArray().put("demo://backdrop/m"+i))
+                .put("container_extension","mp4").put("added",String.valueOf(base()-DAY/2-i*2*DAY))
+                // Provider ratings like many real servers: often "10". The app must ignore them.
+                .put("rating",i%3==0?"10":String.format(Locale.US,"%.1f",5+(i*37%45)/10.0))
+                .put("tmdb",i%4==3?String.valueOf(700000+i):"")
+                .put("year",movieYear(i)).put("backdrop_path",i%3==1?new JSONArray():new JSONArray().put("demo://backdrop/m"+i))
                 .put("plot","A demo title used to check layouts. "+(i%2==0?"When an old signal returns from the past, a small crew must decide how much of the truth to share before the storm reaches the coast.":"Two strangers share one long night on the road.")));
             return list.toString();}
-        if(url.contains("action=get_series_info")){JSONObject episodes=new JSONObject();
+        if(url.contains("action=get_series_info")){JSONObject episodes=new JSONObject();int sid=Integer.parseInt(param(url,"series_id"));
             for(int s=1;s<=3;s++){JSONArray list=new JSONArray();
-                for(int e=1;e<=8;e++)list.put(new JSONObject().put("id",String.valueOf(9000+s*100+e)).put("episode_num",e).put("season",s)
+                for(int e=1;e<=8;e++){JSONObject ep=new JSONObject().put("id",String.valueOf(9000+s*100+e)).put("episode_num",e).put("season",s)
                     .put("title","Chapter "+e+": "+B[(s*3+e)%B.length]).put("container_extension","mkv")
-                    .put("info",new JSONObject().put("movie_image","demo://backdrop/e"+(s*10+e))));
+                    .put("info",new JSONObject().put("movie_image","demo://backdrop/e"+(s*10+e)));
+                    long added=episodeAdded(sid,s,e,base());if(added>0)ep.put("added",String.valueOf(added));
+                    list.put(ep);}
+                if(s==3 && sid==5003 && seriesFetches>=2)list.put(new JSONObject().put("id","9399").put("episode_num",9).put("season",3)
+                    .put("title","Chapter 9: Late Arrival").put("container_extension","mkv"));
                 episodes.put(String.valueOf(s),list);}
             return new JSONObject().put("info",new JSONObject().put("plot","A demo series with three seasons, used to check the season selector and episode row.")
-                .put("genre","Crime, Drama").put("rating","8.1").put("releaseDate","2021-04-02")).put("episodes",episodes).toString();}
+                .put("genre","Crime, Drama").put("rating","10").put("releaseDate","2021-04-02")).put("episodes",episodes).toString();}
         if(url.contains("action=get_vod_info"))return new JSONObject().put("info",new JSONObject()
                 .put("plot","When an old signal returns from the past, a small crew must decide how much of the truth to share before the storm reaches the coast. A demo synopsis long enough to wrap onto three lines on a TV screen.")
                 .put("genre","Drama, Thriller").put("duration_secs",6840).put("rating","7.6").put("releasedate","2019-09-14")
                 .put("backdrop_path",new JSONArray().put("demo://backdrop/detail"+param(url,"vod_id"))).put("cast","Ava Moreno, Daniel Okafor"))
             .put("movie_data",new JSONObject().put("container_extension","mp4")).toString();
-        if(url.contains("action=get_series")){JSONArray list=new JSONArray();
+        if(url.contains("action=get_series")){JSONArray list=new JSONArray();seriesFetches++;long b=base();
             for(int i=0;i<30;i++)list.put(new JSONObject().put("series_id",String.valueOf(5000+i)).put("name",title(i,5))
                 .put("cover","demo://poster/s"+i).put("category_id",String.valueOf(50+i%SERIES_CATS.length))
-                .put("last_modified",String.valueOf(1760000000-i*43200)).put("rating",String.format(Locale.US,"%.1f",6+(i*13%38)/10.0))
-                .put("year",2005+i%19).put("backdrop_path",new JSONArray().put("demo://backdrop/s"+i)).put("genre",i%2==0?"Crime, Drama":"Documentary")
+                .put("last_modified",String.valueOf(seriesModified(i,b))).put("rating","10")
+                .put("year",seriesYear(i)).put("backdrop_path",new JSONArray().put("demo://backdrop/s"+i)).put("genre",i%2==0?"Crime, Drama":"Documentary")
                 .put("plot","A demo series about a small town, its secrets and the people who keep them. Used to check the Home preview."));
+            if(seriesFetches>=2)list.put(new JSONObject().put("series_id","5099").put("name","The Night Shift Files").put("cover","demo://poster/s99")
+                .put("category_id","50").put("last_modified",String.valueOf(b-1800)).put("year",2026).put("backdrop_path",new JSONArray().put("demo://backdrop/s99"))
+                .put("plot","Added to the demo server after the first catalog, so it is proven new."));
             return list.toString();}
         if(url.contains("player_api.php"))return new JSONObject().put("user_info",new JSONObject()
             .put("status",Boolean.getBoolean("flix.demo.expired")||expired?"Expired":"Active").put("exp_date","1830254400").put("username","demo")).toString();
         throw new IllegalStateException("No demo response for "+url);
     }
     static volatile boolean expired;
+
+    /*
+     * Mixed cases for the ratings and "new" badges (times relative to today):
+     *  5000 older series with a new episode 2 days ago        → NEW EPISODES (episode times)
+     *  5001 whole series uploaded 3 days ago                    → NEW SERIES (episode times)
+     *  5002 last_modified touched today, all episodes old       → no badge
+     *  5003 no episode times; a new episode ID appears later    → NEW EPISODES on the second catalog
+     *  5004–5009 last_modified bulk-touched 6 h ago, old episodes → no badge
+     *  5099 appears in the second catalog (no episode times)    → NEW SERIES (catalog comparison)
+     *  everything else: old                                     → no badge
+     */
+    static long seriesModified(int i,long b){
+        switch(i){case 0:return b-DAY;case 1:return b-3*DAY;case 2:return b-7200;
+            case 3:return seriesFetches>=2?b-3600:b-5*DAY;}
+        return i<=9?b-6*3600:b-(40+i)*DAY;
+    }
+    static long episodeAdded(int sid,int season,int episode,long b){
+        switch(sid){
+            case 5000:return season==3 && episode==8?b-2*DAY:b-400*DAY+season*30*DAY+episode*DAY;
+            case 5001:return b-3*DAY+season*600+episode*60;
+            case 5003:case 5099:return 0;
+            default:return b-500*DAY+season*30*DAY+episode*DAY;
+        }
+    }
+    /** TMDB ratings as the panel would answer: some titles have none (shown without a rating). */
+    private static String ratings(String body)throws Exception{
+        JSONArray items=new JSONObject(body).getJSONArray("items");JSONObject out=new JSONObject();
+        for(int i=0;i<items.length();i++){JSONObject it=items.getJSONObject(i);String key=it.getString("key");
+            int id=Integer.parseInt(key.substring(key.indexOf(':')+1));
+            if(id%6==0||id==5003)out.put(key,JSONObject.NULL);
+            else out.put(key,new JSONObject().put("rating",Math.round((5.8+(id*7%35)/10.0)*10)/10.0).put("votes",100+id%900).put("tmdb_id",id));}
+        return new JSONObject().put("ratings",out).toString();
+    }
+    /** TMDB trending as the panel would answer: a mix of titles on and not on the demo server. */
+    private static String trending()throws Exception{
+        JSONArray items=new JSONArray();
+        Object[][] list={
+            {"movie","900001","Dune: Part Three",2026,8.1},                 // not on the server
+            {"movie","700003",title(3,1),movieYear(3),7.9},                  // by TMDB ID (movie 1003)
+            {"tv","800002",title(2,5),seriesYear(2),8.6},                    // series 5002 by title + year
+            {"movie","900002",title(5,1),movieYear(5)+6,7.0},                // same title, wrong year: no match
+            {"movie","900010",title(10,1),movieYear(10)+1,6.4},              // title + year within one
+            {"tv","800000",title(0,5),seriesYear(0),8.9},                    // series 5000
+            {"movie","900020",title(20,1),movieYear(20),null},               // matched, too few votes: no rating
+            {"tv","900099","Not On This Server",2026,7.7},
+            {"movie","900040",title(40,1),movieYear(40),7.2},
+            {"movie","900050",title(50,1),movieYear(50),6.9},
+        };
+        for(int i=0;i<list.length;i++){Object[] r=list[i];
+            items.put(new JSONObject().put("rank",i+1).put("media",r[0]).put("id",Integer.parseInt((String)r[1])).put("title",r[2]).put("original",r[2])
+                .put("year",r[3]).put("rating",r[4]==null?JSONObject.NULL:r[4]).put("votes",r[4]==null?4:1200));}
+        return new JSONObject().put("items",items).toString();
+    }
     private static String param(String url,String name){int at=url.indexOf(name+"=");if(at<0)return "";int end=url.indexOf('&',at);
         return url.substring(at+name.length()+1,end<0?url.length():end);}
     private static String categories(String[] names,int first)throws Exception{JSONArray list=new JSONArray();

@@ -54,7 +54,8 @@ public class LoginActivity extends Activity {
     }
     /** QA build only: lets the emulator test script start from a clean or expired account. */
     private void applyDemoExtras(){
-        if(getIntent().getBooleanExtra("demo_reset",false)){AccountStore.clear(this);Api.prefs(this).edit().clear().apply();}
+        if(getIntent().getBooleanExtra("demo_reset",false)){AccountStore.clear(this);Api.prefs(this).edit().clear().apply();
+            for(String f:new String[]{"ratings.json","series_news.json","trending.json"})new java.io.File(getFilesDir(),f).delete();}
         DemoData.expired=getIntent().getBooleanExtra("demo_expired",false);
         DemoData.offline=getIntent().getBooleanExtra("demo_offline",false);
         DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);

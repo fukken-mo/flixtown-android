@@ -19,23 +19,6 @@ public class HomeLogicTest {
     }
     private static long now(){return System.currentTimeMillis()/1000;}
 
-    @Test public void trendingPrefersHighlyRatedRecentTitles()throws Exception{
-        long t=now();
-        Catalog.Item oldGreat=movie("1","Old Great",9.5,t-900*86400L,"1",null);
-        Catalog.Item newGood=movie("2","New Good",8.0,t-86400,"1",null);
-        Catalog.Item newPoor=movie("3","New Poor",2.0,t-86400,"1",null);
-        Catalog.Item oldPoor=movie("4","Old Poor",1.0,t-900*86400L,"1",null);
-        List<Catalog.Item> top=Catalog.trending(Arrays.asList(oldGreat,newGood,newPoor,oldPoor),new ArrayList<>(),3);
-        assertEquals(3,top.size());
-        assertEquals("New Good",top.get(0).title);
-        assertFalse("the weakest title is dropped",top.contains(oldPoor));
-    }
-    @Test public void trendingNeverReturnsMoreThanAsked()throws Exception{
-        List<Catalog.Item> many=new ArrayList<>();
-        for(int i=0;i<40;i++)many.add(movie(String.valueOf(i),"M"+i,i%10,now()-i*3600,"1",null));
-        assertEquals(10,Catalog.trending(many,new ArrayList<>(),10).size());
-        assertTrue(Catalog.trending(new ArrayList<>(),new ArrayList<>(),10).isEmpty());
-    }
     @Test public void backdropDetectionIgnoresPosterFallback()throws Exception{
         assertFalse(movie("1","No Art",5,now(),"1",null).hasBackdrop());
         assertTrue(movie("2","Art",5,now(),"1","https://img/wide.jpg").hasBackdrop());

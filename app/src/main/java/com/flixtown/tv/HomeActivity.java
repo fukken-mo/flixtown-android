@@ -96,6 +96,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     @Override public void onCreate(Bundle state){super.onCreate(state);
         if(Api.prefs(this).getBoolean("expired",false)){startActivity(new Intent(this,RenewalActivity.class));finish();return;}
         setContentView(R.layout.activity_main);updates=new AppUpdates(this);Images.init(this);
+        Ratings.init(this);Ratings.listen(ratingsChanged);
         ambientSlot=findViewById(R.id.ambient_slot);ambientDim=findViewById(R.id.ambient_dim);homeScrim=findViewById(R.id.home_scrim);
         ambient=new BackdropView(this);((FrameLayout)ambientSlot).addView(ambient,new FrameLayout.LayoutParams(-1,-1));
         preview=findViewById(R.id.preview);previewTitle=findViewById(R.id.preview_title);previewMeta=findViewById(R.id.preview_meta);previewDesc=findViewById(R.id.preview_desc);
@@ -233,6 +234,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(settingsPage!=null)settingsPage.refreshStatus();
         if(r.state==StartupRefresh.DONE){
             applyCatalog(r.movies,r.series,r.movieCategories,r.seriesCategories);
+            SeriesNews.onServerCatalog(this,series,this::homeFactsChanged);
             if(r.manual)toast("Your catalog is up to date");
             hideOverlay(false);return;
         }
@@ -249,6 +251,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private void loadCache(){Api.IO.execute(()->{
         List<Catalog.Item> m=Catalog.parse(Api.cached(this,"movies"),"movie"),s=Catalog.parse(Api.cached(this,"series"),"series");
         List<Catalog.Category> mc=Catalog.parseCategories(Api.cached(this,"movie_categories")),sc=Catalog.parseCategories(Api.cached(this,"series_categories"));
+        Ratings.ensureLoaded(this);SeriesNews.ensureLoaded(this,s);   // saved ratings and badges are ready for the first render
         runOnUiThread(()->{
             if(isFinishing() || destroyed)return;
             cacheLoaded=true;
@@ -273,6 +276,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         categoryNames.clear();for(Catalog.Category c:mc)categoryNames.put(c.id,c.name);for(Catalog.Category c:sc)categoryNames.put(c.id,c.name);
         Catalog.Store.set(movies,series);
         boolean changed=before!=signature(movies)*7+signature(series);
+        if(changed||!rendered)Trending.refresh(this,movies,series,this::homeFactsChanged);
         if(!changed && rendered && !pendingRender)return;
         if(canRenderNow())renderKeepingFocus();
         else if(isBrowse() && !nav.isOpen())updateBrowseInPlace();
@@ -313,6 +317,29 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(focus==null)return true;
         if(isBrowse())return restoreGridPosition>=0;
         return tab.equals("Home") && heroMode;
+    }
+
+    /**
+     * Trending matches or series badges changed. These can add a row or reorder Latest TV Shows, so
+     * Home is rebuilt only where that cannot move the viewer (at the hero); otherwise the visible
+     * cards just update their words and the rebuild waits until the viewer is back at the top.
+     */
+    private void homeFactsChanged(){
+        if(destroyed || !rendered)return;
+        if(!tab.equals("Home")){pendingRender=true;return;}
+        if(heroMode && canRenderNow() && !nav.isOpen()){int keep=heroIndex;renderKeepingFocus();heroIndex=keep;if(hero!=null)bindHero(false);}
+        else{pendingRender=true;refreshCardText();}
+    }
+    private final Runnable ratingsChanged=this::refreshCardText;
+    /** New ratings or badges: same cards, same focus, only their text lines change. */
+    private void refreshCardText(){
+        if(destroyed)return;
+        for(Object e:entries)if(e instanceof HomeFeed.Section){HomeFeed.Section s=(HomeFeed.Section)e;
+            if(s.adapter!=null && s.type!=HomeFeed.CONTINUE)s.adapter.notifyItemRangeChanged(0,s.adapter.getItemCount(),HomeCards.TEXT);}
+        if(browseGrid.getAdapter() instanceof PosterAdapter)((PosterAdapter)browseGrid.getAdapter()).refreshText();
+        Catalog.Item item=current();
+        if(hero!=null && item!=null && tab.equals("Home"))hero.meta.setText(metaLine(item,null));
+        if(!heroMode && pendingFocusItem!=null && previewTitle.getText().toString().equals(pendingFocusItem.title))previewMeta.setText(metaLine(pendingFocusItem,null));
     }
 
     /* ---------------- Navigation ---------------- */
@@ -429,7 +456,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         ArrayList<Catalog.Item> filtered=new ArrayList<>();for(Catalog.Item item:source)if(category.isEmpty()||category.equals(item.categoryId))filtered.add(item);
         if(sortMode==0)filtered=new ArrayList<>(Catalog.recent(filtered,filtered.size()));
         if(sortMode==1)java.util.Collections.sort(filtered,(a,b)->a.title.compareToIgnoreCase(b.title));
-        if(sortMode==2)java.util.Collections.sort(filtered,(a,b)->Double.compare(b.rating,a.rating));
+        if(sortMode==2)filtered=new ArrayList<>(Catalog.topRated(filtered,filtered.size()));   // TMDB ratings known so far
         if(sortMode==3)java.util.Collections.sort(filtered,(a,b)->Integer.compare(b.year,a.year));
         return filtered;
     }
@@ -582,7 +609,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(info==null)info=HERO_INFO.get(item.key());
         List<String> parts=new ArrayList<>();
         if(item.year>1900)parts.add(String.valueOf(item.year));
-        if(item.rating>0)parts.add(String.format(Locale.US,"★ %.1f",item.rating));
+        String rating=Ratings.label(item);if(!rating.isEmpty())parts.add(rating);
         if("series".equals(item.kind))parts.add("Series");
         else if(info!=null){int secs=info.optInt("duration_secs",0);
             if(secs<=0){String[] hms=info.optString("duration","").split(":");try{if(hms.length==3)secs=Integer.parseInt(hms[0])*3600+Integer.parseInt(hms[1])*60+Integer.parseInt(hms[2]);}catch(Exception ignored){}}
@@ -647,7 +674,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         Runnable fill=()->{
             int rank=-1;for(Object e:entries)if(e instanceof HomeFeed.Section && ((HomeFeed.Section)e).type==HomeFeed.TRENDING)rank=((HomeFeed.Section)e).items.indexOf(item);
             String kind="series".equals(item.kind)?"SERIES":"MOVIE";
-            hero.eyebrow.setText(rank>=0?"#"+(rank+1)+" TRENDING  ·  "+kind:item.isNew()?"NEW ON FLIX TOWN  ·  "+kind:"FEATURED  ·  "+kind);
+            // "#n TRENDING" only for real TMDB trending titles; NEW only with proof (see HomeCards.badge).
+            String news="series".equals(item.kind)?SeriesNews.badge(item).label():item.isNew()?"NEW ON FLIX TOWN":null;
+            hero.eyebrow.setText(rank>=0?"#"+(rank+1)+" TRENDING  ·  "+kind:news!=null?news+"  ·  "+kind:"FEATURED  ·  "+kind);
             hero.title.setText(item.title);
             hero.meta.setText(metaLine(item,null));
             JSONObject info=HERO_INFO.get(item.key());
@@ -665,7 +694,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
                     for(View x:words){x.setTranslationX(Ui.dp(this,12));x.animate().alpha(1f).translationX(0).setDuration(260).start();}}:null).start();}}
         else{fill.run();for(View w:words){w.animate().cancel();w.setAlpha(1f);w.setTranslationX(0);}}
         if(heroMode && tab.equals("Home"))showHeroArt();
-        fetchHeroInfo(item);
+        fetchHeroInfo(item);Ratings.want(item);
         // Warm only the next hero backdrop; nothing else is preloaded.
         if(featured.size()>1){Catalog.Item next=featured.get((heroIndex+1)%featured.size());String art=heroBackdrop(next);
             if(art!=null)Images.prefetch(art,960);}
@@ -849,6 +878,6 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
     private static boolean isDescendant(ViewGroup parent,View view){
         for(Object p=view.getParent();p instanceof View;p=((View)p).getParent())if(p==parent)return true;return false;}
-    @Override protected void onDestroy(){destroyed=true;StartupRefresh.unlisten(this);handler.removeCallbacksAndMessages(null);
+    @Override protected void onDestroy(){destroyed=true;StartupRefresh.unlisten(this);Ratings.unlisten(ratingsChanged);handler.removeCallbacksAndMessages(null);
         if(sweep!=null)sweep.cancel();if(exitDialog!=null)exitDialog.dismiss();if(updates!=null)updates.destroy();super.onDestroy();}
 }

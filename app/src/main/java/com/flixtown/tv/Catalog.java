@@ -27,7 +27,8 @@ final class Catalog {
         ArrayList<Item> same=new ArrayList<>(),rest=new ArrayList<>();
         for(Item item:pool){if(item.id.equals(self.id))continue;
             if(!self.categoryId.isEmpty() && self.categoryId.equals(item.categoryId))same.add(item);else rest.add(item);}
-        java.util.Comparator<Item> order=(a,b)->a.rating!=b.rating?Double.compare(b.rating,a.rating):Integer.compare(b.added,a.added);
+        java.util.Comparator<Item> order=(a,b)->{double ra=Ratings.value(a),rb=Ratings.value(b);
+            return ra!=rb?Double.compare(rb,ra):Integer.compare(b.added,a.added);};
         same.sort(order);
         ArrayList<Item> out=new ArrayList<>(same.subList(0,Math.min(limit,same.size())));
         if(out.size()<limit)out.addAll(topRated(rest,limit-out.size()));
@@ -35,11 +36,17 @@ final class Catalog {
     }
     static final class Item {
         final String id,title,poster,backdrop,kind,extension,categoryId,overview,genre;
-        final int year,added; final double rating;
+        /** TMDB ID when the provider sends one ("tmdb" / "tmdb_id"); only a hint, verified by the panel. */
+        final String tmdbId;
+        /** Movies: when the title was added to the server. Series: Xtream only has last_modified here. */
+        final int year,added;
+        /** Series only: Xtream's last_modified. Providers often touch it for every series at once,
+         *  so on its own it never proves anything is new (see SeriesNews). */
+        final int lastModified;
         /** True when the server sent real landscape artwork (the backdrop field falls back to the poster). */
         boolean hasBackdrop(){return !backdrop.isEmpty() && !backdrop.equals(poster);}
-        /** Added to the server within the last week. */
-        boolean isNew(){return added>0 && System.currentTimeMillis()/1000-added<7L*86400;}
+        /** A movie added to the server within the last week (Xtream's "added" time). Series use SeriesNews. */
+        boolean isNew(){return "movie".equals(kind) && added>0 && System.currentTimeMillis()/1000-added<7L*86400;}
         /** "4K"/"UHD" in the title the server gave it. */
         boolean isUhd(){String t=title.toUpperCase(java.util.Locale.US);return t.contains("4K")||t.contains("UHD")||t.contains("2160");}
         String key(){return kind+":"+id;}
@@ -54,8 +61,20 @@ final class Catalog {
             categoryId=j.optString("category_id","");
             overview=j.optString("plot",j.optString("description",""));
             genre=j.optString("genre","").trim();
-            year=j.optInt("year",0); added=j.optInt("added",j.optInt("last_modified",0));
-            double parsed;try{parsed=Double.parseDouble(j.optString("rating","0"));}catch(Exception e){parsed=0;}rating=parsed;
+            String tmdb=j.optString("tmdb",j.optString("tmdb_id","")).trim();
+            tmdbId=tmdb.matches("\\d{1,9}") && !tmdb.equals("0")?tmdb:"";
+            lastModified=number(j,"last_modified");
+            int a=number(j,"added");added=a>0?a:lastModified;
+            year=yearOf(j,title);
+        }
+        private static int number(JSONObject j,String name){
+            try{return (int)Long.parseLong(j.optString(name,"0").trim());}catch(Exception e){return 0;}}
+        /** "year", else the release date, else a "(2019)" at the end of the provider's title. */
+        private static int yearOf(JSONObject j,String title){
+            int y=number(j,"year");if(y>1870 && y<2100)return y;
+            for(String f:new String[]{"releaseDate","release_date","releasedate"}){String d=j.optString(f,"");
+                if(d.length()>=4 && d.substring(0,4).matches("(18|19|20)\\d{2}"))return Integer.parseInt(d.substring(0,4));}
+            return TitleMatch.clean(title).year;
         }
     }
     static List<Item> parse(String json,String kind) {
@@ -71,34 +90,12 @@ final class Catalog {
             else if(item.added>queue.peek().added){queue.poll();queue.add(item);}}
         ArrayList<Item> sorted=new ArrayList<>(queue);sorted.sort((a,b)->Integer.compare(b.added,a.added));return sorted;
     }
+    /** Best TMDB-rated first (titles without a known rating last, newest first). */
     static List<Item> topRated(List<Item> original,int limit) {
-        java.util.PriorityQueue<Item> queue=new java.util.PriorityQueue<>(Math.max(1,limit),
-            (a,b)->Double.compare(a.rating,b.rating));
-        for(Item item:original){if(queue.size()<limit)queue.add(item);
-            else if(item.rating>queue.peek().rating){queue.poll();queue.add(item);}}
-        ArrayList<Item> sorted=new ArrayList<>(queue);sorted.sort((a,b)->Double.compare(b.rating,a.rating));return sorted;
-    }
-    /**
-     * "Trending Now": there is no server-side view data, so this ranks the catalog by rating (60%)
-     * and how recently a title was added (40%). The same idea the earlier Compose build used.
-     */
-    static List<Item> trending(List<Item> movies,List<Item> series,int limit){
-        ArrayList<Item> all=new ArrayList<>(movies.size()+series.size());all.addAll(movies);all.addAll(series);
-        if(all.isEmpty())return all;
-        int newest=0,oldest=Integer.MAX_VALUE;
-        for(Item i:all)if(i.added>0){newest=Math.max(newest,i.added);oldest=Math.min(oldest,i.added);}
-        final int top=newest,span=Math.max(1,newest-(oldest==Integer.MAX_VALUE?newest:oldest));
-        // Plain comparators (no Comparator.reversed / List.sort) so this also runs on Android 6 boxes.
-        java.util.Comparator<Item> best=(a,b)->Double.compare(score(b,top,span),score(a,top,span));
-        java.util.Comparator<Item> worst=(a,b)->Double.compare(score(a,top,span),score(b,top,span));
-        java.util.PriorityQueue<Item> queue=new java.util.PriorityQueue<>(limit+1,worst);
-        for(Item i:all){queue.add(i);if(queue.size()>limit)queue.poll();}
-        ArrayList<Item> out=new ArrayList<>(queue);Collections.sort(out,best);return out;
-    }
-    private static double score(Item i,int newest,int span){
-        double rating=Math.max(0,Math.min(10,i.rating))/10.0;
-        double recency=i.added>0?1.0-Math.min(1.0,(newest-i.added)/(double)span):0;
-        return rating*0.6+recency*0.4;
+        ArrayList<Item> sorted=new ArrayList<>(original);
+        Collections.sort(sorted,(a,b)->{double ra=Ratings.value(a),rb=Ratings.value(b);
+            return ra!=rb?Double.compare(rb,ra):Integer.compare(b.added,a.added);});
+        return limit<sorted.size()?new ArrayList<>(sorted.subList(0,limit)):sorted;
     }
     /** Viewing progress saved by the player, used by the Continue Watching cards. */
     static final class Progress {final long position,duration;final String label,art;final boolean upNext;
