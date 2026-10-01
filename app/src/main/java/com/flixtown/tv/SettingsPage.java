@@ -23,7 +23,7 @@ import java.util.Locale;
  * and read by the player each time playback starts.
  */
 final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
-    interface Host { void refreshCatalog(); void checkForUpdates(); void signOut(); }
+    interface Host { void refreshCatalog(); void checkForUpdates(); void signOut(); String updateValue(); String updateDetail(); }
 
     static final String AUTOPLAY="autoplay_next",AUDIO_LANGUAGE="audio_language",SUBTITLES_ON="subtitles_on",
         SUBTITLE_LANGUAGE="subtitle_language",LAST_REFRESH="last_refresh_at";
@@ -139,7 +139,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case AUDIO:return "Used when a title has more than one audio track";
             case SUBTITLES:return "Turn on to show subtitles automatically when a title has them";
             case SUBTITLE_LANG:return prefs.getBoolean(SUBTITLES_ON,false)?"Chosen when subtitles start automatically":"Used when subtitles are on";
-            case UPDATES:return BuildConfig.PREVIEW?"Checks your Flix Town panel. This preview build does not install updates":"Checks your Flix Town panel for a newer version";
+            case UPDATES:return host.updateDetail();
             case VERSION:return "";
             default:return "Removes this account from the TV";
         }
@@ -152,6 +152,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case AUDIO:{String code=prefs.getString(AUDIO_LANGUAGE,"");return code.isEmpty()?"Stream default  ›":languageName(code)+"  ›";}
             case SUBTITLE_LANG:{String code=prefs.getString(SUBTITLE_LANGUAGE,"");return code.isEmpty()?"Device language  ›":languageName(code)+"  ›";}
             case VERSION:return BuildConfig.VERSION_NAME+"  ("+BuildConfig.VERSION_CODE+")";
+            case UPDATES:return host.updateValue();
             case IMAGES:return imageBytes<=0?"":megabytes(imageBytes);
             default:return "";
         }
@@ -201,6 +202,8 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     }
     private static int indexOf(int row){for(int i=0;i<ROWS.length;i++)if(ROWS[i]==row)return i;return 0;}
 
+    /** Checking, up to date, available, downloading, ready or failed. */
+    void updateRowChanged(){notifyItemChanged(indexOf(UPDATES));}
     /** Refreshes the rows whose text depends on the account or the last refresh. */
     void refreshStatus(){notifyItemChanged(indexOf(ACCOUNT));notifyItemChanged(indexOf(REFRESH));}
     private void measureImages(){Api.IO.execute(()->{long bytes=Images.diskBytes();

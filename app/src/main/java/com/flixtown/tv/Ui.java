@@ -148,6 +148,32 @@ final class Ui {
         return dialog(activity,title,message,new String[]{"OK"},0,i->{},null);
     }
 
+    /** A dialog whose message and bar can change while it is open (update download). */
+    static final class Progress {
+        final Dialog dialog;private final TextView message;private final View bar;private final int track;
+        private Progress(Dialog dialog,TextView message,View bar,int track){this.dialog=dialog;this.message=message;this.bar=bar;this.track=track;}
+        void set(String text,int percent){message.setText(text);
+            ViewGroup.LayoutParams p=bar.getLayoutParams();p.width=Math.max(0,Math.min(100,percent))*track/100;bar.setLayoutParams(p);}
+        boolean isShowing(){return dialog.isShowing();}
+        void dismiss(){if(dialog.isShowing())dialog.dismiss();}
+    }
+    /** Title, live message, progress bar and one button (for example "Hide"). */
+    static Progress progress(Activity activity,String title,String button,Runnable onButton){
+        Dialog dialog=newDialog(activity);
+        LinearLayout body=sheet(activity,title,null);
+        TextView message=text(activity,"",16);message.setTextColor(TEXT_2);
+        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,8);body.addView(message,mp);
+        int track=dp(activity,406);
+        android.widget.FrameLayout bars=new android.widget.FrameLayout(activity);bars.setBackground(rounded(0x26FFFFFF,2,activity));
+        View bar=new View(activity);bar.setBackground(rounded(GLOW,2,activity));bars.addView(bar,new android.widget.FrameLayout.LayoutParams(0,-1));
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(track,dp(activity,4));bp.topMargin=dp(activity,16);body.addView(bars,bp);
+        Button b=button(activity,button);b.setTextSize(17);b.setMinWidth(dp(activity,120));
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,48));lp.topMargin=dp(activity,22);
+        body.addView(b,lp);b.setOnClickListener(v->{dialog.dismiss();if(onButton!=null)onButton.run();});
+        dialog.setContentView(body);showWindow(activity,dialog,470,false,0);b.post(b::requestFocus);
+        return new Progress(dialog,message,bar,track);
+    }
+
     /** Scrollable single-choice list (sort, categories, seasons, audio, subtitles). */
     static Dialog picker(Activity activity,String title,String[] labels,int selected,Choice action){
         Dialog dialog=newDialog(activity);

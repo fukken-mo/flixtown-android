@@ -1,5 +1,13 @@
 name: Build Flix Town APK
 
+# Release builds are signed with the permanent Flix Town key when these repository secrets exist
+# (Settings › Secrets and variables › Actions):
+#   FLIXTOWN_RELEASE_KEYSTORE_BASE64   the .p12/.jks keystore, base64-encoded
+#   FLIXTOWN_RELEASE_KEYSTORE_PASSWORD
+#   FLIXTOWN_RELEASE_KEY_ALIAS
+#   FLIXTOWN_RELEASE_KEY_PASSWORD
+# Without them the release APK is left unsigned (never signed with a temporary key).
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,6 +15,12 @@ on:
         description: "Build a side-by-side test copy (Flix Town Preview, package .preview)"
         type: boolean
         default: false
+      version_code:
+        description: "versionCode (blank = the one in app/build.gradle.kts)"
+        required: false
+      version_name:
+        description: "versionName (blank = the one in app/build.gradle.kts)"
+        required: false
   push:
     branches: [main]
 
@@ -16,6 +30,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.FLIXTOWN_RELEASE_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -23,13 +39,32 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Unit tests, debug and release APKs
-        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --stacktrace -PflixPreview=${{ inputs.preview == true }}
-      - name: APK sizes and package ids
+      - name: Release key from secrets
+        if: env.KEYSTORE_B64 != ''
         run: |
-          for f in app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/release/app-release-unsigned.apk; do
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "FLIXTOWN_RELEASE_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+      - name: Unit tests, debug and release APKs
+        env:
+          FLIXTOWN_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.FLIXTOWN_RELEASE_KEYSTORE_PASSWORD }}
+          FLIXTOWN_RELEASE_KEY_ALIAS: ${{ secrets.FLIXTOWN_RELEASE_KEY_ALIAS }}
+          FLIXTOWN_RELEASE_KEY_PASSWORD: ${{ secrets.FLIXTOWN_RELEASE_KEY_PASSWORD }}
+        run: |
+          ARGS="-PflixPreview=${{ inputs.preview == true }}"
+          [ -n "${{ inputs.version_code }}" ] && ARGS="$ARGS -PflixVersionCode=${{ inputs.version_code }}"
+          [ -n "${{ inputs.version_name }}" ] && ARGS="$ARGS -PflixVersionName=${{ inputs.version_name }}"
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --stacktrace $ARGS
+          rm -f "$RUNNER_TEMP/release.keystore"
+      - name: APK sizes, package ids, versions and signing keys
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/
+          REL=$(ls app/build/outputs/apk/release/*.apk | head -1); cp "$REL" dist/
+          for f in dist/*.apk; do
             echo "SIZE $(stat -c %s "$f") bytes  $f"
-            "$ANDROID_HOME"/build-tools/*/aapt2 dump packagename "$f" 2>/dev/null | sed 's/^/PACKAGE /' | head -1 || true
+            "$BT/aapt2" dump badging "$f" | head -1 | sed 's/^/PACKAGE /'
+            "$BT/apksigner" verify --print-certs "$f" 2>&1 | grep -E "SHA-256|DOES NOT VERIFY|Missing" | head -2 | sed 's/^/SIGNER /' || true
           done
           grep -h -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' app/build/test-results/testDebugUnitTest/*.xml | sed 's/^/TESTS /'
       - uses: actions/upload-artifact@v4
@@ -40,7 +75,7 @@ jobs:
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-NativeTV-release-unsigned
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          name: ${{ env.KEYSTORE_B64 != '' && 'FlixTown-NativeTV-release-signed' || 'FlixTown-NativeTV-release-unsigned' }}
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30

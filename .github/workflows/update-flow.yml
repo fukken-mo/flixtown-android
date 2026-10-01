@@ -1,0 +1,116 @@
+name: App update flow
+
+# Proves the panel's same-link update flow with real builds:
+#  1. Builds the same source three times with increasing versionCodes (signed with the fixed
+#     Preview test key), checks that the panel reads package/versionCode/versionName/signing key
+#     exactly as Android's own tools do, and runs the panel's HTTP test replacing one APK link.
+#  2. On an Android TV emulator: installs version 1, publishes version 2 at the same link, and
+#     updates through the app (check, offer, download, checksum, installer), keeping sign-in and
+#     settings. Screenshots are committed to qa/update-flow.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths: ["panel/**", ".github/workflows/update-flow.yml", ".github/qa/update_flow.sh", "app/src/main/java/com/flixtown/tv/AppUpdates.java"]
+
+permissions:
+  contents: write
+
+jobs:
+  panel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+      - name: Build Preview 3.4.0 (10006), 3.4.1 (10007), 3.4.2 (10008) from the same source
+        run: |
+          mkdir -p dist
+          for v in "10006 3.4.0" "10007 3.4.1" "10008 3.4.2"; do set -- $v
+            ./gradlew :app:assembleDebug -PflixPreview=true -PflixVersionCode=$1 -PflixVersionName=$2 -q
+            cp app/build/outputs/apk/debug/app-debug.apk "dist/FlixTown-Preview-$2-$1.apk"
+          done
+          ls -la dist
+      - name: Panel reads the same values as aapt2 and apksigner
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          fail=0
+          for f in dist/*.apk; do
+            line="$("$BT/aapt2" dump badging "$f" | head -1)"
+            pkg="$(sed -n "s/.*name='\([^']*\)'.*/\1/p" <<< "$line")"
+            code="$(sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" <<< "$line")"
+            name="$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$line")"
+            cert="$("$BT/apksigner" verify --print-certs "$f" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+            got="$(php panel/tests/inspect.php "$f")"
+            want="$(php -r 'echo json_encode(array("package"=>$argv[1],"version_code"=>(int)$argv[2],"version_name"=>$argv[3],"signer_sha256"=>$argv[4],"sha256"=>$argv[5]));' "$pkg" "$code" "$name" "$cert" "$(sha256sum "$f" | cut -c1-64)")"
+            same="$(php -r '$g=json_decode($argv[1],true);$w=json_decode($argv[2],true);foreach($w as $k=>$v)if($g[$k]!==$v){echo "$k: panel=".json_encode($g[$k])." android=".json_encode($v);exit;}echo "ok";' "$got" "$want")"
+            echo "$(basename "$f"): android says $pkg $code $name signer ${cert:0:16}…  panel: $same"
+            [ "$same" = "ok" ] || fail=1
+          done
+          exit $fail
+      - name: Same build signed with another key (for the panel's key-change warning)
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          keytool -genkeypair -keystore other.p12 -storetype PKCS12 -storepass other123 -keypass other123 -alias other -keyalg RSA -keysize 2048 -validity 30 -dname "CN=Other key" >/dev/null 2>&1
+          "$BT/apksigner" sign --ks other.p12 --ks-pass pass:other123 --out other-key.apk dist/FlixTown-Preview-3.4.1-10007.apk
+      - name: Panel HTTP test with one link replaced in place
+        run: |
+          bash panel/tests/http_test.sh com.myflixtown.tv.native.preview \
+            dist/FlixTown-Preview-3.4.0-10006.apk:10006 dist/FlixTown-Preview-3.4.1-10007.apk:10007 \
+            dist/FlixTown-Preview-3.4.2-10008.apk:10008 other-key.apk:10007
+      - name: Panel ZIP
+        run: |
+          rm -rf pkg && mkdir -p pkg/flixtown-panel-updates/api
+          cp panel/README-UPDATES.txt pkg/flixtown-panel-updates/
+          cp -R panel/app-update.php panel/app-update-admin.php panel/flixtown-update pkg/flixtown-panel-updates/api/
+          rm -f pkg/flixtown-panel-updates/api/flixtown-update/data/state.json
+          (cd pkg && zip -qr ../flixtown-panel-updates.zip flixtown-panel-updates)
+          unzip -l flixtown-panel-updates.zip
+      - uses: actions/upload-artifact@v4
+        with: { name: FlixTown-Preview-update-test-APKs, path: "dist/*.apk", if-no-files-found: error, retention-days: 30 }
+      - uses: actions/upload-artifact@v4
+        with: { name: flixtown-panel-updates, path: flixtown-panel-updates.zip, if-no-files-found: error, retention-days: 30 }
+
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: QA builds 10006 and 10007 that check a panel on this machine
+        run: |
+          HOST_IP="$(hostname -I | awk '{print $1}')"; echo "HOST_IP=$HOST_IP" >> "$GITHUB_ENV"
+          mkdir -p dist
+          for v in "10006 3.4.0" "10007 3.4.1"; do set -- $v
+            ./gradlew :app:assembleQa -PflixVersionCode=$1 -PflixVersionName=$2 -PflixQaUpdateUrl="http://$HOST_IP:8787/api/app-update.php" -q
+            cp app/build/outputs/apk/qa/app-qa.apk "dist/qa-$1.apk"
+          done
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Update through the app on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .github/qa/update_flow.sh
+      - name: Commit screenshots
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qa/update-flow
+          git commit -m "Update-flow screenshots from TV emulator (${GITHUB_SHA::7})" || exit 0
+          git pull --rebase origin ${GITHUB_REF_NAME} || true
+          git push origin HEAD:${GITHUB_REF_NAME}

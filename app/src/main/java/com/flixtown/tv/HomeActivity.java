@@ -123,6 +123,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(!StartupRefresh.startedThisProcess())StartupRefresh.start(this,false);
         StartupRefresh.listen(this);
         StartupRefresh.watchForeground(getApplication());
+        updates.setListener(()->{if(settingsPage!=null)settingsPage.updateRowChanged();});
+        updates.checkOnStartup();
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
         out.putString("tab",tab);out.putString("category",category);out.putInt("sort",sortMode);
@@ -154,7 +156,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         browseGrid.setPadding(browseGrid.getPaddingLeft(),Ui.dp(this,4),browseGrid.getPaddingRight(),safeY);
     }
 
-    @Override protected void onResume(){super.onResume();resumed=true;if(updates!=null)updates.installIfReady();scheduleRotation();}
+    @Override protected void onResume(){super.onResume();resumed=true;if(updates!=null)updates.resume();scheduleRotation();}
     @Override protected void onPause(){resumed=false;handler.removeCallbacks(rotateHero);super.onPause();}
     @Override protected void onRestart(){super.onRestart();refreshAfterReturn();}
 
@@ -211,9 +213,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
 
     /* ---------------- Catalog ---------------- */
 
-    @Override public void onConfig(JSONObject config){
-        if(!isFinishing() && !BuildConfig.PREVIEW)updates.check(config);
-    }
+    /** Updates come from the panel's app-update.php (see AppUpdates), not from config.php. */
+    @Override public void onConfig(JSONObject config){}
     @Override public void onResult(StartupRefresh.Result r){
         if(isFinishing()||destroyed)return;
         if(r.state==StartupRefresh.EXPIRED){startActivity(new Intent(this,RenewalActivity.class));finish();return;}
@@ -438,7 +439,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         Toast.makeText(this,"Checking your account and catalog…",Toast.LENGTH_SHORT).show();
         StartupRefresh.start(this,true);
     }
-    @Override public void checkForUpdates(){updates.checkNow();}
+    @Override public void checkForUpdates(){updates.select();}
+    @Override public String updateValue(){return updates.rowValue();}
+    @Override public String updateDetail(){return updates.rowDetail();}
     @Override public void signOut(){
         Ui.dialog(this,"Sign out of Flix Town?","This TV will forget your account. Your settings stay. To watch again, scan the code or sign in with your remote.",
             new String[]{"Cancel","Sign out"},0,i->{if(i!=1)return;
