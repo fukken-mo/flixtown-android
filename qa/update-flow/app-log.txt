@@ -1,167 +1,167 @@
-10-01 08:03:07.153  2814  2814 I FlixTown: Refresh started
-10-01 08:03:08.915  2814  2814 I FlixTown: Refresh finished: updated
-10-01 08:03:27.949  3813  3813 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:03:27.952  3813  3813 I AndroidRuntime: Using default boot image
-10-01 08:03:27.952  3813  3813 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:03:28.110  3813  3813 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:03:30.779  3813  3813 D AndroidRuntime: Shutting down VM
-10-01 08:03:31.749  3870  3870 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:03:31.752  3870  3870 I AndroidRuntime: Using default boot image
-10-01 08:03:31.752  3870  3870 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:03:31.846  3870  3870 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:03:32.930  3870  3870 D AndroidRuntime: Shutting down VM
-10-01 08:03:50.747  4111  4111 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:03:50.758  4111  4111 I AndroidRuntime: Using default boot image
-10-01 08:03:50.758  4111  4111 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:03:50.917  4111  4111 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:03:51.979  4111  4111 D AndroidRuntime: Shutting down VM
-10-01 08:03:52.939  4322  4322 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:03:52.942  4322  4322 I AndroidRuntime: Using default boot image
-10-01 08:03:52.942  4322  4322 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:03:53.028  4322  4322 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:03:54.048  4322  4322 D AndroidRuntime: Shutting down VM
-10-01 08:03:54.967  4352  4352 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:03:54.969  4352  4352 I AndroidRuntime: Using default boot image
-10-01 08:03:54.970  4352  4352 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:03:55.059  4352  4352 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:03:56.099  4352  4352 D AndroidRuntime: Shutting down VM
-10-01 08:04:00.443  4554  4554 I FlixTown: Refresh started
-10-01 08:04:00.847  4554  4588 W FlixTown: Startup refresh failed; cached titles remain
-10-01 08:04:00.847  4554  4588 W FlixTown: java.io.IOException: Demo: network unreachable
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at com.flixtown.tv.DemoData.respond(DemoData.java:37)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at com.flixtown.tv.Api.request(Api.java:28)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at com.flixtown.tv.Api.get(Api.java:22)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at com.flixtown.tv.StartupRefresh.run(StartupRefresh.java:114)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at com.flixtown.tv.StartupRefresh.lambda$start$0(StartupRefresh.java:67)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at com.flixtown.tv.StartupRefresh$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
-10-01 08:04:00.847  4554  4588 W FlixTown: 	at java.lang.Thread.run(Thread.java:920)
-10-01 08:04:01.263  4554  4554 I FlixTown: Refresh finished: failed
-10-01 08:04:02.705  4554  4554 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 08:04:18.212  4651  4651 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:04:18.215  4651  4651 I AndroidRuntime: Using default boot image
-10-01 08:04:18.215  4651  4651 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:04:18.305  4651  4651 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:04:19.382  4651  4651 D AndroidRuntime: Shutting down VM
-10-01 08:04:20.292  4669  4669 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:04:20.296  4669  4669 I AndroidRuntime: Using default boot image
-10-01 08:04:20.296  4669  4669 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:04:20.383  4669  4669 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:04:21.445  4669  4669 D AndroidRuntime: Shutting down VM
-10-01 08:04:22.344  4687  4687 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:04:22.347  4687  4687 I AndroidRuntime: Using default boot image
-10-01 08:04:22.347  4687  4687 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:04:22.427  4687  4687 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:04:23.474  4687  4687 D AndroidRuntime: Shutting down VM
-10-01 08:04:35.414  4554  4554 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 08:04:40.489  4795  4795 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:04:40.491  4795  4795 I AndroidRuntime: Using default boot image
-10-01 08:04:40.491  4795  4795 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:04:40.573  4795  4795 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:04:41.592  4795  4795 D AndroidRuntime: Shutting down VM
-10-01 08:04:42.488  4816  4816 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:04:42.491  4816  4816 I AndroidRuntime: Using default boot image
-10-01 08:04:42.491  4816  4816 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:04:42.569  4816  4816 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:04:43.589  4816  4816 D AndroidRuntime: Shutting down VM
-10-01 08:04:44.502  4834  4834 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:04:44.505  4834  4834 I AndroidRuntime: Using default boot image
-10-01 08:04:44.505  4834  4834 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:04:44.591  4834  4834 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:04:45.607  4834  4834 D AndroidRuntime: Shutting down VM
-10-01 08:04:46.508  4852  4852 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:04:46.511  4852  4852 I AndroidRuntime: Using default boot image
-10-01 08:04:46.511  4852  4852 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:04:46.589  4852  4852 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:04:47.609  4852  4852 D AndroidRuntime: Shutting down VM
-10-01 08:04:51.842  4900  4900 I FlixTown: Refresh started
-10-01 08:04:53.860  4900  4900 I FlixTown: Refresh finished: updated
-10-01 08:05:09.239  4973  4973 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:09.242  4973  4973 I AndroidRuntime: Using default boot image
-10-01 08:05:09.242  4973  4973 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:09.327  4973  4973 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:10.358  4973  4973 D AndroidRuntime: Shutting down VM
-10-01 08:05:11.257  4990  4990 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:11.260  4990  4990 I AndroidRuntime: Using default boot image
-10-01 08:05:11.260  4990  4990 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:11.337  4990  4990 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:12.355  4990  4990 D AndroidRuntime: Shutting down VM
-10-01 08:05:13.255  5013  5013 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:13.258  5013  5013 I AndroidRuntime: Using default boot image
-10-01 08:05:13.258  5013  5013 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:13.344  5013  5013 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:14.757  5013  5013 D AndroidRuntime: Shutting down VM
-10-01 08:05:15.705  5087  5087 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:15.708  5087  5087 I AndroidRuntime: Using default boot image
-10-01 08:05:15.708  5087  5087 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:15.833  5087  5087 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:16.887  5087  5087 D AndroidRuntime: Shutting down VM
-10-01 08:05:28.550  5201  5201 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:28.553  5201  5201 I AndroidRuntime: Using default boot image
-10-01 08:05:28.553  5201  5201 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:28.632  5201  5201 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:29.713  5201  5201 D AndroidRuntime: Shutting down VM
-10-01 08:05:30.617  5219  5219 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:30.620  5219  5219 I AndroidRuntime: Using default boot image
-10-01 08:05:30.620  5219  5219 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:30.699  5219  5219 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:31.776  5219  5219 D AndroidRuntime: Shutting down VM
-10-01 08:05:33.271  5254  5254 I FlixTown: Refresh started
-10-01 08:05:35.577  5254  5254 I FlixTown: Refresh finished: updated
-10-01 08:05:51.040  5315  5315 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:51.043  5315  5315 I AndroidRuntime: Using default boot image
-10-01 08:05:51.043  5315  5315 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:51.121  5315  5315 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:52.140  5315  5315 D AndroidRuntime: Shutting down VM
-10-01 08:05:53.040  5336  5336 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:53.043  5336  5336 I AndroidRuntime: Using default boot image
-10-01 08:05:53.043  5336  5336 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:53.122  5336  5336 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:54.140  5336  5336 D AndroidRuntime: Shutting down VM
-10-01 08:05:56.963  5367  5367 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:05:56.966  5367  5367 I AndroidRuntime: Using default boot image
-10-01 08:05:56.966  5367  5367 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:05:57.044  5367  5367 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:05:58.070  5367  5367 D AndroidRuntime: Shutting down VM
-10-01 08:06:00.441   491  2466 I ActivityTaskManager: START u0 {act=android.intent.action.VIEW dat=content://com.myflixtown.tv.native.qa.fileprovider/updates/FlixTown-10011.apk typ=application/vnd.android.package-archive flg=0x10000001 cmp=com.google.android.packageinstaller/com.android.packageinstaller.InstallStart} from uid 10080
-10-01 08:06:00.798   491  1293 I ActivityTaskManager: START u0 {act=android.intent.action.VIEW dat=content://com.myflixtown.tv.native.qa.fileprovider/updates/FlixTown-10011.apk typ=application/vnd.android.package-archive flg=0x2000001 cmp=com.google.android.packageinstaller/com.android.packageinstaller.InstallStaging (has extras)} from uid 10032
-10-01 08:06:10.090  5483  5483 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:06:10.094  5483  5483 I AndroidRuntime: Using default boot image
-10-01 08:06:10.094  5483  5483 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:06:10.179  5483  5483 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:06:11.206  5483  5483 D AndroidRuntime: Shutting down VM
-10-01 08:06:28.817  5585  5585 I FlixTown: Refresh started
-10-01 08:06:31.196  5585  5585 I FlixTown: Refresh finished: updated
-10-01 08:06:46.482  5644  5644 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:06:46.485  5644  5644 I AndroidRuntime: Using default boot image
-10-01 08:06:46.485  5644  5644 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:06:46.570  5644  5644 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:06:47.635  5644  5644 D AndroidRuntime: Shutting down VM
-10-01 08:06:48.535  5662  5662 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:06:48.538  5662  5662 I AndroidRuntime: Using default boot image
-10-01 08:06:48.538  5662  5662 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:06:48.616  5662  5662 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:06:49.666  5662  5662 D AndroidRuntime: Shutting down VM
-10-01 08:06:50.575  5680  5680 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:06:50.578  5680  5680 I AndroidRuntime: Using default boot image
-10-01 08:06:50.578  5680  5680 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:06:50.661  5680  5680 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:06:52.864  5680  5680 D AndroidRuntime: Shutting down VM
-10-01 08:07:08.846  5795  5795 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:07:08.849  5795  5795 I AndroidRuntime: Using default boot image
-10-01 08:07:08.849  5795  5795 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:07:08.935  5795  5795 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:07:09.953  5795  5795 D AndroidRuntime: Shutting down VM
-10-01 08:07:12.005  5830  5830 I FlixTown: Refresh started
-10-01 08:07:14.038  5830  5830 I FlixTown: Refresh finished: updated
-10-01 08:07:29.380  5908  5908 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:07:29.383  5908  5908 I AndroidRuntime: Using default boot image
-10-01 08:07:29.383  5908  5908 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:07:29.462  5908  5908 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:07:30.540  5908  5908 D AndroidRuntime: Shutting down VM
-10-01 08:07:31.439  5928  5928 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-01 08:07:31.441  5928  5928 I AndroidRuntime: Using default boot image
-10-01 08:07:31.441  5928  5928 I AndroidRuntime: Leaving lock profiling enabled
-10-01 08:07:31.524  5928  5928 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-10-01 08:07:32.592  5928  5928 D AndroidRuntime: Shutting down VM
+10-01 08:55:31.345  2820  2820 I FlixTown: Refresh started
+10-01 08:55:33.194  2820  2820 I FlixTown: Refresh finished: updated
+10-01 08:55:51.470  3535  3535 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:55:51.490  3535  3535 I AndroidRuntime: Using default boot image
+10-01 08:55:51.490  3535  3535 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:55:51.633  3535  3535 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:55:52.708  3535  3535 D AndroidRuntime: Shutting down VM
+10-01 08:55:53.574  3555  3555 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:55:53.576  3555  3555 I AndroidRuntime: Using default boot image
+10-01 08:55:53.576  3555  3555 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:55:53.631  3555  3555 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:55:54.661  3555  3555 D AndroidRuntime: Shutting down VM
+10-01 08:56:11.915  3705  3705 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:56:11.917  3705  3705 I AndroidRuntime: Using default boot image
+10-01 08:56:11.917  3705  3705 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:56:11.975  3705  3705 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:56:12.998  3705  3705 D AndroidRuntime: Shutting down VM
+10-01 08:56:13.862  3726  3726 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:56:13.864  3726  3726 I AndroidRuntime: Using default boot image
+10-01 08:56:13.864  3726  3726 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:56:13.919  3726  3726 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:56:14.933  3726  3726 D AndroidRuntime: Shutting down VM
+10-01 08:56:15.799  3746  3746 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:56:15.800  3746  3746 I AndroidRuntime: Using default boot image
+10-01 08:56:15.800  3746  3746 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:56:15.854  3746  3746 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:56:16.865  3746  3746 D AndroidRuntime: Shutting down VM
+10-01 08:56:19.846  3794  3794 I FlixTown: Refresh started
+10-01 08:56:20.303  3794  3818 W FlixTown: Startup refresh failed; cached titles remain
+10-01 08:56:20.303  3794  3818 W FlixTown: java.io.IOException: Demo: network unreachable
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at com.flixtown.tv.DemoData.respond(DemoData.java:43)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at com.flixtown.tv.Api.request(Api.java:28)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at com.flixtown.tv.Api.get(Api.java:22)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at com.flixtown.tv.StartupRefresh.run(StartupRefresh.java:114)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at com.flixtown.tv.StartupRefresh.lambda$start$0(StartupRefresh.java:67)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at com.flixtown.tv.StartupRefresh$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+10-01 08:56:20.303  3794  3818 W FlixTown: 	at java.lang.Thread.run(Thread.java:920)
+10-01 08:56:20.304  3794  3794 I FlixTown: Refresh finished: failed
+10-01 08:56:22.201  3794  3794 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-01 08:56:37.116  3908  3908 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:56:37.118  3908  3908 I AndroidRuntime: Using default boot image
+10-01 08:56:37.118  3908  3908 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:56:37.174  3908  3908 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:56:38.219  3908  3908 D AndroidRuntime: Shutting down VM
+10-01 08:56:39.084  3927  3927 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:56:39.086  3927  3927 I AndroidRuntime: Using default boot image
+10-01 08:56:39.086  3927  3927 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:56:39.138  3927  3927 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:56:40.184  3927  3927 D AndroidRuntime: Shutting down VM
+10-01 08:56:41.048  3945  3945 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:56:41.050  3945  3945 I AndroidRuntime: Using default boot image
+10-01 08:56:41.050  3945  3945 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:56:41.104  3945  3945 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:56:42.138  3945  3945 D AndroidRuntime: Shutting down VM
+10-01 08:56:54.039  3794  3794 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-01 08:56:58.999  4058  4058 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:56:59.001  4058  4058 I AndroidRuntime: Using default boot image
+10-01 08:56:59.001  4058  4058 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:56:59.055  4058  4058 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:00.067  4058  4058 D AndroidRuntime: Shutting down VM
+10-01 08:57:00.933  4076  4076 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:00.934  4076  4076 I AndroidRuntime: Using default boot image
+10-01 08:57:00.934  4076  4076 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:00.988  4076  4076 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:02.003  4076  4076 D AndroidRuntime: Shutting down VM
+10-01 08:57:02.868  4094  4094 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:02.870  4094  4094 I AndroidRuntime: Using default boot image
+10-01 08:57:02.870  4094  4094 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:02.930  4094  4094 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:03.942  4094  4094 D AndroidRuntime: Shutting down VM
+10-01 08:57:04.807  4112  4112 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:04.809  4112  4112 I AndroidRuntime: Using default boot image
+10-01 08:57:04.809  4112  4112 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:04.866  4112  4112 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:05.877  4112  4112 D AndroidRuntime: Shutting down VM
+10-01 08:57:10.047  4156  4156 I FlixTown: Refresh started
+10-01 08:57:11.720  4156  4156 I FlixTown: Refresh finished: updated
+10-01 08:57:27.238  4247  4247 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:27.240  4247  4247 I AndroidRuntime: Using default boot image
+10-01 08:57:27.240  4247  4247 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:27.293  4247  4247 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:28.308  4247  4247 D AndroidRuntime: Shutting down VM
+10-01 08:57:29.174  4266  4266 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:29.176  4266  4266 I AndroidRuntime: Using default boot image
+10-01 08:57:29.176  4266  4266 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:29.241  4266  4266 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:30.264  4266  4266 D AndroidRuntime: Shutting down VM
+10-01 08:57:31.128  4284  4284 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:31.130  4284  4284 I AndroidRuntime: Using default boot image
+10-01 08:57:31.130  4284  4284 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:31.182  4284  4284 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:32.524  4284  4284 D AndroidRuntime: Shutting down VM
+10-01 08:57:33.490  4302  4302 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:33.492  4302  4302 I AndroidRuntime: Using default boot image
+10-01 08:57:33.492  4302  4302 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:33.544  4302  4302 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:34.559  4302  4302 D AndroidRuntime: Shutting down VM
+10-01 08:57:45.727  4378  4378 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:45.728  4378  4378 I AndroidRuntime: Using default boot image
+10-01 08:57:45.728  4378  4378 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:45.789  4378  4378 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:46.842  4378  4378 D AndroidRuntime: Shutting down VM
+10-01 08:57:47.704  4396  4396 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:57:47.705  4396  4396 I AndroidRuntime: Using default boot image
+10-01 08:57:47.705  4396  4396 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:57:47.756  4396  4396 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:57:48.792  4396  4396 D AndroidRuntime: Shutting down VM
+10-01 08:57:50.146  4432  4432 I FlixTown: Refresh started
+10-01 08:57:52.440  4432  4432 I FlixTown: Refresh finished: updated
+10-01 08:58:07.470  4497  4497 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:58:07.471  4497  4497 I AndroidRuntime: Using default boot image
+10-01 08:58:07.471  4497  4497 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:58:07.528  4497  4497 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:58:08.544  4497  4497 D AndroidRuntime: Shutting down VM
+10-01 08:58:09.419  4516  4516 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:58:09.421  4516  4516 I AndroidRuntime: Using default boot image
+10-01 08:58:09.421  4516  4516 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:58:09.478  4516  4516 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:58:10.492  4516  4516 D AndroidRuntime: Shutting down VM
+10-01 08:58:13.480  4547  4547 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:58:13.482  4547  4547 I AndroidRuntime: Using default boot image
+10-01 08:58:13.482  4547  4547 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:58:13.539  4547  4547 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:58:14.555  4547  4547 D AndroidRuntime: Shutting down VM
+10-01 08:58:16.601   493  3291 I ActivityTaskManager: START u0 {act=android.intent.action.VIEW dat=content://com.myflixtown.tv.native.qa.fileprovider/updates/FlixTown-10011.apk typ=application/vnd.android.package-archive flg=0x10000001 cmp=com.google.android.packageinstaller/com.android.packageinstaller.InstallStart} from uid 10080
+10-01 08:58:16.673   493  3291 I ActivityTaskManager: START u0 {act=android.intent.action.VIEW dat=content://com.myflixtown.tv.native.qa.fileprovider/updates/FlixTown-10011.apk typ=application/vnd.android.package-archive flg=0x2000001 cmp=com.google.android.packageinstaller/com.android.packageinstaller.InstallStaging (has extras)} from uid 10032
+10-01 08:58:26.398  4614  4614 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:58:26.400  4614  4614 I AndroidRuntime: Using default boot image
+10-01 08:58:26.400  4614  4614 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:58:26.455  4614  4614 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:58:27.475  4614  4614 D AndroidRuntime: Shutting down VM
+10-01 08:58:44.654  4734  4734 I FlixTown: Refresh started
+10-01 08:58:46.591  4734  4734 I FlixTown: Refresh finished: updated
+10-01 08:59:02.143  4804  4804 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:59:02.145  4804  4804 I AndroidRuntime: Using default boot image
+10-01 08:59:02.145  4804  4804 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:59:02.197  4804  4804 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:59:03.242  4804  4804 D AndroidRuntime: Shutting down VM
+10-01 08:59:04.106  4823  4823 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:59:04.108  4823  4823 I AndroidRuntime: Using default boot image
+10-01 08:59:04.108  4823  4823 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:59:04.160  4823  4823 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:59:05.201  4823  4823 D AndroidRuntime: Shutting down VM
+10-01 08:59:06.067  4841  4841 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:59:06.069  4841  4841 I AndroidRuntime: Using default boot image
+10-01 08:59:06.069  4841  4841 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:59:06.126  4841  4841 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:59:08.233  4841  4841 D AndroidRuntime: Shutting down VM
+10-01 08:59:23.958  4957  4957 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:59:23.960  4957  4957 I AndroidRuntime: Using default boot image
+10-01 08:59:23.960  4957  4957 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:59:24.018  4957  4957 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:59:25.034  4957  4957 D AndroidRuntime: Shutting down VM
+10-01 08:59:26.928  4992  4992 I FlixTown: Refresh started
+10-01 08:59:29.342  4992  4992 I FlixTown: Refresh finished: updated
+10-01 08:59:44.148  5054  5054 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:59:44.150  5054  5054 I AndroidRuntime: Using default boot image
+10-01 08:59:44.150  5054  5054 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:59:44.203  5054  5054 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:59:45.253  5054  5054 D AndroidRuntime: Shutting down VM
+10-01 08:59:46.116  5072  5072 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-01 08:59:46.118  5072  5072 I AndroidRuntime: Using default boot image
+10-01 08:59:46.118  5072  5072 I AndroidRuntime: Leaving lock profiling enabled
+10-01 08:59:46.171  5072  5072 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-01 08:59:47.215  5072  5072 D AndroidRuntime: Shutting down VM
