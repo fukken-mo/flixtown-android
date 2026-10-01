@@ -156,7 +156,10 @@ final class Ui {
     static Dialog notice(Activity activity,String title,String message,String muted,String[] labels,int focusIndex,
                          boolean cancelable,Choice action,Runnable onCancel){
         Dialog dialog=newDialog(activity);
-        LinearLayout body=column(activity);pad(body,activity,30,24,30,24);body.setBackground(glass(activity,18));
+        LinearLayout body=column(activity);pad(body,activity,30,24,30,24);
+        // Solid (not see-through) so the hero title behind never shows through the card.
+        GradientDrawable surface=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xFF211F25,0xFF17161A,0xFF111014});
+        surface.setCornerRadius(dp(activity,18));surface.setStroke(dp(activity,1),HAIRLINE);body.setBackground(surface);
         LinearLayout top=row(activity);top.setGravity(Gravity.CENTER_VERTICAL);
         android.widget.ImageView mark=new android.widget.ImageView(activity);mark.setImageResource(R.drawable.flix_logo);
         mark.setScaleType(android.widget.ImageView.ScaleType.FIT_START);mark.setAdjustViewBounds(true);
