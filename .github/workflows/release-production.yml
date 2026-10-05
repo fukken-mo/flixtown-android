@@ -21,11 +21,11 @@ on:
       version_code:
         description: "versionCode (must be higher than the version customers have)"
         required: true
-        default: "10015"
+        default: "10016"
       version_name:
         description: "versionName shown in Settings"
         required: true
-        default: "3.7.0"
+        default: "3.7.1"
   # Also runs once when this file changes on a working branch (with the defaults above), so the
   # first production build does not depend on the workflow being on the default branch yet.
   push:
@@ -47,8 +47,8 @@ jobs:
       PREVIEW_CERT: 426f5dda091757c0e4f6adc8d4a5adeff1f0c6d448cab643a92833b5b9ff11b7
       PACKAGE: com.myflixtown.tv.native
       PANEL_UPDATE_URL: https://panelsandapps.com/panels/flixtown2027/api/app-update.php
-      VERSION_CODE: ${{ inputs.version_code || '10015' }}
-      VERSION_NAME: ${{ inputs.version_name || '3.7.0' }}
+      VERSION_CODE: ${{ inputs.version_code || '10016' }}
+      VERSION_NAME: ${{ inputs.version_name || '3.7.1' }}
     steps:
       - name: Release signing secrets present
         run: |
@@ -112,11 +112,18 @@ jobs:
           APK="$(ls dist/*.apk)"
           php panel/tests/inspect.php "$APK"; echo
           bash .github/release/panel_check.sh "$APK" "$PACKAGE" "$VERSION_CODE" "$EXPECTED_CERT"
+      - name: Package release-date panel endpoint
+        run: |
+          php -l panel/tmdb/ratings.php
+          mkdir -p dist/panel-api
+          cp panel/tmdb/ratings.php dist/panel-api/ratings.php
+          printf '%s\\n' 'Replace api/ratings.php in the existing Flix Town app panel. Keep bootstrap.php, tmdb-match.php, configuration and credentials unchanged.' > dist/panel-api/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.7.0' }}-${{ inputs.version_code || '10015' }}
+          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.7.1' }}-${{ inputs.version_code || '10016' }}
           path: |
             dist/*.apk
             dist/RELEASE-INFO.txt
+            dist/panel-api/
           if-no-files-found: error
           retention-days: 90

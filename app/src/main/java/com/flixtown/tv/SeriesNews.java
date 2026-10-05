@@ -156,7 +156,7 @@ final class SeriesNews {
     /** The badge for a series card, from the last evaluation. */
     static Badge badge(Catalog.Item item){
         if(!"series".equals(item.kind))return NO_BADGE;
-        Badge b=badges.get(item.id);return b==null?NO_BADGE:b;}
+        return item.isNew()?new Badge(NEW_SERIES,item.releaseDate()):NO_BADGE;}
 
     /** Reads the saved state and evaluates badges for this catalog. Background thread. */
     static synchronized void ensureLoaded(Context c,List<Catalog.Item> series){
@@ -192,28 +192,8 @@ final class SeriesNews {
      * whenever the set of badges changes.
      */
     static void onServerCatalog(Context context,List<Catalog.Item> series,Runnable changed){
-        Context c=context.getApplicationContext();List<Catalog.Item> list=new ArrayList<>(series);
-        Handler main=new Handler(Looper.getMainLooper());
-        WORKER.execute(()->{
-            ensureLoaded(c,list);
-            List<Catalog.Item> todo;
-            synchronized(SeriesNews.class){state.onCatalog(list,now());save();
-                if(evaluate(list))main.post(changed);
-                todo=state.candidates(list,now(),Math.min(PER_REFRESH,PER_PROCESS-checksThisProcess));}
-            if(todo.isEmpty())return;
-            try{Thread.sleep(START_DELAY_MS);}catch(InterruptedException e){return;}
-            int failures=0;
-            for(Catalog.Item item:todo){
-                try{
-                    JSONObject info=Api.get(Api.xtream(c,"get_series_info","&series_id="+Api.enc(item.id)));
-                    List<Episode> eps=episodes(info);
-                    synchronized(SeriesNews.class){checksThisProcess++;if(!eps.isEmpty())state.record(item.id,item.lastModified,eps,now());}
-                    failures=0;
-                }catch(Exception e){if(++failures>=2)break;}
-                try{Thread.sleep(GAP_MS);}catch(InterruptedException e){break;}
-            }
-            synchronized(SeriesNews.class){save();if(evaluate(list))main.post(changed);}
-        });
+        // Upload timestamps and imported episode IDs are not release dates.
+        // Premiere dates arrive in the catalog or the existing cached TMDB ratings request.
     }
 
     /** "Latest TV Shows": series with a badge first (latest event first), then the rest by last change. */

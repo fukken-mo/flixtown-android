@@ -163,7 +163,7 @@ final class HomeCards {
     }
     /** Payload for {@code notifyItemRangeChanged}: only ratings/badges changed. */
     static final Object TEXT="text";
-    /** Series: NEW EPISODES / NEW SERIES only with proof (SeriesNews). Movies: NEW (added this week) or 4K. */
+    /** NEW / NEW SERIES only for releases in the last 30 days; uploads never qualify. */
     static String badge(Catalog.Item item){
         if("series".equals(item.kind)){String b=SeriesNews.badge(item).label();if(b!=null)return b;}
         else if(item.isNew())return "NEW";

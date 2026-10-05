@@ -24,7 +24,7 @@ public class HomeLogicTest {
         assertTrue(movie("2","Art",5,now(),"1","https://img/wide.jpg").hasBackdrop());
     }
     @Test public void newAndUhdBadgesUseRealData()throws Exception{
-        assertTrue(movie("1","Fresh",5,now()-3600,"1",null).isNew());
+        assertFalse("upload time alone is not a release date",movie("1","Fresh",5,now()-3600,"1",null).isNew());
         assertFalse(movie("2","Old",5,now()-30*86400L,"1",null).isNew());
         assertTrue(movie("3","Dune 4K",5,now(),"1",null).isUhd());
         assertFalse(movie("4","Dune",5,now(),"1",null).isUhd());

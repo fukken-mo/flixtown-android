@@ -39,7 +39,7 @@ foreach ($items as $it) {
     if ($year > 0) $steps[] = 'year';
     $steps[] = 'search';
     $want[$k] = ['type' => $type, 'tmdb' => $tmdb, 'title' => $clean, 'year' => $year, 'steps' => $steps,
-        'cache' => hash('sha256', 'rating-v1|' . $type . '|' . $tmdb . '|' . ftNormalize($clean) . '|' . $year)];
+        'cache' => hash('sha256', 'rating-v2-release|' . $type . '|' . $tmdb . '|' . ftNormalize($clean) . '|' . $year)];
 }
 
 $order = array_keys($want);
@@ -74,7 +74,9 @@ for ($round = 0; $round < 3 && $pending; $round++) {
             : ftPick(is_array($data['results'] ?? null) ? $data['results'] : [], $w['title'], $w['year']);
         if ($match === null && $w['steps']) { $next[$k] = $w; continue; }
         $rating = $match ? ftRating($match) : null;
-        $value = $rating ? $rating + ['tmdb_id' => (int)$match['id']] : null;
+        $value = $match ? ($rating ?? ['rating' => null, 'votes' => (int)($match['vote_count'] ?? 0)])
+            + ['tmdb_id' => (int)$match['id'],
+               'release_date' => (string)($match[$w['type'] === 'tv' ? 'first_air_date' : 'release_date'] ?? '')] : null;
         $out[$k] = $value;
         ftCacheSet($db, $w['cache'], json_encode($value ?? ['rating' => null, 'tmdb_id' => $match ? (int)$match['id'] : 0]),
             $value ? 7 * 86400 : 2 * 86400);

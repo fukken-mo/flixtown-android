@@ -215,19 +215,32 @@ public class RatingsAndBadgesTest {
         assertEquals(SeriesNews.NEW_EPISODES,back.badge("1",t).type);
         assertEquals(s.baselineAt,back.baselineAt);
     }
-    @Test public void latestTvShowsPutsProvenNewsFirst()throws Exception{
-        long t=now();
-        Catalog.Item touched=series("1","Touched",2000,t),older=series("2","Older With Episode",2000,t-5*DAY),fresh=series("3","Fresh",2026,t-3*DAY);
-        List<Catalog.Item> all=Arrays.asList(touched,older,fresh);
-        SeriesNews.State s=new SeriesNews.State();s.onCatalog(all,t);
-        s.record("2",t-5*DAY,eps(t-300*DAY,t-DAY),t);
-        s.record("3",t-3*DAY,eps(t-3*DAY,t-3*DAY+60),t);
-        SeriesNews.setForTest(s,all);
-        List<Catalog.Item> latest=SeriesNews.latest(all,24);
-        assertEquals(Arrays.asList("2","3","1"),Arrays.asList(latest.get(0).id,latest.get(1).id,latest.get(2).id));
-        assertEquals("NEW EPISODES",HomeCards.badge(older));
-        assertEquals("NEW SERIES",HomeCards.badge(fresh));
-        assertNull("touched last_modified alone is no badge",HomeCards.badge(touched));
-        SeriesNews.setForTest(new SeriesNews.State(),all);
+    @Test public void badgesUseReleaseDatesNotImports()throws Exception{
+        long today=now()/DAY*DAY;
+        String recent=java.time.Instant.ofEpochSecond(today-3*DAY).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString();
+        Catalog.Item old=new Catalog.Item(new JSONObject().put("stream_id","old").put("name","Old Film")
+            .put("release_date","2020-01-01").put("added",now()),"movie");
+        Catalog.Item fresh=new Catalog.Item(new JSONObject().put("stream_id","fresh").put("name","Fresh Film")
+            .put("release_date",recent).put("added",now()-300*DAY),"movie");
+        Catalog.Item show=new Catalog.Item(new JSONObject().put("series_id","show").put("name","Fresh Show")
+            .put("first_air_date",recent),"series");
+        Catalog.Item oldShow=series("old-show","Old Show",2000,now());
+        assertNull(HomeCards.badge(old));assertEquals("NEW",HomeCards.badge(fresh));
+        assertEquals("NEW SERIES",HomeCards.badge(show));assertNull(HomeCards.badge(oldShow));
+        assertFalse("a year alone cannot prove a recent release",movie("year","Year Only",2026,"").isNew());
+        assertEquals(Arrays.asList(show,oldShow),SeriesNews.latest(Arrays.asList(oldShow,show),24));
+    }
+
+    @Test public void releaseWindowIsStrictAndRejectsUnknownOrFutureDates(){
+        long today=ReleaseDates.parse("2026-10-05"),now=today+12*3600;
+        assertTrue(ReleaseDates.recent(today,now));
+        assertTrue(ReleaseDates.recent(today-29*DAY,now));
+        assertFalse(ReleaseDates.recent(today-30*DAY,now));
+        assertFalse(ReleaseDates.recent(today+DAY,now));
+        assertFalse(ReleaseDates.recent(0,now));
+        assertEquals(0,ReleaseDates.parse("2026"));
+        assertEquals(0,ReleaseDates.parse("2026-02-30"));
+        assertEquals(0,ReleaseDates.parse("2026-10-05junk"));
+        assertTrue(ReleaseDates.parse("2024-02-29")>0);
     }
 }

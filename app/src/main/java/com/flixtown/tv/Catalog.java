@@ -38,6 +38,7 @@ final class Catalog {
         final String id,title,poster,backdrop,kind,extension,categoryId,overview,genre;
         /** TMDB ID when the provider sends one ("tmdb" / "tmdb_id"); only a hint, verified by the panel. */
         final String tmdbId;
+        final long releaseAt;
         /** Movies: when the title was added to the server. Series: Xtream only has last_modified here. */
         final int year,added;
         /** Series only: Xtream's last_modified. Providers often touch it for every series at once,
@@ -45,8 +46,9 @@ final class Catalog {
         final int lastModified;
         /** True when the server sent real landscape artwork (the backdrop field falls back to the poster). */
         boolean hasBackdrop(){return !backdrop.isEmpty() && !backdrop.equals(poster);}
-        /** A movie added to the server within the last week (Xtream's "added" time). Series use SeriesNews. */
-        boolean isNew(){return "movie".equals(kind) && added>0 && System.currentTimeMillis()/1000-added<7L*86400;}
+        /** Full release/premiere dates only. Upload times and year-only metadata never earn NEW. */
+        long releaseDate(){long tmdb=Ratings.releaseDate(this);return tmdb>0?tmdb:releaseAt;}
+        boolean isNew(){return ReleaseDates.recent(releaseDate(),System.currentTimeMillis()/1000);}
         /** "4K"/"UHD" in the title the server gave it. */
         boolean isUhd(){String t=title.toUpperCase(java.util.Locale.US);return t.contains("4K")||t.contains("UHD")||t.contains("2160");}
         String key(){return kind+":"+id;}
@@ -66,6 +68,11 @@ final class Catalog {
             lastModified=number(j,"last_modified");
             int a=number(j,"added");added=a>0?a:lastModified;
             year=yearOf(j,title);
+            long release=0;
+            String[] dates="series".equals(kind)?new String[]{"first_air_date","releaseDate","release_date","releasedate"}:
+                new String[]{"release_date","releaseDate","releasedate"};
+            for(String field:dates){release=ReleaseDates.parse(j.optString(field,"").trim());if(release>0)break;}
+            releaseAt=release;
         }
         private static int number(JSONObject j,String name){
             try{return (int)Long.parseLong(j.optString(name,"0").trim());}catch(Exception e){return 0;}}

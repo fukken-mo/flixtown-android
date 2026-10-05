@@ -41,8 +41,9 @@ final class Ratings {
     private static final long FIRST_DELAY_MS=700,BETWEEN_MS=350,PAUSE_MS=10*60_000L,UNAVAILABLE_PAUSE_MS=30*60_000L;
 
     /** rating < 0: TMDB has no reliable rating for this title. */
-    static final class Entry{final double rating;final long at;final int sig;
-        Entry(double r,long a,int s){rating=r;at=a;sig=s;}
+    static final class Entry{final double rating;final long at,releaseAt;final int sig;
+        Entry(double r,long a,int s){this(r,a,s,0);}
+        Entry(double r,long a,int s,long release){rating=r;at=a;sig=s;releaseAt=release;}
         boolean fresh(long now){return now-at<(rating>0?FOUND_TTL:NONE_TTL);}}
 
     private static final Map<String,Entry> CACHE=new ConcurrentHashMap<>();
@@ -58,6 +59,9 @@ final class Ratings {
     static int sig(Catalog.Item item){return (item.title+"|"+item.year+"|"+item.tmdbId).hashCode();}
 
     /** TMDB rating, or -1 when none is known. */
+    static long releaseDate(Catalog.Item item){
+        Entry e=CACHE.get(item.key());return e!=null && e.sig==sig(item)?e.releaseAt:0;
+    }
     static double value(Catalog.Item item){
         Entry e=CACHE.get(item.key());
         return e!=null && e.rating>0 && e.sig==sig(item)?e.rating:-1;
@@ -68,7 +72,7 @@ final class Ratings {
 
     static void init(Context c){
         if(file!=null)return;
-        synchronized(Ratings.class){if(file==null)file=new File(c.getApplicationContext().getFilesDir(),"ratings.json");}
+        synchronized(Ratings.class){if(file==null)file=new File(c.getApplicationContext().getFilesDir(),"ratings_v2.json");}
     }
     /** Reads the saved ratings; call from a background thread (it is quick and idempotent). */
     static void ensureLoaded(Context c){init(c);load();}
@@ -80,7 +84,7 @@ final class Ratings {
                 JSONObject all=new JSONObject(bytes.toString("UTF-8"));long now=System.currentTimeMillis();
                 for(Iterator<String> it=all.keys();it.hasNext();){String k=it.next();JSONArray a=all.optJSONArray(k);
                     if(a==null||a.length()<3)continue;long at=a.optLong(1);
-                    if(now-at<KEEP_MS)CACHE.put(k,new Entry(a.optDouble(0,-1),at,a.optInt(2)));}
+                    if(now-at<KEEP_MS)CACHE.put(k,new Entry(a.optDouble(0,-1),at,a.optInt(2),a.optLong(3)));}
             }catch(Exception ignored){}
             loaded=true;
         }
@@ -105,7 +109,8 @@ final class Ratings {
 
     /** A rating that came with an exact TMDB match (Trending): no separate lookup needed. */
     static void seed(Catalog.Item item,double rating){
-        CACHE.put(item.key(),new Entry(rating>0 && rating<=10?rating:-1,System.currentTimeMillis(),sig(item)));
+        Entry old=CACHE.get(item.key());
+        CACHE.put(item.key(),new Entry(rating>0 && rating<=10?rating:-1,old!=null && old.sig==sig(item)?old.at:0,sig(item),old!=null && old.sig==sig(item)?old.releaseAt:0));
     }
 
     private static void pump(){
@@ -148,8 +153,9 @@ final class Ratings {
                 if(!map.has(i.key()))continue;                       // not checked this time; asked again later
                 JSONObject r=map.optJSONObject(i.key());
                 double rating=r==null?-1:r.optDouble("rating",-1);
-                Entry old=CACHE.put(i.key(),new Entry(rating>0 && rating<=10?rating:-1,now,sig(i)));
-                if(old==null || old.rating!=rating)changed=true;
+                long release=r==null?0:ReleaseDates.parse(r.optString("release_date",""));
+                Entry old=CACHE.put(i.key(),new Entry(rating>0 && rating<=10?rating:-1,now,sig(i),release));
+                if(old==null || old.rating!=rating || old.releaseAt!=release)changed=true;
             }
             save();
             return changed;
@@ -165,7 +171,7 @@ final class Ratings {
         try{
             JSONObject all=new JSONObject();long now=System.currentTimeMillis();
             for(Map.Entry<String,Entry> e:CACHE.entrySet())if(now-e.getValue().at<KEEP_MS)
-                all.put(e.getKey(),new JSONArray().put(e.getValue().rating).put(e.getValue().at).put(e.getValue().sig));
+                all.put(e.getKey(),new JSONArray().put(e.getValue().rating).put(e.getValue().at).put(e.getValue().sig).put(e.getValue().releaseAt));
             File temp=new File(target.getPath()+".tmp");
             try(FileOutputStream out=new FileOutputStream(temp)){out.write(all.toString().getBytes(StandardCharsets.UTF_8));}
             if(!temp.renameTo(target))temp.delete();
