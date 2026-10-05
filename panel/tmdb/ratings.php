@@ -48,7 +48,7 @@ $cached = ftCacheGet($db, array_column($want, 'cache'));
 foreach ($want as $k => $w) {
     if (!isset($cached[$w['cache']])) continue;
     $value = json_decode($cached[$w['cache']], true);
-    $out[$k] = is_array($value) && isset($value['rating']) ? $value : null;
+    $out[$k] = is_array($value) && array_key_exists('rating', $value) ? $value : null;
     unset($want[$k]);
 }
 
