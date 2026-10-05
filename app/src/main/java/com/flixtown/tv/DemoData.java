@@ -37,8 +37,8 @@ final class DemoData {
     private static final long DAY=86400;
     /** Today at 00:00 UTC, so demo times move only once a day (the catalog looks unchanged between refreshes). */
     static long base(){return System.currentTimeMillis()/1000/DAY*DAY;}
-    static int movieYear(int i){return 1998+(i*5)%27;}
-    static int seriesYear(int i){return 2005+i%19;}
+    static int movieYear(int i){return i==0?java.util.Calendar.getInstance().get(java.util.Calendar.YEAR):1998+(i*5)%27;}
+    static int seriesYear(int i){return i==1?java.util.Calendar.getInstance().get(java.util.Calendar.YEAR):2005+i%19;}
     static String respond(String url,String body)throws Exception{
         if(offline){Thread.sleep(400);throw new java.io.IOException("Demo: network unreachable");}
         Thread.sleep(url.contains("get_vod_streams")?(slow?21000:900):250);
@@ -74,6 +74,7 @@ final class DemoData {
                 // Provider ratings like many real servers: often "10". The app must ignore them.
                 .put("rating",i%3==0?"10":String.format(Locale.US,"%.1f",5+(i*37%45)/10.0))
                 .put("tmdb",i%4==3?String.valueOf(700000+i):"")
+                .put("release_date",i==0?releaseDate(base()-3*DAY):movieYear(i)+"-01-01")
                 .put("year",movieYear(i)).put("backdrop_path",i%3==1?new JSONArray():new JSONArray().put("demo://backdrop/m"+i))
                 .put("plot","A demo title used to check layouts. "+(i%2==0?"When an old signal returns from the past, a small crew must decide how much of the truth to share before the storm reaches the coast.":"Two strangers share one long night on the road.")));
             return list.toString();}
@@ -98,10 +99,11 @@ final class DemoData {
             for(int i=0;i<30;i++)list.put(new JSONObject().put("series_id",String.valueOf(5000+i)).put("name",title(i,5))
                 .put("cover","demo://poster/s"+i).put("category_id",String.valueOf(50+i%SERIES_CATS.length))
                 .put("last_modified",String.valueOf(seriesModified(i,b))).put("rating","10")
+                .put("first_air_date",i==1?releaseDate(base()-3*DAY):seriesYear(i)+"-01-01")
                 .put("year",seriesYear(i)).put("backdrop_path",new JSONArray().put("demo://backdrop/s"+i)).put("genre",i%2==0?"Crime, Drama":"Documentary")
                 .put("plot","A demo series about a small town, its secrets and the people who keep them. Used to check the Home preview."));
             if(seriesFetches>=2)list.put(new JSONObject().put("series_id","5099").put("name","The Night Shift Files").put("cover","demo://poster/s99")
-                .put("category_id","50").put("last_modified",String.valueOf(b-1800)).put("year",2026).put("backdrop_path",new JSONArray().put("demo://backdrop/s99"))
+                .put("category_id","50").put("first_air_date",releaseDate(b-2*DAY)).put("last_modified",String.valueOf(b-1800)).put("year",2026).put("backdrop_path",new JSONArray().put("demo://backdrop/s99"))
                 .put("plot","Added to the demo server after the first catalog, so it is proven new."));
             return list.toString();}
         if(url.contains("player_api.php"))return new JSONObject().put("user_info",new JSONObject()
@@ -134,12 +136,14 @@ final class DemoData {
         }
     }
     /** TMDB ratings as the panel would answer: some titles have none (shown without a rating). */
+    private static String releaseDate(long at){java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US);
+        f.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));return f.format(new java.util.Date(at*1000));}
     private static String ratings(String body)throws Exception{
         JSONArray items=new JSONObject(body).getJSONArray("items");JSONObject out=new JSONObject();
         for(int i=0;i<items.length();i++){JSONObject it=items.getJSONObject(i);String key=it.getString("key");
             int id=Integer.parseInt(key.substring(key.indexOf(':')+1));
             if(id%6==0||id==5003)out.put(key,JSONObject.NULL);
-            else out.put(key,new JSONObject().put("rating",Math.round((5.8+(id*7%35)/10.0)*10)/10.0).put("votes",100+id%900).put("tmdb_id",id));}
+            else out.put(key,new JSONObject().put("rating",Math.round((5.8+(id*7%35)/10.0)*10)/10.0).put("votes",100+id%900).put("tmdb_id",id).put("release_date",id==5001||id==5099?releaseDate(base()-3*DAY):"2000-01-01"));}
         return new JSONObject().put("ratings",out).toString();
     }
     /** TMDB trending as the panel would answer: a mix of titles on and not on the demo server. */

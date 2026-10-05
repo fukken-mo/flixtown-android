@@ -13,6 +13,7 @@ name: Production release (signed)
 # (or the repository variable FLIXTOWN_RELEASE_CERT_SHA256, if set). Fingerprints are public; the
 # key and passwords never leave the secrets and the keystore file is deleted after the build.
 #
+# Release badges use movie release dates and TV premiere dates, not upload timestamps.
 # Every future update: run again with a HIGHER version_code. Same package, same key, always.
 
 on:

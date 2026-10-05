@@ -22,23 +22,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * "NEW SERIES" / "NEW EPISODES" badges for TV shows, only when the data proves it.
- *
- * Xtream's series list has no "added" time, and its last_modified is often touched for every
- * series at once, so neither the list nor the premiere year is used as proof. Evidence, in order:
- *  1. Episode "added" times from get_series_info (the server's own upload times):
- *     - newest episode within 14 days and at least a day newer than the first one → NEW EPISODES;
- *     - every episode within 14 days, and the series was not already listed before that → NEW SERIES.
- *  2. Episode IDs remembered from an earlier check (for servers without episode times): IDs that
- *     appeared since, while last_modified moved forward → NEW EPISODES. A first check only records.
- *  3. A series ID that was not in the previous catalog, when that catalog was at most 14 days old
- *     → NEW SERIES. The first catalog after install, a reinstall, or a jump of many new IDs at once
- *     (a partial catalog followed by a full one) only records a baseline.
- * Otherwise there is no badge. NEW EPISODES wins when both apply.
- *
- * Work is bounded: series info is fetched only for series whose last_modified changed within the
- * last 30 days (newest first) or that newly appeared, at most 12 per catalog refresh, one at a time
- * after start-up has settled. Results are kept in files/series_news.json.
+ * Visible NEW SERIES badges use the original premiere date, never uploads or episode IDs.
+ * Legacy snapshot parsing remains compatible with saved state from older app versions, but does
+ * not decide visible badges and no additional get_series_info requests are made for badges.
  */
 final class SeriesNews {
     static final long DAY=86400,WINDOW=14*DAY,CANDIDATE_AGE=30*DAY;

@@ -64,7 +64,7 @@ key DPAD_RIGHT DPAD_RIGHT DPAD_RIGHT DPAD_RIGHT; shot 03b-trending-row-right 2; 
 check "trending title with too few TMDB votes shows no rating ($M20)" '[ -n "$(card "$M20")" ] && ! card "$M20" | grep -q "★"'
 key DPAD_LEFT DPAD_LEFT DPAD_LEFT DPAD_LEFT; sleep 0.5
 key DPAD_DOWN;                               shot 04-latest-movies 2.5; dump movies
-check "Latest Movies: NEW for movies added this week" 'has "text=\"NEW\""'
+check "Latest Movies: NEW for a movie released this week" 'has "text=\"NEW\""'
 check "Latest Movies: some titles without a TMDB rating show none" 'python3 - "$OUT/ui.xml" <<EOF
 import sys, xml.etree.ElementTree as ET
 r=ET.parse(sys.argv[1]).getroot(); metas=[n.get("text") for n in r.iter("node") if n.get("text","")[:2] in ("19","20") and len(n.get("text"))>=4]
@@ -72,12 +72,12 @@ sys.exit(0 if any("★" in m for m in metas) and any("★" not in m for m in met
 EOF'
 key DPAD_DOWN;                               shot 05-latest-tv-first-import 2.5; dump tv1
 note "  $S0: $(card "$S0")"; note "  $S1: $(card "$S1")"; note "  $S2: $(card "$S2")"; note "  $S3: $(card "$S3")"
-check "older series with a new episode: NEW EPISODES ($S0)" 'card "$S0" | grep -q "NEW EPISODES"'
-check "recently added series: NEW SERIES ($S1)" 'card "$S1" | grep -q "NEW SERIES"'
+check "old premiere with newly uploaded episodes: no NEW badge ($S0)" '! card "$S0" | grep -q "NEW"'
+check "recently premiered series: NEW SERIES ($S1)" 'card "$S1" | grep -q "NEW SERIES"'
 check "unchanged series with touched last_modified: no badge ($S2)" '! card "$S2" | grep -q "NEW"'
 check "series without episode times, first check: no badge ($S3)" '! card "$S3" | grep -q "NEW"'
 check "first import: not every poster is NEW" '[ "$(grep -o "text=\"NEW [A-Z]*\"" "$OUT/ui.xml" | wc -l)" -le 2 ]'
-check "badged series lead Latest TV Shows" 'python3 - "$OUT/ui.xml" "$S0" "$S1" <<EOF
+check "recently premiered series leads Latest TV Shows" 'python3 - "$OUT/ui.xml" "$S1" "$S1" <<EOF
 import sys, xml.etree.ElementTree as ET
 menu={"Search","Home","Movies","TV Shows","My List","Settings"}
 r=ET.parse(sys.argv[1]).getroot(); order=[n.get("content-desc") for n in r.iter("node") if n.get("content-desc") and n.get("content-desc") not in menu]
@@ -114,15 +114,15 @@ sleep 22                                      # episode checks for the changed s
 key DPAD_LEFT DPAD_UP DPAD_UP DPAD_UP DPAD_UP DPAD_CENTER; sleep 2.5   # menu on Settings → Home
 key DPAD_DOWN DPAD_DOWN DPAD_DOWN;           shot 09-latest-tv-after-new-catalog 2; dump tv2
 note "  $S9: $(card "$S9")"; note "  $S3: $(card "$S3")"
-check "series that appeared after the first import: NEW SERIES" 'card "$S9" | grep -q "NEW SERIES"'
-check "series without episode times, new episode ID: NEW EPISODES ($S3)" 'card "$S3" | grep -q "NEW EPISODES"'
-check "earlier badges kept ($S0 NEW EPISODES)" 'card "$S0" | grep -q "NEW EPISODES"'
+check "recent premiere added after the first import: NEW SERIES" 'card "$S9" | grep -q "NEW SERIES"'
+check "importing an old episode does not earn NEW ($S3)" '! card "$S3" | grep -q "NEW"'
+check "old show stays unbadged after refresh ($S0)" '! card "$S0" | grep -q "NEW"'
 check "unchanged series still without badge ($S2)" '! card "$S2" | grep -q "NEW"'
 
 # ---------- 5. Restart: saved ratings and badges, a plain refresh adds nothing ----------
 launch;                                      sleep 8; shot 10-relaunch-home 0.5
 key DPAD_DOWN DPAD_DOWN DPAD_DOWN;           shot 11-latest-tv-relaunch 0.8; dump tv3
-check "after restart: badges come from saved state ($S0)" 'card "$S0" | grep -q "NEW EPISODES"'
+check "after restart: imported old show stays unbadged ($S0)" '! card "$S0" | grep -q "NEW"'
 check "after restart: unchanged series still without badge ($S2)" '! card "$S2" | grep -q "NEW"'
 check "after restart: ratings shown from the saved cache" 'grep -q "★ [0-9]\.[0-9]" "$OUT/ui.xml"'
 

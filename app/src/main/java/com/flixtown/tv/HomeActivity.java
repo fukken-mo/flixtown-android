@@ -673,7 +673,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             int rank=-1;for(Object e:entries)if(e instanceof HomeFeed.Section && ((HomeFeed.Section)e).type==HomeFeed.TRENDING)rank=((HomeFeed.Section)e).items.indexOf(item);
             String kind="series".equals(item.kind)?"SERIES":"MOVIE";
             // "#n TRENDING" only for real TMDB trending titles; NEW only with proof (see HomeCards.badge).
-            String news="series".equals(item.kind)?SeriesNews.badge(item).label():item.isNew()?"NEW ON FLIX TOWN":null;
+            String news="series".equals(item.kind)?SeriesNews.badge(item).label():item.isNew()?"NEW RELEASE":null;
             hero.eyebrow.setText(rank>=0?"#"+(rank+1)+" TRENDING  ·  "+kind:news!=null?news+"  ·  "+kind:"FEATURED  ·  "+kind);
             hero.title.setText(item.title);
             hero.meta.setText(metaLine(item,null));
