@@ -41,7 +41,7 @@ ok "TMDB id used and verified (The Matrix)"            "$(q ratings.movie:1.rati
 ok "wrong provider id ignored, search finds 1999"       "$(q ratings.movie:2.tmdb_id <<< "$R")" "603"
 ok "year from \"(2018)\" picks the 2018 remake"         "$(q ratings.movie:3.rating <<< "$R")" "6.5"
 ok "same title, no year: ambiguous, no rating"          "$(q ratings.movie:4 <<< "$R")" "null"
-ok "2 votes of 10.0 is not a rating"                    "$(q ratings.movie:5 <<< "$R")" "null"
+ok "2 votes of 10.0 is not a rating"                    "$(q ratings.movie:5.rating <<< "$R")" "null"
 ok "TV match by title and year"                         "$(q ratings.series:6.rating <<< "$R")" "8.5"
 ok "two series named The Office, no year: none"         "$(q ratings.series:7 <<< "$R")" "null"
 ok "The Office (2005) is the US series"                 "$(q ratings.series:8.tmdb_id <<< "$R")" "2316"
