@@ -6,7 +6,7 @@ PASS  trending rank #1 is not shown as a rating
 PASS  Trending cards show TMDB ratings ★ x.x
 PASS  no provider '★ 10.0' in Trending
 PASS  trending title with too few TMDB votes shows no rating (The Hidden Voyage)
-FAIL  Latest Movies: NEW for a movie released this week
+PASS  Latest Movies: NEW for a movie released this week
 PASS  Latest Movies: some titles without a TMDB rating show none
   The Golden Harbor: 
   Iron Protocol: Iron Protocol|NEW SERIES|Iron Protocol|2026  ·  ★ 6.5  ·  Series
@@ -33,4 +33,4 @@ PASS  after restart: imported old show stays unbadged (The Golden Harbor)
 PASS  after restart: unchanged series still without badge (Broken Station)
 PASS  after restart: ratings shown from the saved cache
 PASS  no crash
-ratings & badges: 28 passed, 1 failed
+ratings & badges: 29 passed, 0 failed
