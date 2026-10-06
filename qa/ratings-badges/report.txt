@@ -6,31 +6,31 @@ PASS  trending rank #1 is not shown as a rating
 PASS  Trending cards show TMDB ratings ★ x.x
 PASS  no provider '★ 10.0' in Trending
 PASS  trending title with too few TMDB votes shows no rating (The Hidden Voyage)
-FAIL  Latest Movies: NEW for movies added this week
+FAIL  Latest Movies: NEW for a movie released this week
 PASS  Latest Movies: some titles without a TMDB rating show none
   The Golden Harbor: 
-  Iron Protocol: 
-  Broken Station: Broken Station|Broken Station|2007  ·  ★ 7.2  ·  Series
+  Iron Protocol: Iron Protocol|NEW SERIES|Iron Protocol|2026  ·  ★ 6.5  ·  Series
+  Broken Station: Broken Station|Broken Station|2007  ·  ★ 8.6  ·  Series
   Paper Garden: 
-FAIL  older series with a new episode: NEW EPISODES (The Golden Harbor)
-FAIL  recently added series: NEW SERIES (Iron Protocol)
+PASS  old premiere with newly uploaded episodes: no NEW badge (The Golden Harbor)
+PASS  recently premiered series: NEW SERIES (Iron Protocol)
 PASS  unchanged series with touched last_modified: no badge (Broken Station)
 PASS  series without episode times, first check: no badge (Paper Garden)
 PASS  first import: not every poster is NEW
-FAIL  badged series lead Latest TV Shows
+PASS  recently premiered series leads Latest TV Shows
 PASS  no provider '★ 10.0' on TV cards
 PASS  details page shows the TMDB rating ★ x.x
 PASS  details page never shows the provider 10
 PASS  browse cards show year · ★ rating
 PASS  browse cards without a rating show only the year
-  The Night Shift Files: The Night Shift Files|The Night Shift Files|2026  ·  ★ 8.6  ·  Series
+  The Night Shift Files: The Night Shift Files|NEW SERIES|The Night Shift Files|2026  ·  ★ 8.6  ·  Series
   Paper Garden: Paper Garden|Paper Garden|2008  ·  Series
-FAIL  series that appeared after the first import: NEW SERIES
-FAIL  series without episode times, new episode ID: NEW EPISODES (Paper Garden)
-FAIL  earlier badges kept (The Golden Harbor NEW EPISODES)
+PASS  recent premiere added after the first import: NEW SERIES
+PASS  importing an old episode does not earn NEW (Paper Garden)
+PASS  old show stays unbadged after refresh (The Golden Harbor)
 PASS  unchanged series still without badge (Broken Station)
-FAIL  after restart: badges come from saved state (The Golden Harbor)
+PASS  after restart: imported old show stays unbadged (The Golden Harbor)
 PASS  after restart: unchanged series still without badge (Broken Station)
 PASS  after restart: ratings shown from the saved cache
 PASS  no crash
-ratings & badges: 21 passed, 8 failed
+ratings & badges: 28 passed, 1 failed
