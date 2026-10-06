@@ -1,19 +1,22 @@
-10-01 21:23:02.095  2830  2830 I FlixTown: Refresh started
-10-01 21:23:03.021  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:23:03.938  2830  2830 I FlixTown: Refresh finished: updated
-10-01 21:24:25.180  2830  2830 I FlixTown: Back from background
-10-01 21:24:25.180  2830  2830 I FlixTown: Refresh started
-10-01 21:24:25.271  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:24:26.698  2830  2830 I FlixTown: Refresh finished: updated
-10-01 21:24:55.720  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:25:00.168  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:25:05.458  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:25:08.679  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:25:19.176  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:25:20.659  2830  2830 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:25:50.807  4872  4872 I FlixTown: Refresh started
-10-01 21:25:52.556  4872  4872 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-10-01 21:25:52.881  4872  4872 I FlixTown: Refresh finished: updated
-10-01 21:26:27.374  5094  5094 I FlixTown: Refresh started
-10-01 21:26:28.185  5094  5094 I FlixTown: Refresh finished: account expired
-10-01 21:26:28.196  5094  5094 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:00:17.129  2854  2854 I FlixTown: Refresh started
+10-06 06:00:18.133  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:00:19.647  2854  2854 I FlixTown: Refresh finished: updated
+10-06 06:00:55.272  2854  2854 I FlixTownQA: picker Sort by: Recently Added|Title A–Z|Top Rated|Release Year selected=0
+10-06 06:01:02.979  2854  2854 I FlixTownQA: picker Categories: All Movies|Action|Drama|Comedy|Thriller|Family|Sci-Fi selected=0
+10-06 06:01:39.431  2854  2854 I FlixTown: Back from background
+10-06 06:01:39.431  2854  2854 I FlixTown: Refresh started
+10-06 06:01:39.555  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:01:40.969  2854  2854 I FlixTown: Refresh finished: updated
+10-06 06:01:57.050  2854  2854 I FlixTownQA: picker Preferred audio language: Stream default|English|Spanish|French|German|Italian|Portuguese|Arabic|Hindi|Turkish|Russian|Dutch|Polish|Greek|Japanese|Korean|Chinese selected=0
+10-06 06:02:04.305  2854  2854 I FlixTownQA: picker Subtitle language: Device language (English)|English|Spanish|French|German|Italian|Portuguese|Arabic|Hindi|Turkish|Russian|Dutch|Polish|Greek|Japanese|Korean|Chinese selected=0
+10-06 06:02:09.864  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:02:14.500  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:02:19.698  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:02:22.864  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:02:33.424  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:02:35.019  2854  2854 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:03:04.901  4846  4846 I FlixTown: Refresh started
+10-06 06:03:05.561  4846  4846 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+10-06 06:03:07.146  4846  4846 I FlixTown: Refresh finished: updated
+10-06 06:03:41.423  5068  5068 I FlixTown: Refresh started
+10-06 06:03:42.048  5068  5068 I FlixTown: Refresh finished: account expired
