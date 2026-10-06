@@ -22,11 +22,11 @@ on:
       version_code:
         description: "versionCode (must be higher than the version customers have)"
         required: true
-        default: "10016"
+        default: "10020"
       version_name:
         description: "versionName shown in Settings"
         required: true
-        default: "3.7.1"
+        default: "3.8.0"
   # Also runs once when this file changes on a working branch (with the defaults above), so the
   # first production build does not depend on the workflow being on the default branch yet.
   push:
@@ -35,6 +35,7 @@ on:
 
 permissions:
   contents: read
+  actions: read   # the upgrade job downloads the earlier production APKs from their runs
 
 jobs:
   release:
@@ -48,8 +49,8 @@ jobs:
       PREVIEW_CERT: 426f5dda091757c0e4f6adc8d4a5adeff1f0c6d448cab643a92833b5b9ff11b7
       PACKAGE: com.myflixtown.tv.native
       PANEL_UPDATE_URL: https://panelsandapps.com/panels/flixtown2027/api/app-update.php
-      VERSION_CODE: ${{ inputs.version_code || '10016' }}
-      VERSION_NAME: ${{ inputs.version_name || '3.7.1' }}
+      VERSION_CODE: ${{ inputs.version_code || '10020' }}
+      VERSION_NAME: ${{ inputs.version_name || '3.8.0' }}
     steps:
       - name: Release signing secrets present
         run: |
@@ -112,6 +113,7 @@ jobs:
         run: |
           APK="$(ls dist/*.apk)"
           php panel/tests/inspect.php "$APK"; echo
+          php panel/tests/credentials_test.php
           bash .github/release/panel_check.sh "$APK" "$PACKAGE" "$VERSION_CODE" "$EXPECTED_CERT"
       - name: Package release-date panel endpoint
         run: |
@@ -121,10 +123,99 @@ jobs:
           printf '%s\\n' 'Replace api/ratings.php in the existing Flix Town app panel. Keep bootstrap.php, tmdb-match.php, configuration and credentials unchanged.' > dist/panel-api/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.7.1' }}-${{ inputs.version_code || '10016' }}
+          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.0' }}-${{ inputs.version_code || '10020' }}
           path: |
             dist/*.apk
             dist/RELEASE-INFO.txt
             dist/panel-api/
           if-no-files-found: error
           retention-days: 90
+
+  # Read-only checks of the live services the app uses (GET only; nothing is created or changed).
+  # Values are not printed, only status codes, JSON keys and the content server's host.
+  live-endpoints:
+    runs-on: ubuntu-latest
+    env:
+      PANEL: https://panelsandapps.com/panels/flixtown2027/api/
+    steps:
+      - name: Panel API, update endpoint, content server
+        run: |
+          fail=0
+          get(){ curl -sS -m 25 -o "$2" -w '%{http_code} %{content_type}' "$1" || echo "000 -"; }
+          r="$(get "${PANEL}config.php" cfg.json)"; echo "config.php -> $r"
+          python3 - cfg.json <<'PY' || fail=1
+          import json,sys,urllib.parse
+          d=json.load(open(sys.argv[1])); print("  keys:", ",".join(sorted(d)))
+          u=d.get("xtream_url",""); host=urllib.parse.urlparse(u).netloc
+          print("  content server host:", host or "(missing)")
+          open("xtream","w").write(u.rstrip("/")); sys.exit(0 if host else 1)
+          PY
+          r="$(get "${PANEL}app-update.php?package=com.myflixtown.tv.native&version_code=1" upd.json)"; echo "app-update.php (production package) -> $r"
+          python3 -c 'import json;d=json.load(open("upd.json"));print("  ok=%s package=%s versionCode=%s has_url=%s has_sha=%s"%(d.get("ok"),d.get("package_name") or d.get("package"),d.get("update_version_code") or d.get("version_code"),bool(d.get("apk_url") or d.get("update_url")),bool(d.get("sha256") or d.get("apk_sha256"))))' || { echo "::error::app-update.php is not JSON"; fail=1; }
+          r="$(get "${PANEL}app-update.php?package=com.myflixtown.tv.native.preview&version_code=1" prev.json)"; echo "app-update.php (preview package) -> $r"
+          python3 -c 'import json;d=json.load(open("prev.json"));print("  preview offered versionCode:",d.get("update_version_code"))' || true
+          r="$(get "${PANEL}trending.php" tr.json)"; echo "trending.php -> $r"
+          r="$(get "${PANEL}pair-start" ps.txt)"; echo "pair-start via GET (expect 405, nothing created) -> $r"
+          code="$(get "$(cat xtream)/player_api.php" xt.txt | cut -d' ' -f1)"; echo "content server player_api.php (no credentials) -> HTTP $code"
+          [ "$code" != "000" ] || { echo "::error::content server not reachable"; fail=1; }
+          r="$(get https://myflixtown.com/activate.php act.html)"; echo "myflixtown.com/activate.php -> $r"
+          grep -qi "<form" act.html && echo "  activation form present" || echo "  (no form found in page)"
+          exit $fail
+
+  # Upgrade from the earlier PRODUCTION builds (same package, same key) on a TV emulator. The
+  # emulator's network is switched off so neither build contacts the live panel (no pairing rows).
+  upgrade:
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.0' }}-${{ inputs.version_code || '10020' }}", path: new }
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.7.1-10016, path: old-10016, run-id: 37385757309, github-token: "${{ github.token }}" }
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.7.0-10015, path: old-10015, run-id: 36939071160, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Write upgrade test
+        run: |
+          cat > upgrade.sh <<'SH'
+          set -u; P=com.myflixtown.tv.native; NEW="$(ls new/*.apk)"; fail=0; mkdir -p shots
+          adb shell svc wifi disable; adb shell svc data disable; sleep 2
+          for OLD in old-10016/*.apk old-10015/*.apk; do
+            [ -f "$OLD" ] || continue; tag="$(basename "$OLD" .apk)"
+            adb uninstall $P >/dev/null 2>&1; adb logcat -c
+            adb install "$OLD" >/dev/null || { echo "FAIL  install $tag"; fail=1; continue; }
+            adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
+            adb shell screencap -p /sdcard/a.png; adb pull /sdcard/a.png "shots/$tag-before.png" >/dev/null
+            first="$(adb shell dumpsys package $P | grep -m1 firstInstallTime | tr -d '\r ')"
+            before="$(adb shell dumpsys package $P | grep -m1 versionCode | tr -d '\r')"
+            out="$(adb install -r "$NEW" 2>&1)"; echo "$out" | tail -1
+            echo "$out" | grep -q Success && echo "PASS  $tag -> new: installed over the existing app (same package and key)" || { echo "FAIL  $tag -> new: $out"; fail=1; continue; }
+            after="$(adb shell dumpsys package $P | grep -m1 versionCode | tr -d '\r')"
+            first2="$(adb shell dumpsys package $P | grep -m1 firstInstallTime | tr -d '\r ')"
+            echo "INFO  before: $before"; echo "INFO  after:  $after"
+            [ "$first" = "$first2" ] && echo "PASS  upgrade kept the install (and app data): $first2" || { echo "FAIL  reinstalled, not upgraded"; fail=1; }
+            adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
+            adb shell screencap -p /sdcard/b.png; adb pull /sdcard/b.png "shots/$tag-after.png" >/dev/null
+            adb shell dumpsys activity activities | grep -q "com.myflixtown.tv.native/com.flixtown.tv" && echo "PASS  new version opens after the upgrade" || { echo "FAIL  new version not in front"; fail=1; }
+            adb logcat -d | grep -q "FATAL EXCEPTION" && { echo "FAIL  crash"; adb logcat -d | grep -A12 "FATAL EXCEPTION" | head -30; fail=1; } || echo "PASS  no crash"
+          done
+          adb shell svc wifi enable; exit $fail
+          SH
+      - name: Upgrade on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash upgrade.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: upgrade-screens, path: shots/, retention-days: 14 }

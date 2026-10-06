@@ -47,6 +47,10 @@ public class LoginActivity extends Activity {
         Button remote=findViewById(R.id.remote_sign_in);
         // Shared Flix Town buttons: the remote form's Sign in is its one primary action.
         Ui.styleButton(remote,Ui.SECONDARY);Ui.styleButton(findViewById(R.id.sign_in),Ui.PRIMARY);Ui.styleButton(findViewById(R.id.back_to_qr),Ui.SECONDARY);
+        Button keyboard=findViewById(R.id.keyboard_mode);Ui.styleButton(keyboard,Ui.SECONDARY);
+        applyKeyboard(Api.prefs(this).getBoolean(LETTERS,false));
+        keyboard.setOnClickListener(v->{boolean letters=!Api.prefs(this).getBoolean(LETTERS,false);
+            Api.prefs(this).edit().putBoolean(LETTERS,letters).apply();applyKeyboard(letters);});
         remote.setOnClickListener(v->{qrPanel.setVisibility(View.GONE);remotePanel.setVisibility(View.VISIBLE);
             findViewById(R.id.username).requestFocus();});
         findViewById(R.id.back_to_qr).setOnClickListener(v->showQr());
@@ -67,6 +71,26 @@ public class LoginActivity extends Activity {
             java.io.File dir=new java.io.File(getFilesDir(),"catalog");java.io.File[] files=dir.listFiles();
             if(files!=null)for(java.io.File f:files)f.delete();
         }
+    }
+    /** Remembered per TV: accounts are digits, but older ones may contain letters. */
+    private static final String LETTERS="login_keyboard_letters";
+    /** Digits keypad by default (leading zeros are kept: the fields stay text), full keyboard on request. */
+    private void applyKeyboard(boolean letters){
+        EditText user=findViewById(R.id.username),pass=findViewById(R.id.password);
+        int userType=letters?android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            :android.text.InputType.TYPE_CLASS_NUMBER;
+        int passType=letters?android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            :android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD;
+        for(EditText field:new EditText[]{user,pass}){
+            int start=field.getSelectionStart();
+            field.setInputType(field==user?userType:passType);
+            if(field==pass)field.setTypeface(user.getTypeface());   // password input types reset the font
+            if(start>=0 && start<=field.length())field.setSelection(start);
+        }
+        ((Button)findViewById(R.id.keyboard_mode)).setText(letters?"123":"ABC");
+        View focus=getCurrentFocus();
+        InputMethodManager ime=(InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+        if(focus instanceof EditText && ime!=null)ime.restartInput(focus);
     }
     private CharSequence steps(){
         String[] lines={"Point your phone's camera at the code","Sign in and approve this TV","Flix Town opens here automatically"};

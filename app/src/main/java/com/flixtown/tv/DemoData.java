@@ -48,9 +48,10 @@ final class DemoData {
         if(url.contains("pair-start")){polls=0;return new JSONObject().put("code","FT4K2Q").put("verifier","demo")
             .put("activation_url","https://myflixtown.com/activate.php?code=FT4K2Q").toString();}
         if(url.contains("pair-poll")){polls++;
-            // Stays pending long enough to capture the QR screen, then approves.
+            // Stays pending long enough to capture the QR screen, then approves a digits-only account with
+            // leading zeros (the format the panel generates), so QA proves they survive pairing.
             return polls<5||holdPairing?new JSONObject().put("status","pending").toString()
-                :new JSONObject().put("status","approved").put("account",new JSONObject().put("username","demo").put("password","demo")).toString();}
+                :new JSONObject().put("status","approved").put("account",new JSONObject().put("username","0048213977").put("password","0000731946205518")).toString();}
         if(url.contains("renewal-request"))return new JSONObject().put("ok",true).toString();
         if(url.contains("tmdb.php")){JSONArray cast=new JSONArray();
             String[] names={"Ava Moreno","Daniel Okafor","Mia Laurent","Jonah Reyes","Priya Nair","Leo Hart","Nora Quinn","Sam Whitaker"};

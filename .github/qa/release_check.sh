@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Release check on a 1080p Android TV emulator (QA build, offline demo server, real demo video).
+# Release check on an Android TV emulator (1080p and 720p) (QA build, offline demo server, real demo video).
 # Every step is checked from the live UI (uiautomator) or Android's own state (activity, IME),
 # not just screenshotted. Results: qa/release-check/report.txt and qa/release-check/screens/*.png
 set -u
 PKG=com.myflixtown.tv.native.qa
 APK=app/build/outputs/apk/qa/app-qa.apk
-OUT=qa/release-check; SHOTS=$OUT/screens
+OUT=${QA_OUT:-qa/release-check}; SHOTS=$OUT/screens
 rm -rf "$OUT" && mkdir -p "$SHOTS"
 REPORT="$OUT/report.txt"; : > "$REPORT"
 note(){ echo "$*" | tee -a "$REPORT"; }
@@ -65,25 +65,65 @@ wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && retu
 secs(){ python3 -c 'import sys;p=sys.argv[1].lstrip("-").split(":");print(sum(int(x)*60**i for i,x in enumerate(reversed(p))) if all(x.isdigit() for x in p) else -1)' "$1"; }
 refreshes(){ adb logcat -d -s FlixTown:I | grep -c "Refresh started" ; }
 
+# Settings › "Signed in as …" line (the saved account, exactly as the server knows it).
+signed_in_as(){ key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "Settings" 8 >/dev/null; key DPAD_CENTER; sleep 2
+  dump; grep -o 'Signed in as [^. "]*' "$OUT/ui.xml" | head -1; }
+ime_type(){ adb shell dumpsys input_method | grep -o 'inputType=0x[0-9a-f]*' | tail -1; }
+
 # ---------------- 1. QR activation, remote sign-in and keyboard ----------------
+# 1a. QR approval delivers a digits-only account with leading zeros (demo pairing approves 0048213977).
+launch --ez demo_reset true
+wait_activity HomeActivity 45 && ok "QR activation approved: Home opened" || bad "QR activation did not reach Home ($(resumed))"
+sleep 6
+who="$(signed_in_as)"
+[ "$who" = "Signed in as 0048213977" ] && ok "QR account kept as text with leading zeros ($who)" || bad "QR account changed: '$who'"
+shot 00-settings-qr-account 0.2
+
+# 1b. Remote sign-in: QR first, keyboard closed until a field is chosen, digits keypad, letters on request.
 launch --ez demo_reset true --ez demo_hold_qr true
 wait_for "FT4K2Q" 20 && ok "QR activation: code shown next to the QR" || bad "QR activation code not shown"
 check "QR activation: QR image drawn" 'grep -q "Activation QR code" "$OUT/ui.xml"'
+check "QR screen wording has no panel/preview/package/build references" '! grep -Eiq "panel|preview|com\.myflixtown|build [0-9]|versionCode" "$OUT/ui.xml"'
 shot 01-qr-activation 0.3
-check "QR screen: 'Sign in with remote instead' focused (keyboard closed)" 'focused | grep -q "Sign in with remote instead"'
+check "QR screen: 'Sign in with remote' focused (keyboard closed)" 'focused | grep -q "Sign in with remote"'
 check "keyboard does not open by itself" '! adb shell dumpsys input_method | grep -q "mInputShown=true"'
 key DPAD_CENTER;                             shot 02-remote-form 0.6
 check "remote sign-in form opens with Username focused" 'focused_id | grep -q ":id/username"'
+check "keyboard stays closed when the form opens" '! adb shell dumpsys input_method | grep -q "mInputShown=true"'
+# Letters toggle (older accounts may contain letters).
+key DPAD_UP
+check "ABC keyboard button reachable above the fields" 'focused_id | grep -q ":id/keyboard_mode"'
+key DPAD_CENTER;                             sleep 0.6
+check "ABC switches to the full keyboard (button now offers 123)" '[ "$(text_of_id keyboard_mode)" = "123" ]'
+key DPAD_DOWN DPAD_CENTER;                   sleep 1.5
+check "full keyboard: text input type" 'ime_type | grep -q "inputType=0x80001"'
+adb shell input text ab12;                   sleep 0.5
+check "full keyboard accepts letters (older accounts)" '[ "$(text_of_id username)" = "ab12" ]'
+shot 03a-letters-keyboard 0.3
+key BACK;                                    sleep 1         # closes the keyboard only
+check "Back closes the keyboard and stays on the form" 'in_activity LoginActivity && has ":id/remote_panel" && ! adb shell dumpsys input_method | grep -q "mInputShown=true"'
+key MOVE_END DEL DEL DEL DEL DEL DEL
+key DPAD_UP DPAD_CENTER;                     sleep 0.6
+check "123 switches back to the digits keypad" '[ "$(text_of_id keyboard_mode)" = "ABC" ]'
+key DPAD_DOWN;                               sleep 0.3
+check "username field empty again" '[ -z "$(text_of_id username)" ] || [ "$(text_of_id username)" = "Username" ]'
 key DPAD_CENTER;                             sleep 1.5
 check "OK on a field opens the on-screen keyboard" 'adb shell dumpsys input_method | grep -q "mInputShown=true"'
+check "digits keypad: number input type" 'ime_type | grep -q "inputType=0x2$"'
 shot 03-keyboard-open 0.3
-adb shell input text demo;                   sleep 0.5
+adb shell input text 0012345678;             sleep 0.5
+check "username keeps its leading zeros (0012345678)" '[ "$(text_of_id username)" = "0012345678" ]'
 key ENTER;                                   sleep 1         # IME "Next" → Password
-adb shell input text demo;                   sleep 0.5
+check "Next moves to Password" 'focused_id | grep -q ":id/password"'
+check "password uses the digits keypad" 'ime_type | grep -q "inputType=0x12$"'
+adb shell input text 0000123456789012;       sleep 0.5
 shot 04-form-filled 0.3
 key ENTER                                                    # IME "Done" → Sign in
 wait_activity HomeActivity 40 && ok "signed in with the remote keyboard (Home opened)" || bad "remote sign-in did not reach Home ($(resumed))"
 sleep 6;                                     shot 05-home-after-sign-in 0.5
+who="$(signed_in_as)"
+[ "$who" = "Signed in as 0012345678" ] && ok "remote account saved exactly as typed ($who)" || bad "remote account changed: '$who'"
+shot 05b-settings-remote-account 0.2
 
 # ---------------- 2. Saved login, startup refresh, no refresh during navigation ----------------
 adb logcat -c
@@ -264,6 +304,10 @@ check "renewal request is sent" 'has "Request sent"'
 shot 24-renewal-sent 0.2
 launch;                                      sleep 4
 wait_activity HomeActivity 30 && ok "after the payment is confirmed (account active) Flix Town reopens" || bad "active account did not leave renewal ($(resumed))"
+sleep 5
+who="$(signed_in_as)"
+[ "$who" = "Signed in as 0012345678" ] && ok "renewal kept the same account ($who)" || bad "account after renewal: '$who'"
+key BACK; sleep 1
 
 # ---------------- 10. Performance sample (emulator only) ----------------
 adb shell dumpsys gfxinfo $PKG reset > /dev/null
