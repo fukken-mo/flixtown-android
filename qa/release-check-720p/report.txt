@@ -1,0 +1,82 @@
+PASS  QR activation approved: Home opened
+PASS  QR account kept as text with leading zeros (Signed in as 0048213977)
+PASS  QR activation: code shown next to the QR
+PASS  QR activation: QR image drawn
+FAIL  QR screen wording has no panel/preview/package/build references
+PASS  QR screen: 'Sign in with remote' focused (keyboard closed)
+PASS  keyboard does not open by itself
+PASS  remote sign-in form opens with Username focused
+PASS  keyboard stays closed when the form opens
+PASS  ABC keyboard button reachable above the fields
+PASS  ABC switches to the full keyboard (button now offers 123)
+PASS  full keyboard: text input type
+PASS  full keyboard accepts letters (older accounts)
+PASS  Back closes the keyboard and stays on the form
+PASS  123 switches back to the digits keypad
+PASS  username field empty again
+PASS  OK on a field opens the on-screen keyboard
+PASS  digits keypad: number input type
+PASS  username keeps its leading zeros (0012345678)
+PASS  Next moves to Password
+PASS  password uses the digits keypad
+PASS  signed in with the remote keyboard (Home opened)
+PASS  remote account saved exactly as typed (Signed in as 0012345678)
+PASS  saved login: relaunch goes straight to Home
+PASS  startup: one catalog refresh on launch
+PASS  no catalog refresh during normal navigation
+PASS  intro plays when the panel enables it, with Skip
+PASS  Skip intro opens Home
+PASS  intro disabled in the panel: no intro
+PASS  Sort chip reachable from the grid
+PASS  sort picker lists Title A–Z and Top Rated
+PASS  sorted by title
+PASS  grid titles are in A–Z order
+PASS  category filter applied (chip shows the category)
+PASS  details page opens for the chosen title
+PASS  Back returns focus to the same poster (The Golden Horizon and the Long Road Home)
+PASS  details: Play is the focused primary action
+PASS  details: cast row with names and portraits
+PASS  details: More Like This row
+PASS  trailer button enabled
+PASS  trailer plays in the player
+PASS  Back from the trailer returns to details
+PASS  My List toggles on details ('+ My List' → '✓ My List')
+PASS  My List page shows the saved title (The Golden Horizon and the Long Road Home)
+PASS  series details: season selector
+PASS  season picker lists every season
+PASS  season 2 selected
+PASS  episode plays from the episode row
+PASS  details now offers Continue for the show
+PASS  resume prompt: 'Continue watching?'
+PASS  resume prompt offers Continue from … and Start over
+PASS  Start over plays from the beginning (5s)
+PASS  Up shows the player controls
+PASS  controls hide by themselves
+PASS  seeking: Right +10s, Left ×2 −20s (11s → 22s → 3s)
+INFO  10-06 05:48:25.332  5061  5061 I FlixTownQA: tracks type=1 count=6 [English · Stereo · AAC, German · Stereo · AAC, Italian · Stereo · AAC, French · Stereo · AAC, Spanish · Stereo · AAC, English · 5.1 · AAC]
+INFO  10-06 05:48:25.332  5061  5061 I FlixTownQA: picker Audio: English · Stereo · AAC|German · Stereo · AAC|Italian · Stereo · AAC|French · Stereo · AAC|Spanish · Stereo · AAC|English · 5.1 · AAC selected=0
+PASS  audio picker lists the stream's audio tracks
+PASS  audio track changed (Audio · English → Audio · German)
+INFO  10-06 05:48:37.201  5061  5061 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+PASS  subtitle picker offers Off and the stream's languages
+PASS  subtitles changed (Subtitles · Off → Subtitles · English)
+PASS  Back with controls shown: hides them, stays in the player
+PASS  Back again leaves the player
+INFO  playing: S2 · E3   Chapter 3: Tide
+PASS  seeking: Right × 4 jumps forward (8s → 50s)
+PASS  next episode offered near the end ('Up next')
+PASS  Up next shows the countdown (Starts in 9 seconds  ·  S2 · E4   Chapter 4: Orchard)
+PASS  Play now starts the next episode (S2 · E3   Chapter 3: Tide → S2 · E4   Chapter 4: Orchard)
+PASS  expired account opens the renewal screen
+PASS  renewal shows plans with panel prices
+PASS  renewal shows the panel's Cash App details
+PASS  renewal request is sent
+PASS  after the payment is confirmed (account active) Flix Town reopens
+PASS  renewal kept the same account (Signed in as 0012345678)
+INFO  emulator frames: Total frames rendered: 162
+INFO  emulator frames: Janky frames: 162 (100.00%)
+INFO  emulator frames: Janky frames (legacy): 162 (100.00%)
+INFO  emulator frames: 50th percentile: 97ms
+INFO  emulator frames: 90th percentile: 125ms
+PASS  no crash during the run
+release check: 71 passed, 1 failed
