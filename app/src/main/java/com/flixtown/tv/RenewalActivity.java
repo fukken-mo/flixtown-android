@@ -60,15 +60,19 @@ public class RenewalActivity extends Activity {
         FrameLayout shell=new FrameLayout(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
         View wash=new View(this);wash.setBackgroundResource(R.drawable.login_backdrop);shell.addView(wash,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout root=Ui.row(this);root.setClipChildren(false);
-        root.setPadding(Ui.dp(this,56),Ui.safeY(this),Ui.dp(this,56),Ui.safeY(this));
+        root.setPadding(Ui.dp(this,44),Ui.safeY(this),Ui.dp(this,56),Ui.safeY(this));
         shell.addView(root,new FrameLayout.LayoutParams(-1,-1));
 
         ScrollView leftScroll=new ScrollView(this);leftScroll.setVerticalScrollBarEnabled(false);leftScroll.setClipChildren(false);leftScroll.setClipToPadding(false);
         root.addView(leftScroll,new LinearLayout.LayoutParams(0,-1,1));
-        LinearLayout left=Ui.column(this);left.setClipChildren(false);left.setPadding(Ui.dp(this,4),Ui.dp(this,4),Ui.dp(this,28),Ui.dp(this,4));
+        LinearLayout left=Ui.column(this);left.setClipChildren(false);left.setPadding(Ui.dp(this,12),Ui.dp(this,6),Ui.dp(this,28),Ui.dp(this,6));   // room for the focus scale and halo
         leftScroll.addView(left);
         ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.flix_logo);logo.setScaleType(ImageView.ScaleType.FIT_START);
-        left.addView(logo,new LinearLayout.LayoutParams(Ui.dp(this,96),Ui.dp(this,50)));
+        // Logo and the account switch share the top row, so the whole screen fits at 720p and 1080p.
+        LinearLayout top=Ui.row(this);top.setClipChildren(false);top.setGravity(Gravity.CENTER_VERTICAL);left.addView(top,new LinearLayout.LayoutParams(-1,-2));
+        top.addView(logo,new LinearLayout.LayoutParams(0,Ui.dp(this,50),1));
+        Button logout=Ui.button(this,"Use a different account");logout.setTextSize(14);logout.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);
+        top.addView(logout,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,42)));
         TextView heading=Ui.heading(this,"Your subscription has ended",28);
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=Ui.dp(this,8);left.addView(heading,hp);
         accountLine=Ui.text(this,"",16);accountLine.setTextColor(Ui.TEXT_2);left.addView(accountLine);
@@ -98,8 +102,6 @@ public class RenewalActivity extends Activity {
         // The answer to "Send" / "Check again" sits right under those buttons, inside the safe area.
         status=Ui.text(this,"",15);status.setTextColor(Ui.TEXT_2);status.setMaxLines(3);
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=Ui.dp(this,8);left.addView(status,sp);
-        Button logout=Ui.button(this,"Use a different account");
-        LinearLayout.LayoutParams lp=buttonParams(-2,0);left.addView(logout,lp);logout.setTextSize(15);
         logout.setOnClickListener(v->Ui.dialog(this,"Sign out of this account?","You can sign in with another account on the next screen.",
             new String[]{"Cancel","Sign out"},0,i->{if(i==1){AccountStore.clear(this);Api.prefs(this).edit().remove("expired").apply();
                 startActivity(new Intent(this,LoginActivity.class));finish();}},null));

@@ -83,7 +83,7 @@ shot 00-settings-qr-account 0.2
 launch --ez demo_reset true --ez demo_hold_qr true
 wait_for "FT4K2Q" 20 && ok "QR activation: code shown next to the QR" || bad "QR activation code not shown"
 check "QR activation: QR image drawn" 'grep -q "Activation QR code" "$OUT/ui.xml"'
-check "QR screen wording has no panel/preview/package/build references" '! grep -Eiq "panel|preview|com\.myflixtown|build [0-9]|versionCode" "$OUT/ui.xml"'
+check "QR screen wording has no panel/preview/package/build references" '! grep -oE "(text|content-desc)=\"[^\"]*\"" "$OUT/ui.xml" | grep -Eiq "panel|preview|com\.myflixtown|build [0-9]|versionCode"'
 shot 01-qr-activation 0.3
 check "QR screen: 'Sign in with remote' focused (keyboard closed)" 'focused | grep -q "Sign in with remote"'
 check "keyboard does not open by itself" '! adb shell dumpsys input_method | grep -q "mInputShown=true"'

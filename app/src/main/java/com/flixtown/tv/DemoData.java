@@ -143,8 +143,9 @@ final class DemoData {
         JSONArray items=new JSONObject(body).getJSONArray("items");JSONObject out=new JSONObject();
         for(int i=0;i<items.length();i++){JSONObject it=items.getJSONObject(i);String key=it.getString("key");
             int id=Integer.parseInt(key.substring(key.indexOf(':')+1));
+            // TMDB agrees with the demo server: movie 1000 and series 5001/5099 were released 3 days ago.
             if(id%6==0||id==5003)out.put(key,JSONObject.NULL);
-            else out.put(key,new JSONObject().put("rating",Math.round((5.8+(id*7%35)/10.0)*10)/10.0).put("votes",100+id%900).put("tmdb_id",id).put("release_date",id==5001||id==5099?releaseDate(base()-3*DAY):"2000-01-01"));}
+            else out.put(key,new JSONObject().put("rating",Math.round((5.8+(id*7%35)/10.0)*10)/10.0).put("votes",100+id%900).put("tmdb_id",id).put("release_date",id==1000||id==5001||id==5099?releaseDate(base()-3*DAY):"2000-01-01"));}
         return new JSONObject().put("ratings",out).toString();
     }
     /** TMDB trending as the panel would answer: a mix of titles on and not on the demo server. */

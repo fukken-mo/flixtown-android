@@ -103,7 +103,10 @@ public class LoginActivity extends Activity {
         return out;
     }
     private void submit(){EditText user=findViewById(R.id.username),pass=findViewById(R.id.password);
+        View focused=getCurrentFocus();   // close the keyboard so the result and the buttons are visible
+        if(focused!=null)((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focused.getWindowToken(),0);
         validate(user.getText().toString().trim(),pass.getText().toString());}
+    private void say(String text,int color){message.setTextColor(color);message.setText(text);message.setVisibility(text.isEmpty()?View.GONE:View.VISIBLE);}
     private void showQr(){View focused=getCurrentFocus();if(focused!=null){
         InputMethodManager ime=(InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);ime.hideSoftInputFromWindow(focused.getWindowToken(),0);}
         remotePanel.setVisibility(View.GONE);qrPanel.setVisibility(View.VISIBLE);findViewById(R.id.remote_sign_in).requestFocus();}
@@ -114,8 +117,8 @@ public class LoginActivity extends Activity {
         }
         return super.dispatchKeyEvent(event);
     }
-    private void validate(String user,String pass){if(user.isEmpty()||pass.isEmpty()){message.setText("Enter your username and password.");return;}
-        message.setTextColor(Ui.TEXT_2);message.setText("Checking your account…");Api.IO.execute(()->{try{
+    private void validate(String user,String pass){if(user.isEmpty()||pass.isEmpty()){say("Enter your username and password.",0xFFF0A29F);return;}
+        say("Checking your account…",Ui.TEXT_2);Api.IO.execute(()->{try{
             JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");String server=config.getString("xtream_url");
             JSONObject account=Api.get(server.replaceAll("/+$","")+"/player_api.php?username="+Api.enc(user)+"&password="+Api.enc(pass));
             JSONObject info=account.optJSONObject("user_info");if(info==null||(!"Active".equalsIgnoreCase(info.optString("status"))&&
@@ -124,8 +127,7 @@ public class LoginActivity extends Activity {
                 .putString("account_status",info.optString("status","")).putString("account_exp_date",info.optString("exp_date","")).apply();
             Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
             runOnUiThread(()->saveAndGo(server,user,pass));
-        }catch(Exception e){runOnUiThread(()->{message.setTextColor(0xFFF0A29F);
-            message.setText(e instanceof IllegalArgumentException?e.getMessage():"Sign in failed. Check your connection and try again.");});}});
+        }catch(Exception e){runOnUiThread(()->say(e instanceof IllegalArgumentException?e.getMessage():"Sign in failed. Check your connection and try again.",0xFFF0A29F));}});
     }
     private void startPair(){status.setText("Preparing your code…");Api.IO.execute(()->{try{
         JSONObject result=Api.post("pair-start",new JSONObject());pairCode=result.getString("code");verifier=result.getString("verifier");
@@ -148,7 +150,7 @@ public class LoginActivity extends Activity {
         }else handler.postDelayed(this::poll,3000);
     }catch(Exception e){handler.postDelayed(this::poll,4000);}});}
     private void saveAndGo(String server,String user,String pass){polling=false;try{AccountStore.save(this,user,pass,server);continueSignedIn();}
-        catch(Exception e){message.setText("Could not save the account on this TV.");}}
+        catch(Exception e){say("Could not save the account on this TV.",0xFFF0A29F);}}
     /** Fresh launch: start the catalog refresh first so it runs during any intro. */
     private void continueSignedIn(){
         if(Api.prefs(this).getBoolean("expired",false)){startActivity(new Intent(this,RenewalActivity.class));finish();return;}

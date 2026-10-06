@@ -31,7 +31,7 @@
                 <Button android:id="@+id/remote_sign_in" android:layout_width="wrap_content" android:layout_height="42dp"
                     android:layout_marginStart="10dp" android:text="Sign in with remote" android:textAllCaps="false"
                     android:textSize="14sp" android:fontFamily="sans-serif-medium" android:singleLine="true"
-                    android:paddingStart="18dp" android:paddingEnd="18dp" android:minWidth="0dp" android:minHeight="0dp"
+                    android:paddingStart="18dp" android:paddingEnd="18dp" android:minWidth="196dp" android:minHeight="0dp" android:gravity="center"
                     android:stateListAnimator="@null" android:focusable="true" android:focusableInTouchMode="true" />
             </LinearLayout>
         </LinearLayout>
@@ -77,6 +77,10 @@
                 android:fontFamily="sans-serif-medium" android:paddingStart="16dp" android:paddingEnd="16dp" android:minWidth="0dp"
                 android:minHeight="0dp" android:stateListAnimator="@null" android:contentDescription="Switch keyboard" />
         </LinearLayout>
+        <!-- Messages sit above the fields: the on-screen keyboard covers the lower half of the screen. -->
+        <TextView android:id="@+id/login_message" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="@color/flix_error" android:textSize="15sp" android:maxLines="2"
+            android:visibility="gone" />
         <EditText android:id="@+id/username" android:layout_width="match_parent" android:layout_height="50dp"
             android:layout_marginTop="16dp" android:singleLine="true" android:hint="Username" android:imeOptions="actionNext|flagNoExtractUi"
             android:inputType="number" android:textColor="@color/flix_text" android:textColorHint="@color/flix_text_3"
@@ -96,7 +100,5 @@
                 android:fontFamily="sans-serif-medium" android:paddingStart="26dp" android:paddingEnd="26dp"
                 android:stateListAnimator="@null" android:minHeight="0dp" />
         </LinearLayout>
-        <TextView android:id="@+id/login_message" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="10dp" android:textColor="@color/flix_error" android:textSize="15sp" android:maxLines="2" />
     </LinearLayout>
 </FrameLayout>
