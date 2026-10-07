@@ -22,11 +22,11 @@ on:
       version_code:
         description: "versionCode (must be higher than the version customers have)"
         required: true
-        default: "10020"
+        default: "10021"
       version_name:
         description: "versionName shown in Settings"
         required: true
-        default: "3.8.0"
+        default: "3.8.1"
   # Also runs once when this file changes on a working branch (with the defaults above), so the
   # first production build does not depend on the workflow being on the default branch yet.
   push:
@@ -49,8 +49,8 @@ jobs:
       PREVIEW_CERT: 426f5dda091757c0e4f6adc8d4a5adeff1f0c6d448cab643a92833b5b9ff11b7
       PACKAGE: com.myflixtown.tv.native
       PANEL_UPDATE_URL: https://panelsandapps.com/panels/flixtown2027/api/app-update.php
-      VERSION_CODE: ${{ inputs.version_code || '10020' }}
-      VERSION_NAME: ${{ inputs.version_name || '3.8.0' }}
+      VERSION_CODE: ${{ inputs.version_code || '10021' }}
+      VERSION_NAME: ${{ inputs.version_name || '3.8.1' }}
     steps:
       - name: Release signing secrets present
         run: |
@@ -123,7 +123,7 @@ jobs:
           printf '%s\\n' 'Replace api/ratings.php in the existing Flix Town app panel. Keep bootstrap.php, tmdb-match.php, configuration and credentials unchanged.' > dist/panel-api/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.0' }}-${{ inputs.version_code || '10020' }}
+          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.1' }}-${{ inputs.version_code || '10021' }}
           path: |
             dist/*.apk
             dist/RELEASE-INFO.txt
@@ -170,7 +170,10 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.0' }}-${{ inputs.version_code || '10020' }}", path: new }
+        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.1' }}-${{ inputs.version_code || '10021' }}", path: new }
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.0-10020, path: old-10020, run-id: 37422757283, github-token: "${{ github.token }}" }
+        continue-on-error: true
       - uses: actions/download-artifact@v4
         with: { name: FlixTown-PRODUCTION-signed-3.7.1-10016, path: old-10016, run-id: 37385757309, github-token: "${{ github.token }}" }
       - uses: actions/download-artifact@v4
@@ -186,7 +189,7 @@ jobs:
           cat > upgrade.sh <<'SH'
           set -u; P=com.myflixtown.tv.native; NEW="$(ls new/*.apk)"; fail=0; mkdir -p shots
           adb shell svc wifi disable; adb shell svc data disable; sleep 2
-          for OLD in old-10016/*.apk old-10015/*.apk; do
+          for OLD in old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
             [ -f "$OLD" ] || continue; tag="$(basename "$OLD" .apk)"
             adb uninstall $P >/dev/null 2>&1; adb logcat -c
             adb install "$OLD" >/dev/null || { echo "FAIL  install $tag"; fail=1; continue; }

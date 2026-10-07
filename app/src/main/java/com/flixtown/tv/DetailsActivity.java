@@ -71,6 +71,8 @@ public class DetailsActivity extends Activity {
         return new Catalog.Item(j,kind);
     }
     private static String join(String a,String b){return a.isEmpty()?b:b.isEmpty()?a:a+"   ·   "+b;}
+    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
+    @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onRestart(){super.onRestart();if(watch!=null)watch.setText(watchLabel());}
     private String resumeKey(){return kind+":"+id;}
     private String watchLabel(){

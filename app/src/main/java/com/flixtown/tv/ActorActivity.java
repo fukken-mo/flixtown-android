@@ -18,6 +18,8 @@ import java.util.Set;
 public class ActorActivity extends Activity {
     private LinearLayout content;
     private TextView message;
+    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
+    @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override public void onCreate(Bundle state){super.onCreate(state);Images.init(this);
         LinearLayout shell=Ui.column(this);shell.setBackgroundColor(Ui.BG);Ui.pad(shell,this,65,36,50,20);setContentView(shell);
         String name=getIntent().getStringExtra("actor_name");if(name==null)name="Actor";

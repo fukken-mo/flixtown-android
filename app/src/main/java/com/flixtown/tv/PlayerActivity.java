@@ -470,6 +470,8 @@ public class PlayerActivity extends Activity {
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
     }
+    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
+    @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onStop(){
         handler.removeCallbacksAndMessages(null);
         if(dialog!=null){dialog.dismiss();dialog=null;}

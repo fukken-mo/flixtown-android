@@ -157,7 +157,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         browseGrid.setPadding(browseGrid.getPaddingLeft(),Ui.dp(this,4),browseGrid.getPaddingRight(),safeY);
     }
 
-    @Override protected void onResume(){super.onResume();resumed=true;scheduleRotation();
+    @Override protected void onResume(){super.onResume();resumed=true;ScreenAwake.on(this);scheduleRotation();
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}}
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
     @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
@@ -169,7 +169,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         return resumed && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
             && (exitDialog==null || !exitDialog.isShowing());
     }
-    @Override protected void onPause(){resumed=false;handler.removeCallbacks(rotateHero);super.onPause();}
+    @Override protected void onPause(){resumed=false;ScreenAwake.off(this);handler.removeCallbacks(rotateHero);super.onPause();}
     @Override protected void onRestart(){super.onRestart();refreshAfterReturn();}
 
     /* ---------------- Startup loading screen ---------------- */
