@@ -10,10 +10,10 @@ PASS  D-pad Down: Remove from Continue Watching
 PASS  Back closes the menu, nothing removed, focus back on the card
 PASS  focus on the movie card
 PASS  normal OK on a movie: player asks 'Continue watching?' (unchanged)
-PASS  Resume: plays from the saved position (0:20) without asking (23s)
+PASS  Resume: plays from the saved position (0:20) without asking (22s)
 PASS  Start over (show): the saved episode from 0:00, no prompt (1s)
 FAIL  after Start over the row still has both titles (nothing lost)
-      at: PlayerActivity focus=''
+      at: HomeActivity focus='Broken Station'
 PASS  focus on the show card before removing
 PASS  Remove: the show leaves the row at once (The Crimson Garden)
 PASS  the show's saved progress is gone (episode, queued next episode, row entry)
