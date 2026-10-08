@@ -67,6 +67,11 @@ public class LoginActivity extends Activity {
         DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);
         DemoData.intro=getIntent().getBooleanExtra("demo_intro",false);
         DemoData.holdPairing=getIntent().getBooleanExtra("demo_hold_qr",false);
+        if(getIntent().getBooleanExtra("demo_continue",false)){
+            // Fixed starting point for the Continue Watching test: a show at S1 E2 and a movie, both at 0:20.
+            Catalog.saveProgress(this,"series","5002","9102","mkv","9103","mkv",20000,3000000);
+            Catalog.saveProgress(this,"movie","1000",null,null,null,null,20000,6840000);
+        }
         if(getIntent().getBooleanExtra("demo_clear_cache",false)){
             java.io.File dir=new java.io.File(getFilesDir(),"catalog");java.io.File[] files=dir.listFiles();
             if(files!=null)for(java.io.File f:files)f.delete();

@@ -65,6 +65,10 @@ wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && retu
 secs(){ python3 -c 'import sys;p=sys.argv[1].lstrip("-").split(":");print(sum(int(x)*60**i for i,x in enumerate(reversed(p))) if all(x.isdigit() for x in p) else -1)' "$1"; }
 refreshes(){ adb logcat -d -s FlixTown:I | grep -c "Refresh started" ; }
 hold_ok(){ adb shell input keyevent --longpress KEYCODE_DPAD_CENTER; sleep 1.2; }
+# The app's saved settings (QA build is debuggable): proves what is really stored, not only what is shown.
+prefs(){ adb shell run-as $PKG cat shared_prefs/flix.xml 2>/dev/null; }
+# Saved progress for one title: its resume_* keys or its entry in the Continue Watching list (not My List).
+progress_of(){ prefs | grep -Eq "name=\"resume_[a-z_]*$1\"|name=\"continue_ids\">[^<]*$1"; }
 # On a failed check, record where the app was (activity + focused view) so a failure is explainable.
 check(){ if eval "$2"; then ok "$1"; else bad "$1"; note "      at: $(resumed | grep -o '[A-Za-z]*Activity' | tail -1) focus='$(focused)'"; fi; }
 # Titles of the cards in the Continue Watching row, in order (empty when the row is gone).
@@ -89,33 +93,24 @@ for n in root.iter('node'):
 PY
 }
 back_home(){ for i in 1 2 3 4; do in_activity HomeActivity && return 0; key BACK; sleep 1.2; done; in_activity HomeActivity; }
-# Home tab, then the first card of the first row under the hero (Continue Watching when it exists).
-home_row(){ back_home; key DPAD_LEFT; focus_to DPAD_UP "Home" 5; key DPAD_CENTER; sleep 2.5; key DPAD_DOWN; sleep 1.5; }
+# Home tab, up to the hero, then the first card of the first row under it (Continue Watching).
+home_row(){ back_home; key DPAD_LEFT; focus_to DPAD_UP "Home" 5; key DPAD_CENTER; sleep 2.5
+  key DPAD_UP DPAD_UP DPAD_UP; sleep 0.8; key DPAD_DOWN; sleep 1.5; }
 
-# ---------------- set up: real progress for one movie (also in My List) and one show ----------------
-launch --ez demo_reset true
+# ---------------- set up: a movie (also put in My List) and a show with saved progress ----------------
+launch --ez demo_reset true --ez demo_continue true
 wait_activity HomeActivity 45 && sleep 8
 key DPAD_LEFT DPAD_DOWN DPAD_CENTER;         sleep 2.5        # menu -> Movies
-movie="$(focused)"
+listed="$(focused)"
 key DPAD_CENTER;                             sleep 3.5        # details
 focus_to DPAD_RIGHT "My List" 3; key DPAD_CENTER; sleep 0.8
-check "set up: '$movie' added to My List" 'focused | grep -q "✓"'
-focus_to DPAD_LEFT "Play" 3; key DPAD_CENTER
-wait_activity PlayerActivity 10; sleep 18
-key BACK; sleep 1; in_activity PlayerActivity && key BACK
-wait_activity DetailsActivity 6; key BACK; sleep 1.5
-key DPAD_LEFT; focus_to DPAD_DOWN "TV Shows" 3; key DPAD_CENTER; sleep 2.5      # Movies -> TV Shows is down
-show="$(focused)"
-check "set up: TV Shows grid, first show '$show'" 'in_activity HomeActivity && [ -n "$show" ] && ! has "Movie or show title"' 
-key DPAD_CENTER;                             sleep 4
-focus_to DPAD_DOWN "Season 1" 3; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER   # first episode
-wait_activity PlayerActivity 10; sleep 18
-key BACK; sleep 1; in_activity PlayerActivity && key BACK
-wait_activity DetailsActivity 6; key BACK; sleep 1.5
+check "set up: '$listed' added to My List" 'focused | grep -q "✓"'
 home_row
 cards="$(continue_cards)"
-check "Continue Watching shows the show and the movie ($cards)" '[ "$cards" = "$show|$movie" ]'
-check "focus on the first Continue Watching card ($show)" '[ "$(focused)" = "$show" ]'
+movie="${cards%%|*}"; show="${cards##*|}"
+check "Continue Watching shows the seeded movie and show ($cards)" '[ -n "$movie" ] && [ -n "$show" ] && [ "$movie" != "$show" ] && [ "$movie|$show" = "$cards" ]'
+check "the movie card is the one in My List" '[ "$movie" = "$listed" ]'
+check "focus on the first Continue Watching card ($movie)" '[ "$(focused)" = "$movie" ]'
 shot 01-continue-row
 
 # ---------------- hold OK: the menu ----------------
@@ -128,10 +123,9 @@ key DPAD_DOWN; check "D-pad Down: Start over" '[ "$(focused)" = "Start over" ]'
 key DPAD_DOWN; check "D-pad Down: Remove from Continue Watching" '[ "$(focused)" = "Remove from Continue Watching" ]'
 shot 03-menu-remove-focused 0.3
 key BACK; sleep 0.8
-check "Back closes the menu, nothing removed, focus back on the card" '! has "Remove from Continue Watching" && [ "$(continue_cards)" = "$show|$movie" ] && [ "$(focused)" = "$show" ]'
+check "Back closes the menu, nothing removed, focus back on the card" '! has "Remove from Continue Watching" && [ "$(continue_cards)" = "$movie|$show" ] && [ "$(focused)" = "$movie" ]'
 
 # ---------------- normal OK keeps its behaviour ----------------
-key DPAD_RIGHT; sleep 0.6
 check "focus on the movie card" '[ "$(focused)" = "$movie" ]'
 adb logcat -c
 key DPAD_CENTER
@@ -140,15 +134,15 @@ check "normal OK on a movie: player asks 'Continue watching?' (unchanged)" '[ "$
 home_row
 
 # ---------------- Resume and Start over ----------------
-focus_to DPAD_RIGHT "$movie" 3
+focus_to DPAD_LEFT "$movie" 3
 adb logcat -c
 hold_ok; key DPAD_CENTER                                         # Resume (focused)
 wait_activity PlayerActivity 10 && sleep 4
 e="$(qaf elapsed)"
-check "Resume: plays from the saved position without asking (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -ge 15 ]'
+check "Resume: plays from the saved position (0:20) without asking (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -ge 18 ] && [ "$e" -lt 40 ]'
 shot 07-resume-playing 0.2
 home_row
-focus_to DPAD_LEFT "$show" 3
+focus_to DPAD_RIGHT "$show" 3
 adb logcat -c
 hold_ok; key DPAD_DOWN DPAD_CENTER                               # Start over
 wait_activity PlayerActivity 25 && sleep 4
@@ -156,18 +150,23 @@ e="$(qaf elapsed)"
 check "Start over (show): the saved episode from 0:00, no prompt (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -lt 12 ]'
 shot 08-start-over-playing 0.2
 home_row
-check "after Start over the row still has both titles (nothing lost)" '[ "$(continue_cards)" = "$show|$movie" ]'
+check "after Start over the row still has both titles (nothing lost)" '[ "$(continue_cards)" = "$movie|$show" ]'
 
 # ---------------- Remove ----------------
 home_row
-focus_to DPAD_LEFT "$show" 3
+focus_to DPAD_RIGHT "$show" 3
 check "focus on the show card before removing" '[ "$(focused)" = "$show" ]' 
 hold_ok; key DPAD_DOWN DPAD_DOWN; key DPAD_CENTER; sleep 1.5
 check "Remove: the show leaves the row at once ($(continue_cards))" '[ "$(continue_cards)" = "$movie" ]'
+sleep 1
+check "the show's saved progress is gone (episode, queued next episode, row entry)" 'progress_of "movie:1000" && ! progress_of "series:5002"'
 check "focus moves to the nearest remaining card ($movie)" '[ "$(focused)" = "$movie" ]'
 shot 04-after-remove-show
 hold_ok; key DPAD_DOWN DPAD_DOWN; key DPAD_CENTER; sleep 1.5
 check "removing the last card removes the row (still on Home)" 'in_activity HomeActivity && ! has "Continue Watching"'
+sleep 1
+check "the movie's saved progress is gone too" '! progress_of "movie:1000"'
+check "My List entry for the movie is still stored" 'prefs | grep -q "|movie:1000|"'
 f="$(focused)"
 check "focus is on the next row, not lost ('$f')" '[ -n "$f" ] && in_activity HomeActivity'
 shot 05-row-gone
@@ -175,12 +174,10 @@ shot 05-row-gone
 # ---------------- nothing else affected ----------------
 key DPAD_LEFT; focus_to DPAD_DOWN "My List" 5; key DPAD_CENTER; sleep 2
 check "My List still has '$movie'" 'has "$movie"'
-key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 4; key DPAD_CENTER; sleep 2.5      # My List -> TV Shows is up
-focus_to DPAD_RIGHT "$show" 6; key DPAD_CENTER; sleep 4
-check "the show's details offer Watch Now again (no stale Continue)" 'has "Watch Now" && ! has "▶  Continue"'
 back_home; sleep 1
 launch; sleep 12
 check "reopened app: Continue Watching stays empty" 'in_activity HomeActivity && ! has "Continue Watching"'
+check "reopened app: no saved progress came back" '! progress_of "series:5002" && ! progress_of "movie:1000"'
 shot 06-reopened
 
 adb logcat -d | grep -E "FATAL EXCEPTION" -A 12 > "$OUT/crash-log.txt" || true
