@@ -76,7 +76,8 @@ public class PlayerActivity extends Activity {
             if("series".equals(kind) && (episodeId==null || !episodeId.equals(Api.prefs(this).getString("resume_episode_"+key,""))))position=0;
         }
         if(position<15000)position=0;
-        resumeAsked=position==0 || (state!=null && state.getBoolean("resume_asked",false));
+        resumeAsked=position==0 || getIntent().getBooleanExtra("resume_now",false)
+            || (state!=null && state.getBoolean("resume_asked",false));
         if(state!=null)position=state.getLong("position",position);
         if(url==null || url.isEmpty()){finish();return;}
         setContentView(R.layout.activity_player);

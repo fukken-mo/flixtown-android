@@ -5,6 +5,7 @@ name: Release check
 #  - release_check.sh: QR + remote sign-in with keyboard, saved login, intro, focus restoration,
 #    cast/trailer/My List, seasons/episodes/resume, player controls/seek/tracks/Back, Up next,
 #    renewal, no refresh during navigation (asserted)
+#  - continue_menu.sh (1080p job): hold OK on Continue Watching -> Resume / Start over / Remove (asserted)
 #  - screen_awake.sh (1080p job): no screensaver while Home / Details / player is in front; the TV's own
 #    screensaver and sleep work again once Flix Town is in the background or closed (asserted)
 # The screen tour (run.sh, qa-emulator.yml) and the update flow (update-flow.yml) have their own
@@ -14,7 +15,7 @@ on:
   workflow_dispatch:
   push:
     branches: ["claude/**"]
-    paths: [".github/qa/release_check.sh", ".github/qa/screen_awake.sh", ".github/workflows/release-qa.yml"]
+    paths: [".github/qa/release_check.sh", ".github/qa/screen_awake.sh", ".github/qa/continue_menu.sh", ".github/workflows/release-qa.yml"]
 
 permissions:
   contents: write
@@ -55,11 +56,12 @@ jobs:
           script: |
             QA_OUT=${{ matrix.out }} bash .github/qa/release_check.sh || true
             if [ "${{ matrix.badges }}" = yes ]; then bash .github/qa/ratings_badges.sh || true; fi
+            if [ "${{ matrix.badges }}" = yes ]; then bash .github/qa/continue_menu.sh || true; fi
             if [ "${{ matrix.badges }}" = yes ]; then bash .github/qa/screen_awake.sh || true; fi
       - name: Result
         if: always()
         run: |
-          reports="${{ matrix.out }}/report.txt"; [ "${{ matrix.badges }}" = yes ] && reports="$reports qa/ratings-badges/report.txt qa/screen-awake/report.txt"
+          reports="${{ matrix.out }}/report.txt"; [ "${{ matrix.badges }}" = yes ] && reports="$reports qa/ratings-badges/report.txt qa/continue-menu/report.txt qa/screen-awake/report.txt"
           cat $reports || true
           ! grep -h '^FAIL' $reports
       - name: Commit screenshots
@@ -67,6 +69,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ${{ matrix.out }}; [ "${{ matrix.badges }}" = yes ] && git add qa/ratings-badges qa/screen-awake
+          git add ${{ matrix.out }}; [ "${{ matrix.badges }}" = yes ] && git add qa/ratings-badges qa/continue-menu qa/screen-awake
           git commit -m "Release check from TV emulator, ${{ matrix.profile }} (${GITHUB_SHA::7})" || exit 0
           for i in 1 2 3; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*5)); done

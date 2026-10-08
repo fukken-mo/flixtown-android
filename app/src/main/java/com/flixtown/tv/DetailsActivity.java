@@ -49,6 +49,8 @@ public class DetailsActivity extends Activity {
     private boolean enrichedCast,movie;
     private final List<JSONObject> castPeople=new ArrayList<>();
     private List<JSONObject> orderedEpisodes;private int seasonIndex;private boolean playedOnOpen;
+    /** "resume_now" / "start_over" from Home's Continue Watching menu, for the play-on-open episode only. */
+    private String openPlayMode;
     /** This title as the catalog knows it (for its TMDB rating), and the server's details once loaded. */
     private Catalog.Item self;private JSONObject lastInfo;
     private final Runnable ratingChanged=()->{if(!isFinishing() && metaLine!=null)metaLine.setText(lastInfo!=null?metaText(lastInfo):join(yearText(),Ratings.label(self)));};
@@ -437,7 +439,9 @@ public class DetailsActivity extends Activity {
     private void playOnOpen(){
         if(!getIntent().getBooleanExtra("play_on_open",false) || playedOnOpen || orderedEpisodes==null || orderedEpisodes.isEmpty())return;
         playedOnOpen=true;
+        openPlayMode=getIntent().getStringExtra("play_mode");
         if(!Api.prefs(this).getString("resume_episode_"+resumeKey(),"").isEmpty()){resumeSeries();return;}
+        openPlayMode=null;
         JSONObject first=orderedEpisodes.get(0),next=orderedEpisodes.size()>1?orderedEpisodes.get(1):null;
         rememberArt(first);
         playEpisode(first.optString("id"),extensionOf(first,"mp4"),next==null?"":next.optString("id"),next==null?"mp4":extensionOf(next,"mp4"),
@@ -461,6 +465,7 @@ public class DetailsActivity extends Activity {
         intent.putExtra("episode_id",streamId);intent.putExtra("episode_ext",ext);
         intent.putExtra("next_episode_id",nextId);intent.putExtra("next_episode_ext",nextExt);
         intent.putExtra("subtitle",label);intent.putExtra("next_subtitle",nextLabel);
+        if(openPlayMode!=null){intent.putExtra(openPlayMode,true);openPlayMode=null;}
         startActivity(intent);
     }
     private void playUrl(String url,boolean track){

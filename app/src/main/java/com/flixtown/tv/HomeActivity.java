@@ -593,17 +593,70 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         openDetails(item,false);
     }
     /** Movies go straight to the player (it offers Continue / Start over); shows resume the right episode. */
-    private void watch(Catalog.Item item){
+    private void watch(Catalog.Item item){watch(item,null);}
+    /** mode: null = as a normal OK press, "resume_now" or "start_over" (chosen in the Continue Watching menu). */
+    private void watch(Catalog.Item item,String mode){
         if("movie".equals(item.kind)){
             Catalog.remember(this,item);
             Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",Api.stream(this,"movie",item.id,item.extension));
-            i.putExtra("title",item.title);i.putExtra("content_kind",item.kind);i.putExtra("content_id",item.id);startActivity(i);
-        }else openDetails(item,true);
+            i.putExtra("title",item.title);i.putExtra("content_kind",item.kind);i.putExtra("content_id",item.id);
+            if(mode!=null)i.putExtra(mode,true);
+            startActivity(i);
+        }else openDetails(item,true,mode);
     }
-    private void openDetails(Catalog.Item item,boolean play){Intent i=new Intent(this,DetailsActivity.class);
+    @Override public void onMenu(Catalog.Item item,HomeFeed.Section section){
+        if(section.type!=HomeFeed.CONTINUE || overlayUp)return;
+        Catalog.Progress p=Catalog.progress(this,item);
+        String detail;
+        if(p.upNext)detail=p.label.isEmpty()?"Next episode":"Up next: "+p.label;
+        else{String left=p.remainingMinutes()>0?p.remainingMinutes()+" min left":"";
+            detail="series".equals(item.kind)?joinDot(p.label,left):left;}
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","continue_menu "+item.key());
+        Ui.dialog(this,item.title,detail.isEmpty()?null:detail,
+            new String[]{"Resume","Start over","Remove from Continue Watching"},0,which->{
+                if(which==0)watch(item,"resume_now");
+                else if(which==1)watch(item,"start_over");
+                else removeFromContinue(item,section);
+            },null);
+    }
+    private static String joinDot(String a,String b){return a.isEmpty()?b:b.isEmpty()?a:a+"  ·  "+b;}
+    /**
+     * Forgets the saved position of this movie / show (the series' episode and its queued next one too),
+     * then takes the card out of the row at once. Titles, files and My List are not touched.
+     * Focus goes to the nearest remaining card, or to the next row when this was the last one.
+     */
+    private void removeFromContinue(Catalog.Item item,HomeFeed.Section section){
+        Catalog.clearProgress(this,item.kind,item.id);           // SharedPreferences apply(): written off the main thread
+        int index=section.items.indexOf(item);
+        int row=entries.indexOf(section);
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","continue_removed "+item.key());
+        if(index<0 || row<0)return;
+        section.items.remove(index);
+        if(section.items.isEmpty()){
+            entries.remove(row);homeAdapter.notifyItemRemoved(row);
+            pendingRender=true;                                     // e.g. "Because you watched" follows at the next render
+            int target=Math.min(row,entries.size()-1);
+            if(target<0)return;
+            homeRows.setSelectedPosition(target);
+            homeRows.post(()->focusHomeItem(12));
+            return;
+        }
+        if(section.adapter!=null)section.adapter.notifyItemRemoved(index);
+        int target=Math.min(index,section.items.size()-1);section.selected=target;
+        RecyclerView.ViewHolder h=homeRows.findViewHolderForAdapterPosition(row);
+        if(h instanceof SectionHolder){
+            HorizontalGridView list=((SectionHolder)h).list;
+            list.setSelectedPosition(target);
+            list.post(()->{RecyclerView.ViewHolder card=list.findViewHolderForAdapterPosition(target);
+                if(card==null || !card.itemView.requestFocus())list.requestFocus();});
+        }
+    }
+    private void openDetails(Catalog.Item item,boolean play){openDetails(item,play,null);}
+    private void openDetails(Catalog.Item item,boolean play,String playMode){Intent i=new Intent(this,DetailsActivity.class);
         i.putExtra("id",item.id);i.putExtra("kind",item.kind);i.putExtra("title",item.title);i.putExtra("poster",item.poster);
         String art=heroBackdrop(item);i.putExtra("backdrop",art!=null?art:item.backdrop);i.putExtra("year",item.year);i.putExtra("extension",item.extension);
-        i.putExtra("category",item.categoryId);if(play)i.putExtra("play_on_open",true);startActivity(i);}
+        i.putExtra("category",item.categoryId);if(play)i.putExtra("play_on_open",true);
+        if(playMode!=null)i.putExtra("play_mode",playMode);startActivity(i);}
 
     /** "2019  ·  ★ 7.6  ·  1h 54m  ·  Drama" with a gold star, from whatever is known. */
     private CharSequence metaLine(Catalog.Item item,JSONObject info){

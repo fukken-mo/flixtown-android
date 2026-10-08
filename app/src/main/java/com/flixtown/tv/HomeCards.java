@@ -32,6 +32,8 @@ final class HomeCards {
     interface Listener {
         void onFocus(Catalog.Item item);
         void onOpen(Catalog.Item item,HomeFeed.Section section);
+        /** OK held on a Continue Watching card: Resume / Start over / Remove. */
+        void onMenu(Catalog.Item item,HomeFeed.Section section);
     }
     static final int GLOW=8;
     // Artwork sizes in dp (the card adds the glow margin around the art).
@@ -126,6 +128,11 @@ final class HomeCards {
             Holder h=new Holder(card,box,art,image,fallback,title,meta,badge,dim,progressTrack,progressFill,rank,glowDrawable,ring);
             card.setOnFocusChangeListener((v,f)->{applyFocus(h,f,true,focusScale);if(f && h.item!=null)listener.onFocus(h.item);});
             card.setOnClickListener(v->{if(h.item!=null)listener.onOpen(h.item,section);});
+            if(section.type==HomeFeed.CONTINUE){
+                // Holding OK opens the actions; the press that follows is not also a click (View handles that).
+                card.setLongClickable(true);
+                card.setOnLongClickListener(v->{if(h.item!=null)listener.onMenu(h.item,section);return true;});
+            }
             return h;
         }
         @Override public void onBindViewHolder(Holder h,int position){
