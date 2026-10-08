@@ -1,0 +1,23 @@
+PASS  set up: 'The Crimson Garden' added to My List
+FAIL  Continue Watching shows the show and the movie ()
+FAIL  focus on the first Continue Watching card (Movie or show title)
+PASS  holding OK opens the menu
+PASS  Resume is focused first
+PASS  the press did not also open the title (still on Home)
+PASS  D-pad Down: Start over
+PASS  D-pad Down: Remove from Continue Watching
+FAIL  Back closes the menu, nothing removed, focus back on the card
+PASS  focus on the movie card
+PASS  normal OK on a movie: player asks 'Continue watching?' (unchanged)
+PASS  Resume: plays from the saved position without asking (21s)
+FAIL  Start over (show): the saved episode from 0:00, no prompt (s)
+FAIL  after Start over the row still has both titles (nothing lost)
+FAIL  Remove: the show leaves the row at once ()
+FAIL  focus moves to the nearest remaining card (The Crimson Garden)
+PASS  removing the last card removes the row
+FAIL  focus is on the next row, not lost ('The Crimson Garden')
+PASS  My List still has 'The Crimson Garden'
+FAIL  the show's details offer Watch Now again (no stale Continue)
+FAIL  reopened app: Continue Watching stays empty
+PASS  no crash during the run
+continue menu: 12 passed, 10 failed

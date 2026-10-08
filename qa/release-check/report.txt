@@ -52,20 +52,20 @@ PASS  resume prompt offers Continue from … and Start over
 PASS  Start over plays from the beginning (5s)
 PASS  Up shows the player controls
 PASS  controls hide by themselves
-PASS  seeking: Right +10s, Left ×2 −20s (11s → 22s → 2s)
-INFO  10-07 23:50:32.262  5134  5134 I FlixTownQA: tracks type=1 count=6 [English · Stereo · AAC, German · Stereo · AAC, Italian · Stereo · AAC, French · Stereo · AAC, Spanish · Stereo · AAC, English · 5.1 · AAC]
-INFO  10-07 23:50:32.262  5134  5134 I FlixTownQA: picker Audio: English · Stereo · AAC|German · Stereo · AAC|Italian · Stereo · AAC|French · Stereo · AAC|Spanish · Stereo · AAC|English · 5.1 · AAC selected=0
+PASS  seeking: Right +10s, Left ×2 −20s (10s → 22s → 2s)
+INFO  10-08 06:52:52.038  5162  5162 I FlixTownQA: tracks type=1 count=6 [English · Stereo · AAC, German · Stereo · AAC, Italian · Stereo · AAC, French · Stereo · AAC, Spanish · Stereo · AAC, English · 5.1 · AAC]
+INFO  10-08 06:52:52.038  5162  5162 I FlixTownQA: picker Audio: English · Stereo · AAC|German · Stereo · AAC|Italian · Stereo · AAC|French · Stereo · AAC|Spanish · Stereo · AAC|English · 5.1 · AAC selected=0
 PASS  audio picker lists the stream's audio tracks
 PASS  audio track changed (Audio · English → Audio · German)
-INFO  10-07 23:50:45.103  5134  5134 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+INFO  10-08 06:53:04.623  5162  5162 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
 PASS  subtitle picker offers Off and the stream's languages
 PASS  subtitles changed (Subtitles · Off → Subtitles · English)
 PASS  Back with controls shown: hides them, stays in the player
 PASS  Back again leaves the player
 INFO  playing: S2 · E3   Chapter 3: Tide
-PASS  seeking: Right × 4 jumps forward (7s → 49s)
+PASS  seeking: Right × 4 jumps forward (8s → 50s)
 PASS  next episode offered near the end ('Up next')
-PASS  Up next shows the countdown (Starts in 10 seconds  ·  S2 · E4   Chapter 4: Orchard)
+PASS  Up next shows the countdown (Starts in 9 seconds  ·  S2 · E4   Chapter 4: Orchard)
 PASS  Play now starts the next episode (S2 · E3   Chapter 3: Tide → S2 · E4   Chapter 4: Orchard)
 PASS  expired account opens the renewal screen
 PASS  renewal shows plans with panel prices
@@ -73,9 +73,9 @@ PASS  renewal shows the panel's Cash App details
 PASS  renewal request is sent
 PASS  after the payment is confirmed (account active) Flix Town reopens
 PASS  renewal kept the same account (Signed in as 0012345678)
-INFO  emulator frames: Total frames rendered: 85
-INFO  emulator frames: Janky frames: 85 (100.00%)
-INFO  emulator frames: Janky frames (legacy): 85 (100.00%)
+INFO  emulator frames: Total frames rendered: 91
+INFO  emulator frames: Janky frames: 91 (100.00%)
+INFO  emulator frames: Janky frames (legacy): 91 (100.00%)
 INFO  emulator frames: 50th percentile: 200ms
 INFO  emulator frames: 90th percentile: 250ms
 PASS  no crash during the run
