@@ -94,7 +94,8 @@ PY
 }
 back_home(){ for i in 1 2 3 4 5 6 7; do in_activity HomeActivity && return 0; key BACK; sleep 1.5; done; in_activity HomeActivity; }
 # Home tab, up to the hero, then the first card of the first row under it (Continue Watching).
-home_row(){ back_home; key DPAD_LEFT; focus_to DPAD_UP "Home" 5; key DPAD_CENTER; sleep 2.5
+# Left until the side menu opens (focus may be on any card of a row), then Home.
+home_row(){ back_home; focus_to DPAD_LEFT "Home" 8; focus_to DPAD_UP "Home" 5; key DPAD_CENTER; sleep 2.5
   key DPAD_UP DPAD_UP DPAD_UP; sleep 0.8; key DPAD_DOWN; sleep 1.5; }
 
 # ---------------- set up: a movie (also put in My List) and a show with saved progress ----------------
