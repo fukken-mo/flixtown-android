@@ -77,15 +77,18 @@ parents={id(c): p for c, p in walk(root)}
 for n in root.iter('node'):
     if n.get('text') == 'Continue Watching':
         sec = parents.get(id(n))
-        while sec is not None and not any(c.get('class','').endswith('HorizontalGridView') for c in sec.iter('node')):
+        is_list = lambda c: 'RecyclerView' in c.get('class','') or 'GridView' in c.get('class','')
+        while sec is not None and not any(is_list(c) for c in sec.iter('node')):
             sec = parents.get(id(sec))
         if sec is None: break
-        grid = next(c for c in sec.iter('node') if c.get('class','').endswith('HorizontalGridView'))
+        grid = next(c for c in sec.iter('node') if is_list(c))
         print("|".join(c.get('content-desc') for c in grid if c.get('content-desc')))
         break
 PY
 }
 back_home(){ for i in 1 2 3 4; do in_activity HomeActivity && return 0; key BACK; sleep 1.2; done; in_activity HomeActivity; }
+# Home tab, then the first card of the first row under the hero (Continue Watching when it exists).
+home_row(){ back_home; key DPAD_LEFT; focus_to DPAD_UP "Home" 5; key DPAD_CENTER; sleep 2.5; key DPAD_DOWN; sleep 1.5; }
 
 # ---------------- set up: real progress for one movie (also in My List) and one show ----------------
 launch --ez demo_reset true
@@ -99,15 +102,15 @@ focus_to DPAD_LEFT "Play" 3; key DPAD_CENTER
 wait_activity PlayerActivity 10; sleep 22
 key BACK; sleep 1; in_activity PlayerActivity && key BACK
 wait_activity DetailsActivity 6; key BACK; sleep 1.5
-key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 3; key DPAD_CENTER; sleep 2.5
+key DPAD_LEFT; focus_to DPAD_DOWN "TV Shows" 3; key DPAD_CENTER; sleep 2.5      # Movies -> TV Shows is down
 show="$(focused)"
+check "set up: TV Shows grid, first show '$show'" 'in_activity HomeActivity && [ -n "$show" ] && ! has "Movie or show title"' 
 key DPAD_CENTER;                             sleep 4
 focus_to DPAD_DOWN "Season 1" 3; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER   # first episode
 wait_activity PlayerActivity 10; sleep 22
 key BACK; sleep 1; in_activity PlayerActivity && key BACK
 wait_activity DetailsActivity 6; key BACK; sleep 1.5
-key DPAD_LEFT; focus_to DPAD_UP "Home" 4; key DPAD_CENTER; sleep 3
-key DPAD_DOWN;                               sleep 1.5
+home_row
 cards="$(continue_cards)"
 check "Continue Watching shows the show and the movie ($cards)" '[ "$cards" = "$show|$movie" ]'
 check "focus on the first Continue Watching card ($show)" '[ "$(focused)" = "$show" ]'
@@ -132,7 +135,7 @@ adb logcat -c
 key DPAD_CENTER
 wait_activity PlayerActivity 10 && sleep 3
 check "normal OK on a movie: player asks 'Continue watching?' (unchanged)" '[ "$(qaf card)" = "Continue watching?" ]'
-back_home; sleep 1.5
+home_row
 
 # ---------------- Resume and Start over ----------------
 focus_to DPAD_RIGHT "$movie" 3
@@ -141,24 +144,26 @@ hold_ok; key DPAD_CENTER                                         # Resume (focus
 wait_activity PlayerActivity 10 && sleep 4
 e="$(qaf elapsed)"
 check "Resume: plays from the saved position without asking (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -ge 15 ]'
-back_home; sleep 1.5
+home_row
 focus_to DPAD_LEFT "$show" 3
 adb logcat -c
 hold_ok; key DPAD_DOWN DPAD_CENTER                               # Start over
 wait_activity PlayerActivity 15 && sleep 4
 e="$(qaf elapsed)"
 check "Start over (show): the saved episode from 0:00, no prompt (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -lt 12 ]'
-back_home; sleep 1.5
+home_row
 check "after Start over the row still has both titles (nothing lost)" '[ "$(continue_cards)" = "$show|$movie" ]'
 
 # ---------------- Remove ----------------
+home_row
 focus_to DPAD_LEFT "$show" 3
+check "focus on the show card before removing" '[ "$(focused)" = "$show" ]' 
 hold_ok; key DPAD_DOWN DPAD_DOWN; key DPAD_CENTER; sleep 1.5
 check "Remove: the show leaves the row at once ($(continue_cards))" '[ "$(continue_cards)" = "$movie" ]'
 check "focus moves to the nearest remaining card ($movie)" '[ "$(focused)" = "$movie" ]'
 shot 04-after-remove-show
 hold_ok; key DPAD_DOWN DPAD_DOWN; key DPAD_CENTER; sleep 1.5
-check "removing the last card removes the row" '! has "Continue Watching"'
+check "removing the last card removes the row (still on Home)" 'in_activity HomeActivity && ! has "Continue Watching"'
 f="$(focused)"
 check "focus is on the next row, not lost ('$f')" '[ -n "$f" ] && in_activity HomeActivity'
 shot 05-row-gone
@@ -166,7 +171,7 @@ shot 05-row-gone
 # ---------------- nothing else affected ----------------
 key DPAD_LEFT; focus_to DPAD_DOWN "My List" 5; key DPAD_CENTER; sleep 2
 check "My List still has '$movie'" 'has "$movie"'
-key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 4; key DPAD_CENTER; sleep 2.5
+key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 4; key DPAD_CENTER; sleep 2.5      # My List -> TV Shows is up
 focus_to DPAD_RIGHT "$show" 6; key DPAD_CENTER; sleep 4
 check "the show's details offer Watch Now again (no stale Continue)" 'has "Watch Now" && ! has "▶  Continue"'
 back_home; sleep 1
