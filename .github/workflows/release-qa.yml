@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
   push:
     branches: ["claude/**"]
-    paths: [".github/qa/release_check.sh", ".github/qa/screen_awake.sh", ".github/qa/continue_menu.sh", ".github/workflows/release-qa.yml"]
+    paths: [".github/qa/release_check.sh", ".github/qa/screen_awake.sh", ".github/workflows/release-qa.yml"]
 
 permissions:
   contents: write

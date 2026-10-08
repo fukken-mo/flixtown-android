@@ -65,6 +65,8 @@ wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && retu
 secs(){ python3 -c 'import sys;p=sys.argv[1].lstrip("-").split(":");print(sum(int(x)*60**i for i,x in enumerate(reversed(p))) if all(x.isdigit() for x in p) else -1)' "$1"; }
 refreshes(){ adb logcat -d -s FlixTown:I | grep -c "Refresh started" ; }
 hold_ok(){ adb shell input keyevent --longpress KEYCODE_DPAD_CENTER; sleep 1.2; }
+# On a failed check, record where the app was (activity + focused view) so a failure is explainable.
+check(){ if eval "$2"; then ok "$1"; else bad "$1"; note "      at: $(resumed | grep -o '[A-Za-z]*Activity' | tail -1) focus='$(focused)'"; fi; }
 # Titles of the cards in the Continue Watching row, in order (empty when the row is gone).
 continue_cards(){ dump; python3 - "$OUT/ui.xml" <<'PY'
 import sys, xml.etree.ElementTree as ET
@@ -99,7 +101,7 @@ key DPAD_CENTER;                             sleep 3.5        # details
 focus_to DPAD_RIGHT "My List" 3; key DPAD_CENTER; sleep 0.8
 check "set up: '$movie' added to My List" 'focused | grep -q "✓"'
 focus_to DPAD_LEFT "Play" 3; key DPAD_CENTER
-wait_activity PlayerActivity 10; sleep 22
+wait_activity PlayerActivity 10; sleep 18
 key BACK; sleep 1; in_activity PlayerActivity && key BACK
 wait_activity DetailsActivity 6; key BACK; sleep 1.5
 key DPAD_LEFT; focus_to DPAD_DOWN "TV Shows" 3; key DPAD_CENTER; sleep 2.5      # Movies -> TV Shows is down
@@ -107,7 +109,7 @@ show="$(focused)"
 check "set up: TV Shows grid, first show '$show'" 'in_activity HomeActivity && [ -n "$show" ] && ! has "Movie or show title"' 
 key DPAD_CENTER;                             sleep 4
 focus_to DPAD_DOWN "Season 1" 3; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER   # first episode
-wait_activity PlayerActivity 10; sleep 22
+wait_activity PlayerActivity 10; sleep 18
 key BACK; sleep 1; in_activity PlayerActivity && key BACK
 wait_activity DetailsActivity 6; key BACK; sleep 1.5
 home_row
@@ -144,13 +146,15 @@ hold_ok; key DPAD_CENTER                                         # Resume (focus
 wait_activity PlayerActivity 10 && sleep 4
 e="$(qaf elapsed)"
 check "Resume: plays from the saved position without asking (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -ge 15 ]'
+shot 07-resume-playing 0.2
 home_row
 focus_to DPAD_LEFT "$show" 3
 adb logcat -c
 hold_ok; key DPAD_DOWN DPAD_CENTER                               # Start over
-wait_activity PlayerActivity 15 && sleep 4
+wait_activity PlayerActivity 25 && sleep 4
 e="$(qaf elapsed)"
 check "Start over (show): the saved episode from 0:00, no prompt (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -lt 12 ]'
+shot 08-start-over-playing 0.2
 home_row
 check "after Start over the row still has both titles (nothing lost)" '[ "$(continue_cards)" = "$show|$movie" ]'
 
