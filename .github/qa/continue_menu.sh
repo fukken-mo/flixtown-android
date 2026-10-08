@@ -151,7 +151,8 @@ e="$(qaf elapsed)"
 check "Start over (show): the saved episode from 0:00, no prompt (${e}s)" '[ -z "$(qaf card)" ] && [ -n "$e" ] && [ "$e" -lt 12 ]'
 shot 08-start-over-playing 0.2
 home_row
-check "after Start over the row still has both titles (nothing lost)" '[ "$(continue_cards)" = "$movie|$show" ]'
+# Playing a title makes it the most recent, so the show may now come first: same two titles, any order.
+check "after Start over the row still has both titles (nothing lost)" 'c="$(continue_cards)"; [ "$c" = "$movie|$show" ] || [ "$c" = "$show|$movie" ]'
 
 # ---------------- Remove ----------------
 home_row
