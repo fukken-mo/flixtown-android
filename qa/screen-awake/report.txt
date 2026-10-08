@@ -1,0 +1,37 @@
+INFO  emulator: screen timeout 20 s, screensaver on, stay-awake-while-charging off
+PASS  Home opened
+PASS  Home: keep-screen-on flag set
+PASS  Home: still awake after 45s idle (timeout 20s)
+PASS  Movies tab: still awake after 45s idle
+PASS  Details opened
+PASS  Details: keep-screen-on flag set
+PASS  Details: still awake after 45s idle
+PASS  player opened
+PASS  player: keep-screen-on flag set
+PASS  player: still awake after 30s without remote input
+PASS  Back from the player returns to Details
+PASS  after playback: Details flag set again
+PASS  after playback: player window gone or flag cleared
+PASS  after playback, Details: still awake after 45s idle
+PASS  Back returns to Home
+PASS  after playback, Home: still awake after 45s idle
+PASS  backgrounded: Flix Town is not in front
+PASS  backgrounded: keep-screen-on cleared on every Flix Town window
+PASS  backgrounded: TV reached its screensaver/sleep (Dreaming)
+PASS  reopened: Home in front
+PASS  reopened: keep-screen-on flag set again
+PASS  reopened: still awake after 45s idle
+PASS  closed: TV reached its screensaver/sleep (Dreaming)
+INFO  10-08 00:21:41.699 12402 12402 I FlixTownQA: screen_awake HomeActivity=true
+INFO  10-08 00:23:26.423 12402 12402 I FlixTownQA: screen_awake HomeActivity=false
+INFO  10-08 00:23:26.454 12402 12402 I FlixTownQA: screen_awake DetailsActivity=true
+INFO  10-08 00:24:15.271 12402 12402 I FlixTownQA: screen_awake DetailsActivity=false
+INFO  10-08 00:24:15.413 12402 12402 I FlixTownQA: screen_awake PlayerActivity=true
+INFO  10-08 00:24:51.270 12402 12402 I FlixTownQA: screen_awake PlayerActivity=false
+INFO  10-08 00:24:51.342 12402 12402 I FlixTownQA: screen_awake DetailsActivity=true
+INFO  10-08 00:25:38.934 12402 12402 I FlixTownQA: screen_awake DetailsActivity=false
+INFO  10-08 00:25:39.010 12402 12402 I FlixTownQA: screen_awake HomeActivity=true
+INFO  10-08 00:26:25.621 12402 12402 I FlixTownQA: screen_awake HomeActivity=false
+INFO  10-08 00:27:16.826 12402 12402 I FlixTownQA: screen_awake HomeActivity=true
+PASS  no crash during the run
+screen awake: 24 passed, 0 failed
