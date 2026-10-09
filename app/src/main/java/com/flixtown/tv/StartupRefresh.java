@@ -116,10 +116,12 @@ final class StartupRefresh {
             Api.prefs(c).edit().putString("intro_url",introOn?cfg.optString("intro_url",""):"").apply();
             MAIN.post(()->{if(token!=generation)return;config=cfg;for(Listener l:new ArrayList<>(listeners))l.onConfig(cfg);});
 
-            JSONObject account=Api.get(Api.accountUrl(c));JSONObject user=account.optJSONObject("user_info");
+            JSONObject account;
+            try{account=Api.get(Api.accountUrl(c));}catch(Exception e){AccountInfo.failed(c);throw e;}
+            JSONObject user=account.optJSONObject("user_info");
+            // Only a real account answer (with a status) is saved or can mark the account expired.
+            if(user!=null && !AccountInfo.save(c,account)){AccountInfo.failed(c);throw new java.io.IOException("No account status in the server's answer");}
             if(user!=null){
-                Api.prefs(c).edit().putString("account_status",user.optString("status",""))
-                    .putString("account_exp_date",user.optString("exp_date","")).apply();
                 if(!"Active".equalsIgnoreCase(user.optString("status",""))){
                     Api.prefs(c).edit().putBoolean("expired",true).apply();
                     finish(token,new Result(EXPIRED,manual,null,null,null,null,null));return;

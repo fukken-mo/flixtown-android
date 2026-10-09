@@ -64,6 +64,10 @@ public class LoginActivity extends Activity {
             for(String f:new String[]{"ratings.json","series_news.json","trending.json"})new java.io.File(getFilesDir(),f).delete();}
         DemoData.expired=getIntent().getBooleanExtra("demo_expired",false);
         DemoData.offline=getIntent().getBooleanExtra("demo_offline",false);
+        DemoData.accountFile=new java.io.File(getFilesDir(),"demo_account.json");
+        if(getIntent().getBooleanExtra("demo_reset",false))DemoData.accountFile.delete();
+        DemoData.connections=getIntent().getIntExtra("demo_connections",1);
+        String exp=getIntent().getStringExtra("demo_exp");DemoData.expDate=exp==null?"1830254400":"never".equals(exp)?"":exp;
         DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);
         DemoData.intro=getIntent().getBooleanExtra("demo_intro",false);
         DemoData.holdPairing=getIntent().getBooleanExtra("demo_hold_qr",false);
@@ -129,7 +133,8 @@ public class LoginActivity extends Activity {
             JSONObject info=account.optJSONObject("user_info");if(info==null||(!"Active".equalsIgnoreCase(info.optString("status"))&&
                 !"Expired".equalsIgnoreCase(info.optString("status"))))throw new IllegalArgumentException("That username and password were not recognised.");
             Api.prefs(this).edit().putBoolean("expired",!"Active".equalsIgnoreCase(info.optString("status")))
-                .putString("account_status",info.optString("status","")).putString("account_exp_date",info.optString("exp_date","")).apply();
+                .apply();
+            AccountInfo.save(this,account);   // status, expiration and connections for Settings
             Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
             runOnUiThread(()->saveAndGo(server,user,pass));
         }catch(Exception e){runOnUiThread(()->say(e instanceof IllegalArgumentException?e.getMessage():"Sign in failed. Check your connection and try again.",0xFFF0A29F));}});

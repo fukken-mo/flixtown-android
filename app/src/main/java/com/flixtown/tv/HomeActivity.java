@@ -470,6 +470,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         int start=0;
         if(restoreGridPosition>=0){start=Math.min(restoreGridPosition,settingsPage.getItemCount()-1);restoreGridPosition=-1;if(!overlayUp)focusGrid();}
         browseGrid.setSelectedPosition(start);
+        settingsPage.checkAccount(false);   // current status, expiration and connections from the server
     }
 
     /* ---------------- Settings actions ---------------- */
@@ -480,6 +481,11 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         StartupRefresh.start(this,true);
     }
     @Override public void checkForUpdates(){updates.select();}
+    @Override public void accountEnded(){
+        if(isFinishing()||destroyed)return;
+        Api.prefs(this).edit().putBoolean("expired",true).apply();
+        startActivity(new Intent(this,RenewalActivity.class));finish();
+    }
     @Override public String updateValue(){return updates.rowValue();}
     @Override public String updateDetail(){return updates.rowDetail();}
     @Override public void signOut(){

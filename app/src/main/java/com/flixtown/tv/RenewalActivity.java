@@ -196,8 +196,7 @@ public class RenewalActivity extends Activity {
         Api.IO.execute(()->{try{
             JSONObject result=Api.get(Api.accountUrl(this));JSONObject info=result.optJSONObject("user_info");
             boolean active=info!=null&&"Active".equalsIgnoreCase(info.optString("status"));
-            if(info!=null)Api.prefs(this).edit().putString("account_status",info.optString("status",""))
-                .putString("account_exp_date",info.optString("exp_date","")).apply();
+            if(info!=null)AccountInfo.save(this,result);
             runOnUiThread(()->{checking=false;if(isFinishing())return;showAccount();
                 if(active){Api.prefs(this).edit().putBoolean("expired",false).apply();
                     StartupRefresh.start(this,false);

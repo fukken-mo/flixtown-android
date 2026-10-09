@@ -107,11 +107,30 @@ final class DemoData {
                 .put("category_id","50").put("first_air_date",releaseDate(b-2*DAY)).put("last_modified",String.valueOf(b-1800)).put("year",2026).put("backdrop_path",new JSONArray().put("demo://backdrop/s99"))
                 .put("plot","Added to the demo server after the first catalog, so it is proven new."));
             return list.toString();}
-        if(url.contains("player_api.php"))return new JSONObject().put("user_info",new JSONObject()
-            .put("status",Boolean.getBoolean("flix.demo.expired")||expired?"Expired":"Active").put("exp_date","1830254400").put("username","demo")).toString();
+        if(url.contains("player_api.php")){
+            // Same shape as the Flix Town backend: exp_date is null for Never Expire; an expired line's
+            // answer has auth 0 and no connection count.
+            // QA: files/demo_account.json (written with run-as) changes the account while the app stays open.
+            JSONObject live=null;
+            try{if(accountFile!=null && accountFile.exists()){
+                java.io.FileInputStream in=new java.io.FileInputStream(accountFile);byte[] data=new byte[(int)accountFile.length()];
+                int n=0;while(n<data.length){int r=in.read(data,n,data.length-n);if(r<0)break;n+=r;}in.close();
+                live=new JSONObject(new String(data,0,n,"UTF-8"));}}catch(Exception ignored){}
+            if(live!=null && live.optBoolean("offline"))throw new java.io.IOException("Demo: account server unreachable");
+            int connections=live!=null?live.optInt("connections",DemoData.connections):DemoData.connections;
+            String expDate=live!=null && live.has("exp")?("never".equals(live.optString("exp"))?"":live.optString("exp")):DemoData.expDate;
+            boolean ended=Boolean.getBoolean("flix.demo.expired")||expired||(live!=null && live.optBoolean("expired"));
+            JSONObject user=new JSONObject().put("status",ended?"Expired":"Active").put("username","demo")
+                .put("exp_date",expDate.isEmpty()?JSONObject.NULL:expDate);
+            if(ended)user.put("auth",0);else user.put("auth",1).put("max_connections",String.valueOf(connections)).put("active_cons","0");
+            return new JSONObject().put("user_info",user).put("server_info",new JSONObject().put("timezone","America/Denver")).toString();}
         throw new IllegalStateException("No demo response for "+url);
     }
     static volatile boolean expired;
+    /** Demo account details (QA extras demo_connections and demo_exp: seconds, or "never"). */
+    static volatile int connections=1;
+    static volatile String expDate="1830254400";
+    static volatile java.io.File accountFile;
 
     /*
      * Mixed cases for the ratings and "new" badges (times relative to today):

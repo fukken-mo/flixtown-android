@@ -1,0 +1,54 @@
+name: Account page check
+
+# Settings > Account: Status / Expiration (a date or Never) / Connections from the account API,
+# refreshed when Settings opens, after a refresh and on reopen, last details kept when offline; on a
+# 1080p Android TV emulator (QA build, offline demo server). The same script also runs in "Release check".
+# Results are committed to qa/account-page only.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths: [".github/qa/account_page.sh", ".github/workflows/account-page-qa.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build QA APK
+        run: ./gradlew :app:assembleQa --stacktrace
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Account page on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .github/qa/account_page.sh || true
+      - name: Result
+        if: always()
+        run: |
+          cat qa/account-page/report.txt || true
+          ! grep -h '^FAIL' qa/account-page/report.txt
+      - name: Commit screenshots
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qa/account-page
+          git commit -m "Account page check from TV emulator (${GITHUB_SHA::7})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*5)); done
