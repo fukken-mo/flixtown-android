@@ -1,0 +1,38 @@
+PASS  signed-in TV reached Home
+      card: Subscription. Status Active. Expiration 12/31/2027. Connections 1.
+PASS  1 connection: Status Active, Expiration 12/31/2027 (panel time), Connections 1
+PASS  the detail line still names the account and when it was checked
+PASS  no Plan is shown (the backend has no plan-duration field)
+PASS  connections saved from max_connections
+      server now: {"connections":3}
+      card: Subscription. Status Active. Expiration 12/31/2027. Connections 3.
+PASS  3 connections shown after reopening Settings (no sign-out)
+      server now: {"connections":10,"exp":"1893499200"}
+      card: Subscription. Status Active. Expiration 01/01/2030. Connections 10.
+PASS  10 connections and the changed expiration (01/01/2030)
+      server now: {"connections":10,"exp":"never"}
+      card: Subscription. Status Active. Expiration Never. Connections 10.
+PASS  Never Expire shows Expiration: Never
+PASS  Never Expire saved as no date (not a guessed one)
+PASS  Never Expire is not treated as expired
+      server now: {"offline":true}
+      card: Subscription. Status Active. Expiration Never. Connections 10.
+      detail: Signed in as 0048213977  ·  Couldn't refresh. Showing details from just now.
+PASS  server unreachable: the last valid details stay (Active, Never, 10)
+PASS  server unreachable: a subtle note says the refresh failed
+PASS  server unreachable: the account is not marked expired and the app stays on Home
+PASS  Check now while offline: no crash, details unchanged
+      server now: {"connections":3,"exp":"never"}
+PASS  Check now when back online: Connections 3 and the failure note is gone
+      server now: {"connections":1,"exp":"1830254400"}
+PASS  cold start refreshed the saved account (1 connection, dated) without signing in again
+      card: Subscription. Status Active. Expiration 12/31/2027. Connections 1.
+PASS  after reopening the app Settings shows the new details
+      server now: {"connections":3,"exp":"1830254400"}
+PASS  returning from the background refreshed the account (3 connections)
+      server now: {"expired":true,"exp":"1759968000"}
+PASS  expired: opening Settings moves to the renewal screen
+PASS  expired: status saved as Expired from the server
+PASS  no crash during the whole run
+
+account page: 21 passed, 0 failed
