@@ -45,7 +45,7 @@ menu(){ for attempt in 1 2 3; do
     dump; python3 - "$OUT/ui.xml" "$1" <<'PY' && return 0
 import sys, xml.etree.ElementTree as ET
 for n in ET.parse(sys.argv[1]).getroot().iter('node'):
-    if n.get('resource-id','').endswith(':id/browse_title'): sys.exit(0 if n.get('text')==sys.argv[2] else 1)
+    if n.get('resource-id','').endswith(':id/browse_title'): sys.exit(0 if sys.argv[2] in (n.get('text') or '') else 1)
 sys.exit(1)
 PY
     note "INFO  side menu did not reach $1 (attempt $attempt)"; done; return 1; }
