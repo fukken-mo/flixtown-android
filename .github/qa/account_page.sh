@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Settings › Account (Status / Expiration / Connections) on an Android TV emulator (QA build, offline
+# Settings › Account (Status / Expiration / Devices) on an Android TV emulator (QA build, offline
 # demo server shaped like the Flix Town player_api user_info). The demo account is changed while the
 # app stays open by writing files/demo_account.json with run-as (QA build is debuggable).
 # Results: qa/account-page/report.txt and qa/account-page/screens/*.png
@@ -46,7 +46,7 @@ m=re.search(r"name=\""+k+r"\"(?: value=\"([^\"]*)\"\s*/>|>([^<]*)</string>|\s*/>
 print("" if not m else (m.group(1) or m.group(2) or ""))' "$1"; }
 # The demo server's account, changed while the app stays open.
 server(){ printf '%s' "$1" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"; note "      server now: $1"; }
-# The Account card's spoken summary: "Subscription. Status Active. Expiration 12/31/2027. Connections 3."
+# The Account card's spoken summary: "Subscription. Status Active. Expiration 12/31/2027. Devices 3."
 card(){ dump; python3 - "$OUT/ui.xml" <<'EOF'
 import sys, xml.etree.ElementTree as ET
 for n in ET.parse(sys.argv[1]).getroot().iter('node'):
@@ -70,9 +70,10 @@ wait_activity HomeActivity 45 && sleep 6
 check "signed-in TV reached Home" 'in_activity HomeActivity'
 open_settings
 c="$(card)"; note "      card: $c"
-check "1 connection: Status Active, Expiration 12/31/2027 (panel time), Connections 1" '[ "$c" = "Subscription. Status Active. Expiration 12/31/2027. Connections 1." ]'
+check "1 device: Status Active, Expiration 12/31/2027 (panel time), Devices 1" '[ "$c" = "Subscription. Status Active. Expiration 12/31/2027. Devices 1." ]'
 check "the detail line still names the account and when it was checked" 'detail | grep -q "Signed in as 0048213977  ·  Updated"'
 check "no Plan is shown (the backend has no plan-duration field)" '! grep -qw "Plan" "$OUT/ui.xml"'
+check "customer wording says Devices, never Connections" '! grep -qi "connection" "$OUT/ui.xml"'
 check "connections saved from max_connections" '[ "$(pref account_max_connections)" = "1" ]'
 shot 01-active-1-connection
 
@@ -80,21 +81,21 @@ shot 01-active-1-connection
 server '{"connections":3}'
 reopen_settings
 c="$(card)"; note "      card: $c"
-check "3 connections shown after reopening Settings (no sign-out)" '[ "$c" = "Subscription. Status Active. Expiration 12/31/2027. Connections 3." ]'
+check "3 devices shown after reopening Settings (no sign-out)" '[ "$c" = "Subscription. Status Active. Expiration 12/31/2027. Devices 3." ]'
 shot 02-active-3-connections
 
 # ---------------- 10 connections and a new expiration date ----------------
 server '{"connections":10,"exp":"1893499200"}'
 reopen_settings
 c="$(card)"; note "      card: $c"
-check "10 connections and the changed expiration (01/01/2030)" '[ "$c" = "Subscription. Status Active. Expiration 01/01/2030. Connections 10." ]'
+check "10 devices and the changed expiration (01/01/2030)" '[ "$c" = "Subscription. Status Active. Expiration 01/01/2030. Devices 10." ]'
 shot 03-active-10-connections-new-date
 
 # ---------------- Never Expire (exp_date null) ----------------
 server '{"connections":10,"exp":"never"}'
 reopen_settings
 c="$(card)"; note "      card: $c"
-check "Never Expire shows Expiration: Never" '[ "$c" = "Subscription. Status Active. Expiration Never. Connections 10." ]'
+check "Never Expire shows Expiration: Never" '[ "$c" = "Subscription. Status Active. Expiration Never. Devices 10." ]'
 check "Never Expire saved as no date (not a guessed one)" '[ -z "$(pref account_exp_date)" ]'
 check "Never Expire is not treated as expired" 'in_activity HomeActivity && [ "$(pref expired)" != "true" ]'
 shot 04-never-expire
@@ -103,19 +104,19 @@ shot 04-never-expire
 server '{"offline":true}'
 reopen_settings
 c="$(card)"; d="$(detail)"; note "      card: $c"; note "      detail: $d"
-check "server unreachable: the last valid details stay (Active, Never, 10)" '[ "$c" = "Subscription. Status Active. Expiration Never. Connections 10." ]'
+check "server unreachable: the last valid details stay (Active, Never, 10)" '[ "$c" = "Subscription. Status Active. Expiration Never. Devices 10." ]'
 check "server unreachable: a subtle note says the refresh failed" 'echo "$d" | grep -q "Couldn.t refresh. Showing details from"'
 check "server unreachable: the account is not marked expired and the app stays on Home" 'in_activity HomeActivity && [ "$(pref expired)" != "true" ] && [ "$(pref account_status)" = "Active" ]'
 shot 05-network-failure
 # Select "Check now" (the card is focused when Settings opens) while still offline.
 to_card; key DPAD_CENTER; sleep 3
 c="$(card)"
-check "Check now while offline: no crash, details unchanged" 'in_activity HomeActivity && [ "$c" = "Subscription. Status Active. Expiration Never. Connections 10." ]'
+check "Check now while offline: no crash, details unchanged" 'in_activity HomeActivity && [ "$c" = "Subscription. Status Active. Expiration Never. Devices 10." ]'
 # Back online: Check now picks the change up at once.
 server '{"connections":3,"exp":"never"}'
 to_card; key DPAD_CENTER; sleep 3
 c="$(card)"; d="$(detail)"
-check "Check now when back online: Connections 3 and the failure note is gone" '[ "$c" = "Subscription. Status Active. Expiration Never. Connections 3." ] && echo "$d" | grep -q "Updated"'
+check "Check now when back online: Devices 3 and the failure note is gone" '[ "$c" = "Subscription. Status Active. Expiration Never. Devices 3." ] && echo "$d" | grep -q "Updated"'
 shot 06-check-now-back-online
 
 # ---------------- app reopen (cold start): refreshed before Settings is opened ----------------
@@ -125,7 +126,7 @@ wait_activity HomeActivity 45 && sleep 6
 check "cold start refreshed the saved account (1 connection, dated) without signing in again" '[ "$(pref account_max_connections)" = "1" ] && [ "$(pref account_exp_date)" = "1830254400" ]'
 open_settings
 c="$(card)"; note "      card: $c"
-check "after reopening the app Settings shows the new details" '[ "$c" = "Subscription. Status Active. Expiration 12/31/2027. Connections 1." ]'
+check "after reopening the app Settings shows the new details" '[ "$c" = "Subscription. Status Active. Expiration 12/31/2027. Devices 1." ]'
 shot 07-after-app-reopen
 
 # ---------------- back from the background (normal refresh) ----------------

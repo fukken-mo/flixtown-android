@@ -66,6 +66,7 @@ public class LoginActivity extends Activity {
         DemoData.offline=getIntent().getBooleanExtra("demo_offline",false);
         DemoData.accountFile=new java.io.File(getFilesDir(),"demo_account.json");
         if(getIntent().getBooleanExtra("demo_reset",false))DemoData.accountFile.delete();
+        DemoData.legacyRenewal=getIntent().getBooleanExtra("demo_legacy_renewal",false);
         DemoData.connections=getIntent().getIntExtra("demo_connections",1);
         String exp=getIntent().getStringExtra("demo_exp");DemoData.expDate=exp==null?"1830254400":"never".equals(exp)?"":exp;
         DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);

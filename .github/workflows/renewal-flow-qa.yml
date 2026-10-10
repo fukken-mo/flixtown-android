@@ -1,0 +1,59 @@
+name: Renewal flow check
+
+# In-app renewal with Cash App Pay (QR on the TV, OnePanel-shaped demo server) on 1080p and 720p
+# Android TV emulators (QA build). The same script also runs in "Release check".
+# Results are committed to qa/renewal-flow and qa/renewal-flow-720p only.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths: [".github/qa/renewal_flow.sh", ".github/workflows/renewal-flow-qa.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { profile: tv_1080p, out: qa/renewal-flow }
+          - { profile: tv_720p, out: qa/renewal-flow-720p }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build QA APK
+        run: ./gradlew :app:assembleQa --stacktrace
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Renewal flow on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: QA_OUT=${{ matrix.out }} bash .github/qa/renewal_flow.sh || true
+      - name: Result
+        if: always()
+        run: |
+          cat ${{ matrix.out }}/report.txt || true
+          ! grep -h '^FAIL' ${{ matrix.out }}/report.txt
+      - name: Commit screenshots
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ${{ matrix.out }}
+          git commit -m "Renewal flow check from TV emulator, ${{ matrix.profile }} (${GITHUB_SHA::7})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*5)); done

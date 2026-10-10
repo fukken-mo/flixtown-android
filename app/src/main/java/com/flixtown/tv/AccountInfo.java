@@ -84,9 +84,12 @@ final class AccountInfo {
         if(raw.isEmpty() || "null".equals(raw) || "0".equals(raw))return "Never";
         long secs;try{secs=Long.parseLong(raw);}catch(Exception e){return "";}
         if(secs<=0)return "Never";
+        return formatDate(c,secs);
+    }
+    /** MM/dd/yyyy in the panel's own timezone (so the date matches OnePanel), the TV's if the server did not say. */
+    static String formatDate(Context c,long secs){
         SimpleDateFormat f=new SimpleDateFormat("MM/dd/yyyy",Locale.US);
-        // The panel's own timezone, so the date matches OnePanel; the TV's if the server did not say.
-        String zone=p.getString(TIMEZONE,"");
+        String zone=Api.prefs(c).getString(TIMEZONE,"");
         f.setTimeZone(zone.isEmpty()?TimeZone.getDefault():TimeZone.getTimeZone(zone));
         return f.format(new Date(secs*1000));
     }

@@ -158,7 +158,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
 
     @Override protected void onResume(){super.onResume();resumed=true;ScreenAwake.on(this);scheduleRotation();
-        if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}}
+        if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
+        if(settingsPage!=null && tab.equals("Settings"))settingsPage.refreshStatus();}   // back from renewing: new expiry
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
     @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
     /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
@@ -481,6 +482,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         StartupRefresh.start(this,true);
     }
     @Override public void checkForUpdates(){updates.select();}
+    @Override public void openRenewal(){
+        startActivity(new Intent(this,RenewalActivity.class).putExtra(RenewalActivity.EXTRA_EARLY,true));
+    }
     @Override public void accountEnded(){
         if(isFinishing()||destroyed)return;
         Api.prefs(this).edit().putBoolean("expired",true).apply();

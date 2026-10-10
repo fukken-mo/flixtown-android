@@ -114,6 +114,7 @@ final class StartupRefresh {
             JSONObject cfg=Api.get(BuildConfig.PANEL_URL+"config.php");
             boolean introOn=cfg.optBoolean("intro_enabled");
             Api.prefs(c).edit().putString("intro_url",introOn?cfg.optString("intro_url",""):"").apply();
+            RenewalApi.remember(c,cfg);   // in-app renewal is offered only when the panel names its service
             MAIN.post(()->{if(token!=generation)return;config=cfg;for(Listener l:new ArrayList<>(listeners))l.onConfig(cfg);});
 
             JSONObject account;

@@ -59,7 +59,7 @@ for node in re.findall(r"<node [^>]*>",xml):
   [ -n "$xy" ] && adb shell input tap $xy && return 0
   return 1
 }
-# Settings rows: 0 Subscription … 3 Autoplay … 7 Check for app updates, 8 App version, 9 Sign out
+# Settings rows: 0 Subscription, 1 Renew subscription (in-app renewal offered by the demo panel), … 4 Autoplay … 8 Check for app updates, 9 App version, 10 Sign out
 open_settings(){ key DPAD_LEFT; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.2; }
 
 OLD=10010; NEW=10011
@@ -80,7 +80,7 @@ popup && bad "popup shown although the app is current" || ok "current version: n
 
 # ---------- 3. Settings: manual check says up to date (and set a preference to keep) ----------
 open_settings
-key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; shot 02-autoplay-off 0.5
+key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; shot 02-autoplay-off 0.5
 key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 3; shot 03-manual-up-to-date 0.3
 screen_has "up to date" && screen_has "Version 3.5.0" && screen_has 'text="Done"' && ok "manual check: 'You’re up to date', version shown, Done" || bad "manual up-to-date dialog wrong"
 key DPAD_CENTER
@@ -90,7 +90,7 @@ kill $PANEL; sleep 1
 adb shell am force-stop $PKG; launch --ez demo_offline true
 sleep 16;                                   shot 04-offline-start 0.5
 popup || screen_has "Unable to check" && bad "offline start showed an update dialog" || ok "offline start: no update dialog (silent)"
-open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
 sleep 4;                                    shot 05-manual-check-offline 0.3
 screen_has "Unable to check for updates" && screen_has "Try again" && screen_has 'text="Close"' && ok "manual check offline: 'Unable to check for updates', Try again / Close" || bad "offline manual check dialog wrong"
 ! screen_has "up to date" && ok "offline is never reported as up to date" || bad "offline reported as up to date"
@@ -159,7 +159,7 @@ launch;                                     sleep 16; shot 15-after-update 0.5
 screen_has "Your movies are waiting" && bad "sign-in lost" || ok "still signed in after the update"
 popup && bad "popup shown although now current" || ok "now current: no automatic popup"
 adb shell run-as $PKG cat shared_prefs/flix.xml 2>/dev/null | grep -q 'name="autoplay_next" value="false"' && ok "autoplay setting kept (Off)" || bad "autoplay setting lost"
-open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+open_settings; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
 sleep 3;                                    shot 16-manual-up-to-date-new 0.3
 screen_has "Version 3.5.1" && ok "manual check after update: up to date, version 3.5.1" || bad "manual check after update wrong"
 key DPAD_CENTER

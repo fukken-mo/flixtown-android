@@ -22,6 +22,8 @@ import java.util.Locale;
  */
 final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     interface Host { void refreshCatalog(); void checkForUpdates(); void signOut(); String updateValue(); String updateDetail();
+        /** Opens the renewal screen for an active account (in-app renewal). */
+        void openRenewal();
         /** The backend now reports the account as not active: the same path as the startup refresh (renewal screen). */
         void accountEnded(); }
 
@@ -33,14 +35,20 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     // ISO 639-1 codes; Media3 matches them against the stream's own language tags (en = eng, …).
     static final String[] LANGUAGE_CODES={"en","es","fr","de","it","pt","ar","hi","tr","ru","nl","pl","el","ja","ko","zh"};
 
-    private static final int ACCOUNT=0,REFRESH=1,IMAGES=2,AUTOPLAY_ROW=3,AUDIO=4,SUBTITLES=5,SUBTITLE_LANG=6,UPDATES=7,VERSION=8,SIGN_OUT=9;
-    private static final int[] ROWS={ACCOUNT,REFRESH,IMAGES,AUTOPLAY_ROW,AUDIO,SUBTITLES,SUBTITLE_LANG,UPDATES,VERSION,SIGN_OUT};
+    private static final int ACCOUNT=0,REFRESH=1,IMAGES=2,AUTOPLAY_ROW=3,AUDIO=4,SUBTITLES=5,SUBTITLE_LANG=6,UPDATES=7,VERSION=8,SIGN_OUT=9,RENEW=10;
+    private static final int[] ALL_ROWS={ACCOUNT,RENEW,REFRESH,IMAGES,AUTOPLAY_ROW,AUDIO,SUBTITLES,SUBTITLE_LANG,UPDATES,VERSION,SIGN_OUT};
+    /** "Renew subscription" is listed only when the panel offers in-app renewal. */
+    private int[] ROWS=ALL_ROWS;
     static final int ROW_WIDTH_DP=760;
 
     private final Activity a;private final Host host;private final SharedPreferences prefs;
     private long imageBytes=-1;
 
-    SettingsPage(Activity a,Host host){this.a=a;this.host=host;this.prefs=Api.prefs(a);setHasStableIds(true);measureImages();}
+    SettingsPage(Activity a,Host host){this.a=a;this.host=host;this.prefs=Api.prefs(a);setHasStableIds(true);ROWS=rows();measureImages();}
+    private int[] rows(){
+        if(RenewalApi.available(a))return ALL_ROWS;
+        int[] out=new int[ALL_ROWS.length-1];int n=0;for(int r:ALL_ROWS)if(r!=RENEW)out[n++]=r;return out;
+    }
 
     @Override public int getItemCount(){return ROWS.length;}
     @Override public long getItemId(int position){return ROWS[position];}
@@ -70,7 +78,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         TextView detail=Ui.text(a,"",14);detail.setTextColor(Ui.TEXT_2);detail.setMaxLines(2);detail.setEllipsize(TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams dp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT);dp.topMargin=Ui.dp(a,2);
         words.addView(detail,dp);
-        // Account only: Status, Expiration and Connections as large tiles under the title.
+        // Account only: Status, Expiration and Devices as large tiles under the title.
         LinearLayout stats=Ui.row(a);stats.setVisibility(View.GONE);
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
         sp.topMargin=Ui.dp(a,12);sp.bottomMargin=Ui.dp(a,4);words.addView(stats,sp);
@@ -118,6 +126,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     private static String title(int row){
         switch(row){
             case ACCOUNT:return "Subscription";
+            case RENEW:return "Renew subscription";
             case REFRESH:return "Check for new movies and shows";
             case IMAGES:return "Clear image cache";
             case AUTOPLAY_ROW:return "Autoplay next episode";
@@ -133,6 +142,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         switch(row){
             case ACCOUNT:{String[] account=AccountStore.read(a);
                 return (account==null?"":"Signed in as "+account[0]+"  ·  ")+accountState();}
+            case RENEW:return "Add time with Cash App Pay, right here on the TV";
             case REFRESH:{if(StartupRefresh.running())return "Checking now…";
                 long at=prefs.getLong(LAST_REFRESH,0);
                 if(at<=0)return "Updates your account and the full catalog";
@@ -152,6 +162,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     private String value(int row){
         switch(row){
             case ACCOUNT:return "Check now  ›";
+            case RENEW:return "Renew  ›";
             case AUTOPLAY_ROW:return prefs.getBoolean(AUTOPLAY,true)?"On":"Off";
             case SUBTITLES:return prefs.getBoolean(SUBTITLES_ON,false)?"On":"Off";
             case AUDIO:{String code=prefs.getString(AUDIO_LANGUAGE,"");return code.isEmpty()?"Stream default  ›":languageName(code)+"  ›";}
@@ -170,7 +181,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         if(AccountInfo.lastCheckFailed(a))return when.isEmpty()?"Couldn't check your subscription. Select to try again.":"Couldn't refresh. Showing details from "+when+".";
         return when.isEmpty()?"Select to check your subscription now.":"Updated "+when;
     }
-    /** Large tiles: Status, Expiration (a date or Never) and Connections, each only when the server reported it. */
+    /** Large tiles: Status, Expiration (a date or Never) and Devices (max_connections), each only when the server reported it. */
     private void bindStats(Holder h){
         h.stats.removeAllViews();
         if(h.row!=ACCOUNT){h.stats.setVisibility(View.GONE);return;}
@@ -178,7 +189,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         boolean active=AccountInfo.isActive(status);
         addStat(h.stats,"Status",status.isEmpty()?"Unknown":active?"Active":status,status.isEmpty()?Ui.TEXT_2:active?0xFF6FCF97:0xFFF0A29F,!status.isEmpty());
         if(!expiration.isEmpty())addStat(h.stats,"Expiration",expiration,Ui.TEXT,false);
-        if(connections>0)addStat(h.stats,"Connections",String.valueOf(connections),Ui.TEXT,false);
+        if(connections>0)addStat(h.stats,"Devices",String.valueOf(connections),Ui.TEXT,false);
         h.stats.setVisibility(View.VISIBLE);
     }
     private void addStat(LinearLayout stats,String label,String value,int color,boolean dot){
@@ -196,11 +207,11 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         if(stats.getChildCount()>0)tp.leftMargin=Ui.dp(a,10);
         stats.addView(tile,tp);
     }
-    /** Read aloud by TalkBack and used by the emulator check: "Subscription. Status Active. Expiration Never. Connections 3." */
+    /** Read aloud by TalkBack and used by the emulator check: "Subscription. Status Active. Expiration Never. Devices 3." */
     private String accountSummary(){
         StringBuilder out=new StringBuilder("Subscription. Status ").append(AccountInfo.status(a).isEmpty()?"Unknown":AccountInfo.status(a)).append('.');
         String expiration=AccountInfo.expiration(a);if(!expiration.isEmpty())out.append(" Expiration ").append(expiration).append('.');
-        int connections=AccountInfo.connections(a);if(connections>0)out.append(" Connections ").append(connections).append('.');
+        int connections=AccountInfo.connections(a);if(connections>0)out.append(" Devices ").append(connections).append('.');
         return out.toString();
     }
     /** Settings was opened: ask the server for the current details (account only, quick) and redraw. */
@@ -225,6 +236,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     private void onSelect(Holder h){
         switch(h.row){
             case ACCOUNT:checkAccount(true);break;
+            case RENEW:host.openRenewal();break;
             case REFRESH:host.refreshCatalog();notifyItemChanged(indexOf(REFRESH));break;
             case IMAGES:
                 Images.clearCache(new android.os.Handler(android.os.Looper.getMainLooper()),freed->{
@@ -248,12 +260,14 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         Ui.picker(a,title,labels,selected,which->{
             prefs.edit().putString(key,which==0?"":LANGUAGE_CODES[which-1]).apply();notifyItemChanged(indexOf(row));});
     }
-    private static int indexOf(int row){for(int i=0;i<ROWS.length;i++)if(ROWS[i]==row)return i;return 0;}
+    private int indexOf(int row){for(int i=0;i<ROWS.length;i++)if(ROWS[i]==row)return i;return 0;}
 
     /** Checking, up to date, available, downloading, ready or failed. */
     void updateRowChanged(){notifyItemChanged(indexOf(UPDATES));}
     /** Refreshes the rows whose text depends on the account or the last refresh. */
-    void refreshStatus(){notifyItemChanged(indexOf(ACCOUNT));notifyItemChanged(indexOf(REFRESH));}
+    void refreshStatus(){
+        int[] now=rows();if(now.length!=ROWS.length){ROWS=now;notifyDataSetChanged();return;}   // renewal offer appeared or went away
+        notifyItemChanged(indexOf(ACCOUNT));notifyItemChanged(indexOf(REFRESH));}
     private void measureImages(){Api.IO.execute(()->{long bytes=Images.diskBytes();
         a.runOnUiThread(()->{imageBytes=bytes;if(!a.isFinishing())notifyItemChanged(indexOf(IMAGES));});});}
 }

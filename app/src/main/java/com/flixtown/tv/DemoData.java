@@ -44,7 +44,9 @@ final class DemoData {
         Thread.sleep(url.contains("get_vod_streams")?(slow?21000:900):250);
         if(url.contains("config.php"))return new JSONObject().put("xtream_url","https://demo.flixtown.invalid").put("intro_enabled",intro)
             .put("intro_url",intro?STREAM:"").put("cashapp_url","https://cash.app/$FlixTownDemo")
-            .put("plans",new JSONObject().put("1m","15").put("3m","40").put("6m","75").put("12m","140")).toString();
+            .put("plans",new JSONObject().put("1m","15").put("3m","40").put("6m","75").put("12m","140"))
+            .put("renewal_api_url",legacyRenewal?"":RENEWAL_URL).toString();
+        if(url.startsWith(RENEWAL_URL))return renewal(new JSONObject(body==null?"{}":body));
         if(url.contains("pair-start")){polls=0;return new JSONObject().put("code","FT4K2Q").put("verifier","demo")
             .put("activation_url","https://myflixtown.com/activate.php?code=FT4K2Q").toString();}
         if(url.contains("pair-poll")){polls++;
@@ -111,15 +113,9 @@ final class DemoData {
             // Same shape as the Flix Town backend: exp_date is null for Never Expire; an expired line's
             // answer has auth 0 and no connection count.
             // QA: files/demo_account.json (written with run-as) changes the account while the app stays open.
-            JSONObject live=null;
-            try{if(accountFile!=null && accountFile.exists()){
-                java.io.FileInputStream in=new java.io.FileInputStream(accountFile);byte[] data=new byte[(int)accountFile.length()];
-                int n=0;while(n<data.length){int r=in.read(data,n,data.length-n);if(r<0)break;n+=r;}in.close();
-                live=new JSONObject(new String(data,0,n,"UTF-8"));}}catch(Exception ignored){}
+            JSONObject live=live();
             if(live!=null && live.optBoolean("offline"))throw new java.io.IOException("Demo: account server unreachable");
-            int connections=live!=null?live.optInt("connections",DemoData.connections):DemoData.connections;
-            String expDate=live!=null && live.has("exp")?("never".equals(live.optString("exp"))?"":live.optString("exp")):DemoData.expDate;
-            boolean ended=Boolean.getBoolean("flix.demo.expired")||expired||(live!=null && live.optBoolean("expired"));
+            int connections=connections(live);String expDate=expDate(live);boolean ended=ended(live);
             JSONObject user=new JSONObject().put("status",ended?"Expired":"Active").put("username","demo")
                 .put("exp_date",expDate.isEmpty()?JSONObject.NULL:expDate);
             if(ended)user.put("auth",0);else user.put("auth",1).put("max_connections",String.valueOf(connections)).put("active_cons","0");
@@ -131,6 +127,71 @@ final class DemoData {
     static volatile int connections=1;
     static volatile String expDate="1830254400";
     static volatile java.io.File accountFile;
+    static volatile boolean legacyRenewal;
+    static final String RENEWAL_URL="https://demo.flixtown.invalid/onepanel/api/tv-renewal.php";
+    /** After a demo renewal: the new expiry (seconds), which wins over the QA file's "expired". */
+    private static volatile long renewedUntil;
+    private static JSONObject payment;
+
+    private static JSONObject live(){
+        try{if(accountFile!=null && accountFile.exists()){
+            java.io.FileInputStream in=new java.io.FileInputStream(accountFile);byte[] data=new byte[(int)accountFile.length()];
+            int n=0;while(n<data.length){int r=in.read(data,n,data.length-n);if(r<0)break;n+=r;}in.close();
+            return new JSONObject(new String(data,0,n,"UTF-8"));}}catch(Exception ignored){}
+        return null;
+    }
+    private static int connections(JSONObject live){return live!=null?live.optInt("connections",connections):connections;}
+    private static String expDate(JSONObject live){
+        if(renewedUntil>0)return String.valueOf(renewedUntil);
+        return live!=null && live.has("exp")?("never".equals(live.optString("exp"))?"":live.optString("exp")):expDate;}
+    private static boolean ended(JSONObject live){
+        if(renewedUntil>0)return false;
+        return Boolean.getBoolean("flix.demo.expired")||expired||(live!=null && live.optBoolean("expired"));}
+
+    /**
+     * Demo of the OnePanel renewal service (same answers as panel/onepanel-tv-renewal). The QA file
+     * steers it: "pay" = state reported after a code is created (waiting by default), "plan" =
+     * current plan months (3 by default, 0 = unknown), "renewal_offline", "payments_off".
+     */
+    private static String renewal(JSONObject in)throws Exception{
+        JSONObject live=live();
+        if(live!=null && live.optBoolean("renewal_offline"))throw new java.io.IOException("Demo: renewal service unreachable");
+        String action=in.optString("action");
+        if(action.equals("context")){
+            if(in.optString("username").isEmpty()||in.optString("password").isEmpty())
+                return new JSONObject().put("ok",false).put("error","auth").put("message","Please sign in again.").toString();
+            String exp=expDate(live);int plan=live!=null?live.optInt("plan",3):3;
+            JSONObject account=new JSONObject().put("username",in.optString("username")).put("status",ended(live)?"Expired":"Active")
+                .put("expires_at",exp.isEmpty()?JSONObject.NULL:Long.parseLong(exp)).put("devices",connections(live))
+                .put("plan_months",plan>0?plan:JSONObject.NULL).put("plan_label",plan>0?plan+(plan==1?" Month":" Months"):JSONObject.NULL)
+                .put("renewable",!exp.isEmpty());
+            JSONArray plans=new JSONArray();int[][] list={{1,15},{3,40},{6,75},{12,135}};
+            for(int[] p:list)plans.put(new JSONObject().put("months",p[0]).put("label",p[0]+(p[0]==1?" Month":" Months")).put("price",p[1]+".00"));
+            return new JSONObject().put("ok",true).put("session","demo-session").put("session_ttl",1800).put("account",account)
+                .put("plans",plans).put("currency","USD").put("payments_available",live==null||!live.optBoolean("payments_off")).toString();
+        }
+        if(!"demo-session".equals(in.optString("session")))return new JSONObject().put("ok",false).put("error","session").put("message","Your session ended.").toString();
+        if(action.equals("create")){int m=in.optInt("months");int price=m==1?15:m==3?40:m==6?75:m==12?135:0;
+            if(price==0)return new JSONObject().put("ok",false).put("error","plan").put("message","Choose one of the plans shown.").toString();
+            payment=new JSONObject().put("id","tvp_"+String.format(Locale.US,"%024x",System.nanoTime())).put("state","waiting").put("months",m)
+                .put("label",m+(m==1?" Month":" Months")).put("amount",price+".00").put("expires_in",900)
+                .put("checkout_url","https://square.link/u/demo"+m);
+            return new JSONObject().put("ok",true).put("payment",payment).toString();
+        }
+        if(payment==null||!payment.optString("id").equals(in.optString("payment_id")))
+            return new JSONObject().put("ok",false).put("error","not_found").put("message","That payment was not found.").toString();
+        String want=live!=null?live.optString("pay","waiting"):"waiting";
+        String now=payment.optString("state");
+        if(action.equals("cancel") && (now.equals("waiting")) && !want.equals("processing") && !want.equals("renewed"))want="cancelled";
+        if(!now.equals("renewed") && want.equals("renewed")){
+            long base=Math.max(System.currentTimeMillis()/1000,parse(expDate(live)));
+            renewedUntil=base+payment.optInt("months")*30L*86400;payment.put("new_expires_at",renewedUntil);}
+        if(!now.equals("renewed"))payment.put("state",want);
+        JSONObject out=new JSONObject(payment.toString());
+        if(!out.optString("state").equals("waiting"))out.remove("checkout_url");
+        return new JSONObject().put("ok",true).put("payment",out).toString();
+    }
+    private static long parse(String s){try{return Long.parseLong(s);}catch(Exception e){return 0;}}
 
     /*
      * Mixed cases for the ratings and "new" badges (times relative to today):

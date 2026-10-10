@@ -13,6 +13,7 @@ final class SignOut {
     private SignOut(){}
     static void run(Context c){
         AccountStore.clear(c);
+        RenewalApi.forget();
         android.content.SharedPreferences.Editor e=Api.prefs(c).edit().remove("expired").remove(SettingsPage.LAST_REFRESH);
         for(String key:AccountInfo.KEYS)e.remove(key);
         e.apply();

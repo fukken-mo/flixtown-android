@@ -293,8 +293,9 @@ sub="$(qaf subtitle)"
 key BACK; sleep 1; in_activity PlayerActivity && key BACK; sleep 1
 
 # ---------------- 9. Expired account: renewal and Cash App ----------------
-launch --ez demo_expired true
-wait_for "Your subscription has ended" 30 && ok "expired account opens the renewal screen" || bad "renewal screen not shown ($(resumed))"
+# The original renewal screen (panel without in-app renewal); in-app renewal has its own check (renewal_flow.sh).
+launch --ez demo_expired true --ez demo_legacy_renewal true
+wait_for "Send renewal request" 30 && ok "expired account opens the renewal screen" || bad "renewal screen not shown ($(resumed))"
 shot 23-renewal 0.3
 check "renewal shows plans with panel prices" 'has "\$15"'
 check "renewal shows the panel's Cash App details" 'has "FlixTownDemo"'
@@ -302,7 +303,7 @@ focus_to DPAD_DOWN "Send renewal request" 8 || note "INFO  renewal focus is on: 
 key DPAD_CENTER; sleep 3
 check "renewal request is sent" 'has "Request sent"'
 shot 24-renewal-sent 0.2
-launch;                                      sleep 4
+launch --ez demo_legacy_renewal true;        sleep 4
 wait_activity HomeActivity 30 && ok "after the payment is confirmed (account active) Flix Town reopens" || bad "active account did not leave renewal ($(resumed))"
 sleep 5
 who="$(signed_in_as)"

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Renewal plan tiles keep their restyle action in this view tag. -->
+    <item name="plan_style" type="id" />
+</resources>
