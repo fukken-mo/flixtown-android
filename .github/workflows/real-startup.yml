@@ -1,0 +1,83 @@
+name: Real-network startup check
+
+# Normal (non-demo) builds of 3.8.3 (1eba5d1), 3.8.4 (19729e2) and the current commit, with only the
+# panel address pointed at a mock panel/Xtream/renewal server on the host (.github/qa/mock_flix.py),
+# so the app's real HTTP code runs: fresh sign-in through the login form, then Movies and TV Shows
+# must fill, with the renewal API absent, reachable, returning 500, timing out and unreachable.
+# Results are committed to qa/real-startup only.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths: [".github/qa/real_startup.sh", ".github/qa/mock_flix.py", ".github/workflows/real-startup.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [31, 28]
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build 3.8.3, 3.8.4 and the current commit against the mock panel
+        run: |
+          mkdir -p dist
+          build(){   # <ref or "HEAD"> <name>
+            dir=build-$2; rm -rf $dir
+            if [ "$1" = HEAD ]; then cp -r . /tmp/$dir && mv /tmp/$dir $dir; else git worktree add -f $dir $1; fi
+            sed -i 's#^val panelUrl = .*#val panelUrl = "http://10.0.2.2:8790/api/"#' $dir/app/build.gradle.kts
+            grep -n '^val panelUrl' $dir/app/build.gradle.kts
+            (cd $dir && ./gradlew -q :app:assembleDebug)
+            cp $dir/app/build/outputs/apk/debug/app-debug.apk dist/$2.apk
+          }
+          build 1eba5d1 v383
+          build 19729e2 v384
+          build HEAD current
+          ls -la dist
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Start mock panel / Xtream / renewal server
+        run: |
+          echo none > /tmp/flix-mode
+          nohup python3 .github/qa/mock_flix.py 8790 /tmp/flix-mode > /tmp/mock.log 2>&1 &
+          sleep 1; curl -s localhost:8790/api/config.php
+      - name: Fresh sign-in and catalog on an Android TV emulator (API ${{ matrix.api }})
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            bash .github/qa/real_startup.sh dist/v383.apk api${{ matrix.api }}-3.8.3 none timeout || true
+            bash .github/qa/real_startup.sh dist/v384.apk api${{ matrix.api }}-3.8.4 none ok 500 timeout unreachable || true
+            bash .github/qa/real_startup.sh dist/current.apk api${{ matrix.api }}-current none ok 500 timeout unreachable || true
+      - name: Result
+        if: always()
+        run: |
+          cp /tmp/mock.log qa/real-startup/mock-api${{ matrix.api }}.log || true
+          cat qa/real-startup/api${{ matrix.api }}-*/report.txt || true
+          ! grep -h '^FAIL' qa/real-startup/api${{ matrix.api }}-*/report.txt
+      - name: Commit results
+        if: always()
+        run: |
+          rm -rf build-*; git worktree prune
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qa/real-startup
+          git commit -m "Real-network startup check, API ${{ matrix.api }} (${GITHUB_SHA::7})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*5)); done
