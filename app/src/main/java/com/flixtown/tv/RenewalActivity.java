@@ -249,7 +249,7 @@ public class RenewalActivity extends Activity {
         scroll.addView(col,new FrameLayout.LayoutParams(-1,-2));
 
         ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.flix_logo);logo.setAdjustViewBounds(true);
-        col.addView(logo,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,70)));
+        col.addView(logo,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,62)));
         heading=Ui.heading(this,"",30);heading.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-2,-2);hp.topMargin=Ui.dp(this,6);col.addView(heading,hp);
         subline=Ui.text(this,"",16);subline.setTextColor(Ui.TEXT_2);subline.setGravity(Gravity.CENTER);col.addView(subline);
@@ -258,10 +258,10 @@ public class RenewalActivity extends Activity {
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-2,-2);sp.topMargin=Ui.dp(this,14);col.addView(summary,sp);
 
         planRow=Ui.row(this);planRow.setGravity(Gravity.CENTER);planRow.setClipChildren(false);planRow.setClipToPadding(false);
-        LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-2,-2);pp.topMargin=Ui.dp(this,18);col.addView(planRow,pp);
+        LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-2,-2);pp.topMargin=Ui.dp(this,16);col.addView(planRow,pp);
 
         pay=Ui.primaryButton(this,"Pay with Cash App Pay");pay.setTextSize(20);pay.setId(View.generateViewId());
-        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,480),Ui.dp(this,58));bp.topMargin=Ui.dp(this,18);
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,480),Ui.dp(this,58));bp.topMargin=Ui.dp(this,16);
         col.addView(pay,bp);pay.setOnClickListener(v->onPrimary());
 
         status=Ui.text(this,"",16);status.setTextColor(Ui.TEXT_2);status.setGravity(Gravity.CENTER);status.setMaxLines(2);
@@ -280,6 +280,14 @@ public class RenewalActivity extends Activity {
             Ui.dialog(this,"Sign out of this account?","You can sign in with another account on the next screen.",
                 new String[]{"Cancel","Sign out"},0,i->{if(i==1){AccountStore.clear(this);RenewalApi.forget();Api.prefs(this).edit().remove("expired").apply();
                     startActivity(new Intent(this,LoginActivity.class));finish();}},null);});
+
+        // D-pad: plans (Left/Right) → Pay → Check again / second button; nothing wraps or escapes sideways.
+        check.setId(View.generateViewId());secondary.setId(View.generateViewId());
+        pay.setNextFocusDownId(check.getId());pay.setNextFocusLeftId(pay.getId());pay.setNextFocusRightId(pay.getId());
+        check.setNextFocusUpId(pay.getId());check.setNextFocusLeftId(check.getId());check.setNextFocusRightId(secondary.getId());
+        check.setNextFocusDownId(check.getId());
+        secondary.setNextFocusUpId(pay.getId());secondary.setNextFocusLeftId(check.getId());secondary.setNextFocusRightId(secondary.getId());
+        secondary.setNextFocusDownId(secondary.getId());
 
         payment=new RenewalPayment(this,shell,new RenewalPayment.Listener(){
             @Override public void onRenewed(long newExpiresAt){renewedHere=true;
@@ -370,20 +378,24 @@ public class RenewalActivity extends Activity {
         if(!known&&list!=null&&list.length()>0)chosenMonths=list.optJSONObject(0).optInt("months");
         for(int i=0;list!=null&&i<list.length();i++){JSONObject p=list.optJSONObject(i);if(p==null)continue;
             View tile=planTile(p,p.optInt("months")==current);planTiles.add(tile);
-            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(Ui.dp(this,170),Ui.dp(this,104));
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(Ui.dp(this,170),Ui.dp(this,98));
             if(planRow.getChildCount()>0)lp.leftMargin=Ui.dp(this,14);
             planRow.addView(tile,lp);if(p.optInt("months")==chosenMonths)focus=tile;}
         status.setTextColor(Ui.TEXT_2);status.setText(early?"Choose a plan. The time is added to your current expiration date.":"Choose a plan, then pay with Cash App Pay on your phone.");
         updatePay();
+        // Ends of the row stay put; Up has nothing above; Down goes to Pay.
+        for(int i=0;i<planTiles.size();i++){View t=planTiles.get(i);t.setNextFocusUpId(t.getId());
+            if(i==0)t.setNextFocusLeftId(t.getId());if(i==planTiles.size()-1)t.setNextFocusRightId(t.getId());}
         if(focus!=null){View f=focus;f.post(f::requestFocus);}
     }
     private View planTile(JSONObject p,boolean current){
         int months=p.optInt("months");String label=p.optString("label");String price=priceText(p.optString("price"));
         LinearLayout tile=Ui.column(this);tile.setGravity(Gravity.CENTER);tile.setFocusable(true);tile.setFocusableInTouchMode(true);tile.setClickable(true);
         tile.setId(View.generateViewId());tile.setTag(months);
-        TextView name=Ui.heading(this,label,18);tile.addView(name);
-        TextView cost=Ui.heading(this,price,32);cost.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));tile.addView(cost);
-        TextView tag=Ui.text(this,current?"Current plan":"",12);tag.setTextColor(Ui.TEXT_3);tag.setLetterSpacing(0.1f);tag.setAllCaps(true);tile.addView(tag);
+        TextView name=Ui.heading(this,label,18);name.setGravity(Gravity.CENTER);tile.addView(name);
+        TextView cost=Ui.heading(this,price,32);cost.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));cost.setGravity(Gravity.CENTER);tile.addView(cost);
+        TextView tag=Ui.text(this,current?"Current plan":"",12);tag.setTextColor(Ui.TEXT_3);tag.setLetterSpacing(0.1f);tag.setAllCaps(true);tag.setGravity(Gravity.CENTER);
+        tag.setVisibility(current?View.VISIBLE:View.GONE);tile.addView(tag);
         tile.setContentDescription(label+" "+price);
         tile.setNextFocusDownId(pay.getId());
         Runnable style=()->{boolean f=tile.isFocused(),sel=months==chosenMonths;

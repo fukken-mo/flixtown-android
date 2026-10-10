@@ -97,6 +97,9 @@ final class RenewalPayment {
         LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.topMargin=Ui.dp(a,4);words.addView(timer,tp);
         buttons=Ui.row(a);buttons.setClipChildren(false);
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,-2);bp.topMargin=Ui.dp(a,18);words.addView(buttons,bp);
+        // The renewal screen underneath must not take focus while the payment step is up.
+        for(int i=0;i<host.getChildCount();i++){View c=host.getChildAt(i);
+            if(c instanceof ViewGroup)((ViewGroup)c).setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);}
         host.addView(overlay,new FrameLayout.LayoutParams(-1,-1));
     }
     /** Replaces the buttons; the first one gets focus. Labels and actions alternate. */
@@ -249,7 +252,9 @@ final class RenewalPayment {
     }
     void close(String finalState){
         generation++;stopPolling();handler.removeCallbacksAndMessages(null);
-        if(overlay!=null){host.removeView(overlay);overlay=null;}
+        if(overlay!=null){host.removeView(overlay);overlay=null;
+            for(int i=0;i<host.getChildCount();i++){View c=host.getChildAt(i);
+                if(c instanceof ViewGroup)((ViewGroup)c).setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);}}
         if(BuildConfig.DEMO)Log.i("FlixTownQA","renewal closed state="+finalState);
         listener.onClosed(finalState);
     }
