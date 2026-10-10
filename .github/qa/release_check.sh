@@ -230,8 +230,10 @@ e="$(qaf elapsed)"
 [ -n "$e" ] && [ "$e" -lt 20 ] && ok "Start over plays from the beginning (${e}s)" || bad "Start over position '${e}'s ($(qa_line))"
 
 # ---------------- 7. Player: controls, seeking, audio, subtitles, Back ----------------
-key DPAD_UP;                                 shot 18-player-controls 0.5
+# State first, screenshot after: on a busy runner the screenshot can take longer than the controls stay up.
+key DPAD_UP
 wait_qa controls true 3 && ok "Up shows the player controls" || bad "controls not shown ($(qa_line))"
+shot 18-player-controls 0.1
 wait_qa controls false 8 && ok "controls hide by themselves" || bad "controls stay on screen ($(qa_line))"
 key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.8                # controls, then the progress bar
 t0="$(qaf elapsed)"
