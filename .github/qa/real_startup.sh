@@ -50,10 +50,19 @@ for attr in ("content-desc","text"):
         if (n.get(attr) or "").strip()==sys.argv[2]:
             x1,y1,x2,y2=map(int,re.findall(r"\d+",n.get("bounds"))); print((x1+x2)//2,(y1+y2)//2); sys.exit()
 ' "$OUT/ui.xml" "$1")"; [ -n "$xy" ] && { adb shell input tap $xy; return 0; }; return 1; }
+title_is(){ dump; python3 - "$OUT/ui.xml" "$1" <<'PY'
+import sys, xml.etree.ElementTree as ET
+for n in ET.parse(sys.argv[1]).getroot().iter('node'):
+    if n.get('resource-id','').endswith(':id/browse_title'): sys.exit(0 if sys.argv[2] in (n.get('text') or '') else 1)
+sys.exit(1)
+PY
+}
 # Opens a side-menu page and confirms the page title (navigation is retried, never the app itself).
 menu(){ for attempt in 1 2 3; do
     key DPAD_LEFT; sleep 1
-    if ! tap_text "$1"; then focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 8 >/dev/null; key DPAD_CENTER; fi
+    # TV rows take focus on the first touch and act on the second (focusable in touch mode).
+    if tap_text "$1"; then sleep 1.5; title_is "$1" || tap_text "$1"
+    else focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 8 >/dev/null; key DPAD_CENTER; fi
     sleep 3
     [ "$1" = Home ] && return 0
     dump; python3 - "$OUT/ui.xml" "$1" <<'PY' && return 0
@@ -181,7 +190,8 @@ for SC in $MODES; do
   elif [ "$RENEWAL" != none ]; then
     menu "Settings"
     if has "Renew subscription"; then
-      tap_text "Renew subscription" || { focus_to DPAD_DOWN "Renew subscription" 4 >/dev/null; key DPAD_CENTER; }
+      tap_text "Renew subscription" && { sleep 2; in_activity RenewalActivity || tap_text "Renew subscription"; } \
+        || { focus_to DPAD_DOWN "Renew subscription" 4 >/dev/null; key DPAD_CENTER; }
       wait_activity RenewalActivity 10 && ok "[$SC] Settings › Renew subscription opens the renewal screen" || bad "[$SC] renewal screen did not open ($(resumed))"
       # The service is broken on purpose: the screen must say so (after its own timeout), never crash.
       wait_for "Try again\|available right now\|couldn.t load\|load your plans" 45 && ok "[$SC] renewal screen reports the broken service" || bad "[$SC] renewal screen gave no answer"
