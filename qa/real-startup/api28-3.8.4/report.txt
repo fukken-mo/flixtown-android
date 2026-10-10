@@ -1,79 +1,65 @@
 
 == api28-3.8.4 · renewal API: none
-FAIL  [none] Home not opened (    mResumedActivity: ActivityRecord{e864258 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t7})
-      startup refresh: none after 60 s (103 s after sign-in)
-FAIL  [none] startup refresh finished: updated
-      at: LoginActivity focus='Password'
+PASS  [none] form filled (username field holds only the username)
+PASS  [none] sign-in accepted, Home opened
+      startup refresh: 10-10 10:57:29.253  5483  5483 I FlixTown: Refresh finished: updated (5 s after sign-in)
+PASS  [none] startup refresh finished: updated
 PASS  [none] no 'taking longer than usual' message
-FAIL  [none] Home shows titles
-      at: LoginActivity focus='Password'
-FAIL  [none] Movies populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-FAIL  [none] TV Shows populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-FAIL  [none] no crash
-      at: LoginActivity focus='Password'
+PASS  [none] Home shows titles
+PASS  [none] Movies populated (12 posters on screen)
+PASS  [none] TV Shows populated (12 posters on screen)
+PASS  [none] no crash
 
 == api28-3.8.4 · renewal API: ok
-FAIL  [ok] Home not opened (    mResumedActivity: ActivityRecord{7f979e8 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t8})
-      startup refresh: none after 60 s (103 s after sign-in)
-FAIL  [ok] startup refresh finished: updated
-      at: LoginActivity focus='Password'
+PASS  [ok] form filled (username field holds only the username)
+PASS  [ok] sign-in accepted, Home opened
+      startup refresh: 10-10 10:58:29.376  6111  6111 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [ok] startup refresh finished: updated
 PASS  [ok] no 'taking longer than usual' message
-FAIL  [ok] Home shows titles
-      at: LoginActivity focus='Password'
-FAIL  [ok] Movies populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-FAIL  [ok] TV Shows populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-INFO  [ok] no Renew subscription row (this build has no in-app renewal)
-FAIL  [ok] no crash
-      at: LoginActivity focus='Password'
+PASS  [ok] Home shows titles
+PASS  [ok] Movies populated (12 posters on screen)
+PASS  [ok] TV Shows populated (12 posters on screen)
+PASS  [ok] renewal screen reports the broken service
+PASS  [ok] Movies still there after the renewal screen (12)
+PASS  [ok] no crash
 
 == api28-3.8.4 · renewal API: 500
-FAIL  [500] Home not opened (    mResumedActivity: ActivityRecord{7a46bb4 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t9})
-      startup refresh: none after 60 s (103 s after sign-in)
-FAIL  [500] startup refresh finished: updated
-      at: LoginActivity focus='Password'
+PASS  [500] form filled (username field holds only the username)
+PASS  [500] sign-in accepted, Home opened
+      startup refresh: 10-10 11:00:27.393  7412  7412 I FlixTown: Refresh finished: updated (4 s after sign-in)
+PASS  [500] startup refresh finished: updated
 PASS  [500] no 'taking longer than usual' message
-FAIL  [500] Home shows titles
-      at: LoginActivity focus='Password'
-FAIL  [500] Movies populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-FAIL  [500] TV Shows populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-INFO  [500] no Renew subscription row (this build has no in-app renewal)
+PASS  [500] Home shows titles
+PASS  [500] Movies populated (7 posters on screen)
+PASS  [500] TV Shows populated (12 posters on screen)
+PASS  [500] renewal screen reports the broken service
+PASS  [500] Movies still there after the renewal screen (12)
 PASS  [500] no crash
 
 == api28-3.8.4 · renewal API: timeout
-FAIL  [timeout] Home not opened (    mResumedActivity: ActivityRecord{71bbad4 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t10})
-      startup refresh: none after 60 s (103 s after sign-in)
-FAIL  [timeout] startup refresh finished: updated
-      at: LoginActivity focus='Password'
+PASS  [timeout] form filled (username field holds only the username)
+PASS  [timeout] sign-in accepted, Home opened
+      startup refresh: 10-10 11:02:23.672  8738  8738 I FlixTown: Refresh finished: updated (4 s after sign-in)
+PASS  [timeout] startup refresh finished: updated
 PASS  [timeout] no 'taking longer than usual' message
-FAIL  [timeout] Home shows titles
-      at: LoginActivity focus='Password'
-FAIL  [timeout] Movies populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-FAIL  [timeout] TV Shows populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-INFO  [timeout] no Renew subscription row (this build has no in-app renewal)
-FAIL  [timeout] no crash
-      at: LoginActivity focus='Password'
+PASS  [timeout] Home shows titles
+PASS  [timeout] Movies populated (12 posters on screen)
+PASS  [timeout] TV Shows populated (12 posters on screen)
+PASS  [timeout] renewal screen reports the broken service
+PASS  [timeout] Movies still there after the renewal screen (12)
+PASS  [timeout] no crash
 
 == api28-3.8.4 · renewal API: unreachable
-FAIL  [unreachable] Home not opened (    mResumedActivity: ActivityRecord{edc8112 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t11})
-      startup refresh: none after 60 s (102 s after sign-in)
-FAIL  [unreachable] startup refresh finished: updated
-      at: LoginActivity focus='Password'
+PASS  [unreachable] form filled (username field holds only the username)
+PASS  [unreachable] sign-in accepted, Home opened
+      startup refresh: 10-10 11:04:29.576 10089 10089 I FlixTown: Refresh finished: updated (4 s after sign-in)
+PASS  [unreachable] startup refresh finished: updated
 PASS  [unreachable] no 'taking longer than usual' message
-FAIL  [unreachable] Home shows titles
-      at: LoginActivity focus='Password'
-FAIL  [unreachable] Movies populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-FAIL  [unreachable] TV Shows populated (0 posters on screen)
-      at: LoginActivity focus='Password'
-INFO  [unreachable] no Renew subscription row (this build has no in-app renewal)
+PASS  [unreachable] Home shows titles
+PASS  [unreachable] Movies populated (12 posters on screen)
+PASS  [unreachable] TV Shows populated (12 posters on screen)
+PASS  [unreachable] renewal screen reports the broken service
+PASS  [unreachable] Movies still there after the renewal screen (12)
 PASS  [unreachable] no crash
 
-api28-3.8.4: 7 passed, 28 failed
+api28-3.8.4: 48 passed, 0 failed
