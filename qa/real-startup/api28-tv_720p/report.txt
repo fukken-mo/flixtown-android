@@ -7,12 +7,8 @@ PASS  [none:ok] startup refresh finished: updated
 PASS  [none:ok] no 'taking longer than usual' message
 PASS  [none:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [none:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [none:ok] TV Shows populated (12 posters on screen)
 PASS  [none:ok] exactly one catalog download, no retries
 PASS  [none:ok] no crash
@@ -21,16 +17,12 @@ PASS  [none:ok] no crash
 PASS  [none:slow] form filled (username field holds only the username)
 PASS  [none:slow] sign-in accepted, Home opened
 PASS  [none:slow] slow server (>15 s): the usual 'taking longer' message
-      catalog arrived 19 s after sign-in (no key pressed)
+      catalog arrived 20 s after sign-in (no key pressed)
 PASS  [none:slow] catalog arrived and the loading screen closed by itself
 PASS  [none:slow] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [none:slow] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [none:slow] TV Shows populated (12 posters on screen)
 PASS  [none:slow] one catalog download, no retries (a slow answer is not a failure)
 PASS  [none:slow] no crash
@@ -43,12 +35,8 @@ PASS  [none:cached] saved titles shown although the server is down
 PASS  [none:cached] with saved titles: no retries (one normal refresh attempt only)
 PASS  [none:cached] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [none:cached] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [none:cached] TV Shows populated (12 posters on screen)
 PASS  [none:cached] no crash
 
@@ -60,23 +48,19 @@ PASS  [probe:ok] startup refresh finished: updated
 PASS  [probe:ok] no 'taking longer than usual' message
 PASS  [probe:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
-FAIL  [probe:ok] Movies populated (0 posters on screen)
-      at: HomeActivity focus='Subscription. Status Active. Expiration 12/31/2027. Devices 2.'
+PASS  [probe:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [probe:ok] TV Shows populated (12 posters on screen)
 PASS  [probe:ok] exactly one catalog download, no retries
 PASS  [probe:ok] no renewal network call during sign-in, startup or catalog loading (0 connections)
-PASS  [probe:ok] renewal screen reports the broken service
+INFO  side menu did not reach Settings (attempt 1)
+FAIL  [probe:ok] renewal screen did not open (    mResumedActivity: ActivityRecord{8c256a1 u0 com.myflixtown.tv.native/com.flixtown.tv.HomeActivity t9})
+FAIL  [probe:ok] renewal screen gave no answer
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [probe:ok] Movies still there after the renewal screen (12)
 PASS  [probe:ok] the renewal screen caused no catalog download
-PASS  [probe:ok] the renewal service is contacted only once its screen is open (1 connections)
+FAIL  [probe:ok] the renewal service is contacted only once its screen is open (0 connections)
+      at: HomeActivity focus='Mock Movie 3000'
 PASS  [probe:ok] no crash
 
 == api28-tv_720p · renewal API: ok · catalog: ok
@@ -87,18 +71,14 @@ PASS  [ok:ok] startup refresh finished: updated
 PASS  [ok:ok] no 'taking longer than usual' message
 PASS  [ok:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [ok:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [ok:ok] TV Shows populated (12 posters on screen)
 PASS  [ok:ok] exactly one catalog download, no retries
-PASS  [ok:ok] renewal screen reports the broken service
+INFO  side menu did not reach Settings (attempt 1)
+FAIL  [ok:ok] renewal screen did not open (    mResumedActivity: ActivityRecord{51d22b7 u0 com.myflixtown.tv.native/com.flixtown.tv.HomeActivity t10})
+FAIL  [ok:ok] renewal screen gave no answer
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [ok:ok] Movies still there after the renewal screen (12)
 PASS  [ok:ok] the renewal screen caused no catalog download
 PASS  [ok:ok] no crash
@@ -111,19 +91,14 @@ PASS  [500:ok] startup refresh finished: updated
 PASS  [500:ok] no 'taking longer than usual' message
 PASS  [500:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
-FAIL  [500:ok] Movies populated (0 posters on screen)
-      at: HomeActivity focus='Subscription. Status Active. Expiration 12/31/2027. Devices 2.'
+PASS  [500:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [500:ok] TV Shows populated (12 posters on screen)
 PASS  [500:ok] exactly one catalog download, no retries
-PASS  [500:ok] renewal screen reports the broken service
+INFO  side menu did not reach Settings (attempt 1)
+FAIL  [500:ok] renewal screen did not open (    mResumedActivity: ActivityRecord{f2a3521 u0 com.myflixtown.tv.native/com.flixtown.tv.HomeActivity t11})
+FAIL  [500:ok] renewal screen gave no answer
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [500:ok] Movies still there after the renewal screen (12)
 PASS  [500:ok] the renewal screen caused no catalog download
 PASS  [500:ok] no crash
@@ -136,18 +111,14 @@ PASS  [timeout:ok] startup refresh finished: updated
 PASS  [timeout:ok] no 'taking longer than usual' message
 PASS  [timeout:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [timeout:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [timeout:ok] TV Shows populated (12 posters on screen)
 PASS  [timeout:ok] exactly one catalog download, no retries
-PASS  [timeout:ok] renewal screen reports the broken service
+INFO  side menu did not reach Settings (attempt 1)
+FAIL  [timeout:ok] renewal screen did not open (    mResumedActivity: ActivityRecord{965d226 u0 com.myflixtown.tv.native/com.flixtown.tv.HomeActivity t12})
+FAIL  [timeout:ok] renewal screen gave no answer
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [timeout:ok] Movies still there after the renewal screen (12)
 PASS  [timeout:ok] the renewal screen caused no catalog download
 PASS  [timeout:ok] no crash
@@ -155,25 +126,21 @@ PASS  [timeout:ok] no crash
 == api28-tv_720p · renewal API: unreachable · catalog: ok
 PASS  [unreachable:ok] form filled (username field holds only the username)
 PASS  [unreachable:ok] sign-in accepted, Home opened
-      catalog arrived 3 s after sign-in
+      catalog arrived 4 s after sign-in
 PASS  [unreachable:ok] startup refresh finished: updated
 PASS  [unreachable:ok] no 'taking longer than usual' message
 PASS  [unreachable:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [unreachable:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [unreachable:ok] TV Shows populated (12 posters on screen)
 PASS  [unreachable:ok] exactly one catalog download, no retries
+INFO  side menu did not reach Settings (attempt 1)
+FAIL  [unreachable:ok] renewal screen did not open (    mResumedActivity: ActivityRecord{712813a u0 com.myflixtown.tv.native/com.flixtown.tv.HomeActivity t13})
 FAIL  [unreachable:ok] renewal screen gave no answer
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [unreachable:ok] Movies still there after the renewal screen (12)
 PASS  [unreachable:ok] the renewal screen caused no catalog download
 PASS  [unreachable:ok] no crash
 
-api28-tv_720p: 86 passed, 3 failed
+api28-tv_720p: 83 passed, 11 failed

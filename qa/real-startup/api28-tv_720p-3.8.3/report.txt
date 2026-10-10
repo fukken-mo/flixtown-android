@@ -2,17 +2,13 @@
 == api28-tv_720p-3.8.3 · renewal API: none · catalog: ok
 PASS  [none:ok] form filled (username field holds only the username)
 PASS  [none:ok] sign-in accepted, Home opened
-      catalog arrived 3 s after sign-in
+      catalog arrived 2 s after sign-in
 PASS  [none:ok] startup refresh finished: updated
 PASS  [none:ok] no 'taking longer than usual' message
 PASS  [none:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [none:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [none:ok] TV Shows populated (12 posters on screen)
 PASS  [none:ok] exactly one catalog download, no retries
 PASS  [none:ok] no crash
@@ -21,16 +17,12 @@ PASS  [none:ok] no crash
 PASS  [none:slow] form filled (username field holds only the username)
 PASS  [none:slow] sign-in accepted, Home opened
 PASS  [none:slow] slow server (>15 s): the usual 'taking longer' message
-      catalog arrived 20 s after sign-in (no key pressed)
+      catalog arrived 19 s after sign-in (no key pressed)
 PASS  [none:slow] catalog arrived and the loading screen closed by itself
 PASS  [none:slow] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [none:slow] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [none:slow] TV Shows populated (12 posters on screen)
 PASS  [none:slow] one catalog download, no retries (a slow answer is not a failure)
 PASS  [none:slow] no crash
@@ -43,12 +35,8 @@ PASS  [none:cached] saved titles shown although the server is down
 PASS  [none:cached] with saved titles: no retries (one normal refresh attempt only)
 PASS  [none:cached] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [none:cached] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [none:cached] TV Shows populated (12 posters on screen)
 PASS  [none:cached] no crash
 
@@ -60,12 +48,8 @@ PASS  [probe:ok] startup refresh finished: updated
 PASS  [probe:ok] no 'taking longer than usual' message
 PASS  [probe:ok] Home shows titles
 INFO  side menu did not reach Movies (attempt 1)
-INFO  side menu did not reach Movies (attempt 2)
-INFO  side menu did not reach Movies (attempt 3)
 PASS  [probe:ok] Movies populated (12 posters on screen)
 INFO  side menu did not reach TV Shows (attempt 1)
-INFO  side menu did not reach TV Shows (attempt 2)
-INFO  side menu did not reach TV Shows (attempt 3)
 PASS  [probe:ok] TV Shows populated (12 posters on screen)
 PASS  [probe:ok] exactly one catalog download, no retries
 PASS  [probe:ok] no renewal network call during sign-in, startup or catalog loading (0 connections)
