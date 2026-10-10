@@ -41,7 +41,13 @@ jobs:
             if [ "$1" = HEAD ]; then cp -r . /tmp/$dir && mv /tmp/$dir $dir; else git worktree add -f $dir $1; fi
             sed -i 's#^val panelUrl = .*#val panelUrl = "http://10.0.2.2:8790/api/"#' $dir/app/build.gradle.kts
             grep -n '^val panelUrl' $dir/app/build.gradle.kts
-            (cd $dir && ./gradlew -q :app:assembleDebug)
+            # A transient Maven/Google download failure (cache miss) is retried; the app source is never changed.
+            for attempt in 1 2 3; do
+              (cd $dir && ./gradlew -q :app:assembleDebug) && break
+              echo "::warning::Gradle build of $2 failed (attempt $attempt), retrying"; sleep $((attempt*20))
+              (cd $dir && ./gradlew -q --refresh-dependencies help) || true
+            done
+            test -f $dir/app/build/outputs/apk/debug/app-debug.apk || { echo "::error::$2 did not build"; exit 1; }
             cp $dir/app/build/outputs/apk/debug/app-debug.apk dist/$2.apk
           }
           build HEAD current
