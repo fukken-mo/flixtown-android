@@ -1,0 +1,114 @@
+
+== api31-tv_720p · renewal API: none · catalog: ok
+PASS  [none:ok] form filled (username field holds only the username)
+PASS  [none:ok] sign-in accepted, Home opened
+      catalog arrived 6 s after sign-in
+PASS  [none:ok] startup refresh finished: updated
+PASS  [none:ok] no 'taking longer than usual' message
+PASS  [none:ok] Home shows titles
+PASS  [none:ok] Movies populated (12 posters on screen)
+PASS  [none:ok] TV Shows populated (12 posters on screen)
+PASS  [none:ok] exactly one catalog download, no retries
+PASS  [none:ok] no crash
+
+== api31-tv_720p · renewal API: none · catalog: slow
+PASS  [none:slow] form filled (username field holds only the username)
+PASS  [none:slow] sign-in accepted, Home opened
+PASS  [none:slow] slow server (>15 s): the usual 'taking longer' message
+      catalog arrived 21 s after sign-in (no key pressed)
+PASS  [none:slow] catalog arrived and the loading screen closed by itself
+PASS  [none:slow] Home shows titles
+PASS  [none:slow] Movies populated (12 posters on screen)
+PASS  [none:slow] TV Shows populated (12 posters on screen)
+PASS  [none:slow] one catalog download, no retries (a slow answer is not a failure)
+PASS  [none:slow] no crash
+
+== api31-tv_720p · renewal API: none · catalog: cached
+PASS  [none:cached] form filled (username field holds only the username)
+PASS  [none:cached] sign-in accepted, Home opened
+PASS  [none:cached] first sign-in loaded the catalog (now saved on the TV)
+PASS  [none:cached] saved titles shown although the server is down
+PASS  [none:cached] with saved titles: no retries (one normal refresh attempt only)
+PASS  [none:cached] Home shows titles
+PASS  [none:cached] Movies populated (12 posters on screen)
+PASS  [none:cached] TV Shows populated (12 posters on screen)
+PASS  [none:cached] no crash
+
+== api31-tv_720p · renewal API: probe · catalog: ok
+PASS  [probe:ok] form filled (username field holds only the username)
+PASS  [probe:ok] sign-in accepted, Home opened
+      catalog arrived 3 s after sign-in
+PASS  [probe:ok] startup refresh finished: updated
+PASS  [probe:ok] no 'taking longer than usual' message
+PASS  [probe:ok] Home shows titles
+PASS  [probe:ok] Movies populated (12 posters on screen)
+PASS  [probe:ok] TV Shows populated (12 posters on screen)
+PASS  [probe:ok] exactly one catalog download, no retries
+PASS  [probe:ok] no renewal network call during sign-in, startup or catalog loading (0 connections)
+PASS  [probe:ok] renewal screen reports the broken service
+PASS  [probe:ok] Movies still there after the renewal screen (12)
+PASS  [probe:ok] the renewal screen caused no catalog download
+PASS  [probe:ok] the renewal service is contacted only once its screen is open (1 connections)
+PASS  [probe:ok] no crash
+
+== api31-tv_720p · renewal API: ok · catalog: ok
+PASS  [ok:ok] form filled (username field holds only the username)
+PASS  [ok:ok] sign-in accepted, Home opened
+      catalog arrived 3 s after sign-in
+PASS  [ok:ok] startup refresh finished: updated
+PASS  [ok:ok] no 'taking longer than usual' message
+PASS  [ok:ok] Home shows titles
+PASS  [ok:ok] Movies populated (12 posters on screen)
+PASS  [ok:ok] TV Shows populated (12 posters on screen)
+PASS  [ok:ok] exactly one catalog download, no retries
+PASS  [ok:ok] renewal screen reports the broken service
+PASS  [ok:ok] Movies still there after the renewal screen (12)
+PASS  [ok:ok] the renewal screen caused no catalog download
+PASS  [ok:ok] no crash
+
+== api31-tv_720p · renewal API: 500 · catalog: ok
+PASS  [500:ok] form filled (username field holds only the username)
+PASS  [500:ok] sign-in accepted, Home opened
+      catalog arrived 3 s after sign-in
+PASS  [500:ok] startup refresh finished: updated
+PASS  [500:ok] no 'taking longer than usual' message
+PASS  [500:ok] Home shows titles
+PASS  [500:ok] Movies populated (12 posters on screen)
+PASS  [500:ok] TV Shows populated (12 posters on screen)
+PASS  [500:ok] exactly one catalog download, no retries
+PASS  [500:ok] renewal screen reports the broken service
+PASS  [500:ok] Movies still there after the renewal screen (12)
+PASS  [500:ok] the renewal screen caused no catalog download
+PASS  [500:ok] no crash
+
+== api31-tv_720p · renewal API: timeout · catalog: ok
+PASS  [timeout:ok] form filled (username field holds only the username)
+PASS  [timeout:ok] sign-in accepted, Home opened
+      catalog arrived 3 s after sign-in
+PASS  [timeout:ok] startup refresh finished: updated
+PASS  [timeout:ok] no 'taking longer than usual' message
+PASS  [timeout:ok] Home shows titles
+PASS  [timeout:ok] Movies populated (12 posters on screen)
+PASS  [timeout:ok] TV Shows populated (12 posters on screen)
+PASS  [timeout:ok] exactly one catalog download, no retries
+PASS  [timeout:ok] renewal screen reports the broken service
+PASS  [timeout:ok] Movies still there after the renewal screen (12)
+PASS  [timeout:ok] the renewal screen caused no catalog download
+PASS  [timeout:ok] no crash
+
+== api31-tv_720p · renewal API: unreachable · catalog: ok
+PASS  [unreachable:ok] form filled (username field holds only the username)
+PASS  [unreachable:ok] sign-in accepted, Home opened
+      catalog arrived 3 s after sign-in
+PASS  [unreachable:ok] startup refresh finished: updated
+PASS  [unreachable:ok] no 'taking longer than usual' message
+PASS  [unreachable:ok] Home shows titles
+PASS  [unreachable:ok] Movies populated (12 posters on screen)
+PASS  [unreachable:ok] TV Shows populated (12 posters on screen)
+PASS  [unreachable:ok] exactly one catalog download, no retries
+PASS  [unreachable:ok] renewal screen reports the broken service
+PASS  [unreachable:ok] Movies still there after the renewal screen (12)
+PASS  [unreachable:ok] the renewal screen caused no catalog download
+PASS  [unreachable:ok] no crash
+
+api31-tv_720p: 89 passed, 0 failed
