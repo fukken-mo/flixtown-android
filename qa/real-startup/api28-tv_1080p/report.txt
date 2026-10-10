@@ -1,0 +1,151 @@
+
+== api28-tv_1080p · renewal API: none · catalog: ok
+PASS  [none:ok] form filled (username field holds only the username)
+PASS  [none:ok] sign-in accepted, Home opened
+      catalog arrived 6 s after sign-in
+PASS  [none:ok] startup refresh finished: updated
+PASS  [none:ok] no 'taking longer than usual' message
+PASS  [none:ok] Home shows titles
+PASS  [none:ok] Movies populated (12 posters on screen)
+PASS  [none:ok] TV Shows populated (12 posters on screen)
+PASS  [none:ok] exactly one catalog download, no retries
+PASS  [none:ok] no crash
+
+== api28-tv_1080p · renewal API: none · catalog: slow
+PASS  [none:slow] form filled (username field holds only the username)
+PASS  [none:slow] sign-in accepted, Home opened
+PASS  [none:slow] slow server (>15 s): the usual 'taking longer' message
+      catalog arrived 20 s after sign-in (no key pressed)
+PASS  [none:slow] catalog arrived and the loading screen closed by itself
+PASS  [none:slow] Home shows titles
+PASS  [none:slow] Movies populated (12 posters on screen)
+FAIL  [none:slow] TV Shows populated (0 posters on screen)
+      at: HomeActivity focus='Mock Series 600'
+PASS  [none:slow] one catalog download, no retries (a slow answer is not a failure)
+PASS  [none:slow] no crash
+
+== api28-tv_1080p · renewal API: none · catalog: fail1
+PASS  [none:fail1] form filled (username field holds only the username)
+PASS  [none:fail1] sign-in accepted, Home opened
+PASS  [none:fail1] first failure: the usual message, once
+      catalog arrived 13 s after sign-in
+PASS  [none:fail1] retried quietly and the catalog arrived
+PASS  [none:fail1] 1 retries, 2 catalog downloads in total (no duplicates)
+PASS  [none:fail1] no repeated popups
+PASS  [none:fail1] same app process (no restart needed)
+PASS  [none:fail1] Home shows titles
+PASS  [none:fail1] Movies populated (12 posters on screen)
+PASS  [none:fail1] TV Shows populated (12 posters on screen)
+PASS  [none:fail1] no crash
+
+== api28-tv_1080p · renewal API: none · catalog: fail3
+PASS  [none:fail3] form filled (username field holds only the username)
+PASS  [none:fail3] sign-in accepted, Home opened
+PASS  [none:fail3] first failure: the usual message, once
+      catalog arrived 74 s after sign-in
+PASS  [none:fail3] retried quietly and the catalog arrived
+PASS  [none:fail3] 3 retries, 4 catalog downloads in total (no duplicates)
+PASS  [none:fail3] no repeated popups
+PASS  [none:fail3] same app process (no restart needed)
+PASS  [none:fail3] Home shows titles
+PASS  [none:fail3] Movies populated (12 posters on screen)
+PASS  [none:fail3] TV Shows populated (12 posters on screen)
+PASS  [none:fail3] no crash
+
+== api28-tv_1080p · renewal API: none · catalog: down
+PASS  [none:down] form filled (username field holds only the username)
+PASS  [none:down] sign-in accepted, Home opened
+PASS  [none:down] first failure: the usual message, once
+      catalog unavailable for 201 s after Continue: 5 downloads, 5 retries scheduled
+PASS  [none:down] retries at ~10/20/40 s then every 2 min: 4-6 downloads in 200 s (no storm)
+PASS  [none:down] no repeated popups while retrying
+FAIL  [none:down] Home and Settings stay usable while retrying
+      at: HomeActivity focus='FLIX TOWN'
+      server back
+      catalog arrived 306 s after Continue
+PASS  [none:down] the catalog arrives on the next retry once the server is back
+PASS  [none:down] Home shows titles
+PASS  [none:down] Movies populated (12 posters on screen)
+PASS  [none:down] TV Shows populated (12 posters on screen)
+PASS  [none:down] no crash
+
+== api28-tv_1080p · renewal API: none · catalog: signout
+PASS  [none:signout] form filled (username field holds only the username)
+PASS  [none:signout] sign-in accepted, Home opened
+PASS  [none:signout] first failure: the usual message, once
+FAIL  [none:signout] sign-out did not reach the sign-in screen
+FAIL  [none:signout] no catalog retries after signing out (4 -> 5 downloads in 80 s)
+      at: HomeActivity focus='FLIX TOWN'
+PASS  [none:signout] no crash
+
+== api28-tv_1080p · renewal API: none · catalog: cached
+PASS  [none:cached] form filled (username field holds only the username)
+PASS  [none:cached] sign-in accepted, Home opened
+PASS  [none:cached] first sign-in loaded the catalog (now saved on the TV)
+PASS  [none:cached] saved titles shown although the server is down
+PASS  [none:cached] with saved titles: no retries (one normal refresh attempt only)
+PASS  [none:cached] Home shows titles
+PASS  [none:cached] Movies populated (12 posters on screen)
+PASS  [none:cached] TV Shows populated (12 posters on screen)
+PASS  [none:cached] no crash
+
+== api28-tv_1080p · renewal API: ok · catalog: ok
+PASS  [ok:ok] form filled (username field holds only the username)
+PASS  [ok:ok] sign-in accepted, Home opened
+      catalog arrived 5 s after sign-in
+PASS  [ok:ok] startup refresh finished: updated
+PASS  [ok:ok] no 'taking longer than usual' message
+PASS  [ok:ok] Home shows titles
+PASS  [ok:ok] Movies populated (12 posters on screen)
+PASS  [ok:ok] TV Shows populated (12 posters on screen)
+PASS  [ok:ok] exactly one catalog download, no retries
+PASS  [ok:ok] renewal screen reports the broken service
+PASS  [ok:ok] Movies still there after the renewal screen (12)
+PASS  [ok:ok] the renewal screen caused no catalog download
+PASS  [ok:ok] no crash
+
+== api28-tv_1080p · renewal API: 500 · catalog: ok
+PASS  [500:ok] form filled (username field holds only the username)
+PASS  [500:ok] sign-in accepted, Home opened
+      catalog arrived 6 s after sign-in
+PASS  [500:ok] startup refresh finished: updated
+PASS  [500:ok] no 'taking longer than usual' message
+PASS  [500:ok] Home shows titles
+PASS  [500:ok] Movies populated (12 posters on screen)
+FAIL  [500:ok] TV Shows populated (0 posters on screen)
+      at: HomeActivity focus='Subscription. Status Active. Expiration 12/31/2027. Devices 2.'
+PASS  [500:ok] exactly one catalog download, no retries
+PASS  [500:ok] renewal screen reports the broken service
+PASS  [500:ok] Movies still there after the renewal screen (12)
+PASS  [500:ok] the renewal screen caused no catalog download
+PASS  [500:ok] no crash
+
+== api28-tv_1080p · renewal API: timeout · catalog: ok
+PASS  [timeout:ok] form filled (username field holds only the username)
+PASS  [timeout:ok] sign-in accepted, Home opened
+      catalog arrived 6 s after sign-in
+PASS  [timeout:ok] startup refresh finished: updated
+PASS  [timeout:ok] no 'taking longer than usual' message
+PASS  [timeout:ok] Home shows titles
+PASS  [timeout:ok] Movies populated (12 posters on screen)
+PASS  [timeout:ok] TV Shows populated (12 posters on screen)
+PASS  [timeout:ok] exactly one catalog download, no retries
+PASS  [timeout:ok] renewal screen reports the broken service
+PASS  [timeout:ok] Movies still there after the renewal screen (12)
+PASS  [timeout:ok] the renewal screen caused no catalog download
+PASS  [timeout:ok] no crash
+
+== api28-tv_1080p · renewal API: unreachable · catalog: ok
+PASS  [unreachable:ok] form filled (username field holds only the username)
+PASS  [unreachable:ok] sign-in accepted, Home opened
+      catalog arrived 5 s after sign-in
+PASS  [unreachable:ok] startup refresh finished: updated
+PASS  [unreachable:ok] no 'taking longer than usual' message
+PASS  [unreachable:ok] Home shows titles
+PASS  [unreachable:ok] Movies populated (12 posters on screen)
+PASS  [unreachable:ok] TV Shows populated (12 posters on screen)
+PASS  [unreachable:ok] exactly one catalog download, no retries
+FAIL  [unreachable:ok] no Renew subscription row although renewal_api_url is set
+PASS  [unreachable:ok] no crash
+
+api28-tv_1080p: 106 passed, 6 failed
