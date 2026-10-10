@@ -1,0 +1,88 @@
+      server now: {"expired":true,"connections":2,"plan":3,"exp":"1759968000"}
+PASS  expired account opens the renewal screen
+PASS  it is the in-app renewal (not the old Cash App request form)
+PASS  account summary: Current plan 3 Months
+PASS  account summary: Expired on 10/08/2025
+PASS  account summary: Devices 2 (max_connections shown as Devices)
+PASS  plans and prices from the renewal service: 1/3/6/12 months, $15/$40/$75/$135
+PASS  no device-count choice offered (shown as account information only)
+PASS  customer wording never says Connection(s)
+PASS  no OnePanel or Square branding, no web page
+PASS  focus starts on the current plan (3 Months)
+PASS  Pay button shows the selected plan's price ($40)
+PASS  Right: 6 Months, Pay shows $75
+PASS  Right: 12 Months $135
+PASS  Right at the last plan stays there
+PASS  Left x3: 1 Month, Pay shows $15
+PASS  Left at the first plan stays there
+PASS  Down: Pay with Cash App Pay
+PASS  Up: back to the chosen plan (1 Month)
+FAIL  Down from Pay: Check again
+      at: RenewalActivity focus='Use a different account'
+FAIL  Right: Use a different account
+      at: RenewalActivity focus='12 Months $135'
+FAIL  Up: Pay
+      at: RenewalActivity focus='12 Months $135'
+FAIL  payment code not shown
+FAIL  the code is for the chosen plan: 1 Month · $15.00
+      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
+FAIL  state: Waiting for payment, with a countdown
+      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
+FAIL  QR encodes the checkout link from the service (no browser opened)
+      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
+FAIL  focus on Cancel
+      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
+FAIL  Back cancels the unpaid code: Payment cancelled, focus back on the plan
+      at: MainActivity focus='Add app to favorites'
+      server now: {"expired":true,"connections":2,"plan":3,"exp":"1759968000","pay":"processing"}
+FAIL  processing state not shown
+PASS  processing is never shown as a failure, and has nothing to cancel
+FAIL  Back does not leave a payment that is being confirmed
+      at: MainActivity focus=''
+      server now: {"expired":true,"connections":2,"plan":3,"exp":"1759968000","pay":"renewed"}
+FAIL  success not shown
+FAIL  success shows the new expiration (11/09/2026)
+      at: MainActivity focus=''
+FAIL  the code closes by itself and the renewal screen shows the new expiry
+      at: MainActivity focus=''
+FAIL  heading: You are all set; message: Renewal successful
+      at: MainActivity focus=''
+FAIL  account refreshed from the backend: Active, not expired
+      at: MainActivity focus=''
+FAIL  focus on Start watching
+      at: MainActivity focus=''
+FAIL  did not reach Home (    mResumedActivity: ActivityRecord{2dbba88 u0 com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.MainActivity t8})
+      server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"failed"}
+FAIL  Settings lists Renew subscription and says Devices
+      at: MainActivity focus=''
+FAIL  early renewal not opened (    mResumedActivity: ActivityRecord{2dbba88 u0 com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.MainActivity t8})
+FAIL  active account: Expires on (not Expired on), Back instead of sign out
+      at: MainActivity focus=''
+FAIL  failed state not shown
+FAIL  failed: Try again focused, Close next to it
+      at: MainActivity focus=''
+      server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"waiting"}
+FAIL  retry did not make a new code
+      server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"expired"}
+FAIL  expired code state not shown
+      server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"waiting"}
+      server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"needs_assistance"}
+FAIL  assistance state not shown
+FAIL  assistance: tells the customer not to pay again, gives a reference
+      at: MainActivity focus=''
+FAIL  Close returns to the renewal screen
+      at: MainActivity focus=''
+FAIL  Back on the renewal screen returns to Settings
+      at: MainActivity focus=''
+      server now: {"connections":2,"plan":3,"exp":"1759968000","renewal_offline":true}
+FAIL  offline message not shown
+FAIL  offline: Try again offered, account untouched
+      at: MainActivity focus=''
+      server now: {"connections":2,"plan":3,"exp":"1759968000","payments_off":true}
+FAIL  payments-off message not shown
+      server now: {"connections":2,"plan":0,"exp":"never"}
+PASS  Never Expire: Your plan never expires, nothing to pay
+PASS  Never Expire: no plans, no Current plan when unknown, Expires on Never
+PASS  no crash during the whole run
+
+renewal flow: 22 passed, 32 failed
