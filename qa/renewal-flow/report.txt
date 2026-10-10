@@ -17,72 +17,51 @@ PASS  Left x3: 1 Month, Pay shows $15
 PASS  Left at the first plan stays there
 PASS  Down: Pay with Cash App Pay
 PASS  Up: back to the chosen plan (1 Month)
-FAIL  Down from Pay: Check again
-      at: RenewalActivity focus='Use a different account'
-FAIL  Right: Use a different account
-      at: RenewalActivity focus='12 Months $135'
-FAIL  Up: Pay
-      at: RenewalActivity focus='12 Months $135'
-FAIL  payment code not shown
-FAIL  the code is for the chosen plan: 1 Month · $15.00
-      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
-FAIL  state: Waiting for payment, with a countdown
-      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
-FAIL  QR encodes the checkout link from the service (no browser opened)
-      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
-FAIL  focus on Cancel
-      at: RenewalActivity focus='Pay with Cash App Pay  ·  $135'
-FAIL  Back cancels the unpaid code: Payment cancelled, focus back on the plan
-      at: MainActivity focus='Add app to favorites'
+PASS  Down from Pay: Check again
+PASS  Right: Use a different account
+PASS  Up: Pay
+PASS  Pay opens the Cash App Pay code on the TV
+PASS  the code is for the chosen plan: 1 Month · $15.00
+PASS  state: Waiting for payment, with a countdown
+PASS  QR encodes the checkout link from the service (no browser opened)
+PASS  focus on Cancel
+PASS  Back cancels the unpaid code: Payment cancelled, focus back on the plan
       server now: {"expired":true,"connections":2,"plan":3,"exp":"1759968000","pay":"processing"}
-FAIL  processing state not shown
+PASS  payment approved on the phone: Payment processing
 PASS  processing is never shown as a failure, and has nothing to cancel
-FAIL  Back does not leave a payment that is being confirmed
-      at: MainActivity focus=''
+PASS  Back does not leave a payment that is being confirmed
       server now: {"expired":true,"connections":2,"plan":3,"exp":"1759968000","pay":"renewed"}
-FAIL  success not shown
-FAIL  success shows the new expiration (11/09/2026)
-      at: MainActivity focus=''
-FAIL  the code closes by itself and the renewal screen shows the new expiry
-      at: MainActivity focus=''
-FAIL  heading: You are all set; message: Renewal successful
-      at: MainActivity focus=''
-FAIL  account refreshed from the backend: Active, not expired
-      at: MainActivity focus=''
-FAIL  focus on Start watching
-      at: MainActivity focus=''
-FAIL  did not reach Home (    mResumedActivity: ActivityRecord{2dbba88 u0 com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.MainActivity t8})
+PASS  renewal confirmed: Renewal Successful
+PASS  success shows the new expiration (11/09/2026)
+PASS  the code closes by itself and the renewal screen shows the new expiry
+PASS  heading: You are all set; message: Renewal successful
+PASS  account refreshed from the backend: Active, not expired
+PASS  focus on Start watching
+PASS  Start watching opens Flix Town
       server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"failed"}
-FAIL  Settings lists Renew subscription and says Devices
-      at: MainActivity focus=''
-FAIL  early renewal not opened (    mResumedActivity: ActivityRecord{2dbba88 u0 com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.MainActivity t8})
-FAIL  active account: Expires on (not Expired on), Back instead of sign out
-      at: MainActivity focus=''
-FAIL  failed state not shown
-FAIL  failed: Try again focused, Close next to it
-      at: MainActivity focus=''
+PASS  Settings lists Renew subscription and says Devices
+PASS  Settings › Renew subscription opens the renewal screen
+PASS  active account: Expires on (not Expired on), Back instead of sign out
+PASS  declined payment: The payment didn't go through
+PASS  failed: Try again focused, Close next to it
       server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"waiting"}
-FAIL  retry did not make a new code
+PASS  Try again makes a new code
       server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"expired"}
-FAIL  expired code state not shown
+PASS  unpaid code timed out: This code has expired (no payment taken)
       server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"waiting"}
       server now: {"connections":2,"plan":3,"exp":"1759968000","pay":"needs_assistance"}
-FAIL  assistance state not shown
-FAIL  assistance: tells the customer not to pay again, gives a reference
-      at: MainActivity focus=''
-FAIL  Close returns to the renewal screen
-      at: MainActivity focus=''
-FAIL  Back on the renewal screen returns to Settings
-      at: MainActivity focus=''
+PASS  paid but renewal needs a person: We'll finish your renewal
+PASS  assistance: tells the customer not to pay again, gives a reference
+PASS  Close returns to the renewal screen
+PASS  Back on the renewal screen returns to Settings
       server now: {"connections":2,"plan":3,"exp":"1759968000","renewal_offline":true}
-FAIL  offline message not shown
-FAIL  offline: Try again offered, account untouched
-      at: MainActivity focus=''
+PASS  renewal service unreachable: friendly message
+PASS  offline: Try again offered, account untouched
       server now: {"connections":2,"plan":3,"exp":"1759968000","payments_off":true}
-FAIL  payments-off message not shown
+PASS  payments switched off on the server: no Pay button, clear message
       server now: {"connections":2,"plan":0,"exp":"never"}
 PASS  Never Expire: Your plan never expires, nothing to pay
 PASS  Never Expire: no plans, no Current plan when unknown, Expires on Never
 PASS  no crash during the whole run
 
-renewal flow: 22 passed, 32 failed
+renewal flow: 54 passed, 0 failed
