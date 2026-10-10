@@ -7,6 +7,8 @@ name: Real-network startup check
 # Results are committed to qa/real-startup only.
 on:
   workflow_dispatch:
+    inputs:
+      apis: { description: "API levels, JSON list", default: "[31, 28]" }
   push:
     branches: ["claude/**"]
     paths: [".github/qa/real_startup.sh", ".github/qa/mock_flix.py", ".github/workflows/real-startup.yml"]
@@ -21,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [31, 28]
+        api: ${{ fromJSON(inputs.apis || '[31, 28]') }}
     steps:
       - uses: actions/checkout@v5
         with: { fetch-depth: 0 }

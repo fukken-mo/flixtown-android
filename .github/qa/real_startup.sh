@@ -37,7 +37,15 @@ focus_to(){ local k=$1 want=$2 n=${3:-6}; for i in $(seq 1 $n); do focused | gre
 check(){ if eval "$2"; then ok "$1"; else bad "$1"; note "      at: $(resumed | grep -o '[A-Za-z]*Activity' | tail -1) focus='$(focused)'"; fi; }
 menu(){ key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 8 >/dev/null; key DPAD_CENTER; sleep 3; }
 count_titles(){ dump; grep -o "content-desc=\"$1 [0-9]*\"" "$OUT/ui.xml" | sort -u | wc -l; }
-crashes(){ adb logcat -d -b crash | grep -c "FATAL EXCEPTION" ; }
+# Taps the view with this resource id (exact on every Android version).
+tap_id(){ dump; local xy; xy="$(python3 -c '
+import sys, re, xml.etree.ElementTree as ET
+for n in ET.parse(sys.argv[1]).getroot().iter("node"):
+    if n.get("resource-id","").endswith(":id/"+sys.argv[2]):
+        x1,y1,x2,y2=map(int,re.findall(r"\d+",n.get("bounds"))); print((x1+x2)//2,(y1+y2)//2); break
+' "$OUT/ui.xml" "$1")"; [ -n "$xy" ] && adb shell input tap $xy; sleep 1
+  return 0; }
+crashes(){ adb logcat -d -b crash 2>/dev/null | grep -A3 "FATAL EXCEPTION" | grep -c "$PKG" ; }
 
 adb install -r "$APK" > /dev/null || { note "FAIL  install"; exit 1; }
 adb shell settings put system screen_off_timeout 1800000 || true
@@ -48,7 +56,10 @@ for MODE in $MODES; do
   adb shell am start -W -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null
   wait_for "remote_sign_in" 20 || note "INFO  login screen slow"
   focus_to DPAD_DOWN "Sign in with remote" 4 >/dev/null; key DPAD_CENTER; sleep 1.5
-  adb shell input text 0012345678; key DPAD_DOWN; adb shell input text 0000111122223333
+  # Fields are filled by tapping them (by resource id): exact on every Android version.
+  tap_id username; adb shell input text 0012345678; sleep 1
+  tap_id password; adb shell input text 0000111122223333; sleep 1
+  check "[$MODE] form filled (username field holds only the username)" 'dump; grep -q "text=\"0012345678\"" "$OUT/ui.xml"'
   start=$(date +%s)
   key ENTER
   wait_activity HomeActivity 40 && ok "[$MODE] sign-in accepted, Home opened" || bad "[$MODE] Home not opened ($(resumed))"
