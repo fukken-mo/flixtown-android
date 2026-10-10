@@ -49,15 +49,15 @@ PASS  episode plays from the episode row
 PASS  details now offers Continue for the show
 PASS  resume prompt: 'Continue watching?'
 PASS  resume prompt offers Continue from … and Start over
-PASS  Start over plays from the beginning (4s)
-PASS  Up shows the player controls
+PASS  Start over plays from the beginning (5s)
+FAIL  controls not shown (10-10 07:58:45.936  5137  5137 I FlixTownQA: player controls=false focus=other elapsed=11 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E2   Chapter 2: Empire)
 PASS  controls hide by themselves
-PASS  seeking: Right +10s, Left ×2 −20s (11s → 22s → 2s)
-INFO  10-09 22:52:39.072  5135  5135 I FlixTownQA: tracks type=1 count=6 [English · Stereo · AAC, German · Stereo · AAC, Italian · Stereo · AAC, French · Stereo · AAC, Spanish · Stereo · AAC, English · 5.1 · AAC]
-INFO  10-09 22:52:39.072  5135  5135 I FlixTownQA: picker Audio: English · Stereo · AAC|German · Stereo · AAC|Italian · Stereo · AAC|French · Stereo · AAC|Spanish · Stereo · AAC|English · 5.1 · AAC selected=0
+PASS  seeking: Right +10s, Left ×2 −20s (12s → 23s → 5s)
+INFO  10-10 07:59:00.382  5137  5137 I FlixTownQA: tracks type=1 count=6 [English · Stereo · AAC, German · Stereo · AAC, Italian · Stereo · AAC, French · Stereo · AAC, Spanish · Stereo · AAC, English · 5.1 · AAC]
+INFO  10-10 07:59:00.382  5137  5137 I FlixTownQA: picker Audio: English · Stereo · AAC|German · Stereo · AAC|Italian · Stereo · AAC|French · Stereo · AAC|Spanish · Stereo · AAC|English · 5.1 · AAC selected=0
 PASS  audio picker lists the stream's audio tracks
 PASS  audio track changed (Audio · English → Audio · German)
-INFO  10-09 22:52:53.314  5135  5135 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+INFO  10-10 07:59:16.135  5137  5137 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
 PASS  subtitle picker offers Off and the stream's languages
 PASS  subtitles changed (Subtitles · Off → Subtitles · English)
 PASS  Back with controls shown: hides them, stays in the player
@@ -73,10 +73,10 @@ PASS  renewal shows the panel's Cash App details
 PASS  renewal request is sent
 PASS  after the payment is confirmed (account active) Flix Town reopens
 PASS  renewal kept the same account (Signed in as 0012345678)
-INFO  emulator frames: Total frames rendered: 91
-INFO  emulator frames: Janky frames: 91 (100.00%)
-INFO  emulator frames: Janky frames (legacy): 91 (100.00%)
+INFO  emulator frames: Total frames rendered: 79
+INFO  emulator frames: Janky frames: 79 (100.00%)
+INFO  emulator frames: Janky frames (legacy): 79 (100.00%)
 INFO  emulator frames: 50th percentile: 200ms
-INFO  emulator frames: 90th percentile: 250ms
+INFO  emulator frames: 90th percentile: 300ms
 PASS  no crash during the run
-release check: 72 passed, 0 failed
+release check: 71 passed, 1 failed
