@@ -20,7 +20,9 @@ bad(){ note "FAIL  $1"; FAIL=$((FAIL+1)); }
 MODEFILE=${MODEFILE:-/tmp/flix-mode}
 shot(){ sleep "${2:-0.8}"; adb shell screencap -p "/sdcard/$1.png"; adb pull "/sdcard/$1.png" "$SHOTS/$1.png" > /dev/null; }
 key(){ for k in "$@"; do adb shell input keyevent "KEYCODE_$k"; sleep 0.7; done; }
-dump(){ adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb shell cat /sdcard/ui.xml > "$OUT/ui.xml" 2>/dev/null; }
+# A screen read can fail or lag on slow emulators (API 28): retry until a complete hierarchy arrives.
+dump(){ for i in 1 2 3 4; do adb shell rm -f /sdcard/ui.xml; adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1
+  adb shell cat /sdcard/ui.xml > "$OUT/ui.xml" 2>/dev/null; grep -q "</hierarchy>" "$OUT/ui.xml" && return 0; sleep 1; done; }
 has(){ dump; grep -q -- "$1" "$OUT/ui.xml"; }
 wait_for(){ local t=0; while [ $t -lt "$2" ]; do has "$1" && return 0; sleep 1; t=$((t+1)); done; return 1; }
 resumed(){ adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | head -1; }
@@ -38,9 +40,21 @@ EOF
 }
 focus_to(){ local k=$1 want=$2 n=${3:-6}; for i in $(seq 1 $n); do focused | grep -q -- "$want" && return 0; key "$k"; done; focused | grep -q -- "$want"; }
 check(){ if eval "$2"; then ok "$1"; else bad "$1"; note "      at: $(resumed | grep -o '[A-Za-z]*Activity' | tail -1) focus='$(focused)'"; fi; }
+# Taps the view labelled exactly this: first by its description (side-menu entries), else by its
+# text (a touch on the text reaches its clickable parent, e.g. a Settings row).
+tap_text(){ dump; local xy; xy="$(python3 -c '
+import sys, re, xml.etree.ElementTree as ET
+nodes=list(ET.parse(sys.argv[1]).getroot().iter("node"))
+for attr in ("content-desc","text"):
+    for n in nodes:
+        if (n.get(attr) or "").strip()==sys.argv[2]:
+            x1,y1,x2,y2=map(int,re.findall(r"\d+",n.get("bounds"))); print((x1+x2)//2,(y1+y2)//2); sys.exit()
+' "$OUT/ui.xml" "$1")"; [ -n "$xy" ] && { adb shell input tap $xy; return 0; }; return 1; }
 # Opens a side-menu page and confirms the page title (navigation is retried, never the app itself).
 menu(){ for attempt in 1 2 3; do
-    key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 8 >/dev/null; key DPAD_CENTER; sleep 3
+    key DPAD_LEFT; sleep 1
+    if ! tap_text "$1"; then focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 8 >/dev/null; key DPAD_CENTER; fi
+    sleep 3
     [ "$1" = Home ] && return 0
     dump; python3 - "$OUT/ui.xml" "$1" <<'PY' && return 0
 import sys, xml.etree.ElementTree as ET
@@ -167,8 +181,8 @@ for SC in $MODES; do
   elif [ "$RENEWAL" != none ]; then
     menu "Settings"
     if has "Renew subscription"; then
-      focus_to DPAD_DOWN "Renew subscription" 4 >/dev/null; key DPAD_CENTER
-      wait_activity RenewalActivity 10
+      tap_text "Renew subscription" || { focus_to DPAD_DOWN "Renew subscription" 4 >/dev/null; key DPAD_CENTER; }
+      wait_activity RenewalActivity 10 && ok "[$SC] Settings › Renew subscription opens the renewal screen" || bad "[$SC] renewal screen did not open ($(resumed))"
       # The service is broken on purpose: the screen must say so (after its own timeout), never crash.
       wait_for "Try again\|available right now\|couldn.t load\|load your plans" 45 && ok "[$SC] renewal screen reports the broken service" || bad "[$SC] renewal screen gave no answer"
       shot "$SC-renewal"
