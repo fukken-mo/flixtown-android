@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Real-network startup check: a normal (non-demo) build of the app, signed in through the real
 # login form, loading its catalog over real HTTP from mock_flix.py on the host (10.0.2.2:8790).
-# For each renewal mode (none, ok, 500, timeout, unreachable) it proves Movies and TV Shows
-# actually fill after a fresh sign-in, and that opening the renewal screen never disturbs them.
-# Usage: real_startup.sh <apk> <label> <modes...>     Results: qa/real-startup/<label>/report.txt
+# Each scenario is "<renewal>:<catalog>" (see mock_flix.py): renewal none|ok|500|timeout|unreachable,
+# catalog ok|slow|fail1|fail3|down|signout|cached. It proves Movies and TV Shows actually fill after a
+# fresh sign-in, that a failed catalog is retried quietly (10 s, 20 s, 40 s, then every 2 min) until
+# it arrives, with no duplicate downloads, no repeated popups, no retries with saved titles or after
+# signing out, and that the renewal service (working or broken) never disturbs the catalog.
+# Usage: real_startup.sh <apk> <label> <scenarios...>   Results: qa/real-startup/<label>/report.txt
 set -u
 APK=$1; LABEL=$2; shift 2; MODES="$*"
 PKG=com.myflixtown.tv.native
@@ -47,51 +50,120 @@ for n in ET.parse(sys.argv[1]).getroot().iter("node"):
   return 0; }
 crashes(){ adb logcat -d -b crash 2>/dev/null | grep -A3 "FATAL EXCEPTION" | grep -c "$PKG" ; }
 
-adb install -r "$APK" > /dev/null || { note "FAIL  install"; exit 1; }
-adb shell settings put system screen_off_timeout 1800000 || true
-for MODE in $MODES; do
-  note ""; note "== $LABEL · renewal API: $MODE"
-  echo "$MODE" > "$MODEFILE"
-  adb shell pm clear $PKG > /dev/null; adb logcat -c; adb logcat -b crash -c 2>/dev/null || true
+MOCK=http://localhost:8790
+vod(){ curl -s $MOCK/__stats | python3 -c 'import json,sys;print(json.load(sys.stdin)["vod"])'; }
+retries(){ adb logcat -d -s FlixTown:I | grep -c "Catalog retry"; }
+updated(){ adb logcat -d -s FlixTown:I | grep -q "Refresh finished: updated"; }
+wait_updated(){ local t=0; while [ $t -lt "$1" ]; do updated && return 0; sleep 2; t=$((t+2)); done; updated; }
+app_pid(){ adb shell pidof $PKG | tr -d '\r'; }
+sign_in(){
   adb shell am start -W -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null
   wait_for "remote_sign_in" 20 || note "INFO  login screen slow"
   focus_to DPAD_DOWN "Sign in with remote" 4 >/dev/null; key DPAD_CENTER; sleep 1.5
   # Fields are filled by tapping them (by resource id): exact on every Android version.
   tap_id username; adb shell input text 0012345678; sleep 1
   tap_id password; adb shell input text 0000111122223333; sleep 1
-  check "[$MODE] form filled (username field holds only the username)" 'dump; grep -q "text=\"0012345678\"" "$OUT/ui.xml"'
-  start=$(date +%s)
-  key ENTER
-  wait_activity HomeActivity 40 && ok "[$MODE] sign-in accepted, Home opened" || bad "[$MODE] Home not opened ($(resumed))"
-  t=0; while [ $t -lt 60 ]; do adb logcat -d -s FlixTown:I | grep -q "Refresh finished" && break; sleep 1; t=$((t+1)); done
-  fin="$(adb logcat -d -s FlixTown:I | grep "Refresh finished" | tail -1)"
-  note "      startup refresh: ${fin:-none after 60 s} ($(( $(date +%s) - start )) s after sign-in)"
-  check "[$MODE] startup refresh finished: updated" 'echo "$fin" | grep -q "updated"'
-  sleep 3
-  check "[$MODE] no 'taking longer than usual' message" '! has "taking longer than usual"'
-  check "[$MODE] Home shows titles" 'has "Mock Movie\|Mock Series"'
-  shot "$MODE-01-home"
-  menu "Movies"; n=$(count_titles "Mock Movie")
-  check "[$MODE] Movies populated ($n posters on screen)" '[ "$n" -ge 4 ]'
-  shot "$MODE-02-movies"
+  check "[$SC] form filled (username field holds only the username)" 'dump; grep -q "text=\"0012345678\"" "$OUT/ui.xml"'
+  START=$(date +%s); key ENTER
+  wait_activity HomeActivity 40 && ok "[$SC] sign-in accepted, Home opened" || bad "[$SC] Home not opened ($(resumed))"
+}
+library(){   # Movies and TV Shows really populated
+  check "[$SC] Home shows titles" 'has "Mock Movie\|Mock Series"'
+  shot "$SC-home"
+  menu "Movies"; local n=$(count_titles "Mock Movie")
+  check "[$SC] Movies populated ($n posters on screen)" '[ "$n" -ge 4 ]'
+  shot "$SC-movies"
   menu "TV Shows"; n=$(count_titles "Mock Series")
-  check "[$MODE] TV Shows populated ($n posters on screen)" '[ "$n" -ge 4 ]'
-  shot "$MODE-03-series"
-  if [ "$MODE" != none ]; then
+  check "[$SC] TV Shows populated ($n posters on screen)" '[ "$n" -ge 4 ]'
+  shot "$SC-series"
+}
+continue_past_message(){   # the one "couldn't reach" message after the first failure: choose Continue
+  if wait_for "couldn.t reach Flix Town" 30; then ok "[$SC] first failure: the usual message, once"; shot "$SC-message"
+    focus_to DPAD_RIGHT "Continue" 3 >/dev/null; key DPAD_CENTER; sleep 1
+  else note "INFO  [$SC] message already gone (a retry succeeded first)"; fi
+}
+
+adb install -r "$APK" > /dev/null || { note "FAIL  install"; exit 1; }
+adb shell settings put system screen_off_timeout 1800000 || true
+for SC in $MODES; do
+  RENEWAL=${SC%%:*}; CATALOG=${SC#*:}; [ "$CATALOG" = "$SC" ] && CATALOG=ok
+  note ""; note "== $LABEL · renewal API: $RENEWAL · catalog: $CATALOG"
+  m=$CATALOG; [ "$m" = signout ] && m=down; [ "$m" = cached ] && m=ok
+  echo "$RENEWAL $m" > "$MODEFILE"; curl -s $MOCK/__reset > /dev/null
+  adb shell pm clear $PKG > /dev/null; adb logcat -c; adb logcat -b crash -c 2>/dev/null || true
+  sign_in
+  case $CATALOG in
+  ok)
+    wait_updated 60; note "      catalog arrived $(( $(date +%s) - START )) s after sign-in"
+    check "[$SC] startup refresh finished: updated" 'updated'
+    sleep 3
+    check "[$SC] no 'taking longer than usual' message" '! has "taking longer than usual"'
+    library
+    check "[$SC] exactly one catalog download, no retries" '[ "$(vod)" = 1 ] && [ "$(retries)" = 0 ]';;
+  slow)
+    wait_for "taking longer than usual" 30 && ok "[$SC] slow server (>15 s): the usual 'taking longer' message" || bad "[$SC] slow message not shown"
+    shot "$SC-slow-message"
+    wait_updated 60; note "      catalog arrived $(( $(date +%s) - START )) s after sign-in (no key pressed)"
+    check "[$SC] catalog arrived and the loading screen closed by itself" 'updated && sleep 2 && ! has "taking longer than usual"'
+    library
+    check "[$SC] one catalog download, no retries (a slow answer is not a failure)" '[ "$(vod)" = 1 ] && [ "$(retries)" = 0 ]';;
+  fail1|fail3)
+    n=${CATALOG#fail}; pid=$(app_pid)
+    continue_past_message
+    wait_updated 150; note "      catalog arrived $(( $(date +%s) - START )) s after sign-in"
+    check "[$SC] retried quietly and the catalog arrived" 'updated'
+    check "[$SC] $n retries, $((n+1)) catalog downloads in total (no duplicates)" '[ "$(retries)" = "$n" ] && [ "$(vod)" = "$((n+1))" ]'
+    sleep 2
+    check "[$SC] no repeated popups" '! has "couldn.t reach Flix Town" && ! has "taking longer than usual"'
+    check "[$SC] same app process (no restart needed)" '[ "$(app_pid)" = "$pid" ]'
+    library;;
+  down)
+    continue_past_message; t0=$(date +%s)
+    sleep 200
+    v=$(vod); r=$(retries); note "      catalog unavailable for $(( $(date +%s) - t0 )) s after Continue: $v downloads, $r retries scheduled"
+    check "[$SC] retries at ~10/20/40 s then every 2 min: 4-6 downloads in 200 s (no storm)" '[ "$v" -ge 4 ] && [ "$v" -le 6 ]'
+    check "[$SC] no repeated popups while retrying" '! has "couldn.t reach Flix Town"'
+    shot "$SC-still-down"
+    menu "Settings"
+    check "[$SC] Home and Settings stay usable while retrying" 'has "Sign out" && in_activity HomeActivity'
+    menu "Home"
+    echo "$RENEWAL ok" > "$MODEFILE"; note "      server back"
+    wait_updated 150; note "      catalog arrived $(( $(date +%s) - t0 )) s after Continue"
+    check "[$SC] the catalog arrives on the next retry once the server is back" 'updated'
+    sleep 2; library;;
+  signout)
+    continue_past_message; sleep 14
+    menu "Settings"; focus_to DPAD_DOWN "Sign out" 16 >/dev/null; key DPAD_CENTER; sleep 1
+    focus_to DPAD_RIGHT "Sign out" 2 >/dev/null; key DPAD_CENTER
+    wait_activity LoginActivity 10 && ok "[$SC] signed out" || bad "[$SC] sign-out did not reach the sign-in screen"
+    before=$(vod); sleep 80; after=$(vod)
+    check "[$SC] no catalog retries after signing out ($before -> $after downloads in 80 s)" '[ "$before" = "$after" ]';;
+  cached)
+    wait_updated 60; check "[$SC] first sign-in loaded the catalog (now saved on the TV)" 'updated'
+    echo "$RENEWAL down" > "$MODEFILE"; curl -s $MOCK/__reset > /dev/null
+    adb shell am force-stop $PKG; adb logcat -c
+    adb shell am start -W -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null
+    wait_activity HomeActivity 40; sleep 45
+    check "[$SC] saved titles shown although the server is down" 'has "Mock Movie\|Mock Series"'
+    check "[$SC] with saved titles: no retries (one normal refresh attempt only)" '[ "$(retries)" = 0 ] && [ "$(vod)" -le 1 ]'
+    library;;
+  esac
+  if [ "$RENEWAL" != none ]; then
     menu "Settings"
     if has "Renew subscription"; then
       focus_to DPAD_DOWN "Renew subscription" 4 >/dev/null; key DPAD_CENTER
       wait_activity RenewalActivity 10
       # The service is broken on purpose: the screen must say so (after its own timeout), never crash.
-      wait_for "Try again\|available right now\|couldn.t load\|load your plans" 45 && ok "[$MODE] renewal screen reports the broken service" || bad "[$MODE] renewal screen gave no answer"
-      shot "$MODE-04-renewal"
+      wait_for "Try again\|available right now\|couldn.t load\|load your plans" 45 && ok "[$SC] renewal screen reports the broken service" || bad "[$SC] renewal screen gave no answer"
+      shot "$SC-renewal"
       key BACK; sleep 2
       menu "Movies"; n=$(count_titles "Mock Movie")
-      check "[$MODE] Movies still there after the renewal screen ($n)" '[ "$n" -ge 4 ]'
+      check "[$SC] Movies still there after the renewal screen ($n)" '[ "$n" -ge 4 ]'
+      check "[$SC] the renewal screen caused no catalog download" '[ "$(vod)" = 1 ]'
     else
-      note "INFO  [$MODE] no Renew subscription row (this build has no in-app renewal)"
+      bad "[$SC] no Renew subscription row although renewal_api_url is set"
     fi
   fi
-  check "[$MODE] no crash" '[ "$(crashes)" = "0" ]'
+  check "[$SC] no crash" '[ "$(crashes)" = "0" ]'
 done
 note ""; note "$LABEL: $PASS passed, $FAIL failed"

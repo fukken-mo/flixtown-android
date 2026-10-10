@@ -8,8 +8,11 @@ startup check (real_startup.sh). The app's REAL HTTP code talks to it (no DemoDa
   /player_api.php                 Xtream: user_info, get_vod_streams, get_series, *_categories
   /renewal                        OnePanel renewal API: ok | 500 | slow (never answers in time)
 
-The mode file (argv[2]) holds one word: none | ok | 500 | timeout | unreachable.
-'timeout' and 'unreachable' put a renewal URL in config.php that hangs or refuses.
+The mode file (argv[2]) holds "<renewal> [catalog]":
+  renewal: none | ok | 500 | timeout | unreachable  ('timeout'/'unreachable' name a renewal URL that hangs or refuses)
+  catalog: ok (default) | slow (get_vod_streams streams for ~20 s) | failN (the first N get_vod_streams
+           calls answer 503, then normal) | down (always 503)
+GET /__stats returns how many catalog downloads were tried; GET /__reset zeroes the counters.
 Every request is logged to stdout with its time, so the log shows the order of startup calls.
 """
 import json, sys, time, threading, urllib.parse
@@ -26,10 +29,13 @@ SERIES = [{"series_id": 5000 + i, "num": i + 1, "name": "Mock Series %d" % (i + 
 MCATS = [{"category_id": str(10 + i), "category_name": n, "parent_id": 0} for i, n in enumerate(["Action", "Drama", "Comedy", "Thriller", "Family", "Sci-Fi"])]
 SCATS = [{"category_id": str(50 + i), "category_name": n, "parent_id": 0} for i, n in enumerate(["Crime", "Documentary", "Animation", "Reality"])]
 T0 = time.time()
+STATS = {"vod": 0, "series": 0, "account": 0}; LOCK = threading.Lock()
 
-def mode():
-    try: return open(MODE_FILE).read().strip() or "none"
-    except Exception: return "none"
+def modes():
+    try: words = open(MODE_FILE).read().split()
+    except Exception: words = []
+    return (words[0] if words else "none"), (words[1] if len(words) > 1 else "ok")
+def mode(): return modes()[0]
 
 class H(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -41,6 +47,11 @@ class H(BaseHTTPRequestHandler):
     def handle_any(self):
         u = urllib.parse.urlparse(self.path); q = dict(urllib.parse.parse_qsl(u.query)); p = u.path
         print("%7.2f %s %s %s" % (time.time() - T0, self.command, p, q.get("action", "")), flush=True)
+        if p == "/__stats": return self.send_json(STATS)
+        if p == "/__reset":
+            with LOCK:
+                for k in STATS: STATS[k] = 0
+            return self.send_json(STATS)
         host = "http://10.0.2.2:%d" % PORT
         if p == "/api/config.php":
             m = mode(); cfg = {"xtream_url": host, "intro_enabled": False, "intro_url": "", "app_name": "Flix Town",
@@ -60,6 +71,16 @@ class H(BaseHTTPRequestHandler):
             if q.get("username") != USER or q.get("password") != PASS:
                 return self.send_json({"user_info": {"auth": 0}})
             a = q.get("action", "")
+            if a == "get_vod_streams":
+                with LOCK: STATS["vod"] += 1; n = STATS["vod"]
+                cat = modes()[1]
+                if cat == "down" or (cat.startswith("fail") and n <= int(cat[4:] or 1)):
+                    return self.send_json({"error": "Catalog temporarily unavailable"}, 503)
+                if cat == "slow": return self.send_slow(MOVIES, 20)
+            if a == "get_series":
+                with LOCK: STATS["series"] += 1
+            if a == "":
+                with LOCK: STATS["account"] += 1
             if a == "": return self.send_json({"user_info": {"username": USER, "auth": 1, "status": "Active", "exp_date": "1830254400", "max_connections": "2"},
                                                "server_info": {"timezone": "America/Denver"}})
             if a == "get_vod_streams": return self.send_json(MOVIES)
@@ -68,6 +89,13 @@ class H(BaseHTTPRequestHandler):
             if a == "get_series_categories": return self.send_json(SCATS)
             return self.send_json([])
         self.send_json({"error": "not found"}, 404)
+    def send_slow(self, obj, seconds):
+        """Starts answering at once but takes about `seconds` to deliver the whole body (a slow server)."""
+        body = json.dumps(obj).encode(); parts = 10; step = len(body) // parts + 1
+        self.send_response(200); self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body))); self.end_headers()
+        for i in range(parts):
+            self.wfile.write(body[i * step:(i + 1) * step]); self.wfile.flush(); time.sleep(seconds / parts)
     do_GET = handle_any
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
