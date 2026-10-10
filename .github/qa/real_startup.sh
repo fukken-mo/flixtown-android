@@ -38,7 +38,17 @@ EOF
 }
 focus_to(){ local k=$1 want=$2 n=${3:-6}; for i in $(seq 1 $n); do focused | grep -q -- "$want" && return 0; key "$k"; done; focused | grep -q -- "$want"; }
 check(){ if eval "$2"; then ok "$1"; else bad "$1"; note "      at: $(resumed | grep -o '[A-Za-z]*Activity' | tail -1) focus='$(focused)'"; fi; }
-menu(){ key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 8 >/dev/null; key DPAD_CENTER; sleep 3; }
+# Opens a side-menu page and confirms the page title (navigation is retried, never the app itself).
+menu(){ for attempt in 1 2 3; do
+    key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 8 >/dev/null; key DPAD_CENTER; sleep 3
+    [ "$1" = Home ] && return 0
+    dump; python3 - "$OUT/ui.xml" "$1" <<'PY' && return 0
+import sys, xml.etree.ElementTree as ET
+for n in ET.parse(sys.argv[1]).getroot().iter('node'):
+    if n.get('resource-id','').endswith(':id/browse_title'): sys.exit(0 if n.get('text')==sys.argv[2] else 1)
+sys.exit(1)
+PY
+    note "INFO  side menu did not reach $1 (attempt $attempt)"; done; return 1; }
 count_titles(){ dump; grep -o "content-desc=\"$1 [0-9]*\"" "$OUT/ui.xml" | sort -u | wc -l; }
 # Taps the view with this resource id (exact on every Android version).
 tap_id(){ dump; local xy; xy="$(python3 -c '
