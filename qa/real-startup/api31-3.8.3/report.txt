@@ -1,0 +1,23 @@
+
+== api31-3.8.3 · renewal API: none
+PASS  [none] sign-in accepted, Home opened
+      startup refresh: 10-10 10:04:20.236  2875  2875 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [none] startup refresh finished: updated
+PASS  [none] no 'taking longer than usual' message
+PASS  [none] Home shows titles
+PASS  [none] Movies populated (12 posters on screen)
+PASS  [none] TV Shows populated (12 posters on screen)
+PASS  [none] no crash
+
+== api31-3.8.3 · renewal API: timeout
+PASS  [timeout] sign-in accepted, Home opened
+      startup refresh: 10-10 10:05:25.025  4361  4361 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [timeout] startup refresh finished: updated
+PASS  [timeout] no 'taking longer than usual' message
+PASS  [timeout] Home shows titles
+PASS  [timeout] Movies populated (12 posters on screen)
+PASS  [timeout] TV Shows populated (12 posters on screen)
+INFO  [timeout] no Renew subscription row (this build has no in-app renewal)
+PASS  [timeout] no crash
+
+api31-3.8.3: 14 passed, 0 failed

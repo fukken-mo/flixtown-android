@@ -1,0 +1,60 @@
+
+== api31-3.8.4 · renewal API: none
+PASS  [none] sign-in accepted, Home opened
+      startup refresh: 10-10 10:07:02.929  5262  5262 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [none] startup refresh finished: updated
+PASS  [none] no 'taking longer than usual' message
+PASS  [none] Home shows titles
+PASS  [none] Movies populated (12 posters on screen)
+PASS  [none] TV Shows populated (12 posters on screen)
+PASS  [none] no crash
+
+== api31-3.8.4 · renewal API: ok
+PASS  [ok] sign-in accepted, Home opened
+      startup refresh: 10-10 10:08:06.670  5825  5825 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [ok] startup refresh finished: updated
+PASS  [ok] no 'taking longer than usual' message
+PASS  [ok] Home shows titles
+PASS  [ok] Movies populated (12 posters on screen)
+PASS  [ok] TV Shows populated (12 posters on screen)
+PASS  [ok] renewal screen reports the broken service
+PASS  [ok] Movies still there after the renewal screen (12)
+PASS  [ok] no crash
+
+== api31-3.8.4 · renewal API: 500
+PASS  [500] sign-in accepted, Home opened
+      startup refresh: 10-10 10:10:23.531  6981  6981 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [500] startup refresh finished: updated
+PASS  [500] no 'taking longer than usual' message
+PASS  [500] Home shows titles
+PASS  [500] Movies populated (12 posters on screen)
+PASS  [500] TV Shows populated (12 posters on screen)
+PASS  [500] renewal screen reports the broken service
+PASS  [500] Movies still there after the renewal screen (12)
+PASS  [500] no crash
+
+== api31-3.8.4 · renewal API: timeout
+PASS  [timeout] sign-in accepted, Home opened
+      startup refresh: 10-10 10:12:39.919  8114  8114 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [timeout] startup refresh finished: updated
+PASS  [timeout] no 'taking longer than usual' message
+PASS  [timeout] Home shows titles
+PASS  [timeout] Movies populated (12 posters on screen)
+PASS  [timeout] TV Shows populated (12 posters on screen)
+PASS  [timeout] renewal screen reports the broken service
+PASS  [timeout] Movies still there after the renewal screen (12)
+PASS  [timeout] no crash
+
+== api31-3.8.4 · renewal API: unreachable
+PASS  [unreachable] sign-in accepted, Home opened
+      startup refresh: 10-10 10:15:14.559 10108 10108 I FlixTown: Refresh finished: updated (3 s after sign-in)
+PASS  [unreachable] startup refresh finished: updated
+PASS  [unreachable] no 'taking longer than usual' message
+PASS  [unreachable] Home shows titles
+PASS  [unreachable] Movies populated (12 posters on screen)
+PASS  [unreachable] TV Shows populated (12 posters on screen)
+PASS  [unreachable] renewal screen reports the broken service
+PASS  [unreachable] Movies still there after the renewal screen (12)
+PASS  [unreachable] no crash
+
+api31-3.8.4: 43 passed, 0 failed
