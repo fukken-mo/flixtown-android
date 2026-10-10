@@ -158,8 +158,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
 
     @Override protected void onResume(){super.onResume();resumed=true;ScreenAwake.on(this);scheduleRotation();
-        if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
-        if(settingsPage!=null && tab.equals("Settings"))settingsPage.refreshStatus();}   // back from renewing: new expiry
+        if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}}
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
     @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
     /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
@@ -236,7 +235,6 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         updateAccountPill();
         if(settingsPage!=null)settingsPage.refreshStatus();
         if(r.state==StartupRefresh.DONE){
-            resetCatalogRetry();catalogFailed=false;
             applyCatalog(r.movies,r.series,r.movieCategories,r.seriesCategories);
             SeriesNews.onServerCatalog(this,series,this::homeFactsChanged);
             if(r.manual)toast("Your catalog is up to date");
@@ -244,10 +242,6 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         }
         if(r.manual){toast("Couldn't reach the server. Your saved titles are still here.");return;}
         boolean haveTitles=!movies.isEmpty()||!series.isEmpty();
-        boolean retrying=catalogRetries>0;catalogFailed=true;
-        if(!haveTitles && cacheLoaded)scheduleCatalogRetry();   // before the saved catalog is read, loadCache() decides
-        // A quiet retry failed again while the message is already on screen: no new popup.
-        if(retrying && overlayUp && startupActions.getVisibility()==View.VISIBLE)return;
         if(overlayUp && !haveTitles){
             if(!cacheLoaded)return; // loadCache() re-checks once the saved catalog has been read
             overlayMessage("We couldn't reach Flix Town. Check the TV's internet connection, then try again.",
@@ -256,32 +250,6 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
                     else hideOverlay(true);});
         }else if(overlayUp){hideOverlay(false);toast("Showing saved titles. New titles will appear next time the server is reachable.");}
     }
-    /*
-     * Quiet catalog retries. When an automatic refresh fails and this TV has no titles at all (a fresh
-     * sign-in has no saved catalog), the refresh is tried again after 10 s, 20 s and 40 s, then every
-     * 2 minutes, until titles arrive; Home fills in place when they do. With saved titles nothing is
-     * retried. Only one retry is ever pending, and none starts while a refresh is already running.
-     */
-    private static final long[] CATALOG_RETRY_MS={10_000,20_000,40_000};
-    private static final long CATALOG_RETRY_LATER_MS=120_000,CATALOG_RETRY_HIDDEN_MS=10_000;
-    private int catalogRetries;private boolean catalogRetryPending,catalogFailed;
-    private void scheduleCatalogRetry(){
-        if(catalogRetryPending||destroyed||!movies.isEmpty()||!series.isEmpty())return;
-        long delay=catalogRetries<CATALOG_RETRY_MS.length?CATALOG_RETRY_MS[catalogRetries]:CATALOG_RETRY_LATER_MS;
-        catalogRetries++;catalogRetryPending=true;
-        android.util.Log.i("FlixTown","Catalog retry "+catalogRetries+" in "+delay/1000+" s");
-        handler.postDelayed(retryCatalog,delay);
-    }
-    private final Runnable retryCatalog=new Runnable(){@Override public void run(){
-        catalogRetryPending=false;
-        if(destroyed||isFinishing()||!movies.isEmpty()||!series.isEmpty())return;   // titles arrived another way
-        if(AccountStore.read(HomeActivity.this)==null)return;                       // signed out
-        // Another screen is in front: check again shortly, without using the network meanwhile.
-        if(!resumed){catalogRetryPending=true;handler.postDelayed(this,CATALOG_RETRY_HIDDEN_MS);return;}
-        if(StartupRefresh.running())return;   // that refresh's own result decides whether to retry again
-        StartupRefresh.start(HomeActivity.this,false);
-    }};
-    private void resetCatalogRetry(){catalogRetries=0;catalogRetryPending=false;handler.removeCallbacks(retryCatalog);}
     private void loadCache(){Api.IO.execute(()->{
         List<Catalog.Item> m=Catalog.parse(Api.cached(this,"movies"),"movie"),s=Catalog.parse(Api.cached(this,"series"),"series");
         List<Catalog.Category> mc=Catalog.parseCategories(Api.cached(this,"movie_categories")),sc=Catalog.parseCategories(Api.cached(this,"series_categories"));
@@ -292,7 +260,6 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             // A network result that already arrived is newer than the file cache.
             if(movies.isEmpty() && series.isEmpty())applyCatalog(m,s,mc,sc);
             boolean haveTitles=!movies.isEmpty()||!series.isEmpty();
-            if(!haveTitles && catalogFailed && !StartupRefresh.running())scheduleCatalogRetry();   // failed before the cache was read
             // Saved titles show at once; the refresh that is already running updates them in place.
             if(overlayUp && haveTitles)hideOverlay(false);
             else if(overlayUp && !StartupRefresh.running()){

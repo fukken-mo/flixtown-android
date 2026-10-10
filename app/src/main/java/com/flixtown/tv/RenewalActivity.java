@@ -313,7 +313,7 @@ public class RenewalActivity extends Activity {
         JSONObject acc=context==null?null:context.optJSONObject("account");
         String plan=acc==null||acc.isNull("plan_label")?"":acc.optString("plan_label","");
         String expires;long exp=acc==null||acc.isNull("expires_at")?-1:acc.optLong("expires_at",-1);
-        if(acc!=null)expires=exp<0?"Never":AccountInfo.formatDate(this,exp);else expires=AccountInfo.expiration(this);
+        if(acc!=null)expires=exp<0?"Never":RenewalApi.formatDate(this,exp);else expires=AccountInfo.expiration(this);
         boolean past=acc!=null?exp>=0&&exp*1000<System.currentTimeMillis():!AccountInfo.isActive(AccountInfo.status(this));
         int devices=acc!=null?acc.optInt("devices",0):AccountInfo.connections(this);
         if(renewedHere){expires=AccountInfo.expiration(this);past=!AccountInfo.isActive(AccountInfo.status(this));}

@@ -296,7 +296,9 @@ key BACK; sleep 1; in_activity PlayerActivity && key BACK; sleep 1
 
 # ---------------- 9. Expired account: renewal and Cash App ----------------
 # The original renewal screen (panel without in-app renewal); in-app renewal has its own check (renewal_flow.sh).
-launch --ez demo_expired true --ez demo_legacy_renewal true
+# QA build: the demo panel leaves renewal_api_url out while this file says so.
+printf '%s' '{"legacy_renewal":true}' | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"
+launch --ez demo_expired true
 wait_for "Send renewal request" 30 && ok "expired account opens the renewal screen" || bad "renewal screen not shown ($(resumed))"
 shot 23-renewal 0.3
 check "renewal shows plans with panel prices" 'has "\$15"'
@@ -305,12 +307,14 @@ focus_to DPAD_DOWN "Send renewal request" 8 || note "INFO  renewal focus is on: 
 key DPAD_CENTER; sleep 3
 check "renewal request is sent" 'has "Request sent"'
 shot 24-renewal-sent 0.2
-launch --ez demo_legacy_renewal true;        sleep 4
+launch;                                      sleep 4
 wait_activity HomeActivity 30 && ok "after the payment is confirmed (account active) Flix Town reopens" || bad "active account did not leave renewal ($(resumed))"
 sleep 5
 who="$(signed_in_as)"
 [ "$who" = "Signed in as 0012345678" ] && ok "renewal kept the same account ($who)" || bad "account after renewal: '$who'"
 key BACK; sleep 1
+
+adb shell "run-as $PKG rm -f files/demo_account.json"
 
 # ---------------- 10. Performance sample (emulator only) ----------------
 adb shell dumpsys gfxinfo $PKG reset > /dev/null

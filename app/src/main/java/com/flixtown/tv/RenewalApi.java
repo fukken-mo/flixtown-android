@@ -11,6 +11,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * In-app renewal through the operator's renewal service (OnePanel). The service address comes from
  * the panel config (config.php "renewal_api_url"); without it the original renewal screen is used.
+ * Nothing here runs during sign-in or startup: the address is read from the config answer the app
+ * already downloaded (StartupRefresh.config()) or saved by the renewal screen, and the service is
+ * only called while the renewal screen is open.
  *
  * The TV holds no payment or panel secret. It signs in once with the customer's own Flix Town
  * account (the service checks it against the Flix Town backend) and gets a short session; after that
@@ -24,8 +27,17 @@ final class RenewalApi {
 
     /** The renewal service address from the panel config, or "" when in-app renewal is not offered. */
     static String url(Context c){
+        JSONObject latest=StartupRefresh.config();   // this launch's config.php answer, when it has arrived
+        if(latest!=null)remember(c,latest);
         String u=Api.prefs(c).getString(URL_KEY,"").trim();
         return u.startsWith("https://")?u:"";
+    }
+    /** MM/dd/yyyy in the panel's timezone (saved with the account details), else the TV's. */
+    static String formatDate(Context c,long secs){
+        java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("MM/dd/yyyy",java.util.Locale.US);
+        String zone=Api.prefs(c).getString(AccountInfo.TIMEZONE,"");
+        f.setTimeZone(zone.isEmpty()?java.util.TimeZone.getDefault():java.util.TimeZone.getTimeZone(zone));
+        return f.format(new java.util.Date(secs*1000));
     }
     static boolean available(Context c){return !url(c).isEmpty();}
     /** Saves (or clears) the address from a config.php answer. */

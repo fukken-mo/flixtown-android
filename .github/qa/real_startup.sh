@@ -52,6 +52,7 @@ crashes(){ adb logcat -d -b crash 2>/dev/null | grep -A3 "FATAL EXCEPTION" | gre
 
 MOCK=http://localhost:8790
 vod(){ curl -s $MOCK/__stats | python3 -c 'import json,sys;print(json.load(sys.stdin)["vod"])'; }
+renewal_conns(){ curl -s $MOCK/__stats | python3 -c 'import json,sys;print(json.load(sys.stdin)["renewal_connections"])'; }
 retries(){ adb logcat -d -s FlixTown:I | grep -c "Catalog retry"; }
 updated(){ adb logcat -d -s FlixTown:I | grep -q "Refresh finished: updated"; }
 wait_updated(){ local t=0; while [ $t -lt "$1" ]; do updated && return 0; sleep 2; t=$((t+2)); done; updated; }
@@ -83,7 +84,7 @@ continue_past_message(){   # the one "couldn't reach" message after the first fa
   else note "INFO  [$SC] message already gone (a retry succeeded first)"; fi
 }
 
-adb install -r "$APK" > /dev/null || { note "FAIL  install"; exit 1; }
+adb uninstall $PKG > /dev/null 2>&1; adb install "$APK" > /dev/null || { note "FAIL  install"; exit 1; }
 adb shell settings put system screen_off_timeout 1800000 || true
 for SC in $MODES; do
   RENEWAL=${SC%%:*}; CATALOG=${SC#*:}; [ "$CATALOG" = "$SC" ] && CATALOG=ok
@@ -148,7 +149,12 @@ for SC in $MODES; do
     check "[$SC] with saved titles: no retries (one normal refresh attempt only)" '[ "$(retries)" = 0 ] && [ "$(vod)" -le 1 ]'
     library;;
   esac
-  if [ "$RENEWAL" != none ]; then
+  if [ "$RENEWAL" = probe ]; then
+    check "[$SC] no renewal network call during sign-in, startup or catalog loading ($(renewal_conns) connections)" '[ "$(renewal_conns)" = 0 ]'
+  fi
+  if [ "$RENEWAL" != none ] && [ -n "${NO_RENEWAL:-}" ]; then
+    note "INFO  [$SC] baseline build without in-app renewal: renewal screen not checked"
+  elif [ "$RENEWAL" != none ]; then
     menu "Settings"
     if has "Renew subscription"; then
       focus_to DPAD_DOWN "Renew subscription" 4 >/dev/null; key DPAD_CENTER
@@ -160,6 +166,7 @@ for SC in $MODES; do
       menu "Movies"; n=$(count_titles "Mock Movie")
       check "[$SC] Movies still there after the renewal screen ($n)" '[ "$n" -ge 4 ]'
       check "[$SC] the renewal screen caused no catalog download" '[ "$(vod)" = 1 ]'
+      [ "$RENEWAL" = probe ] && check "[$SC] the renewal service is contacted only once its screen is open ($(renewal_conns) connections)" '[ "$(renewal_conns)" -ge 1 ]'
     else
       bad "[$SC] no Renew subscription row although renewal_api_url is set"
     fi

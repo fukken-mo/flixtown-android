@@ -10,6 +10,7 @@ startup check (real_startup.sh). The app's REAL HTTP code talks to it (no DemoDa
 
 The mode file (argv[2]) holds "<renewal> [catalog]":
   renewal: none | ok | 500 | timeout | unreachable  ('timeout'/'unreachable' name a renewal URL that hangs or refuses)
+           | probe (a renewal URL on this host, port 8443, where every connection attempt is counted)
   catalog: ok (default) | slow (get_vod_streams streams for ~20 s) | failN (the first N get_vod_streams
            calls answer 503, then normal) | down (always 503)
 GET /__stats returns how many catalog downloads were tried; GET /__reset zeroes the counters.
@@ -29,7 +30,19 @@ SERIES = [{"series_id": 5000 + i, "num": i + 1, "name": "Mock Series %d" % (i + 
 MCATS = [{"category_id": str(10 + i), "category_name": n, "parent_id": 0} for i, n in enumerate(["Action", "Drama", "Comedy", "Thriller", "Family", "Sci-Fi"])]
 SCATS = [{"category_id": str(50 + i), "category_name": n, "parent_id": 0} for i, n in enumerate(["Crime", "Documentary", "Animation", "Reality"])]
 T0 = time.time()
-STATS = {"vod": 0, "series": 0, "account": 0}; LOCK = threading.Lock()
+STATS = {"vod": 0, "series": 0, "account": 0, "renewal_connections": 0}; LOCK = threading.Lock()
+
+def probe_listener():
+    """Counts every connection to the 'probe' renewal address (TLS never completes: it is a counter)."""
+    import socket
+    srv = socket.socket(); srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(("0.0.0.0", 8443)); srv.listen(16)
+    while True:
+        conn, _ = srv.accept()
+        with LOCK: STATS["renewal_connections"] += 1
+        print("%7.2f RENEWAL connection" % (time.time() - T0), flush=True)
+        conn.close()
+threading.Thread(target=probe_listener, daemon=True).start()
 
 def modes():
     try: words = open(MODE_FILE).read().split()
@@ -61,6 +74,7 @@ class H(BaseHTTPRequestHandler):
             elif m == "500": cfg["renewal_api_url"] = "https://httpbin.org/status/500"
             elif m == "timeout": cfg["renewal_api_url"] = "https://httpbin.org/delay/40"
             elif m == "unreachable": cfg["renewal_api_url"] = "https://10.255.255.1/api/tv-renewal.php"
+            elif m == "probe": cfg["renewal_api_url"] = "https://10.0.2.2:8443/api/tv-renewal.php"
             return self.send_json(cfg)
         if p == "/api/app-update.php": return self.send_json({"ok": True, "update_version_code": 0, "message": "No update"})
         if p in ("/api/trending.php",): return self.send_json({"movies": [], "series": []})

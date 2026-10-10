@@ -169,7 +169,7 @@ final class RenewalPayment {
     private void showRenewed(long newExpiresAt){
         qrFrame.setVisibility(View.GONE);
         title.setText("✓  Renewal Successful");title.setTextColor(0xFF6FCF97);
-        String when=newExpiresAt>0?AccountInfo.formatDate(a,newExpiresAt):"";
+        String when=newExpiresAt>0?RenewalApi.formatDate(a,newExpiresAt):"";
         plan.setText(label+"  ·  $"+price);
         steps.setText(when.isEmpty()?"Thank you! Your subscription has been renewed.":"Thank you! Your subscription now expires on "+when+".");
         setState("",Ui.TEXT,false);timer.setText("");

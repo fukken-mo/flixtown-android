@@ -45,7 +45,7 @@ final class DemoData {
         if(url.contains("config.php"))return new JSONObject().put("xtream_url","https://demo.flixtown.invalid").put("intro_enabled",intro)
             .put("intro_url",intro?STREAM:"").put("cashapp_url","https://cash.app/$FlixTownDemo")
             .put("plans",new JSONObject().put("1m","15").put("3m","40").put("6m","75").put("12m","140"))
-            .put("renewal_api_url",legacyRenewal?"":RENEWAL_URL).toString();
+            .put("renewal_api_url",legacyRenewal||(live()!=null&&live().optBoolean("legacy_renewal"))?"":RENEWAL_URL).toString();
         if(url.startsWith(RENEWAL_URL))return renewal(new JSONObject(body==null?"{}":body));
         if(url.contains("pair-start")){polls=0;return new JSONObject().put("code","FT4K2Q").put("verifier","demo")
             .put("activation_url","https://myflixtown.com/activate.php?code=FT4K2Q").toString();}
