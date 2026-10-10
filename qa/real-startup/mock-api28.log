@@ -1,0 +1,867 @@
+   0.96 GET /api/config.php 
+ 289.03 POST /api/pair-start.php 
+ 289.66 POST /api/pair-poll.php 
+ 292.67 POST /api/pair-poll.php 
+ 295.68 POST /api/pair-poll.php 
+ 298.68 POST /api/pair-poll.php 
+ 301.69 POST /api/pair-poll.php 
+ 304.69 POST /api/pair-poll.php 
+ 307.69 POST /api/pair-poll.php 
+ 310.70 POST /api/pair-poll.php 
+ 313.70 POST /api/pair-poll.php 
+ 316.71 POST /api/pair-poll.php 
+ 319.71 POST /api/pair-poll.php 
+ 322.72 POST /api/pair-poll.php 
+ 325.72 POST /api/pair-poll.php 
+ 328.73 POST /api/pair-poll.php 
+ 331.73 POST /api/pair-poll.php 
+ 334.74 POST /api/pair-poll.php 
+ 337.74 POST /api/pair-poll.php 
+ 340.74 POST /api/pair-poll.php 
+ 343.75 POST /api/pair-poll.php 
+ 346.75 POST /api/pair-poll.php 
+ 349.76 POST /api/pair-poll.php 
+ 352.76 POST /api/pair-poll.php 
+ 355.77 POST /api/pair-poll.php 
+ 358.77 POST /api/pair-poll.php 
+ 361.78 POST /api/pair-poll.php 
+ 364.78 POST /api/pair-poll.php 
+ 367.78 POST /api/pair-poll.php 
+ 370.79 POST /api/pair-poll.php 
+ 373.79 POST /api/pair-poll.php 
+ 376.80 POST /api/pair-poll.php 
+ 379.80 POST /api/pair-poll.php 
+ 382.81 POST /api/pair-poll.php 
+ 385.81 POST /api/pair-poll.php 
+ 388.82 POST /api/pair-poll.php 
+ 391.82 POST /api/pair-poll.php 
+ 394.83 POST /api/pair-poll.php 
+ 397.83 POST /api/pair-poll.php 
+ 400.84 POST /api/pair-poll.php 
+ 403.84 POST /api/pair-poll.php 
+ 406.85 POST /api/pair-poll.php 
+ 409.85 POST /api/pair-poll.php 
+ 412.86 POST /api/pair-poll.php 
+ 415.86 POST /api/pair-poll.php 
+ 418.86 POST /api/pair-poll.php 
+ 421.87 POST /api/pair-poll.php 
+ 424.87 POST /api/pair-poll.php 
+ 427.88 POST /api/pair-poll.php 
+ 430.88 POST /api/pair-poll.php 
+ 433.89 POST /api/pair-poll.php 
+ 436.89 POST /api/pair-poll.php 
+ 439.90 POST /api/pair-poll.php 
+ 442.91 POST /api/pair-poll.php 
+ 445.91 POST /api/pair-poll.php 
+ 448.92 POST /api/pair-poll.php 
+ 451.92 POST /api/pair-poll.php 
+ 454.93 POST /api/pair-poll.php 
+ 457.93 POST /api/pair-poll.php 
+ 460.95 POST /api/pair-poll.php 
+ 463.95 POST /api/pair-poll.php 
+ 466.95 POST /api/pair-poll.php 
+ 469.96 POST /api/pair-poll.php 
+ 472.96 POST /api/pair-poll.php 
+ 475.97 POST /api/pair-poll.php 
+ 478.98 POST /api/pair-poll.php 
+ 481.98 POST /api/pair-poll.php 
+ 484.99 POST /api/pair-poll.php 
+ 487.99 POST /api/pair-poll.php 
+ 490.99 POST /api/pair-poll.php 
+ 494.01 POST /api/pair-poll.php 
+ 497.02 POST /api/pair-poll.php 
+ 500.02 POST /api/pair-poll.php 
+ 503.03 POST /api/pair-poll.php 
+ 506.03 POST /api/pair-poll.php 
+ 509.04 POST /api/pair-poll.php 
+ 512.04 POST /api/pair-poll.php 
+ 515.05 POST /api/pair-poll.php 
+ 518.05 POST /api/pair-poll.php 
+ 521.06 POST /api/pair-poll.php 
+ 524.06 POST /api/pair-poll.php 
+ 527.07 POST /api/pair-poll.php 
+ 530.07 POST /api/pair-poll.php 
+ 531.85 POST /api/pair-start.php 
+ 532.29 POST /api/pair-poll.php 
+ 535.30 POST /api/pair-poll.php 
+ 538.31 POST /api/pair-poll.php 
+ 541.32 POST /api/pair-poll.php 
+ 544.33 POST /api/pair-poll.php 
+ 547.35 POST /api/pair-poll.php 
+ 550.35 POST /api/pair-poll.php 
+ 553.36 POST /api/pair-poll.php 
+ 556.37 POST /api/pair-poll.php 
+ 559.38 POST /api/pair-poll.php 
+ 562.39 POST /api/pair-poll.php 
+ 565.39 POST /api/pair-poll.php 
+ 568.41 POST /api/pair-poll.php 
+ 571.41 POST /api/pair-poll.php 
+ 574.41 POST /api/pair-poll.php 
+ 577.42 POST /api/pair-poll.php 
+ 580.43 POST /api/pair-poll.php 
+ 583.43 POST /api/pair-poll.php 
+ 586.44 POST /api/pair-poll.php 
+ 589.44 POST /api/pair-poll.php 
+ 592.45 POST /api/pair-poll.php 
+ 595.45 POST /api/pair-poll.php 
+ 598.46 POST /api/pair-poll.php 
+ 601.46 POST /api/pair-poll.php 
+ 604.47 POST /api/pair-poll.php 
+ 607.47 POST /api/pair-poll.php 
+ 610.48 POST /api/pair-poll.php 
+ 613.48 POST /api/pair-poll.php 
+ 616.49 POST /api/pair-poll.php 
+ 619.50 POST /api/pair-poll.php 
+ 622.50 POST /api/pair-poll.php 
+ 625.51 POST /api/pair-poll.php 
+ 628.51 POST /api/pair-poll.php 
+ 631.52 POST /api/pair-poll.php 
+ 634.52 POST /api/pair-poll.php 
+ 637.53 POST /api/pair-poll.php 
+ 640.54 POST /api/pair-poll.php 
+ 643.54 POST /api/pair-poll.php 
+ 646.55 POST /api/pair-poll.php 
+ 649.55 POST /api/pair-poll.php 
+ 652.56 POST /api/pair-poll.php 
+ 655.58 POST /api/pair-poll.php 
+ 658.58 POST /api/pair-poll.php 
+ 661.59 POST /api/pair-poll.php 
+ 664.59 POST /api/pair-poll.php 
+ 667.60 POST /api/pair-poll.php 
+ 670.60 POST /api/pair-poll.php 
+ 673.60 POST /api/pair-poll.php 
+ 676.61 POST /api/pair-poll.php 
+ 679.61 POST /api/pair-poll.php 
+ 682.62 POST /api/pair-poll.php 
+ 685.62 POST /api/pair-poll.php 
+ 688.63 POST /api/pair-poll.php 
+ 691.63 POST /api/pair-poll.php 
+ 694.64 POST /api/pair-poll.php 
+ 697.65 POST /api/pair-poll.php 
+ 700.65 POST /api/pair-poll.php 
+ 703.66 POST /api/pair-poll.php 
+ 706.66 POST /api/pair-poll.php 
+ 709.66 POST /api/pair-poll.php 
+ 712.67 POST /api/pair-poll.php 
+ 715.68 POST /api/pair-poll.php 
+ 718.68 POST /api/pair-poll.php 
+ 721.69 POST /api/pair-poll.php 
+ 724.71 POST /api/pair-poll.php 
+ 727.71 POST /api/pair-poll.php 
+ 730.72 POST /api/pair-poll.php 
+ 733.75 POST /api/pair-start.php 
+ 733.91 POST /api/pair-poll.php 
+ 736.93 POST /api/pair-poll.php 
+ 739.93 POST /api/pair-poll.php 
+ 742.94 POST /api/pair-poll.php 
+ 745.94 POST /api/pair-poll.php 
+ 748.94 POST /api/pair-poll.php 
+ 751.95 POST /api/pair-poll.php 
+ 754.95 POST /api/pair-poll.php 
+ 757.96 POST /api/pair-poll.php 
+ 760.96 POST /api/pair-poll.php 
+ 763.97 POST /api/pair-poll.php 
+ 766.97 POST /api/pair-poll.php 
+ 769.97 POST /api/pair-poll.php 
+ 772.98 POST /api/pair-poll.php 
+ 775.98 POST /api/pair-poll.php 
+ 778.99 POST /api/pair-poll.php 
+ 781.99 POST /api/pair-poll.php 
+ 784.99 POST /api/pair-poll.php 
+ 788.00 POST /api/pair-poll.php 
+ 791.00 POST /api/pair-poll.php 
+ 794.01 POST /api/pair-poll.php 
+ 797.01 POST /api/pair-poll.php 
+ 800.01 POST /api/pair-poll.php 
+ 803.02 POST /api/pair-poll.php 
+ 806.02 POST /api/pair-poll.php 
+ 809.03 POST /api/pair-poll.php 
+ 812.03 POST /api/pair-poll.php 
+ 815.03 POST /api/pair-poll.php 
+ 818.04 POST /api/pair-poll.php 
+ 821.04 POST /api/pair-poll.php 
+ 824.05 POST /api/pair-poll.php 
+ 827.05 POST /api/pair-poll.php 
+ 830.05 POST /api/pair-poll.php 
+ 833.06 POST /api/pair-poll.php 
+ 836.06 POST /api/pair-poll.php 
+ 839.07 POST /api/pair-poll.php 
+ 842.07 POST /api/pair-poll.php 
+ 845.08 POST /api/pair-poll.php 
+ 848.08 POST /api/pair-poll.php 
+ 851.08 POST /api/pair-poll.php 
+ 854.09 POST /api/pair-poll.php 
+ 857.09 POST /api/pair-poll.php 
+ 860.10 POST /api/pair-poll.php 
+ 863.10 POST /api/pair-poll.php 
+ 866.10 POST /api/pair-poll.php 
+ 869.11 POST /api/pair-poll.php 
+ 872.11 POST /api/pair-poll.php 
+ 875.12 POST /api/pair-poll.php 
+ 878.12 POST /api/pair-poll.php 
+ 881.12 POST /api/pair-poll.php 
+ 884.13 POST /api/pair-poll.php 
+ 887.13 POST /api/pair-poll.php 
+ 890.14 POST /api/pair-poll.php 
+ 893.14 POST /api/pair-poll.php 
+ 896.15 POST /api/pair-poll.php 
+ 899.15 POST /api/pair-poll.php 
+ 902.16 POST /api/pair-poll.php 
+ 905.16 POST /api/pair-poll.php 
+ 908.18 POST /api/pair-poll.php 
+ 911.19 POST /api/pair-poll.php 
+ 914.19 POST /api/pair-poll.php 
+ 917.20 POST /api/pair-poll.php 
+ 920.20 POST /api/pair-poll.php 
+ 923.21 POST /api/pair-poll.php 
+ 926.21 POST /api/pair-poll.php 
+ 929.22 POST /api/pair-poll.php 
+ 932.22 POST /api/pair-poll.php 
+ 935.22 POST /api/pair-poll.php 
+ 938.23 POST /api/pair-poll.php 
+ 941.23 POST /api/pair-poll.php 
+ 944.23 POST /api/pair-poll.php 
+ 947.24 POST /api/pair-poll.php 
+ 950.24 POST /api/pair-poll.php 
+ 953.25 POST /api/pair-poll.php 
+ 956.27 POST /api/pair-poll.php 
+ 959.28 POST /api/pair-poll.php 
+ 962.28 POST /api/pair-poll.php 
+ 965.28 POST /api/pair-poll.php 
+ 968.29 POST /api/pair-poll.php 
+ 971.29 POST /api/pair-poll.php 
+ 975.04 POST /api/pair-start.php 
+ 975.45 POST /api/pair-poll.php 
+ 978.46 POST /api/pair-poll.php 
+ 981.47 POST /api/pair-poll.php 
+ 984.47 POST /api/pair-poll.php 
+ 987.48 POST /api/pair-poll.php 
+ 990.48 POST /api/pair-poll.php 
+ 993.49 POST /api/pair-poll.php 
+ 996.49 POST /api/pair-poll.php 
+ 999.49 POST /api/pair-poll.php 
+1002.50 POST /api/pair-poll.php 
+1005.50 POST /api/pair-poll.php 
+1008.51 POST /api/pair-poll.php 
+1011.51 POST /api/pair-poll.php 
+1014.52 POST /api/pair-poll.php 
+1017.52 POST /api/pair-poll.php 
+1020.53 POST /api/pair-poll.php 
+1023.53 POST /api/pair-poll.php 
+1026.53 POST /api/pair-poll.php 
+1029.54 POST /api/pair-poll.php 
+1032.54 POST /api/pair-poll.php 
+1035.55 POST /api/pair-poll.php 
+1038.55 POST /api/pair-poll.php 
+1041.56 POST /api/pair-poll.php 
+1044.56 POST /api/pair-poll.php 
+1047.56 POST /api/pair-poll.php 
+1050.57 POST /api/pair-poll.php 
+1053.57 POST /api/pair-poll.php 
+1056.58 POST /api/pair-poll.php 
+1059.58 POST /api/pair-poll.php 
+1062.58 POST /api/pair-poll.php 
+1065.59 POST /api/pair-poll.php 
+1068.59 POST /api/pair-poll.php 
+1071.60 POST /api/pair-poll.php 
+1074.60 POST /api/pair-poll.php 
+1077.61 POST /api/pair-poll.php 
+1080.61 POST /api/pair-poll.php 
+1083.62 POST /api/pair-poll.php 
+1086.62 POST /api/pair-poll.php 
+1089.62 POST /api/pair-poll.php 
+1092.63 POST /api/pair-poll.php 
+1095.63 POST /api/pair-poll.php 
+1098.64 POST /api/pair-poll.php 
+1101.64 POST /api/pair-poll.php 
+1104.64 POST /api/pair-poll.php 
+1107.65 POST /api/pair-poll.php 
+1110.65 POST /api/pair-poll.php 
+1113.66 POST /api/pair-poll.php 
+1116.66 POST /api/pair-poll.php 
+1119.67 POST /api/pair-poll.php 
+1122.67 POST /api/pair-poll.php 
+1125.68 POST /api/pair-poll.php 
+1128.68 POST /api/pair-poll.php 
+1131.68 POST /api/pair-poll.php 
+1134.69 POST /api/pair-poll.php 
+1137.69 POST /api/pair-poll.php 
+1140.70 POST /api/pair-poll.php 
+1143.71 POST /api/pair-poll.php 
+1146.71 POST /api/pair-poll.php 
+1149.71 POST /api/pair-poll.php 
+1152.72 POST /api/pair-poll.php 
+1155.72 POST /api/pair-poll.php 
+1158.73 POST /api/pair-poll.php 
+1161.73 POST /api/pair-poll.php 
+1164.73 POST /api/pair-poll.php 
+1167.75 POST /api/pair-poll.php 
+1170.75 POST /api/pair-poll.php 
+1173.75 POST /api/pair-poll.php 
+1176.76 POST /api/pair-poll.php 
+1179.77 POST /api/pair-poll.php 
+1182.79 POST /api/pair-poll.php 
+1185.79 POST /api/pair-poll.php 
+1188.79 POST /api/pair-poll.php 
+1191.80 POST /api/pair-poll.php 
+1194.80 POST /api/pair-poll.php 
+1197.81 POST /api/pair-poll.php 
+1200.81 POST /api/pair-poll.php 
+1203.81 POST /api/pair-poll.php 
+1206.84 POST /api/pair-poll.php 
+1209.84 POST /api/pair-poll.php 
+1212.84 POST /api/pair-poll.php 
+1214.64 POST /api/pair-start.php 
+1215.16 POST /api/pair-poll.php 
+1218.19 POST /api/pair-poll.php 
+1221.19 POST /api/pair-poll.php 
+1224.20 POST /api/pair-poll.php 
+1227.20 POST /api/pair-poll.php 
+1230.20 POST /api/pair-poll.php 
+1233.21 POST /api/pair-poll.php 
+1236.21 POST /api/pair-poll.php 
+1239.22 POST /api/pair-poll.php 
+1242.22 POST /api/pair-poll.php 
+1245.23 POST /api/pair-poll.php 
+1248.23 POST /api/pair-poll.php 
+1251.23 POST /api/pair-poll.php 
+1254.24 POST /api/pair-poll.php 
+1257.24 POST /api/pair-poll.php 
+1260.25 POST /api/pair-poll.php 
+1263.25 POST /api/pair-poll.php 
+1266.26 POST /api/pair-poll.php 
+1269.26 POST /api/pair-poll.php 
+1272.27 POST /api/pair-poll.php 
+1275.27 POST /api/pair-poll.php 
+1278.27 POST /api/pair-poll.php 
+1281.28 POST /api/pair-poll.php 
+1284.28 POST /api/pair-poll.php 
+1287.29 POST /api/pair-poll.php 
+1290.29 POST /api/pair-poll.php 
+1293.29 POST /api/pair-poll.php 
+1296.30 POST /api/pair-poll.php 
+1299.30 POST /api/pair-poll.php 
+1302.31 POST /api/pair-poll.php 
+1305.31 POST /api/pair-poll.php 
+1308.32 POST /api/pair-poll.php 
+1311.32 POST /api/pair-poll.php 
+1314.32 POST /api/pair-poll.php 
+1317.33 POST /api/pair-poll.php 
+1320.33 POST /api/pair-poll.php 
+1323.34 POST /api/pair-poll.php 
+1326.34 POST /api/pair-poll.php 
+1329.34 POST /api/pair-poll.php 
+1332.35 POST /api/pair-poll.php 
+1335.35 POST /api/pair-poll.php 
+1338.36 POST /api/pair-poll.php 
+1341.36 POST /api/pair-poll.php 
+1344.36 POST /api/pair-poll.php 
+1347.37 POST /api/pair-poll.php 
+1350.37 POST /api/pair-poll.php 
+1353.38 POST /api/pair-poll.php 
+1356.38 POST /api/pair-poll.php 
+1359.39 POST /api/pair-poll.php 
+1362.39 POST /api/pair-poll.php 
+1365.39 POST /api/pair-poll.php 
+1368.40 POST /api/pair-poll.php 
+1371.40 POST /api/pair-poll.php 
+1374.40 POST /api/pair-poll.php 
+1377.41 POST /api/pair-poll.php 
+1380.41 POST /api/pair-poll.php 
+1383.42 POST /api/pair-poll.php 
+1386.42 POST /api/pair-poll.php 
+1389.43 POST /api/pair-poll.php 
+1392.43 POST /api/pair-poll.php 
+1395.43 POST /api/pair-poll.php 
+1398.44 POST /api/pair-poll.php 
+1401.44 POST /api/pair-poll.php 
+1404.45 POST /api/pair-poll.php 
+1407.45 POST /api/pair-poll.php 
+1410.46 POST /api/pair-poll.php 
+1413.46 POST /api/pair-poll.php 
+1416.48 POST /api/pair-poll.php 
+1419.49 POST /api/pair-poll.php 
+1422.49 POST /api/pair-poll.php 
+1425.50 POST /api/pair-poll.php 
+1428.50 POST /api/pair-poll.php 
+1431.51 POST /api/pair-poll.php 
+1434.51 POST /api/pair-poll.php 
+1437.52 POST /api/pair-poll.php 
+1440.52 POST /api/pair-poll.php 
+1443.53 POST /api/pair-poll.php 
+1446.54 POST /api/pair-poll.php 
+1449.54 POST /api/pair-poll.php 
+1452.54 POST /api/pair-poll.php 
+1455.34 POST /api/pair-start.php 
+1455.94 POST /api/pair-poll.php 
+1458.94 POST /api/pair-poll.php 
+1461.95 POST /api/pair-poll.php 
+1464.95 POST /api/pair-poll.php 
+1467.95 POST /api/pair-poll.php 
+1470.96 POST /api/pair-poll.php 
+1473.96 POST /api/pair-poll.php 
+1476.97 POST /api/pair-poll.php 
+1479.97 POST /api/pair-poll.php 
+1482.97 POST /api/pair-poll.php 
+1485.98 POST /api/pair-poll.php 
+1488.98 POST /api/pair-poll.php 
+1491.99 POST /api/pair-poll.php 
+1494.99 POST /api/pair-poll.php 
+1497.99 POST /api/pair-poll.php 
+1501.00 POST /api/pair-poll.php 
+1504.00 POST /api/pair-poll.php 
+1507.01 POST /api/pair-poll.php 
+1510.01 POST /api/pair-poll.php 
+1513.01 POST /api/pair-poll.php 
+1516.02 POST /api/pair-poll.php 
+1519.02 POST /api/pair-poll.php 
+1522.03 POST /api/pair-poll.php 
+1525.03 POST /api/pair-poll.php 
+1528.04 POST /api/pair-poll.php 
+1531.04 POST /api/pair-poll.php 
+1534.04 POST /api/pair-poll.php 
+1537.05 POST /api/pair-poll.php 
+1540.05 POST /api/pair-poll.php 
+1543.06 POST /api/pair-poll.php 
+1546.06 POST /api/pair-poll.php 
+1549.06 POST /api/pair-poll.php 
+1552.07 POST /api/pair-poll.php 
+1555.07 POST /api/pair-poll.php 
+1558.07 POST /api/pair-poll.php 
+1561.08 POST /api/pair-poll.php 
+1564.08 POST /api/pair-poll.php 
+1567.09 POST /api/pair-poll.php 
+1570.09 POST /api/pair-poll.php 
+1573.09 POST /api/pair-poll.php 
+1576.10 POST /api/pair-poll.php 
+1579.10 POST /api/pair-poll.php 
+1582.11 POST /api/pair-poll.php 
+1585.11 POST /api/pair-poll.php 
+1588.11 POST /api/pair-poll.php 
+1591.12 POST /api/pair-poll.php 
+1594.12 POST /api/pair-poll.php 
+1597.14 POST /api/pair-poll.php 
+1600.14 POST /api/pair-poll.php 
+1603.14 POST /api/pair-poll.php 
+1606.15 POST /api/pair-poll.php 
+1609.15 POST /api/pair-poll.php 
+1612.16 POST /api/pair-poll.php 
+1615.16 POST /api/pair-poll.php 
+1618.16 POST /api/pair-poll.php 
+1621.17 POST /api/pair-poll.php 
+1624.17 POST /api/pair-poll.php 
+1627.18 POST /api/pair-poll.php 
+1630.18 POST /api/pair-poll.php 
+1633.18 POST /api/pair-poll.php 
+1636.19 POST /api/pair-poll.php 
+1639.20 POST /api/pair-poll.php 
+1642.20 POST /api/pair-poll.php 
+1645.21 POST /api/pair-poll.php 
+1648.23 POST /api/pair-poll.php 
+1651.24 POST /api/pair-poll.php 
+1654.24 POST /api/pair-poll.php 
+1657.26 POST /api/pair-poll.php 
+1660.28 POST /api/pair-poll.php 
+1663.28 POST /api/pair-poll.php 
+1666.28 POST /api/pair-poll.php 
+1669.29 POST /api/pair-poll.php 
+1672.29 POST /api/pair-poll.php 
+1675.29 POST /api/pair-poll.php 
+1678.30 POST /api/pair-poll.php 
+1681.30 POST /api/pair-poll.php 
+1684.31 POST /api/pair-poll.php 
+1687.31 POST /api/pair-poll.php 
+1690.32 POST /api/pair-poll.php 
+1693.32 POST /api/pair-poll.php 
+1696.00 POST /api/pair-start.php 
+1696.42 POST /api/pair-poll.php 
+1699.44 POST /api/pair-poll.php 
+1702.44 POST /api/pair-poll.php 
+1705.45 POST /api/pair-poll.php 
+1708.45 POST /api/pair-poll.php 
+1711.45 POST /api/pair-poll.php 
+1714.46 POST /api/pair-poll.php 
+1717.46 POST /api/pair-poll.php 
+1720.47 POST /api/pair-poll.php 
+1723.47 POST /api/pair-poll.php 
+1726.47 POST /api/pair-poll.php 
+1729.48 POST /api/pair-poll.php 
+1732.48 POST /api/pair-poll.php 
+1735.49 POST /api/pair-poll.php 
+1738.49 POST /api/pair-poll.php 
+1741.50 POST /api/pair-poll.php 
+1744.50 POST /api/pair-poll.php 
+1747.50 POST /api/pair-poll.php 
+1750.51 POST /api/pair-poll.php 
+1753.51 POST /api/pair-poll.php 
+1756.52 POST /api/pair-poll.php 
+1759.52 POST /api/pair-poll.php 
+1762.53 POST /api/pair-poll.php 
+1765.53 POST /api/pair-poll.php 
+1768.53 POST /api/pair-poll.php 
+1771.54 POST /api/pair-poll.php 
+1774.54 POST /api/pair-poll.php 
+1777.55 POST /api/pair-poll.php 
+1780.55 POST /api/pair-poll.php 
+1783.55 POST /api/pair-poll.php 
+1786.56 POST /api/pair-poll.php 
+1789.56 POST /api/pair-poll.php 
+1792.57 POST /api/pair-poll.php 
+1795.57 POST /api/pair-poll.php 
+1798.58 POST /api/pair-poll.php 
+1801.59 POST /api/pair-poll.php 
+1804.60 POST /api/pair-poll.php 
+1807.61 POST /api/pair-poll.php 
+1810.62 POST /api/pair-poll.php 
+1813.62 POST /api/pair-poll.php 
+1816.63 POST /api/pair-poll.php 
+1819.64 POST /api/pair-poll.php 
+1822.64 POST /api/pair-poll.php 
+1825.64 POST /api/pair-poll.php 
+1828.65 POST /api/pair-poll.php 
+1831.65 POST /api/pair-poll.php 
+1834.66 POST /api/pair-poll.php 
+1837.66 POST /api/pair-poll.php 
+1840.66 POST /api/pair-poll.php 
+1843.67 POST /api/pair-poll.php 
+1846.68 POST /api/pair-poll.php 
+1849.68 POST /api/pair-poll.php 
+1852.68 POST /api/pair-poll.php 
+1855.69 POST /api/pair-poll.php 
+1858.72 POST /api/pair-poll.php 
+1861.72 POST /api/pair-poll.php 
+1864.73 POST /api/pair-poll.php 
+1867.73 POST /api/pair-poll.php 
+1870.74 POST /api/pair-poll.php 
+1873.75 POST /api/pair-poll.php 
+1876.76 POST /api/pair-poll.php 
+1879.76 POST /api/pair-poll.php 
+1882.77 POST /api/pair-poll.php 
+1885.77 POST /api/pair-poll.php 
+1888.77 POST /api/pair-poll.php 
+1891.78 POST /api/pair-poll.php 
+1894.78 POST /api/pair-poll.php 
+1897.07 POST /api/pair-start.php 
+1897.50 POST /api/pair-poll.php 
+1900.52 POST /api/pair-poll.php 
+1903.53 POST /api/pair-poll.php 
+1906.54 POST /api/pair-poll.php 
+1909.54 POST /api/pair-poll.php 
+1912.55 POST /api/pair-poll.php 
+1915.55 POST /api/pair-poll.php 
+1918.56 POST /api/pair-poll.php 
+1921.56 POST /api/pair-poll.php 
+1924.57 POST /api/pair-poll.php 
+1927.57 POST /api/pair-poll.php 
+1930.57 POST /api/pair-poll.php 
+1933.58 POST /api/pair-poll.php 
+1936.58 POST /api/pair-poll.php 
+1939.59 POST /api/pair-poll.php 
+1942.59 POST /api/pair-poll.php 
+1945.60 POST /api/pair-poll.php 
+1948.60 POST /api/pair-poll.php 
+1951.61 POST /api/pair-poll.php 
+1954.61 POST /api/pair-poll.php 
+1957.62 POST /api/pair-poll.php 
+1960.62 POST /api/pair-poll.php 
+1963.63 POST /api/pair-poll.php 
+1966.63 POST /api/pair-poll.php 
+1969.63 POST /api/pair-poll.php 
+1972.64 POST /api/pair-poll.php 
+1975.64 POST /api/pair-poll.php 
+1978.65 POST /api/pair-poll.php 
+1981.65 POST /api/pair-poll.php 
+1984.66 POST /api/pair-poll.php 
+1987.66 POST /api/pair-poll.php 
+1990.66 POST /api/pair-poll.php 
+1993.67 POST /api/pair-poll.php 
+1996.67 POST /api/pair-poll.php 
+1999.68 POST /api/pair-poll.php 
+2002.68 POST /api/pair-poll.php 
+2005.69 POST /api/pair-poll.php 
+2008.69 POST /api/pair-poll.php 
+2011.69 POST /api/pair-poll.php 
+2014.70 POST /api/pair-poll.php 
+2017.70 POST /api/pair-poll.php 
+2020.71 POST /api/pair-poll.php 
+2023.71 POST /api/pair-poll.php 
+2026.71 POST /api/pair-poll.php 
+2029.72 POST /api/pair-poll.php 
+2032.72 POST /api/pair-poll.php 
+2035.73 POST /api/pair-poll.php 
+2038.73 POST /api/pair-poll.php 
+2041.74 POST /api/pair-poll.php 
+2044.74 POST /api/pair-poll.php 
+2047.75 POST /api/pair-poll.php 
+2050.75 POST /api/pair-poll.php 
+2053.75 POST /api/pair-poll.php 
+2056.76 POST /api/pair-poll.php 
+2059.77 POST /api/pair-poll.php 
+2062.77 POST /api/pair-poll.php 
+2065.78 POST /api/pair-poll.php 
+2068.78 POST /api/pair-poll.php 
+2071.79 POST /api/pair-poll.php 
+2074.79 POST /api/pair-poll.php 
+2077.79 POST /api/pair-poll.php 
+2080.80 POST /api/pair-poll.php 
+2083.80 POST /api/pair-poll.php 
+2086.81 POST /api/pair-poll.php 
+2089.81 POST /api/pair-poll.php 
+2092.82 POST /api/pair-poll.php 
+2095.82 POST /api/pair-poll.php 
+2098.82 POST /api/pair-poll.php 
+2101.83 POST /api/pair-poll.php 
+2104.83 POST /api/pair-poll.php 
+2107.84 POST /api/pair-poll.php 
+2110.85 POST /api/pair-poll.php 
+2113.86 POST /api/pair-poll.php 
+2116.86 POST /api/pair-poll.php 
+2119.87 POST /api/pair-poll.php 
+2122.87 POST /api/pair-poll.php 
+2125.87 POST /api/pair-poll.php 
+2128.88 POST /api/pair-poll.php 
+2131.88 POST /api/pair-poll.php 
+2134.89 POST /api/pair-poll.php 
+2136.92 POST /api/pair-start.php 
+2137.43 POST /api/pair-poll.php 
+2140.53 POST /api/pair-poll.php 
+2143.54 POST /api/pair-poll.php 
+2146.54 POST /api/pair-poll.php 
+2149.54 POST /api/pair-poll.php 
+2152.55 POST /api/pair-poll.php 
+2155.55 POST /api/pair-poll.php 
+2158.56 POST /api/pair-poll.php 
+2161.56 POST /api/pair-poll.php 
+2164.56 POST /api/pair-poll.php 
+2167.57 POST /api/pair-poll.php 
+2170.57 POST /api/pair-poll.php 
+2173.58 POST /api/pair-poll.php 
+2176.58 POST /api/pair-poll.php 
+2179.59 POST /api/pair-poll.php 
+2182.59 POST /api/pair-poll.php 
+2185.59 POST /api/pair-poll.php 
+2188.60 POST /api/pair-poll.php 
+2191.60 POST /api/pair-poll.php 
+2194.61 POST /api/pair-poll.php 
+2197.61 POST /api/pair-poll.php 
+2200.61 POST /api/pair-poll.php 
+2203.62 POST /api/pair-poll.php 
+2206.62 POST /api/pair-poll.php 
+2209.63 POST /api/pair-poll.php 
+2212.63 POST /api/pair-poll.php 
+2215.63 POST /api/pair-poll.php 
+2218.64 POST /api/pair-poll.php 
+2221.64 POST /api/pair-poll.php 
+2224.65 POST /api/pair-poll.php 
+2227.65 POST /api/pair-poll.php 
+2230.65 POST /api/pair-poll.php 
+2233.66 POST /api/pair-poll.php 
+2236.66 POST /api/pair-poll.php 
+2239.67 POST /api/pair-poll.php 
+2242.67 POST /api/pair-poll.php 
+2245.67 POST /api/pair-poll.php 
+2248.68 POST /api/pair-poll.php 
+2251.68 POST /api/pair-poll.php 
+2254.69 POST /api/pair-poll.php 
+2257.69 POST /api/pair-poll.php 
+2260.70 POST /api/pair-poll.php 
+2263.70 POST /api/pair-poll.php 
+2266.71 POST /api/pair-poll.php 
+2269.71 POST /api/pair-poll.php 
+2272.71 POST /api/pair-poll.php 
+2275.72 POST /api/pair-poll.php 
+2278.73 POST /api/pair-poll.php 
+2281.73 POST /api/pair-poll.php 
+2284.74 POST /api/pair-poll.php 
+2287.74 POST /api/pair-poll.php 
+2290.75 POST /api/pair-poll.php 
+2293.75 POST /api/pair-poll.php 
+2296.76 POST /api/pair-poll.php 
+2299.77 POST /api/pair-poll.php 
+2302.77 POST /api/pair-poll.php 
+2305.78 POST /api/pair-poll.php 
+2308.78 POST /api/pair-poll.php 
+2311.79 POST /api/pair-poll.php 
+2314.79 POST /api/pair-poll.php 
+2317.80 POST /api/pair-poll.php 
+2320.80 POST /api/pair-poll.php 
+2323.81 POST /api/pair-poll.php 
+2326.81 POST /api/pair-poll.php 
+2329.82 POST /api/pair-poll.php 
+2332.83 POST /api/pair-poll.php 
+2335.83 POST /api/pair-poll.php 
+2338.83 POST /api/pair-poll.php 
+2341.84 POST /api/pair-poll.php 
+2344.85 POST /api/pair-poll.php 
+2347.87 POST /api/pair-poll.php 
+2350.87 POST /api/pair-poll.php 
+2353.88 POST /api/pair-poll.php 
+2356.88 POST /api/pair-poll.php 
+2359.88 POST /api/pair-poll.php 
+2362.89 POST /api/pair-poll.php 
+2365.89 POST /api/pair-poll.php 
+2368.90 POST /api/pair-poll.php 
+2371.90 POST /api/pair-poll.php 
+2374.90 POST /api/pair-poll.php 
+2378.49 POST /api/pair-start.php 
+2378.94 POST /api/pair-poll.php 
+2381.95 POST /api/pair-poll.php 
+2384.95 POST /api/pair-poll.php 
+2387.96 POST /api/pair-poll.php 
+2390.96 POST /api/pair-poll.php 
+2393.96 POST /api/pair-poll.php 
+2396.97 POST /api/pair-poll.php 
+2399.97 POST /api/pair-poll.php 
+2402.98 POST /api/pair-poll.php 
+2405.98 POST /api/pair-poll.php 
+2408.99 POST /api/pair-poll.php 
+2411.99 POST /api/pair-poll.php 
+2415.00 POST /api/pair-poll.php 
+2418.00 POST /api/pair-poll.php 
+2421.01 POST /api/pair-poll.php 
+2424.01 POST /api/pair-poll.php 
+2427.01 POST /api/pair-poll.php 
+2430.02 POST /api/pair-poll.php 
+2433.02 POST /api/pair-poll.php 
+2436.03 POST /api/pair-poll.php 
+2439.03 POST /api/pair-poll.php 
+2442.04 POST /api/pair-poll.php 
+2445.04 POST /api/pair-poll.php 
+2448.04 POST /api/pair-poll.php 
+2451.05 POST /api/pair-poll.php 
+2454.05 POST /api/pair-poll.php 
+2457.06 POST /api/pair-poll.php 
+2460.06 POST /api/pair-poll.php 
+2463.07 POST /api/pair-poll.php 
+2466.07 POST /api/pair-poll.php 
+2469.07 POST /api/pair-poll.php 
+2472.08 POST /api/pair-poll.php 
+2475.08 POST /api/pair-poll.php 
+2478.09 POST /api/pair-poll.php 
+2481.09 POST /api/pair-poll.php 
+2484.10 POST /api/pair-poll.php 
+2487.10 POST /api/pair-poll.php 
+2490.10 POST /api/pair-poll.php 
+2493.11 POST /api/pair-poll.php 
+2496.11 POST /api/pair-poll.php 
+2499.12 POST /api/pair-poll.php 
+2502.12 POST /api/pair-poll.php 
+2505.13 POST /api/pair-poll.php 
+2508.13 POST /api/pair-poll.php 
+2511.13 POST /api/pair-poll.php 
+2514.14 POST /api/pair-poll.php 
+2517.14 POST /api/pair-poll.php 
+2520.15 POST /api/pair-poll.php 
+2523.15 POST /api/pair-poll.php 
+2526.16 POST /api/pair-poll.php 
+2529.16 POST /api/pair-poll.php 
+2532.16 POST /api/pair-poll.php 
+2535.17 POST /api/pair-poll.php 
+2538.17 POST /api/pair-poll.php 
+2541.18 POST /api/pair-poll.php 
+2544.18 POST /api/pair-poll.php 
+2547.19 POST /api/pair-poll.php 
+2550.19 POST /api/pair-poll.php 
+2553.19 POST /api/pair-poll.php 
+2556.20 POST /api/pair-poll.php 
+2559.20 POST /api/pair-poll.php 
+2562.21 POST /api/pair-poll.php 
+2565.21 POST /api/pair-poll.php 
+2568.21 POST /api/pair-poll.php 
+2571.22 POST /api/pair-poll.php 
+2574.22 POST /api/pair-poll.php 
+2577.23 POST /api/pair-poll.php 
+2580.23 POST /api/pair-poll.php 
+2583.24 POST /api/pair-poll.php 
+2586.24 POST /api/pair-poll.php 
+2589.25 POST /api/pair-poll.php 
+2592.29 POST /api/pair-poll.php 
+2595.32 POST /api/pair-poll.php 
+2598.33 POST /api/pair-poll.php 
+2601.33 POST /api/pair-poll.php 
+2604.34 POST /api/pair-poll.php 
+2607.35 POST /api/pair-poll.php 
+2610.36 POST /api/pair-poll.php 
+2613.37 POST /api/pair-poll.php 
+2616.37 POST /api/pair-poll.php 
+2618.51 POST /api/pair-start.php 
+2618.99 POST /api/pair-poll.php 
+2622.00 POST /api/pair-poll.php 
+2625.00 POST /api/pair-poll.php 
+2628.01 POST /api/pair-poll.php 
+2631.02 POST /api/pair-poll.php 
+2634.03 POST /api/pair-poll.php 
+2637.03 POST /api/pair-poll.php 
+2640.04 POST /api/pair-poll.php 
+2643.04 POST /api/pair-poll.php 
+2646.05 POST /api/pair-poll.php 
+2649.05 POST /api/pair-poll.php 
+2652.06 POST /api/pair-poll.php 
+2655.07 POST /api/pair-poll.php 
+2658.07 POST /api/pair-poll.php 
+2661.07 POST /api/pair-poll.php 
+2664.08 POST /api/pair-poll.php 
+2667.09 POST /api/pair-poll.php 
+2670.09 POST /api/pair-poll.php 
+2673.10 POST /api/pair-poll.php 
+2676.10 POST /api/pair-poll.php 
+2679.11 POST /api/pair-poll.php 
+2682.12 POST /api/pair-poll.php 
+2685.13 POST /api/pair-poll.php 
+2688.13 POST /api/pair-poll.php 
+2691.14 POST /api/pair-poll.php 
+2694.14 POST /api/pair-poll.php 
+2697.14 POST /api/pair-poll.php 
+2700.15 POST /api/pair-poll.php 
+2703.15 POST /api/pair-poll.php 
+2706.16 POST /api/pair-poll.php 
+2709.16 POST /api/pair-poll.php 
+2712.17 POST /api/pair-poll.php 
+2715.17 POST /api/pair-poll.php 
+2718.18 POST /api/pair-poll.php 
+2721.19 POST /api/pair-poll.php 
+2724.19 POST /api/pair-poll.php 
+2727.20 POST /api/pair-poll.php 
+2730.21 POST /api/pair-poll.php 
+2733.21 POST /api/pair-poll.php 
+2736.21 POST /api/pair-poll.php 
+2739.22 POST /api/pair-poll.php 
+2742.22 POST /api/pair-poll.php 
+2745.23 POST /api/pair-poll.php 
+2748.23 POST /api/pair-poll.php 
+2751.24 POST /api/pair-poll.php 
+2754.24 POST /api/pair-poll.php 
+2757.24 POST /api/pair-poll.php 
+2760.25 POST /api/pair-poll.php 
+2763.25 POST /api/pair-poll.php 
+2766.26 POST /api/pair-poll.php 
+2769.26 POST /api/pair-poll.php 
+2772.27 POST /api/pair-poll.php 
+2775.29 POST /api/pair-poll.php 
+2778.30 POST /api/pair-poll.php 
+2781.31 POST /api/pair-poll.php 
+2784.32 POST /api/pair-poll.php 
+2787.33 POST /api/pair-poll.php 
+2790.33 POST /api/pair-poll.php 
+2793.33 POST /api/pair-poll.php 
+2796.34 POST /api/pair-poll.php 
+2799.34 POST /api/pair-poll.php 
+2802.35 POST /api/pair-poll.php 
+2805.35 POST /api/pair-poll.php 
+2808.35 POST /api/pair-poll.php 
+2811.37 POST /api/pair-poll.php 
+2814.37 POST /api/pair-poll.php 
+2817.38 POST /api/pair-poll.php 
+2820.38 POST /api/pair-poll.php 
+2823.39 POST /api/pair-poll.php 
+2826.43 POST /api/pair-poll.php 
+2829.43 POST /api/pair-poll.php 
+2832.44 POST /api/pair-poll.php 
+2835.44 POST /api/pair-poll.php 
+2838.45 POST /api/pair-poll.php 
+2841.45 POST /api/pair-poll.php 
+2844.46 POST /api/pair-poll.php 
+2847.46 POST /api/pair-poll.php 
+2850.46 POST /api/pair-poll.php 
+2853.47 POST /api/pair-poll.php 
+2856.47 POST /api/pair-poll.php 

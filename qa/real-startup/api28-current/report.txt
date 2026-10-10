@@ -1,0 +1,77 @@
+
+== api28-current · renewal API: none
+FAIL  [none] Home not opened (    mResumedActivity: ActivityRecord{7364dbf u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t12})
+      startup refresh: none after 60 s (103 s after sign-in)
+FAIL  [none] startup refresh finished: updated
+      at: LoginActivity focus='Password'
+PASS  [none] no 'taking longer than usual' message
+FAIL  [none] Home shows titles
+      at: LoginActivity focus='Password'
+FAIL  [none] Movies populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+FAIL  [none] TV Shows populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+PASS  [none] no crash
+
+== api28-current · renewal API: ok
+FAIL  [ok] Home not opened (    mResumedActivity: ActivityRecord{4c3fb78 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t13})
+      startup refresh: none after 60 s (103 s after sign-in)
+FAIL  [ok] startup refresh finished: updated
+      at: LoginActivity focus='Password'
+PASS  [ok] no 'taking longer than usual' message
+FAIL  [ok] Home shows titles
+      at: LoginActivity focus='Password'
+FAIL  [ok] Movies populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+FAIL  [ok] TV Shows populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+INFO  [ok] no Renew subscription row (this build has no in-app renewal)
+PASS  [ok] no crash
+
+== api28-current · renewal API: 500
+FAIL  [500] Home not opened (    mResumedActivity: ActivityRecord{ba253b9 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t14})
+      startup refresh: none after 60 s (103 s after sign-in)
+FAIL  [500] startup refresh finished: updated
+      at: LoginActivity focus='Password'
+PASS  [500] no 'taking longer than usual' message
+FAIL  [500] Home shows titles
+      at: LoginActivity focus='Password'
+FAIL  [500] Movies populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+FAIL  [500] TV Shows populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+INFO  [500] no Renew subscription row (this build has no in-app renewal)
+FAIL  [500] no crash
+      at: LoginActivity focus='Password'
+
+== api28-current · renewal API: timeout
+FAIL  [timeout] Home not opened (    mResumedActivity: ActivityRecord{9f635b8 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t15})
+      startup refresh: none after 60 s (102 s after sign-in)
+FAIL  [timeout] startup refresh finished: updated
+      at: LoginActivity focus='Password'
+PASS  [timeout] no 'taking longer than usual' message
+FAIL  [timeout] Home shows titles
+      at: LoginActivity focus='Password'
+FAIL  [timeout] Movies populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+FAIL  [timeout] TV Shows populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+INFO  [timeout] no Renew subscription row (this build has no in-app renewal)
+PASS  [timeout] no crash
+
+== api28-current · renewal API: unreachable
+FAIL  [unreachable] Home not opened (    mResumedActivity: ActivityRecord{bdb143 u0 com.myflixtown.tv.native/com.flixtown.tv.LoginActivity t16})
+      startup refresh: none after 60 s (102 s after sign-in)
+FAIL  [unreachable] startup refresh finished: updated
+      at: LoginActivity focus='Password'
+PASS  [unreachable] no 'taking longer than usual' message
+FAIL  [unreachable] Home shows titles
+      at: LoginActivity focus='Password'
+FAIL  [unreachable] Movies populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+FAIL  [unreachable] TV Shows populated (0 posters on screen)
+      at: LoginActivity focus='Password'
+INFO  [unreachable] no Renew subscription row (this build has no in-app renewal)
+PASS  [unreachable] no crash
+
+api28-current: 9 passed, 26 failed
