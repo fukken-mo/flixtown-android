@@ -1,93 +1,87 @@
-[3185] [Wed Oct  7 23:43:17 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3186] [Wed Oct  7 23:43:17 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3187] [Wed Oct  7 23:43:17 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3183] [Wed Oct  7 23:43:17 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3188] [Wed Oct  7 23:43:17 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3183] [Wed Oct  7 23:43:24 2026] Failed to poll event
-[3185] [Wed Oct  7 23:43:24 2026] Failed to poll event
-[3187] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33352 Accepted
-[3187] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33352 [200]: GET /api/app-update-admin.php
-[3187] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33352 Closing
-[3188] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33366 Accepted
-[3188] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33366 [302]: POST /api/app-update-admin.php
-[3188] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33366 Closing
-[3183] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33378 Accepted
-[3183] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33378 [200]: GET /api/app-update-admin.php
-[3183] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33378 Closing
-[3185] [Wed Oct  7 23:43:24 2026] Failed to poll event
-[3183] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33380 Accepted
-[3183] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33380 [302]: POST /api/app-update-admin.php
-[3183] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33380 Closing
-[3185] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33384 Accepted
-[3185] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33384 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&t=32573
-[3185] [Wed Oct  7 23:43:24 2026] 10.1.0.106:33384 Closing
-[3185] [Wed Oct  7 23:43:40 2026] 10.1.0.106:34450 Accepted
-[3185] [Wed Oct  7 23:43:40 2026] 10.1.0.106:34450 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791416620674
-[3185] [Wed Oct  7 23:43:40 2026] 10.1.0.106:34450 Closing
-[3185] [Wed Oct  7 23:44:17 2026] 10.1.0.106:46480 Accepted
-[3185] [Wed Oct  7 23:44:17 2026] 10.1.0.106:46480 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791416657408
-[3185] [Wed Oct  7 23:44:17 2026] 10.1.0.106:46480 Closing
-[3539] [Wed Oct  7 23:45:18 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3540] [Wed Oct  7 23:45:18 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3541] [Wed Oct  7 23:45:18 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3537] [Wed Oct  7 23:45:18 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3542] [Wed Oct  7 23:45:18 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
-[3539] [Wed Oct  7 23:45:35 2026] Failed to poll event
-[3541] [Wed Oct  7 23:45:35 2026] 10.1.0.106:50104 Accepted
-[3537] [Wed Oct  7 23:45:35 2026] Failed to poll event
-[3542] [Wed Oct  7 23:45:35 2026] Failed to poll event
-[3541] [Wed Oct  7 23:45:35 2026] 10.1.0.106:50104 [200]: GET /api/app-update-admin.php
-[3541] [Wed Oct  7 23:45:35 2026] 10.1.0.106:50104 Closing
-[3537] [Wed Oct  7 23:45:35 2026] Failed to poll event
-[3540] [Wed Oct  7 23:45:35 2026] Failed to poll event
-[3542] [Wed Oct  7 23:45:35 2026] Failed to poll event
-[3541] [Wed Oct  7 23:45:35 2026] 10.1.0.106:50112 Accepted
-[3541] [Wed Oct  7 23:45:35 2026] 10.1.0.106:50112 [302]: POST /api/app-update-admin.php
-[3541] [Wed Oct  7 23:45:35 2026] 10.1.0.106:50112 Closing
-[3540] [Wed Oct  7 23:45:36 2026] Failed to poll event
-[3542] [Wed Oct  7 23:45:36 2026] Failed to poll event
-[3541] [Wed Oct  7 23:45:36 2026] 10.1.0.106:50116 Accepted
-[3541] [Wed Oct  7 23:45:36 2026] 10.1.0.106:50116 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&t=31437
-[3541] [Wed Oct  7 23:45:36 2026] 10.1.0.106:50116 Closing
-[3541] [Wed Oct  7 23:45:58 2026] 10.1.0.106:60604 Accepted
-[3541] [Wed Oct  7 23:45:59 2026] 10.1.0.106:60604 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791416758735
-[3541] [Wed Oct  7 23:45:59 2026] 10.1.0.106:60604 Closing
-[3541] [Wed Oct  7 23:46:15 2026] Failed to poll event
-[3540] [Wed Oct  7 23:46:15 2026] 10.1.0.106:51376 Accepted
-[3540] [Wed Oct  7 23:46:16 2026] 10.1.0.106:51376 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791416775792
-[3540] [Wed Oct  7 23:46:16 2026] 10.1.0.106:51376 Closing
-[3537] [Wed Oct  7 23:46:46 2026] 10.1.0.106:46508 Accepted
-[3537] [Wed Oct  7 23:46:46 2026] 10.1.0.106:46508 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791416806582
-[3537] [Wed Oct  7 23:46:46 2026] 10.1.0.106:46508 Closing
-[3542] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3537] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3541] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3540] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44400 Accepted
-[3540] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44400 [200]: GET /api/app-update-admin.php
-[3540] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44400 Closing
-[3540] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44412 Accepted
-[3541] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3539] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3537] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3540] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44412 [302]: POST /api/app-update-admin.php
-[3540] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44412 Closing
-[3540] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3542] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3539] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44424 Accepted
-[3537] [Wed Oct  7 23:47:25 2026] Failed to poll event
-[3539] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44424 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&t=14477
-[3539] [Wed Oct  7 23:47:25 2026] 10.1.0.106:44424 Closing
-[3537] [Wed Oct  7 23:47:26 2026] 10.1.0.106:44434 Accepted
-[3537] [Wed Oct  7 23:47:26 2026] 10.1.0.106:44434 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791416845936
-[3537] [Wed Oct  7 23:47:26 2026] 10.1.0.106:44434 Closing
-[3539] [Wed Oct  7 23:48:19 2026] 10.1.0.106:58688 Accepted
-[3541] [Wed Oct  7 23:48:19 2026] Failed to poll event
-[3539] [Wed Oct  7 23:48:20 2026] 10.1.0.106:58688 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10011&_ft=1791416899734
-[3539] [Wed Oct  7 23:48:20 2026] 10.1.0.106:58688 Closing
-[3542] [Wed Oct  7 23:48:53 2026] Failed to poll event
-[3537] [Wed Oct  7 23:48:53 2026] 10.1.0.106:60586 Accepted
-[3537] [Wed Oct  7 23:48:53 2026] 10.1.0.106:60586 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10011&_ft=1791416933644
-[3537] [Wed Oct  7 23:48:53 2026] 10.1.0.106:60586 Closing
-[3540] [Wed Oct  7 23:49:01 2026] 10.1.0.106:52032 Accepted
-[3540] [Wed Oct  7 23:49:01 2026] 10.1.0.106:52032 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10011&_ft=1791416941572
-[3540] [Wed Oct  7 23:49:01 2026] 10.1.0.106:52032 Closing
+[3472] [Sat Oct 10 07:26:10 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3473] [Sat Oct 10 07:26:10 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3474] [Sat Oct 10 07:26:10 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3470] [Sat Oct 10 07:26:10 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3475] [Sat Oct 10 07:26:10 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3474] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44176 Accepted
+[3474] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44176 [200]: GET /api/app-update-admin.php
+[3474] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44176 Closing
+[3473] [Sat Oct 10 07:26:21 2026] Failed to poll event
+[3474] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44188 Accepted
+[3474] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44188 [302]: POST /api/app-update-admin.php
+[3474] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44188 Closing
+[3472] [Sat Oct 10 07:26:21 2026] Failed to poll event
+[3475] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44192 Accepted
+[3475] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44192 [200]: GET /api/app-update-admin.php
+[3475] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44192 Closing
+[3470] [Sat Oct 10 07:26:21 2026] Failed to poll event
+[3472] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44204 Accepted
+[3472] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44204 [302]: POST /api/app-update-admin.php
+[3472] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44204 Closing
+[3475] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44206 Accepted
+[3475] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44206 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&t=2479
+[3475] [Sat Oct 10 07:26:21 2026] 10.1.0.133:44206 Closing
+[3472] [Sat Oct 10 07:26:38 2026] Failed to poll event
+[3473] [Sat Oct 10 07:26:38 2026] 10.1.0.133:56888 Accepted
+[3473] [Sat Oct 10 07:26:38 2026] 10.1.0.133:56888 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791617197873
+[3473] [Sat Oct 10 07:26:38 2026] 10.1.0.133:56888 Closing
+[3472] [Sat Oct 10 07:27:17 2026] 10.1.0.133:59040 Accepted
+[3472] [Sat Oct 10 07:27:17 2026] 10.1.0.133:59040 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791617237198
+[3472] [Sat Oct 10 07:27:17 2026] 10.1.0.133:59040 Closing
+[3834] [Sat Oct 10 07:28:21 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3835] [Sat Oct 10 07:28:21 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3836] [Sat Oct 10 07:28:21 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3832] [Sat Oct 10 07:28:21 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3837] [Sat Oct 10 07:28:21 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8787) started
+[3832] [Sat Oct 10 07:28:39 2026] Failed to poll event
+[3837] [Sat Oct 10 07:28:39 2026] Failed to poll event
+[3834] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60162 Accepted
+[3834] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60162 [200]: GET /api/app-update-admin.php
+[3834] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60162 Closing
+[3832] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60164 Accepted
+[3832] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60164 [302]: POST /api/app-update-admin.php
+[3832] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60164 Closing
+[3832] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60166 Accepted
+[3832] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60166 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&t=16155
+[3832] [Sat Oct 10 07:28:39 2026] 10.1.0.133:60166 Closing
+[3836] [Sat Oct 10 07:29:03 2026] 10.1.0.133:52252 Accepted
+[3836] [Sat Oct 10 07:29:03 2026] 10.1.0.133:52252 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791617343463
+[3836] [Sat Oct 10 07:29:03 2026] 10.1.0.133:52252 Closing
+[3836] [Sat Oct 10 07:29:21 2026] 10.1.0.133:49090 Accepted
+[3836] [Sat Oct 10 07:29:21 2026] 10.1.0.133:49090 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791617360615
+[3836] [Sat Oct 10 07:29:21 2026] 10.1.0.133:49090 Closing
+[3834] [Sat Oct 10 07:29:52 2026] 10.1.0.133:35878 Accepted
+[3836] [Sat Oct 10 07:29:52 2026] Failed to poll event
+[3834] [Sat Oct 10 07:29:52 2026] 10.1.0.133:35878 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791617392204
+[3834] [Sat Oct 10 07:29:52 2026] 10.1.0.133:35878 Closing
+[3832] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50202 Accepted
+[3834] [Sat Oct 10 07:30:31 2026] Failed to poll event
+[3832] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50202 [200]: GET /api/app-update-admin.php
+[3832] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50202 Closing
+[3832] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50208 Accepted
+[3834] [Sat Oct 10 07:30:31 2026] Failed to poll event
+[3835] [Sat Oct 10 07:30:31 2026] Failed to poll event
+[3837] [Sat Oct 10 07:30:31 2026] Failed to poll event
+[3832] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50208 [302]: POST /api/app-update-admin.php
+[3832] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50208 Closing
+[3836] [Sat Oct 10 07:30:31 2026] Failed to poll event
+[3837] [Sat Oct 10 07:30:31 2026] Failed to poll event
+[3835] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50218 Accepted
+[3832] [Sat Oct 10 07:30:31 2026] Failed to poll event
+[3835] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50218 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&t=30149
+[3835] [Sat Oct 10 07:30:31 2026] 10.1.0.133:50218 Closing
+[3835] [Sat Oct 10 07:30:33 2026] 10.1.0.133:50228 Accepted
+[3835] [Sat Oct 10 07:30:33 2026] 10.1.0.133:50228 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10010&_ft=1791617432546
+[3835] [Sat Oct 10 07:30:33 2026] 10.1.0.133:50228 Closing
+[3835] [Sat Oct 10 07:31:28 2026] 10.1.0.133:44868 Accepted
+[3835] [Sat Oct 10 07:31:28 2026] 10.1.0.133:44868 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10011&_ft=1791617487620
+[3835] [Sat Oct 10 07:31:28 2026] 10.1.0.133:44868 Closing
+[3836] [Sat Oct 10 07:32:03 2026] Failed to poll event
+[3835] [Sat Oct 10 07:32:03 2026] Failed to poll event
+[3832] [Sat Oct 10 07:32:03 2026] 10.1.0.133:47888 Accepted
+[3832] [Sat Oct 10 07:32:03 2026] 10.1.0.133:47888 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10011&_ft=1791617522680
+[3832] [Sat Oct 10 07:32:03 2026] 10.1.0.133:47888 Closing
+[3837] [Sat Oct 10 07:32:11 2026] Failed to poll event
+[3834] [Sat Oct 10 07:32:11 2026] 10.1.0.133:36240 Accepted
+[3834] [Sat Oct 10 07:32:11 2026] 10.1.0.133:36240 [200]: GET /api/app-update.php?package=com.myflixtown.tv.native.qa&version_code=10011&_ft=1791617530998
+[3834] [Sat Oct 10 07:32:11 2026] 10.1.0.133:36240 Closing
