@@ -1,457 +1,447 @@
-   0.94 GET /api/config.php 
-  95.76 GET /__reset 
-  97.36 POST /api/pair-start.php 
-  98.54 POST /api/pair-poll.php 
- 101.70 POST /api/pair-poll.php 
- 104.70 POST /api/pair-poll.php 
- 107.71 POST /api/pair-poll.php 
- 110.71 POST /api/pair-poll.php 
- 113.72 POST /api/pair-poll.php 
- 116.73 POST /api/pair-poll.php 
- 119.43 GET /api/config.php 
- 119.47 GET /player_api.php 
- 119.63 GET /api/config.php 
- 119.67 GET /player_api.php 
- 119.74 GET /player_api.php get_series
- 119.75 GET /player_api.php get_series_categories
- 119.77 GET /player_api.php get_vod_streams
- 119.79 GET /player_api.php get_vod_categories
- 120.01 GET /api/app-update.php 
- 123.34 GET /api/trending.php 
- 123.35 GET /player_api.php get_vod_info
- 123.36 GET /player_api.php get_vod_info
- 123.38 GET /player_api.php get_vod_info
- 124.07 POST /api/ratings.php 
- 124.69 GET /player_api.php get_vod_info
- 124.70 GET /player_api.php get_vod_info
- 124.70 GET /player_api.php get_vod_info
- 125.38 POST /api/ratings.php 
- 146.74 POST /api/ratings.php 
- 147.09 POST /api/ratings.php 
- 172.01 POST /api/ratings.php 
- 172.36 POST /api/ratings.php 
- 177.88 GET /__stats 
- 177.95 GET /__reset 
- 178.71 POST /api/pair-start.php 
- 179.46 POST /api/pair-poll.php 
- 182.49 POST /api/pair-poll.php 
- 185.50 POST /api/pair-poll.php 
- 188.50 POST /api/pair-poll.php 
- 191.51 POST /api/pair-poll.php 
- 194.51 POST /api/pair-poll.php 
- 196.63 GET /api/config.php 
- 196.65 GET /player_api.php 
- 196.72 GET /api/config.php 
- 196.78 GET /player_api.php 
- 196.97 GET /player_api.php get_vod_streams
- 197.00 GET /player_api.php get_series_categories
- 197.00 GET /player_api.php get_vod_categories
- 197.00 GET /player_api.php get_series
- 197.09 GET /api/app-update.php 
- 215.75 GET /player_api.php get_vod_info
- 215.75 GET /player_api.php get_vod_info
- 215.75 GET /player_api.php get_vod_info
- 216.48 POST /api/ratings.php 
- 216.98 GET /api/trending.php 
- 217.27 GET /player_api.php get_vod_info
- 217.27 GET /player_api.php get_vod_info
- 217.28 GET /player_api.php get_vod_info
- 217.97 POST /api/ratings.php 
- 237.47 POST /api/ratings.php 
- 237.82 POST /api/ratings.php 
- 262.42 POST /api/ratings.php 
- 262.77 POST /api/ratings.php 
- 268.25 GET /__stats 
- 268.31 GET /__reset 
- 268.95 POST /api/pair-start.php 
- 269.63 POST /api/pair-poll.php 
- 272.66 POST /api/pair-poll.php 
- 275.66 POST /api/pair-poll.php 
- 278.67 POST /api/pair-poll.php 
- 281.67 POST /api/pair-poll.php 
- 284.68 POST /api/pair-poll.php 
- 286.59 GET /api/config.php 
- 286.59 GET /player_api.php 
- 286.73 GET /api/config.php 
- 286.74 GET /player_api.php 
- 286.83 GET /player_api.php get_series
- 286.90 GET /api/app-update.php 
- 286.90 GET /player_api.php get_vod_streams
- 286.91 GET /player_api.php get_series_categories
- 286.91 GET /player_api.php get_vod_categories
- 288.76 GET /player_api.php get_vod_info
- 288.76 GET /player_api.php get_vod_info
- 288.76 GET /player_api.php get_vod_info
- 288.77 GET /api/trending.php 
- 289.46 GET /player_api.php get_vod_info
- 289.46 GET /player_api.php get_vod_info
- 289.46 GET /player_api.php get_vod_info
- 289.49 POST /api/ratings.php 
- 289.56 GET /__reset 
- 289.91 GET /api/config.php 
- 290.47 GET /player_api.php 
- 290.48 GET /player_api.php get_vod_streams
- 290.53 GET /player_api.php get_series_categories
- 290.55 GET /player_api.php get_vod_categories
- 290.59 GET /player_api.php get_series
- 290.66 GET /api/app-update.php 
- 292.46 GET /api/trending.php 
- 292.48 GET /player_api.php get_vod_info
- 292.48 GET /player_api.php get_vod_info
- 292.49 GET /player_api.php get_vod_info
- 293.22 POST /api/ratings.php 
- 293.29 GET /player_api.php get_vod_info
- 293.29 GET /player_api.php get_vod_info
- 293.31 GET /player_api.php get_vod_info
- 293.57 POST /api/ratings.php 
- 303.30 GET /player_api.php get_vod_info
- 304.00 POST /api/ratings.php 
- 313.31 GET /player_api.php get_vod_info
- 314.01 POST /api/ratings.php 
- 323.32 GET /player_api.php get_vod_info
- 324.02 POST /api/ratings.php 
- 333.33 GET /player_api.php get_vod_info
- 334.03 POST /api/ratings.php 
- 337.50 GET /__stats 
- 354.01 POST /api/ratings.php 
- 354.36 POST /api/ratings.php 
- 378.96 POST /api/ratings.php 
- 379.32 POST /api/ratings.php 
- 384.83 GET /__reset 
- 385.43 POST /api/pair-start.php 
- 386.04 POST /api/pair-poll.php 
- 389.04 POST /api/pair-poll.php 
- 392.05 POST /api/pair-poll.php 
- 395.05 POST /api/pair-poll.php 
- 398.06 POST /api/pair-poll.php 
- 401.06 POST /api/pair-poll.php 
- 402.98 GET /api/config.php 
- 402.99 GET /player_api.php 
- 403.09 GET /api/config.php 
- 403.12 GET /player_api.php 
- 403.18 GET /player_api.php get_series_categories
- 403.19 GET /player_api.php get_series
- 403.20 GET /player_api.php get_vod_categories
- 403.21 GET /player_api.php get_vod_streams
- 403.21 GET /api/app-update.php 
- 404.87 GET /api/trending.php 
- 404.89 GET /player_api.php get_vod_info
- 404.89 GET /player_api.php get_vod_info
- 404.90 GET /player_api.php get_vod_info
- 405.55 GET /player_api.php get_vod_info
- 405.56 GET /player_api.php get_vod_info
- 405.56 GET /player_api.php get_vod_info
- 405.64 POST /api/ratings.php 
- 427.36 POST /api/ratings.php 
- 427.72 POST /api/ratings.php 
- 452.30 POST /api/ratings.php 
- 452.65 POST /api/ratings.php 
- 458.13 GET /__stats 
- 458.17 GET /__stats 
- 458.20 GET /__stats 
- 484.89 GET /player_api.php 
- 495.31 GET /api/config.php 
- 495.32 GET /player_api.php 
- 495.32 RENEWAL connection
- 526.00 POST /api/ratings.php 
- 526.36 POST /api/ratings.php 
- 530.99 GET /__stats 
- 531.02 GET /__stats 
- 531.04 GET /__stats 
- 531.08 GET /__reset 
- 531.72 POST /api/pair-start.php 
- 532.40 POST /api/pair-poll.php 
- 535.58 POST /api/pair-poll.php 
- 538.59 POST /api/pair-poll.php 
- 541.59 POST /api/pair-poll.php 
- 544.59 POST /api/pair-poll.php 
- 547.60 POST /api/pair-poll.php 
- 549.41 GET /api/config.php 
- 549.43 GET /player_api.php 
- 549.50 GET /api/config.php 
- 549.56 GET /player_api.php 
- 549.62 GET /player_api.php get_vod_streams
- 549.81 GET /player_api.php get_vod_categories
- 549.81 GET /player_api.php get_series_categories
- 549.81 GET /player_api.php get_series
- 549.93 GET /api/app-update.php 
- 551.94 GET /api/trending.php 
- 551.97 GET /player_api.php get_vod_info
- 551.98 GET /player_api.php get_vod_info
- 551.98 GET /player_api.php get_vod_info
- 552.62 GET /player_api.php get_vod_info
- 552.62 GET /player_api.php get_vod_info
- 552.65 GET /player_api.php get_vod_info
- 552.69 POST /api/ratings.php 
- 573.81 POST /api/ratings.php 
- 574.16 POST /api/ratings.php 
- 598.79 POST /api/ratings.php 
- 599.14 POST /api/ratings.php 
- 604.65 GET /__stats 
- 631.33 GET /player_api.php 
- 641.82 GET /api/config.php 
- 641.82 GET /player_api.php 
- 672.61 POST /api/ratings.php 
- 672.96 POST /api/ratings.php 
- 677.60 GET /__stats 
- 677.64 GET /__reset 
- 678.22 POST /api/pair-start.php 
- 678.84 POST /api/pair-poll.php 
- 682.04 POST /api/pair-poll.php 
- 685.04 POST /api/pair-poll.php 
- 688.05 POST /api/pair-poll.php 
- 691.05 POST /api/pair-poll.php 
- 694.06 POST /api/pair-poll.php 
- 695.89 GET /api/config.php 
- 695.90 GET /player_api.php 
- 696.01 GET /api/config.php 
- 696.07 GET /player_api.php 
- 696.14 GET /player_api.php get_vod_streams
- 696.18 GET /api/app-update.php 
- 696.18 GET /player_api.php get_series_categories
- 696.19 GET /player_api.php get_vod_categories
- 696.19 GET /player_api.php get_series
- 697.98 GET /api/trending.php 
- 698.00 GET /player_api.php get_vod_info
- 698.01 GET /player_api.php get_vod_info
- 698.01 GET /player_api.php get_vod_info
- 698.70 GET /player_api.php get_vod_info
- 698.70 GET /player_api.php get_vod_info
- 698.73 POST /api/ratings.php 
- 698.73 GET /player_api.php get_vod_info
- 699.14 POST /api/ratings.php 
- 721.31 POST /api/ratings.php 
- 721.66 POST /api/ratings.php 
- 747.54 POST /api/ratings.php 
- 747.90 POST /api/ratings.php 
- 753.40 GET /__stats 
- 780.26 GET /player_api.php 
- 790.78 GET /api/config.php 
- 790.78 GET /player_api.php 
- 821.66 POST /api/ratings.php 
- 822.01 POST /api/ratings.php 
- 826.68 GET /__stats 
- 826.72 GET /__reset 
- 827.25 POST /api/pair-start.php 
- 828.57 POST /api/pair-poll.php 
- 831.59 POST /api/pair-poll.php 
- 834.59 POST /api/pair-poll.php 
- 837.60 POST /api/pair-poll.php 
- 840.60 POST /api/pair-poll.php 
- 843.61 POST /api/pair-poll.php 
- 845.86 GET /api/config.php 
- 845.87 GET /player_api.php 
- 845.97 GET /api/config.php 
- 845.99 GET /player_api.php 
- 846.07 GET /player_api.php get_vod_streams
- 846.14 GET /player_api.php get_series
- 846.15 GET /player_api.php get_vod_categories
- 846.19 GET /player_api.php get_series_categories
- 846.29 GET /api/app-update.php 
- 848.23 GET /player_api.php get_vod_info
- 848.23 GET /player_api.php get_vod_info
- 848.23 GET /player_api.php get_vod_info
- 848.27 GET /api/trending.php 
- 848.94 POST /api/ratings.php 
- 849.04 GET /player_api.php get_vod_info
- 849.04 GET /player_api.php get_vod_info
- 849.06 GET /player_api.php get_vod_info
- 849.32 POST /api/ratings.php 
- 870.48 POST /api/ratings.php 
- 870.83 POST /api/ratings.php 
- 895.73 POST /api/ratings.php 
- 896.08 POST /api/ratings.php 
- 901.60 GET /__stats 
- 928.53 GET /player_api.php 
- 939.04 GET /api/config.php 
- 939.05 GET /player_api.php 
- 981.85 POST /api/ratings.php 
- 982.21 POST /api/ratings.php 
- 986.86 GET /__stats 
- 986.91 GET /__reset 
- 987.66 POST /api/pair-start.php 
- 989.19 POST /api/pair-poll.php 
- 992.20 POST /api/pair-poll.php 
- 995.20 POST /api/pair-poll.php 
- 998.21 POST /api/pair-poll.php 
-1001.21 POST /api/pair-poll.php 
-1004.22 POST /api/pair-poll.php 
-1006.29 GET /api/config.php 
-1006.30 GET /player_api.php 
-1006.39 GET /api/config.php 
-1006.43 GET /player_api.php 
-1006.57 GET /player_api.php get_vod_streams
-1006.64 GET /player_api.php get_series
-1006.64 GET /player_api.php get_series_categories
-1006.64 GET /player_api.php get_vod_categories
-1006.85 GET /api/app-update.php 
-1008.97 GET /api/trending.php 
-1009.01 GET /player_api.php get_vod_info
-1009.01 GET /player_api.php get_vod_info
-1009.02 GET /player_api.php get_vod_info
-1009.73 POST /api/ratings.php 
-1009.81 GET /player_api.php get_vod_info
-1009.83 GET /player_api.php get_vod_info
-1009.84 GET /player_api.php get_vod_info
-1010.10 POST /api/ratings.php 
-1031.00 POST /api/ratings.php 
-1031.35 POST /api/ratings.php 
-1056.25 POST /api/ratings.php 
-1056.60 POST /api/ratings.php 
-1062.14 GET /__stats 
-1089.09 GET /player_api.php 
-1099.61 GET /api/config.php 
-1099.61 GET /player_api.php 
-1136.46 POST /api/ratings.php 
-1136.82 POST /api/ratings.php 
-1141.47 GET /__stats 
-1144.39 GET /__reset 
-1145.33 POST /api/pair-start.php 
-1146.02 POST /api/pair-poll.php 
-1149.04 POST /api/pair-poll.php 
-1152.04 POST /api/pair-poll.php 
-1155.05 POST /api/pair-poll.php 
-1158.05 POST /api/pair-poll.php 
-1161.06 POST /api/pair-poll.php 
-1163.10 GET /api/config.php 
-1163.11 GET /player_api.php 
-1163.21 GET /api/config.php 
-1163.25 GET /player_api.php 
-1163.33 GET /player_api.php get_series_categories
-1163.47 GET /player_api.php get_series
-1163.48 GET /player_api.php get_vod_streams
-1163.49 GET /player_api.php get_vod_categories
-1163.51 GET /api/app-update.php 
-1165.36 GET /api/trending.php 
-1165.37 GET /player_api.php get_vod_info
-1165.38 GET /player_api.php get_vod_info
-1165.38 GET /player_api.php get_vod_info
-1166.12 POST /api/ratings.php 
-1166.18 GET /player_api.php get_vod_info
-1166.19 GET /player_api.php get_vod_info
-1166.20 GET /player_api.php get_vod_info
-1166.47 POST /api/ratings.php 
-1187.77 POST /api/ratings.php 
-1188.12 POST /api/ratings.php 
-1212.92 POST /api/ratings.php 
-1213.27 POST /api/ratings.php 
-1218.80 GET /__stats 
-1218.86 GET /__reset 
-1219.37 POST /api/pair-start.php 
-1220.14 POST /api/pair-poll.php 
-1223.16 POST /api/pair-poll.php 
-1226.16 POST /api/pair-poll.php 
-1229.17 POST /api/pair-poll.php 
-1232.17 POST /api/pair-poll.php 
-1235.18 POST /api/pair-poll.php 
-1237.39 GET /api/config.php 
-1237.40 GET /player_api.php 
-1237.49 GET /api/config.php 
-1237.52 GET /player_api.php 
-1237.58 GET /player_api.php get_series
-1237.60 GET /player_api.php get_vod_streams
-1237.62 GET /player_api.php get_series_categories
-1237.62 GET /player_api.php get_vod_categories
-1237.65 GET /api/app-update.php 
-1256.35 GET /api/trending.php 
-1256.38 GET /player_api.php get_vod_info
-1256.39 GET /player_api.php get_vod_info
-1257.08 POST /api/ratings.php 
-1257.10 GET /player_api.php get_vod_info
-1257.11 GET /player_api.php get_vod_info
-1257.11 GET /player_api.php get_vod_info
-1257.44 POST /api/ratings.php 
-1257.62 GET /player_api.php get_vod_info
-1278.22 POST /api/ratings.php 
-1278.57 POST /api/ratings.php 
-1303.38 POST /api/ratings.php 
-1303.73 POST /api/ratings.php 
-1309.23 GET /__stats 
-1309.29 GET /__reset 
-1310.01 POST /api/pair-start.php 
-1310.67 POST /api/pair-poll.php 
-1313.69 POST /api/pair-poll.php 
-1316.70 POST /api/pair-poll.php 
-1319.70 POST /api/pair-poll.php 
-1322.71 POST /api/pair-poll.php 
-1325.71 POST /api/pair-poll.php 
-1327.68 GET /api/config.php 
-1327.68 GET /player_api.php 
-1327.78 GET /api/config.php 
-1327.80 GET /player_api.php 
-1327.88 GET /player_api.php get_vod_streams
-1327.89 GET /player_api.php get_series_categories
-1327.89 GET /player_api.php get_series
-1327.89 GET /player_api.php get_vod_categories
-1327.98 GET /api/app-update.php 
-1329.62 GET /api/trending.php 
-1329.64 GET /player_api.php get_vod_info
-1329.64 GET /player_api.php get_vod_info
-1329.65 GET /player_api.php get_vod_info
-1330.39 POST /api/ratings.php 
-1330.44 GET /player_api.php get_vod_info
-1330.44 GET /player_api.php get_vod_info
-1330.45 GET /player_api.php get_vod_info
-1330.54 GET /__reset 
-1331.25 GET /api/config.php 
-1331.80 GET /player_api.php 
-1331.86 GET /player_api.php get_series_categories
-1331.97 GET /player_api.php get_vod_categories
-1331.97 GET /player_api.php get_vod_streams
-1331.97 GET /player_api.php get_series
-1332.05 GET /api/app-update.php 
-1333.96 GET /api/trending.php 
-1333.98 GET /player_api.php get_vod_info
-1333.99 GET /player_api.php get_vod_info
-1333.99 GET /player_api.php get_vod_info
-1334.72 POST /api/ratings.php 
-1334.83 GET /player_api.php get_vod_info
-1334.83 GET /player_api.php get_vod_info
-1334.84 GET /player_api.php get_vod_info
-1335.08 POST /api/ratings.php 
-1344.77 GET /player_api.php get_vod_info
-1345.46 POST /api/ratings.php 
-1354.77 GET /player_api.php get_vod_info
-1355.47 POST /api/ratings.php 
-1364.79 GET /player_api.php get_vod_info
-1365.48 POST /api/ratings.php 
-1374.79 GET /player_api.php get_vod_info
-1375.49 POST /api/ratings.php 
-1379.96 GET /__stats 
-1396.50 POST /api/ratings.php 
-1396.85 POST /api/ratings.php 
-1421.51 POST /api/ratings.php 
-1421.86 POST /api/ratings.php 
-1427.38 GET /__reset 
-1428.09 POST /api/pair-start.php 
-1428.74 POST /api/pair-poll.php 
-1431.87 POST /api/pair-poll.php 
-1434.88 POST /api/pair-poll.php 
-1437.88 POST /api/pair-poll.php 
-1440.89 POST /api/pair-poll.php 
-1443.90 POST /api/pair-poll.php 
-1445.77 GET /api/config.php 
-1445.80 GET /player_api.php 
-1445.89 GET /api/config.php 
-1445.90 GET /player_api.php 
-1446.00 GET /player_api.php get_series
-1446.03 GET /player_api.php get_vod_streams
-1446.04 GET /player_api.php get_series_categories
-1446.04 GET /player_api.php get_vod_categories
-1446.05 GET /api/app-update.php 
-1447.74 GET /player_api.php get_vod_info
-1447.74 GET /player_api.php get_vod_info
-1447.74 GET /player_api.php get_vod_info
-1447.76 GET /api/trending.php 
-1448.46 GET /player_api.php get_vod_info
-1448.46 GET /player_api.php get_vod_info
-1448.46 POST /api/ratings.php 
-1448.48 GET /player_api.php get_vod_info
-1448.82 POST /api/ratings.php 
-1470.22 POST /api/ratings.php 
-1470.57 POST /api/ratings.php 
-1495.30 POST /api/ratings.php 
-1495.65 POST /api/ratings.php 
-1501.17 GET /__stats 
-1501.21 GET /__stats 
-1501.23 GET /__stats 
+   0.97 GET /api/config.php 
+  83.59 GET /__reset 
+  84.89 POST /api/pair-start.php 
+  85.63 POST /api/pair-poll.php 
+  88.66 POST /api/pair-poll.php 
+  91.66 POST /api/pair-poll.php 
+  94.67 POST /api/pair-poll.php 
+  97.67 POST /api/pair-poll.php 
+ 100.70 POST /api/pair-poll.php 
+ 103.72 POST /api/pair-poll.php 
+ 105.03 GET /api/config.php 
+ 105.04 GET /player_api.php 
+ 105.18 GET /api/config.php 
+ 105.20 GET /player_api.php 
+ 105.26 GET /player_api.php get_vod_streams
+ 105.29 GET /player_api.php get_vod_categories
+ 105.29 GET /player_api.php get_series_categories
+ 105.29 GET /player_api.php get_series
+ 105.37 GET /api/app-update.php 
+ 107.01 GET /api/trending.php 
+ 107.04 GET /player_api.php get_vod_info
+ 107.05 GET /player_api.php get_vod_info
+ 107.07 GET /player_api.php get_vod_info
+ 107.72 GET /player_api.php get_vod_info
+ 107.73 GET /player_api.php get_vod_info
+ 107.73 GET /player_api.php get_vod_info
+ 107.84 POST /api/ratings.php 
+ 129.61 POST /api/ratings.php 
+ 129.96 POST /api/ratings.php 
+ 198.46 POST /api/ratings.php 
+ 198.81 POST /api/ratings.php 
+ 258.84 GET /__stats 
+ 258.89 GET /__reset 
+ 259.57 POST /api/pair-start.php 
+ 260.45 POST /api/pair-poll.php 
+ 263.46 POST /api/pair-poll.php 
+ 266.47 POST /api/pair-poll.php 
+ 269.47 POST /api/pair-poll.php 
+ 272.47 POST /api/pair-poll.php 
+ 275.48 POST /api/pair-poll.php 
+ 276.90 GET /api/config.php 
+ 276.90 GET /player_api.php 
+ 276.95 GET /api/config.php 
+ 277.00 GET /player_api.php 
+ 277.09 GET /player_api.php get_vod_categories
+ 277.11 GET /player_api.php get_series
+ 277.11 GET /player_api.php get_vod_streams
+ 277.12 GET /player_api.php get_series_categories
+ 277.15 GET /api/app-update.php 
+ 295.64 GET /api/trending.php 
+ 295.66 GET /player_api.php get_vod_info
+ 295.66 GET /player_api.php get_vod_info
+ 295.67 GET /player_api.php get_vod_info
+ 296.17 GET /player_api.php get_vod_info
+ 296.18 GET /player_api.php get_vod_info
+ 296.19 GET /player_api.php get_vod_info
+ 296.36 POST /api/ratings.php 
+ 317.03 POST /api/ratings.php 
+ 317.38 POST /api/ratings.php 
+ 386.46 POST /api/ratings.php 
+ 386.81 POST /api/ratings.php 
+ 446.83 GET /__stats 
+ 446.88 GET /__reset 
+ 447.55 POST /api/pair-start.php 
+ 448.31 POST /api/pair-poll.php 
+ 451.31 POST /api/pair-poll.php 
+ 454.32 POST /api/pair-poll.php 
+ 457.32 POST /api/pair-poll.php 
+ 460.32 POST /api/pair-poll.php 
+ 463.33 POST /api/pair-poll.php 
+ 464.73 GET /api/config.php 
+ 464.73 GET /player_api.php 
+ 464.84 GET /api/config.php 
+ 464.85 GET /player_api.php 
+ 464.95 GET /api/app-update.php 
+ 465.00 GET /player_api.php get_series_categories
+ 465.01 GET /player_api.php get_vod_categories
+ 465.01 GET /player_api.php get_series
+ 465.02 GET /player_api.php get_vod_streams
+ 466.05 GET /api/trending.php 
+ 466.07 GET /player_api.php get_vod_info
+ 466.07 GET /player_api.php get_vod_info
+ 466.07 GET /player_api.php get_vod_info
+ 466.56 GET /player_api.php get_vod_info
+ 466.57 GET /player_api.php get_vod_info
+ 466.57 GET /player_api.php get_vod_info
+ 466.87 POST /api/ratings.php 
+ 467.87 GET /__reset 
+ 468.23 GET /api/config.php 
+ 468.75 GET /player_api.php 
+ 468.77 GET /player_api.php get_series_categories
+ 468.81 GET /player_api.php get_vod_categories
+ 468.86 GET /player_api.php get_series
+ 468.91 GET /player_api.php get_vod_streams
+ 468.91 GET /api/app-update.php 
+ 470.37 GET /api/trending.php 
+ 470.40 GET /player_api.php get_vod_info
+ 470.41 GET /player_api.php get_vod_info
+ 470.43 GET /player_api.php get_vod_info
+ 471.00 GET /player_api.php get_vod_info
+ 471.00 GET /player_api.php get_vod_info
+ 471.01 GET /player_api.php get_vod_info
+ 471.10 POST /api/ratings.php 
+ 481.01 GET /player_api.php get_vod_info
+ 481.71 POST /api/ratings.php 
+ 491.01 GET /player_api.php get_vod_info
+ 491.71 POST /api/ratings.php 
+ 501.02 GET /player_api.php get_vod_info
+ 501.72 POST /api/ratings.php 
+ 511.03 GET /player_api.php get_vod_info
+ 511.73 POST /api/ratings.php 
+ 516.69 GET /__stats 
+ 532.83 POST /api/ratings.php 
+ 533.19 POST /api/ratings.php 
+ 601.84 POST /api/ratings.php 
+ 602.19 POST /api/ratings.php 
+ 662.18 GET /__reset 
+ 662.58 POST /api/pair-start.php 
+ 663.25 POST /api/pair-poll.php 
+ 666.26 POST /api/pair-poll.php 
+ 669.26 POST /api/pair-poll.php 
+ 672.27 POST /api/pair-poll.php 
+ 675.27 POST /api/pair-poll.php 
+ 678.27 POST /api/pair-poll.php 
+ 679.47 GET /api/config.php 
+ 679.48 GET /player_api.php 
+ 679.54 GET /api/config.php 
+ 679.60 GET /player_api.php 
+ 679.74 GET /api/app-update.php 
+ 679.75 GET /player_api.php get_series
+ 679.76 GET /player_api.php get_vod_streams
+ 679.77 GET /player_api.php get_series_categories
+ 679.77 GET /player_api.php get_vod_categories
+ 681.15 GET /player_api.php get_vod_info
+ 681.15 GET /player_api.php get_vod_info
+ 681.16 GET /player_api.php get_vod_info
+ 681.18 GET /api/trending.php 
+ 681.61 GET /player_api.php get_vod_info
+ 681.61 GET /player_api.php get_vod_info
+ 681.62 GET /player_api.php get_vod_info
+ 681.88 POST /api/ratings.php 
+ 703.57 POST /api/ratings.php 
+ 703.93 POST /api/ratings.php 
+ 772.47 POST /api/ratings.php 
+ 772.82 POST /api/ratings.php 
+ 833.44 GET /__stats 
+ 833.48 GET /__stats 
+ 833.49 GET /__stats 
+ 859.41 GET /player_api.php 
+ 872.01 GET /api/config.php 
+ 872.01 GET /player_api.php 
+ 872.01 RENEWAL connection
+ 902.15 POST /api/ratings.php 
+ 902.51 POST /api/ratings.php 
+ 951.72 GET /__stats 
+ 951.74 GET /__stats 
+ 951.76 GET /__stats 
+ 951.79 GET /__reset 
+ 952.13 POST /api/pair-start.php 
+ 953.31 POST /api/pair-poll.php 
+ 956.31 POST /api/pair-poll.php 
+ 959.32 POST /api/pair-poll.php 
+ 962.32 POST /api/pair-poll.php 
+ 965.32 POST /api/pair-poll.php 
+ 968.33 POST /api/pair-poll.php 
+ 969.73 GET /api/config.php 
+ 969.74 GET /player_api.php 
+ 969.81 GET /api/config.php 
+ 969.86 GET /player_api.php 
+ 969.96 GET /player_api.php get_series_categories
+ 969.99 GET /player_api.php get_vod_categories
+ 970.00 GET /player_api.php get_series
+ 970.00 GET /player_api.php get_vod_streams
+ 970.10 GET /api/app-update.php 
+ 971.47 GET /player_api.php get_vod_info
+ 971.47 GET /player_api.php get_vod_info
+ 971.49 GET /player_api.php get_vod_info
+ 971.49 GET /api/trending.php 
+ 971.96 GET /player_api.php get_vod_info
+ 971.99 GET /player_api.php get_vod_info
+ 971.99 GET /player_api.php get_vod_info
+ 972.16 POST /api/ratings.php 
+ 993.71 POST /api/ratings.php 
+ 994.07 POST /api/ratings.php 
+1062.61 POST /api/ratings.php 
+1062.96 POST /api/ratings.php 
+1122.92 GET /__stats 
+1149.08 GET /player_api.php 
+1161.30 GET /api/config.php 
+1161.30 GET /player_api.php 
+1192.51 POST /api/ratings.php 
+1192.86 POST /api/ratings.php 
+1241.81 GET /__stats 
+1241.84 GET /__reset 
+1242.18 POST /api/pair-start.php 
+1243.14 POST /api/pair-poll.php 
+1246.17 POST /api/pair-poll.php 
+1249.18 POST /api/pair-poll.php 
+1252.18 POST /api/pair-poll.php 
+1255.19 POST /api/pair-poll.php 
+1258.19 POST /api/pair-poll.php 
+1259.84 GET /api/config.php 
+1259.84 GET /player_api.php 
+1259.90 GET /api/config.php 
+1259.97 GET /player_api.php 
+1260.04 GET /player_api.php get_vod_streams
+1260.07 GET /player_api.php get_series
+1260.07 GET /player_api.php get_series_categories
+1260.09 GET /player_api.php get_vod_categories
+1260.17 GET /api/app-update.php 
+1261.42 GET /player_api.php get_vod_info
+1261.43 GET /player_api.php get_vod_info
+1261.43 GET /player_api.php get_vod_info
+1261.44 GET /api/trending.php 
+1261.93 GET /player_api.php get_vod_info
+1261.94 GET /player_api.php get_vod_info
+1261.95 GET /player_api.php get_vod_info
+1262.20 POST /api/ratings.php 
+1283.76 POST /api/ratings.php 
+1284.11 POST /api/ratings.php 
+1353.08 POST /api/ratings.php 
+1353.44 POST /api/ratings.php 
+1413.46 GET /__stats 
+1440.15 GET /player_api.php 
+1452.38 GET /api/config.php 
+1452.39 GET /player_api.php 
+1482.95 POST /api/ratings.php 
+1483.30 POST /api/ratings.php 
+1531.66 GET /__stats 
+1532.10 GET /__reset 
+1532.49 POST /api/pair-start.php 
+1533.03 POST /api/pair-poll.php 
+1536.03 POST /api/pair-poll.php 
+1539.04 POST /api/pair-poll.php 
+1542.04 POST /api/pair-poll.php 
+1545.04 POST /api/pair-poll.php 
+1548.05 POST /api/pair-poll.php 
+1549.70 GET /api/config.php 
+1549.70 GET /player_api.php 
+1549.79 GET /api/config.php 
+1549.80 GET /player_api.php 
+1549.86 GET /player_api.php get_vod_streams
+1549.86 GET /player_api.php get_series_categories
+1549.88 GET /player_api.php get_series
+1549.89 GET /player_api.php get_vod_categories
+1549.99 GET /api/app-update.php 
+1551.04 GET /api/trending.php 
+1551.06 GET /player_api.php get_vod_info
+1551.06 GET /player_api.php get_vod_info
+1551.06 GET /player_api.php get_vod_info
+1551.50 GET /player_api.php get_vod_info
+1551.50 GET /player_api.php get_vod_info
+1551.50 GET /player_api.php get_vod_info
+1551.76 POST /api/ratings.php 
+1573.89 POST /api/ratings.php 
+1574.24 POST /api/ratings.php 
+1642.20 POST /api/ratings.php 
+1642.56 POST /api/ratings.php 
+1702.77 GET /__stats 
+1728.70 GET /player_api.php 
+1740.91 GET /api/config.php 
+1740.91 GET /player_api.php 
+1783.01 POST /api/ratings.php 
+1783.36 POST /api/ratings.php 
+1832.10 GET /__stats 
+1832.13 GET /__reset 
+1832.43 POST /api/pair-start.php 
+1833.54 POST /api/pair-poll.php 
+1836.56 POST /api/pair-poll.php 
+1839.56 POST /api/pair-poll.php 
+1842.57 POST /api/pair-poll.php 
+1845.57 POST /api/pair-poll.php 
+1848.57 POST /api/pair-poll.php 
+1850.22 GET /api/config.php 
+1850.22 GET /player_api.php 
+1850.34 GET /api/config.php 
+1850.36 GET /player_api.php 
+1850.41 GET /api/app-update.php 
+1850.42 GET /player_api.php get_vod_streams
+1850.44 GET /player_api.php get_vod_categories
+1850.47 GET /player_api.php get_series
+1850.47 GET /player_api.php get_series_categories
+1851.43 GET /player_api.php get_vod_info
+1851.43 GET /player_api.php get_vod_info
+1851.43 GET /player_api.php get_vod_info
+1851.45 GET /api/trending.php 
+1851.90 GET /player_api.php get_vod_info
+1851.90 GET /player_api.php get_vod_info
+1851.90 GET /player_api.php get_vod_info
+1852.13 POST /api/ratings.php 
+1874.35 POST /api/ratings.php 
+1874.70 POST /api/ratings.php 
+1942.71 POST /api/ratings.php 
+1943.06 POST /api/ratings.php 
+2003.21 GET /__stats 
+2029.13 GET /player_api.php 
+2041.56 GET /api/config.php 
+2041.57 GET /player_api.php 
+2077.51 POST /api/ratings.php 
+2077.87 POST /api/ratings.php 
+2126.38 GET /__stats 
+2128.28 GET /__reset 
+2128.89 POST /api/pair-start.php 
+2129.45 POST /api/pair-poll.php 
+2132.50 POST /api/pair-poll.php 
+2135.50 POST /api/pair-poll.php 
+2138.50 POST /api/pair-poll.php 
+2141.51 POST /api/pair-poll.php 
+2144.51 POST /api/pair-poll.php 
+2145.84 GET /api/config.php 
+2145.85 GET /player_api.php 
+2145.91 GET /api/config.php 
+2145.96 GET /player_api.php 
+2146.07 GET /player_api.php get_vod_categories
+2146.08 GET /player_api.php get_series_categories
+2146.09 GET /player_api.php get_vod_streams
+2146.09 GET /player_api.php get_series
+2146.12 GET /api/app-update.php 
+2147.53 GET /player_api.php get_vod_info
+2147.53 GET /player_api.php get_vod_info
+2147.55 GET /player_api.php get_vod_info
+2147.57 GET /api/trending.php 
+2148.08 GET /player_api.php get_vod_info
+2148.09 GET /player_api.php get_vod_info
+2148.10 GET /player_api.php get_vod_info
+2148.27 POST /api/ratings.php 
+2169.87 POST /api/ratings.php 
+2170.23 POST /api/ratings.php 
+2238.65 POST /api/ratings.php 
+2239.00 POST /api/ratings.php 
+2300.37 GET /__stats 
+2300.41 GET /__reset 
+2301.01 POST /api/pair-start.php 
+2301.56 POST /api/pair-poll.php 
+2304.58 POST /api/pair-poll.php 
+2307.59 POST /api/pair-poll.php 
+2310.59 POST /api/pair-poll.php 
+2313.59 POST /api/pair-poll.php 
+2316.60 POST /api/pair-poll.php 
+2318.06 GET /api/config.php 
+2318.06 GET /player_api.php 
+2318.13 GET /api/config.php 
+2318.20 GET /player_api.php 
+2318.33 GET /api/app-update.php 
+2318.35 GET /player_api.php get_series_categories
+2318.36 GET /player_api.php get_series
+2318.36 GET /player_api.php get_vod_streams
+2318.37 GET /player_api.php get_vod_categories
+2336.87 GET /player_api.php get_vod_info
+2336.87 GET /player_api.php get_vod_info
+2336.88 GET /player_api.php get_vod_info
+2336.90 GET /api/trending.php 
+2337.29 GET /player_api.php get_vod_info
+2337.30 GET /player_api.php get_vod_info
+2337.31 GET /player_api.php get_vod_info
+2337.60 POST /api/ratings.php 
+2358.27 POST /api/ratings.php 
+2358.62 POST /api/ratings.php 
+2427.13 POST /api/ratings.php 
+2427.48 POST /api/ratings.php 
+2487.60 GET /__stats 
+2487.64 GET /__reset 
+2488.15 POST /api/pair-start.php 
+2488.55 POST /api/pair-poll.php 
+2491.58 POST /api/pair-poll.php 
+2494.59 POST /api/pair-poll.php 
+2497.59 POST /api/pair-poll.php 
+2500.60 POST /api/pair-poll.php 
+2503.60 POST /api/pair-poll.php 
+2505.33 GET /api/config.php 
+2505.35 GET /player_api.php 
+2505.44 GET /api/config.php 
+2505.46 GET /player_api.php 
+2505.52 GET /player_api.php get_vod_streams
+2505.53 GET /player_api.php get_series
+2505.56 GET /player_api.php get_vod_categories
+2505.56 GET /api/app-update.php 
+2505.56 GET /player_api.php get_series_categories
+2506.46 GET /api/trending.php 
+2506.50 GET /player_api.php get_vod_info
+2506.50 GET /player_api.php get_vod_info
+2506.50 GET /player_api.php get_vod_info
+2506.91 GET /player_api.php get_vod_info
+2506.91 GET /player_api.php get_vod_info
+2506.92 GET /player_api.php get_vod_info
+2507.20 POST /api/ratings.php 
+2508.12 GET /__reset 
+2508.41 GET /api/config.php 
+2508.91 GET /player_api.php 
+2509.00 GET /api/app-update.php 
+2509.11 GET /player_api.php get_vod_categories
+2509.15 GET /player_api.php get_vod_streams
+2509.21 GET /player_api.php get_series_categories
+2509.22 GET /player_api.php get_series
+2510.19 GET /api/trending.php 
+2510.22 GET /player_api.php get_vod_info
+2510.22 GET /player_api.php get_vod_info
+2510.23 GET /player_api.php get_vod_info
+2510.69 GET /player_api.php get_vod_info
+2510.69 GET /player_api.php get_vod_info
+2510.70 GET /player_api.php get_vod_info
+2510.92 POST /api/ratings.php 
+2520.70 GET /player_api.php get_vod_info
+2521.40 POST /api/ratings.php 
+2530.71 GET /player_api.php get_vod_info
+2531.40 POST /api/ratings.php 
+2540.71 GET /player_api.php get_vod_info
+2541.41 POST /api/ratings.php 
+2550.72 GET /player_api.php get_vod_info
+2551.42 POST /api/ratings.php 
+2556.83 GET /__stats 
+2572.91 POST /api/ratings.php 
+2573.26 POST /api/ratings.php 
+2641.12 POST /api/ratings.php 
+2641.48 POST /api/ratings.php 
+2701.55 GET /__reset 
+2702.00 POST /api/pair-start.php 
+2702.60 POST /api/pair-poll.php 
+2705.63 POST /api/pair-poll.php 
+2708.63 POST /api/pair-poll.php 
+2711.64 POST /api/pair-poll.php 
+2714.64 POST /api/pair-poll.php 
+2717.64 POST /api/pair-poll.php 
+2718.79 GET /api/config.php 
+2718.79 GET /player_api.php 
+2718.85 GET /api/config.php 
+2718.93 GET /player_api.php 
+2719.00 GET /player_api.php get_series
+2719.01 GET /player_api.php get_series_categories
+2719.02 GET /player_api.php get_vod_streams
+2719.04 GET /player_api.php get_vod_categories
+2719.10 GET /api/app-update.php 
+2720.31 GET /api/trending.php 
+2720.33 GET /player_api.php get_vod_info
+2720.33 GET /player_api.php get_vod_info
+2720.33 GET /player_api.php get_vod_info
+2720.76 GET /player_api.php get_vod_info
+2720.76 GET /player_api.php get_vod_info
+2720.76 GET /player_api.php get_vod_info
+2721.03 POST /api/ratings.php 
+2742.70 POST /api/ratings.php 
+2743.05 POST /api/ratings.php 
+2811.63 POST /api/ratings.php 
+2811.99 POST /api/ratings.php 
+2871.87 GET /__stats 
+2871.89 GET /__stats 
+2871.91 GET /__stats 
