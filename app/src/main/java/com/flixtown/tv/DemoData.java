@@ -178,10 +178,10 @@ final class DemoData {
                 .put("poster",t.optString("poster")).put("seasons",seasons==null?new JSONArray():seasons).put("requested_at",System.currentTimeMillis()/1000).put("state","pending");
             demoRequests.add(0,row);
             return new JSONObject().put("ok",true).put("request",new JSONObject().put("type",type).put("id",id).put("title",t.optString("title")).put("state","pending")).toString();}
-        if(action.equals("history")){JSONArray list=new JSONArray();
+        if(action.equals("history")){JSONArray list=new JSONArray();   // newest first, as OnePanel answers
+            for(JSONObject r:demoRequests)list.put(r);
             list.put(new JSONObject().put("type","movie").put("id",9101).put("title","Alpha Earlier Request").put("year","2020").put("poster","demo://poster/m11")
                 .put("seasons",new JSONArray()).put("requested_at",base()-5*DAY).put("state","approved"));
-            for(JSONObject r:demoRequests)list.put(r);
             return new JSONObject().put("ok",true).put("page",1).put("has_more",false).put("requests",list).toString();}
         return new JSONObject().put("ok",false).put("error","bad_request").put("message","Unknown action.").put("_http",400).toString();
     }
