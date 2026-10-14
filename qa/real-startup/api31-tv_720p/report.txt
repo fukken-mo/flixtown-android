@@ -2,7 +2,7 @@
 == api31-tv_720p · renewal API: none · catalog: ok
 PASS  [none:ok] form filled (username field holds only the username)
 PASS  [none:ok] sign-in accepted, Home opened
-      catalog arrived 3 s after sign-in
+      catalog arrived 5 s after sign-in
 PASS  [none:ok] startup refresh finished: updated
 PASS  [none:ok] no 'taking longer than usual' message
 PASS  [none:ok] Home shows titles
@@ -44,7 +44,7 @@ PASS  [probe:ok] Home shows titles
 PASS  [probe:ok] Movies populated (12 posters on screen)
 PASS  [probe:ok] TV Shows populated (12 posters on screen)
 PASS  [probe:ok] exactly one catalog download, no retries
-PASS  [probe:ok] no renewal network call during sign-in, startup or catalog loading (0 connections)
+PASS  [probe:ok] no renewal or requests network call during sign-in, startup or catalog loading (0 connections)
 PASS  [probe:ok] Settings › Renew subscription opens the renewal screen
 PASS  [probe:ok] renewal screen reports the broken service
 PASS  [probe:ok] Movies still there after the renewal screen (12)
@@ -87,7 +87,7 @@ PASS  [500:ok] no crash
 == api31-tv_720p · renewal API: timeout · catalog: ok
 PASS  [timeout:ok] form filled (username field holds only the username)
 PASS  [timeout:ok] sign-in accepted, Home opened
-      catalog arrived 2 s after sign-in
+      catalog arrived 4 s after sign-in
 PASS  [timeout:ok] startup refresh finished: updated
 PASS  [timeout:ok] no 'taking longer than usual' message
 PASS  [timeout:ok] Home shows titles
@@ -103,7 +103,7 @@ PASS  [timeout:ok] no crash
 == api31-tv_720p · renewal API: unreachable · catalog: ok
 PASS  [unreachable:ok] form filled (username field holds only the username)
 PASS  [unreachable:ok] sign-in accepted, Home opened
-      catalog arrived 2 s after sign-in
+      catalog arrived 3 s after sign-in
 PASS  [unreachable:ok] startup refresh finished: updated
 PASS  [unreachable:ok] no 'taking longer than usual' message
 PASS  [unreachable:ok] Home shows titles
