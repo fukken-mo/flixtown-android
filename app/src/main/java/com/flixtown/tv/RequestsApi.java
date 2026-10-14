@@ -38,7 +38,7 @@ final class RequestsApi {
         Reply(int http,JSONObject body){this.http=http;this.body=body;ok=body.optBoolean("ok");
             error=body.optString("error","");String m=body.optString("message","");
             message=ok?"":(http>=500||error.equals("unavailable")||m.isEmpty()?UNAVAILABLE:m);}
-        static Reply unavailable(){return new Reply(503,new JSONObject());}
+        static Reply failed(){return new Reply(503,new JSONObject());}
         boolean unavailable(){return !ok && message.equals(UNAVAILABLE);}
     }
 
@@ -63,7 +63,7 @@ final class RequestsApi {
             if(!r.ok && r.error.equals("session")){forget();Reply s=signIn(c,account);if(!s.ok)return s;
                 r=post(c,new JSONObject(body.toString()).put("session",session));}
             return r;
-        }catch(Exception e){return Reply.unavailable();}
+        }catch(Exception e){return Reply.failed();}
     }
     private static Reply signIn(Context c,String[] account)throws Exception{
         Reply r=post(c,new JSONObject().put("action","session").put("username",account[0]).put("password",account[1]));
@@ -72,7 +72,7 @@ final class RequestsApi {
         return r;
     }
     private static Reply post(Context c,JSONObject body)throws Exception{
-        String url=url(c);if(url.isEmpty())return Reply.unavailable();
+        String url=url(c);if(url.isEmpty())return Reply.failed();
         if(BuildConfig.DEMO){JSONObject j=new JSONObject(DemoData.respond(url,body.toString()));return new Reply(j.optInt("_http",200),j);}
         HttpURLConnection connection=(HttpURLConnection)new URL(url).openConnection();
         connection.setConnectTimeout(6000);connection.setReadTimeout(15000);
@@ -83,9 +83,9 @@ final class RequestsApi {
             connection.getOutputStream().write(body.toString().getBytes(StandardCharsets.UTF_8));
             int status=connection.getResponseCode();
             try(InputStream stream=status>=400?connection.getErrorStream():connection.getInputStream()){
-                if(stream==null)return Reply.unavailable();
+                if(stream==null)return Reply.failed();
                 ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;
-                while((n=stream.read(buffer))!=-1){bytes.write(buffer,0,n);if(bytes.size()>262144)return Reply.unavailable();}
+                while((n=stream.read(buffer))!=-1){bytes.write(buffer,0,n);if(bytes.size()>262144)return Reply.failed();}
                 return new Reply(status,new JSONObject(bytes.toString("UTF-8")));
             }
         }finally{connection.disconnect();}
