@@ -71,27 +71,38 @@ above_controls(){ set -- $1; [ "$7" -gt 20 ] && [ "$4" -le $(($6 - $6*122/540)) 
 
 # Capture with the controls up: shown right before (the auto-hide is 3 s), retried if they had gone.
 shown_box(){ local r; for t in 1 2 3; do key DPAD_UP; sleep 0.5; r="$(sub_box "$1" "$2")"; [ "$(cat "$OUT/lc")" = true ] && break; done; echo "$r"; }
-# Picks a subtitle track by label through the player's Subtitles menu.
-choose_subs(){ local want="$1"
+pickers(){ adb logcat -d -s FlixTownQA:I | grep -c " picker Subtitles"; }
+# Opens the Subtitles menu and waits until it is really open (its QA line appears).
+open_picker(){ local n0; n0="$(pickers)"
   key DPAD_UP; sleep 0.6; wait_qa controls true 3
   player_focus subs DPAD_RIGHT || note "INFO  focus: $(qa_line)"
-  key DPAD_CENTER; sleep 1.5
-  local line; line="$(picker_line)"; note "INFO  $line"
-  local moves; moves="$(python3 -c '
+  key DPAD_CENTER
+  for i in $(seq 1 12); do [ "$(pickers)" -gt "$n0" ] && return 0; sleep 0.5; done; return 1; }
+# Picks a subtitle track by label through the player's Subtitles menu; checks the label after, once more if needed.
+choose_subs(){ local want="$1" expect
+  case "$want" in Plain) expect=English;; Bottom) expect=French;; *) expect=Off;; esac
+  for attempt in 1 2; do
+    open_picker || { note "INFO  Subtitles menu did not open (attempt $attempt)"; key BACK; sleep 1; continue; }
+    sleep 0.8
+    local line; line="$(picker_line)"; note "INFO  $line"
+    local moves; moves="$(python3 -c '
 import re,sys
 l=sys.argv[1]; want=sys.argv[2]
 m=re.search(r"picker Subtitles: (.*) selected=(\d+)",l)
 labels=m.group(1).split("|"); sel=int(m.group(2))
 t=[i for i,x in enumerate(labels) if want in x][0]
 print(("DOWN "*(t-sel) if t>sel else "UP "*(sel-t)).strip())' "$line" "$want")"
-  for k in $moves; do key "DPAD_$k"; done
-  key DPAD_CENTER; sleep 1.5; }
+    for k in $moves; do key "DPAD_$k"; done
+    key DPAD_CENTER; sleep 1.5
+    qaf subs | grep -q "$expect" && return 0
+    note "INFO  label after choosing $want: $(qaf subs) (attempt $attempt)"
+  done; return 1; }
 
 run_case(){ local kind="$1"
   wait_activity PlayerActivity 15 && ok "$kind: player opened" || { bad "$kind: player did not open ($(resumed))"; return; }
   for i in $(seq 1 40); do e="$(qaf elapsed)"; [ -n "$e" ] && [ "$e" -ge 3 ] 2>/dev/null && break; sleep 1; done
   note "INFO  $kind: playing at ${e:-?}s"
-  key DPAD_UP; sleep 0.6; player_focus subs DPAD_RIGHT; key DPAD_CENTER; sleep 1.5
+  open_picker; sleep 0.8
   check "$kind: playing the test video (its subtitle tracks are listed)" 'picker_line | grep -q "Plain" && picker_line | grep -q "Bottom"'
   key BACK; sleep 1
   picker_line | grep -q "Plain" || { note "      $(picker_line)"; for i in 1 2 3; do in_activity PlayerActivity || break; key BACK; sleep 1; done; return; }
