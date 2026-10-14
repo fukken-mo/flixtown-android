@@ -32,9 +32,11 @@ file_put_contents($state, json_encode([
   'flix' => [
     'alice' => ['username' => 'alice', 'password' => 'alice-pass', 'expires_at' => $future, 'enabled' => true],
     'bob' => ['username' => 'bob', 'password' => 'bob-pass', 'expires_at' => null, 'enabled' => true],
+    'carol' => ['username' => 'carol', 'password' => 'carol-pass', 'expires_at' => $future, 'enabled' => true],
     'old' => ['username' => 'old', 'password' => 'old-pass', 'expires_at' => $past, 'enabled' => true],
   ],
-  'users' => ['1' => ['permissions' => 2], '7' => ['permissions' => 32], '8' => ['permissions' => 32 | 128], '9' => ['permissions' => 2], '10' => ['permissions' => 64]],
+  'users' => ['1' => ['permissions' => 2], '7' => ['permissions' => 32], '8' => ['permissions' => 32 | 128], '9' => ['permissions' => 2], '10' => ['permissions' => 64],
+    '11' => ['permissions' => 32 | 256], '12' => ['permissions' => 32 | 512], '13' => ['permissions' => 32 | 16]],
   'catalog' => [
     ['mediaType' => 'movie', 'id' => 101, 'title' => 'Alpha Movie', 'releaseDate' => '2021-05-01', 'posterPath' => '/alpha.jpg', 'backdropPath' => '/alpha-b.jpg', 'overview_full' => '<b>Alpha</b> synopsis'],
     ['mediaType' => 'movie', 'id' => 102, 'title' => 'Alpha Available', 'releaseDate' => '2019-01-01', 'posterPath' => '/x.jpg'],
@@ -43,6 +45,7 @@ file_put_contents($state, json_encode([
     ['mediaType' => 'movie', 'id' => 105, 'title' => 'Alpha Approved', 'releaseDate' => '2017-01-01'],
     ['mediaType' => 'movie', 'id' => 106, 'title' => 'Race Movie', 'releaseDate' => '2022-01-01'],
     ['mediaType' => 'tv', 'id' => 201, 'name' => 'Alpha Show', 'firstAirDate' => '2015-02-03', 'posterPath' => '/show.jpg', 'seasons' => $seasons(4)],
+    ['mediaType' => 'tv', 'id' => 203, 'name' => 'Race Show', 'firstAirDate' => '2012-01-01', 'seasons' => $seasons(5)],
     ['mediaType' => 'tv', 'id' => 202, 'name' => 'Complete Show', 'firstAirDate' => '2010-01-01', 'seasons' => $seasons(2)],
   ],
   'media' => [
@@ -179,8 +182,51 @@ $m = []; foreach (call(['action' => 'history', 'session' => $A, 'page' => 1])['j
 check('My Requests: Available once Seerr reports it', ($m['Alpha Movie'] ?? '') === 'available');
 check('My Requests: invalid page refused', call(['action' => 'history', 'session' => $A, 'page' => 0])['j']['error'] === 'page');
 
+$pdo->exec('DELETE FROM tv_request_rate');
+// ---------------- different customers at the same moment ----------------
+// Three customers ask for overlapping seasons of one show at once: no season may reach Seerr twice,
+// every accepted answer is exactly one Seerr request, and each customer only ever sees their own.
+$C = login('carol', 'carol-pass');
+setst(function ($s) { $s['slow_post'] = true; return $s; });
+$jobs = [[$A, [1, 2]], [$B, [2, 3]], [$C, [3]], [$C, [1]], [$B, [4, 5]], [$A, [5]]];
+$mh = curl_multi_init(); $hs = [];
+foreach ($jobs as [$sess, $sea]) { $ch = curl_init("http://127.0.0.1:$port/api/tv-requests.php");
+  curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode(['action' => 'request', 'session' => $sess, 'type' => 'tv', 'id' => 203, 'seasons' => $sea]), CURLOPT_HTTPHEADER => ['Content-Type: application/json']]);
+  curl_multi_add_handle($mh, $ch); $hs[] = $ch; }
+do { curl_multi_exec($mh, $run); curl_multi_select($mh, 0.2); } while ($run);
+$codes = array_map(fn($h) => curl_getinfo($h, CURLINFO_RESPONSE_CODE), $hs);
+setst(function ($s) { unset($s['slow_post']); return $s; });
+$racePosts = array_values(array_filter(st()['posts'], fn($p) => $p['key'] === 'tv:203'));
+$sent = array_merge(...array_map(fn($p) => $p['seasons'], $racePosts ?: [['seasons' => []]]));
+check('concurrent customers, overlapping seasons: no season sent to Seerr twice (' . implode(',', $codes) . ')',
+  count($sent) === count(array_unique($sent)) && count($racePosts) === count(array_filter($codes, fn($c) => $c === 200))
+  && count(array_filter($codes, fn($c) => !in_array($c, [200, 409], true))) === 0 && count($racePosts) >= 1);
+$owned = []; $leak = false;
+foreach (['alice' => $A, 'bob' => $B, 'carol' => $C] as $who => $sess) {
+  $raw = call(['action' => 'history', 'session' => $sess, 'page' => 1]);
+  foreach ($raw['j']['requests'] ?? [] as $x) if ($x['title'] === 'Race Show') $owned[$who][] = $x['seasons'];
+  foreach (['alice', 'bob', 'carol', 'requestedBy', 'email', 'secret-user', 'plexToken', 'username'] as $bad) if (stripos(json_encode($raw['j']), $bad) !== false) $leak = true;
+}
+$ownedSeasons = array_merge(...array_values(array_map(fn($l) => array_merge(...$l), $owned ?: ['x' => [[]]])));
+sort($ownedSeasons); $sortedSent = $sent; sort($sortedSent);
+$rowsOk = (int)$pdo->query("SELECT COUNT(*) FROM tv_media_requests WHERE tmdb_id=203")->fetchColumn() === count($racePosts);
+check('concurrent customers: each accepted request belongs to exactly one customer, recorded once', $rowsOk && $ownedSeasons === $sortedSent);
+check('concurrent customers: My Requests never shows another customer, their name or Seerr user data', !$leak);
+check('every Seerr submission so far was made as the requester (X-API-User 7), never as the admin key user',
+  count(array_filter(st()['posts'], fn($p) => $p['user'] !== 7)) === 0);
+check('every request created in Seerr so far is Pending (no auto-approval)',
+  count(array_filter(st()['requests'], fn($r) => $r['user'] === 7 && $r['status'] !== 1 && !in_array($r['key'], ['movie:101', 'tv:201'], true))) === 0);
+
+$pdo->exec('DELETE FROM tv_request_rate');
+// The requester gains Auto-Approve while the service runs: the very next submission is refused.
+setst(function ($s) { $s['users']['7']['permissions'] = 32 | 128; return $s; });
+$before = count(st()['posts']);
+$r2 = call(['action' => 'request', 'session' => $C, 'type' => 'tv', 'id' => 201, 'seasons' => [4]]);
+check('requester given Auto-Approve later: the next submissions are refused at once, nothing sent', $r2['code'] === 503 && count(st()['posts']) === $before);
+setst(function ($s) { $s['users']['7']['permissions'] = 32; return $s; });
+
 // ---------------- requester safety ----------------
-foreach ([8 => 'AUTO_APPROVE', 9 => 'ADMIN', 10 => 'no request permission', 1 => 'user 1 (administrator)'] as $uid => $label) {
+foreach ([8 => 'AUTO_APPROVE', 11 => 'AUTO_APPROVE_MOVIE', 12 => 'AUTO_APPROVE_TV', 13 => 'MANAGE_REQUESTS', 9 => 'ADMIN', 10 => 'no request permission', 1 => 'user 1 (administrator)'] as $uid => $label) {
   proc_terminate($server); usleep(300000); @unlink("$storage/tv-requests-requester.json");
   $server = serve(['TVQ_REQUESTER' => (string)$uid]); for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) usleep(100000);
   $before = count(st()['posts'] ?? []);

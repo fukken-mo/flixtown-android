@@ -185,27 +185,19 @@ function tvq_read(string $path, array $query = []): array {
 }
 /**
  * The requester user must be able to request and must NOT be able to approve anything itself.
- * Cached for 10 minutes; any doubt fails closed.
+ * Read from Seerr before every submission; any doubt fails closed.
  */
 function tvq_check_requester(string $type): void {
-  static $ok = [];
+  // Read fresh before every submission (never cached): if someone later gives this Seerr user an
+  // approving permission, requests stop at once instead of being auto-approved.
   $id = tvq_config()['requester'];
-  $cacheKey = $id . ':' . $type;
-  if (isset($ok[$cacheKey])) return;
-  $cache = onepanel_storage_dir() . '/tv-requests-requester.json';
-  $c = is_file($cache) ? json_decode((string)@file_get_contents($cache), true) : null;
-  if (is_array($c) && ($c['id'] ?? 0) === $id && ($c['t'] ?? 0) > time() - 600) $perms = (int)$c['perms'];
-  else {
-    $u = tvq_seerr('GET', '/user/' . $id);
-    if (!$u['ok'] || !is_array($u['data']) || !isset($u['data']['permissions'])) tvq_unavailable('cannot read requester user ' . $id);
-    $perms = (int)$u['data']['permissions'];
-    @file_put_contents($cache, json_encode(['id' => $id, 'perms' => $perms, 't' => time()]), LOCK_EX);
-  }
+  $u = tvq_seerr('GET', '/user/' . $id);
+  if (!$u['ok'] || !is_array($u['data']) || !isset($u['data']['permissions'])) tvq_unavailable('cannot read requester user ' . $id);
+  $perms = (int)$u['data']['permissions'];
   $approves = TVQ_P_ADMIN | TVQ_P_MANAGE_REQUESTS | TVQ_P_AUTO_APPROVE | TVQ_P_AUTO_APPROVE_MOVIE | TVQ_P_AUTO_APPROVE_TV;
   if ($perms & $approves) tvq_unavailable('requester user ' . $id . ' can approve requests (ADMIN/MANAGE_REQUESTS/AUTO_APPROVE); refusing to submit');
   $need = $type === 'tv' ? (TVQ_P_REQUEST | TVQ_P_REQUEST_TV) : (TVQ_P_REQUEST | TVQ_P_REQUEST_MOVIE);
   if (!($perms & $need)) tvq_unavailable('requester user ' . $id . ' has no ' . $type . ' request permission');
-  $ok[$cacheKey] = true;
 }
 
 /* ---------------- sanitising ---------------- */
