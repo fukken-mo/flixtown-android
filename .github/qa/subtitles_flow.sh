@@ -75,6 +75,8 @@ pickers(){ adb logcat -d -s FlixTownQA:I | grep -c " picker Subtitles"; }
 # Opens the Subtitles menu and waits until it is really open (its QA line appears).
 open_picker(){ local n0; n0="$(pickers)"
   key DPAD_UP; sleep 0.6; wait_qa controls true 3
+  # Right on the progress bar seeks; move up to the buttons row first.
+  for i in 1 2 3; do [ "$(qaf focus)" = progress ] || break; key DPAD_UP; sleep 0.5; done
   player_focus subs DPAD_RIGHT || note "INFO  focus: $(qa_line)"
   key DPAD_CENTER
   for i in $(seq 1 12); do [ "$(pickers)" -gt "$n0" ] && return 0; sleep 0.5; done; return 1; }
