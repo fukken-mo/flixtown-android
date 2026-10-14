@@ -37,7 +37,7 @@ PASS  [none:cached] no crash
 == api28-tv_720p · renewal API: probe · catalog: ok
 PASS  [probe:ok] form filled (username field holds only the username)
 PASS  [probe:ok] sign-in accepted, Home opened
-      catalog arrived 4 s after sign-in
+      catalog arrived 3 s after sign-in
 PASS  [probe:ok] startup refresh finished: updated
 PASS  [probe:ok] no 'taking longer than usual' message
 PASS  [probe:ok] Home shows titles
