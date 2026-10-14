@@ -91,4 +91,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ${{ matrix.out }}
           git commit -m "Requests flow check from TV emulator, API ${{ matrix.api }} ${{ matrix.profile }} (${GITHUB_SHA::7})" || exit 0
-          for i in 1 2 3; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*5)); done
+          for i in 1 2 3 4 5 6 7 8; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*3 + RANDOM % 7)); done
