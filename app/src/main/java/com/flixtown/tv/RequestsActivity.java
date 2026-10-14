@@ -130,6 +130,7 @@ public class RequestsActivity extends Activity {
     }
     private final Runnable debounced=()->startSearch(false);
     static final int COLUMNS=4,GRID_TOP_DP=16;
+    static final String SUBMITTED="Request submitted. Track its status in My Requests.";
     /** Text under a poster: title (16sp), year · type (14sp) and the request state (14sp). */
     static final int TEXT_DP=70;
     private int cardWidth,artWidth,artHeight;
@@ -469,7 +470,7 @@ public class RequestsActivity extends Activity {
                     if(BuildConfig.DEMO)Log.i("FlixTownQA","requests submit "+e.type+":"+e.id+" seasons="+seasonsText(seasons)+" ok="+r.ok+" error="+r.error);
                     if(r.ok){JSONObject req=r.body.optJSONObject("request");String st=req==null?"pending":req.optString("state","pending");
                         setBadge(st);e.state=st;refreshCard(e);note.setTextColor(0xFF6FCF97);
-                        note.setText((seasons==null?"Requested. ":"Requested "+seasonsText(seasons)+". ")+"You'll find it in My Requests; it is added once approved.");
+                        note.setText(SUBMITTED);
                         return;}
                     note.setTextColor(r.unavailable()?Ui.TEXT_2:0xFFF0A29F);note.setText(r.message);
                     if(r.error.equals("duplicate"))load();   // show what is already there

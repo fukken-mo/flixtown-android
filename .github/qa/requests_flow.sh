@@ -163,7 +163,7 @@ for i in $(seq 1 8); do dump; grep -q "A demo synopsis for Alpha Movie" "$OUT/ui
 check "details: title, synopsis, Requestable, Request button focused" 'text "Alpha Movie" && grep -q "A demo synopsis for Alpha Movie" "$OUT/ui.xml" && [ "$(focused)" = "Request" ]'
 shot 03-details-movie
 key DPAD_CENTER; sleep 2; dump
-check "Request: Pending approval, told where to find it" 'grep -q "Pending approval" "$OUT/ui.xml" && grep -q "My Requests" "$OUT/ui.xml" && qa | grep -q "submit movie:8100 seasons= ok=true"'
+check "Request: Pending approval, told where to find it" 'grep -q "Pending approval" "$OUT/ui.xml" && grep -q "Request submitted. Track its status in My Requests." "$OUT/ui.xml" && qa | grep -q "submit movie:8100 seasons= ok=true"'
 shot 04-requested
 key BACK; sleep 1
 check "Back closes details and returns to the same card" 'in_activity RequestsActivity && focused | grep -q "Alpha Movie"'
@@ -212,7 +212,7 @@ check "Down: Season 4 (the last season that can be requested)" 'focused | grep -
 key DPAD_DOWN; sleep 0.5
 check "Down from the last season: Request 1 season" '[ "$(focused)" = "Request 1 season" ]'
 key DPAD_CENTER; sleep 2; dump
-check "season request sent for S3 only, Pending approval" 'qa | grep -q "submit tv:8205 seasons=S3 ok=true" && grep -q "Requested S3" "$OUT/ui.xml"'
+check "season request sent for S3 only, Pending approval" 'qa | grep -q "submit tv:8205 seasons=S3 ok=true" && grep -q "Request submitted. Track its status in My Requests." "$OUT/ui.xml"'
 shot 07-season-requested
 key BACK; sleep 1; key DPAD_CENTER; sleep 2; key DPAD_CENTER; sleep 1; dump
 check "reopened picker: Season 3 now pending, only Season 4 selectable" 'grep -q "Season 3  ·  8 episodes   —   Pending approval" "$OUT/ui.xml" && focused | grep -q "Season 4"'
