@@ -1,0 +1,94 @@
+name: Production upgrade check (3.8.8)
+
+# The "upgrade" job of release-production.yml, run against the APK that production run 38622975721
+# already built and signed (FlixTown-PRODUCTION-signed-3.8.8-10028), so the tested file is exactly the
+# delivered one. Installs it over earlier production builds on an offline TV emulator. Build artifacts
+# only; nothing is signed, published or deployed here.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["feature/request-media"]
+    paths: [".github/workflows/upgrade-check.yml"]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.8-10028, path: new, run-id: 38622975721, github-token: "${{ github.token }}" }
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.6-10026, path: old-10026, run-id: 38071832546, github-token: "${{ github.token }}" }
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.5-10025, path: old-10025, run-id: 38069754237, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.4-10024, path: old-10024, run-id: 38035706205, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.3-10023, path: old-10023, run-id: 38000675003, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.2-10022, path: old-10022, run-id: 37747826133, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.1-10021, path: old-10021, run-id: 37703600713, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.0-10020, path: old-10020, run-id: 37422757283, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.7.1-10016, path: old-10016, run-id: 37385757309, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.7.0-10015, path: old-10015, run-id: 36939071160, github-token: "${{ github.token }}" }
+        continue-on-error: true
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Write upgrade test
+        run: |
+          cat > upgrade.sh <<'SH'
+          set -u; P=com.myflixtown.tv.native; NEW="$(ls new/*.apk)"; fail=0; mkdir -p shots
+          adb shell svc wifi disable; adb shell svc data disable; sleep 2
+          for OLD in old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
+            [ -f "$OLD" ] || continue; tag="$(basename "$OLD" .apk)"; tested=$((${tested:-0}+1))
+            adb uninstall $P >/dev/null 2>&1; adb logcat -c
+            adb install "$OLD" >/dev/null || { echo "FAIL  install $tag"; fail=1; continue; }
+            adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
+            adb shell screencap -p /sdcard/a.png; adb pull /sdcard/a.png "shots/$tag-before.png" >/dev/null
+            first="$(adb shell dumpsys package $P | grep -m1 firstInstallTime | tr -d '\r ')"
+            before="$(adb shell dumpsys package $P | grep -m1 versionCode | tr -d '\r')"
+            out="$(adb install -r "$NEW" 2>&1)"; echo "$out" | tail -1
+            echo "$out" | grep -q Success && echo "PASS  $tag -> new: installed over the existing app (same package and key)" || { echo "FAIL  $tag -> new: $out"; fail=1; continue; }
+            after="$(adb shell dumpsys package $P | grep -m1 versionCode | tr -d '\r')"
+            first2="$(adb shell dumpsys package $P | grep -m1 firstInstallTime | tr -d '\r ')"
+            echo "INFO  before: $before"; echo "INFO  after:  $after"
+            [ "$first" = "$first2" ] && echo "PASS  upgrade kept the install (and app data): $first2" || { echo "FAIL  reinstalled, not upgraded"; fail=1; }
+            adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
+            adb shell screencap -p /sdcard/b.png; adb pull /sdcard/b.png "shots/$tag-after.png" >/dev/null
+            adb shell dumpsys activity activities | grep -q "com.myflixtown.tv.native/com.flixtown.tv" && echo "PASS  new version opens after the upgrade" || { echo "FAIL  new version not in front"; fail=1; }
+            adb logcat -d | grep -q "FATAL EXCEPTION" && { echo "FAIL  crash"; adb logcat -d | grep -A12 "FATAL EXCEPTION" | head -30; fail=1; } || echo "PASS  no crash"
+          done
+          echo "INFO  earlier production builds tested: ${tested:-0}"
+          [ "${tested:-0}" -ge 1 ] || { echo "FAIL  no earlier production build was available to upgrade from"; fail=1; }
+          adb shell svc wifi enable; exit $fail
+          SH
+      - name: Upgrade on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash upgrade.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: upgrade-screens, path: shots/, retention-days: 14 }
