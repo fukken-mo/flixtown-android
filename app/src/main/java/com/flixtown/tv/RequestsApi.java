@@ -42,20 +42,20 @@ final class RequestsApi {
         boolean unavailable(){return !ok && message.equals(UNAVAILABLE);}
     }
 
-    static Reply search(Context c,String query,int page){return call(c,obj("action","search").put("query",query).put("page",page));}
-    static Reply details(Context c,String type,int id){return call(c,obj("action","details").put("type",type).put("id",id));}
-    static Reply history(Context c,int page){return call(c,obj("action","history").put("page",page));}
+    static Reply search(Context c,String query,int page){return call(c,"search",o->o.put("query",query).put("page",page));}
+    static Reply details(Context c,String type,int id){return call(c,"details",o->o.put("type",type).put("id",id));}
+    static Reply history(Context c,int page){return call(c,"history",o->o.put("page",page));}
     static Reply request(Context c,String type,int id,int[] seasons){
-        JSONObject b=obj("action","request").put("type",type).put("id",id);
-        try{if(seasons!=null&&seasons.length>0){JSONArray a=new JSONArray();for(int n:seasons)a.put(n);b.put("seasons",a);}}catch(Exception ignored){}
-        return call(c,b);
+        return call(c,"request",o->{o.put("type",type).put("id",id);
+            if(seasons!=null&&seasons.length>0){JSONArray a=new JSONArray();for(int n:seasons)a.put(n);o.put("seasons",a);}});
     }
     static void forget(){session=null;sessionUser=null;sessionUntil=0;}
 
-    private static JSONObject obj(String k,String v){try{return new JSONObject().put(k,v);}catch(Exception e){throw new IllegalStateException(e);}}
+    private interface Fill{void into(JSONObject o)throws Exception;}
     /** Runs off the main thread. Signs in when needed and once more if the session ended. */
-    private static Reply call(Context c,JSONObject body){
+    private static Reply call(Context c,String action,Fill fill){
         try{
+            JSONObject body=new JSONObject().put("action",action);fill.into(body);
             String[] account=AccountStore.read(c);
             if(account==null)return new Reply(401,new JSONObject().put("error","auth").put("message","Please sign in again."));
             if(session==null||System.currentTimeMillis()>sessionUntil||!account[0].equals(sessionUser)){Reply s=signIn(c,account);if(!s.ok)return s;}
