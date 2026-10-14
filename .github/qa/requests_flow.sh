@@ -156,8 +156,8 @@ for i in $(seq 1 8); do in_field && break; key DPAD_UP; done; close_kb
 check "Up from the first row returns to the search box" 'in_field'
 
 # ---------------- movie details and request ----------------
-go_card 0 "Alpha Movie"; key DPAD_CENTER; sleep 2
-dump
+go_card 0 "Alpha Movie"; key DPAD_CENTER; sleep 1.5
+for i in $(seq 1 8); do dump; grep -q "A demo synopsis for Alpha Movie" "$OUT/ui.xml" && break; sleep 1; done   # details load in the background
 check "details: title, synopsis, Requestable, Request button focused" 'text "Alpha Movie" && grep -q "A demo synopsis for Alpha Movie" "$OUT/ui.xml" && [ "$(focused)" = "Request" ]'
 shot 03-details-movie
 key DPAD_CENTER; sleep 2; dump
