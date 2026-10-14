@@ -97,7 +97,7 @@ go_card(){ local n=$1 s; for i in $(seq 1 8); do in_field && break; key DPAD_UP;
   for i in $(seq 1 $((n / s))); do key DPAD_DOWN; done
   for i in $(seq 1 $((n % s))); do key DPAD_RIGHT; done; sleep 0.8
   # When a title is given, make sure the move landed on it (the grid may still have been scrolling).
-  if [ -n "$2" ] && ! focused | grep -q -- "$2"; then sleep 1; go_card "$n"; fi; }
+  if [ -n "${2:-}" ] && ! focused | grep -q -- "$2"; then sleep 1; go_card "$n"; fi; }
 
 adb logcat -c; adb logcat -b crash -c 2>/dev/null || true
 launch --ez demo_reset true
@@ -229,7 +229,8 @@ check "service down: Requests are temporarily unavailable." 'grep -q "Requests a
 shot 09-unavailable
 key BACK; sleep 1.5; in_activity RequestsActivity && { key BACK; sleep 1.5; }
 check "Back leaves Requests for Home" 'in_activity HomeActivity'
-menu_to "Movies"; key DPAD_CENTER; sleep 3; dump
+menu_to "Movies"; key DPAD_CENTER; sleep 2
+for i in $(seq 1 8); do dump; grep -q "All Movies" "$OUT/ui.xml" && [ "$(grep -c "content-desc=\"[A-Z][a-z]* [A-Z]" "$OUT/ui.xml")" -ge 1 ] && break; sleep 1; done
 check "browsing still works while Requests is down (Movies grid)" 'grep -q "All Movies" "$OUT/ui.xml" && [ "$(grep -c "content-desc=\"[A-Z][a-z]* [A-Z]" "$OUT/ui.xml")" -ge 1 ]'
 adb shell "run-as $PKG rm -f files/demo_account.json"
 

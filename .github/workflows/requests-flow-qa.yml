@@ -84,6 +84,7 @@ jobs:
         run: |
           cat ${{ matrix.out }}/report.txt || true
           ! grep -h '^FAIL' ${{ matrix.out }}/report.txt
+          grep -q '^requests flow: [0-9]* passed, 0 failed' ${{ matrix.out }}/report.txt   # the run reached its end
       - name: Commit screenshots
         if: always()
         run: |
