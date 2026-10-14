@@ -13,3 +13,10 @@ config/config.php (next to base_url / api_key / actions_enabled). Do not commit 
       'customer_open_limit' => 10,            // requests a customer may have waiting for approval
       'customer_allow_expired' => false,      // expired customers cannot request
       'customer_allow_rerequest_declined' => false,   // a declined title/season is not offered again
+      // Flix Town catalog check (refuses movies / complete seasons already in Flix Town). By default it
+      // reads each customer's own line through the Flix Town adapter address + /player_api.php.
+      // Only if the player API lives elsewhere:
+      // 'customer_player_api_url' => 'https://<flix town server>',
+      // Only if the Flix Town adapter's user records carry no line password: a line with the full catalog.
+      // 'customer_catalog_username' => '',
+      // 'customer_catalog_password' => '',

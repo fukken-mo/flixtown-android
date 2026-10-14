@@ -187,6 +187,13 @@ key BACK; sleep 2
 check "Back from the title returns to Requests" 'in_activity RequestsActivity'
 key BACK; sleep 1
 
+# In Flix Town according to the server's catalog check, though the TV's own catalog copy is stale
+go_card 7 "Alpha Title 7"; key DPAD_CENTER; sleep 1.5
+for i in $(seq 1 8); do dump; grep -q "A demo synopsis for Alpha Title 7" "$OUT/ui.xml" && break; sleep 1; done
+check "server catalog check: In Flix Town shown, no Request button, explained" 'grep -q "In Flix Town" "$OUT/ui.xml" && grep -q "This is already in Flix Town." "$OUT/ui.xml" && ! text "Request\""'
+shot 05b-in-flix-town-server
+key BACK; sleep 1
+
 # ---------------- series: season picker ----------------
 go_card 5 "Alpha Show"; key DPAD_CENTER; sleep 2; dump
 check "series details: Choose seasons" '[ "$(focused)" = "Choose seasons" ]'

@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS tv_media_requests (
   last_media_status TINYINT UNSIGNED NOT NULL DEFAULT 1,
   last_checked_ts INT UNSIGNED NOT NULL DEFAULT 0,
   UNIQUE KEY uq_tv_media_requests_seerr (seerr_request_id),
-  INDEX idx_tv_media_requests_user (username, id)
+  INDEX idx_tv_media_requests_user (username, id),
+  INDEX idx_tv_media_requests_media (media_type, tmdb_id, last_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS tv_request_rate (

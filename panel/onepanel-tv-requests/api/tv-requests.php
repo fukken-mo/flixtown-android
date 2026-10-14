@@ -56,7 +56,7 @@ try {
     $page = $in['page'] ?? 1;
     if (!is_int($page) || $page < 1 || $page > 10) tvq_err(400, 'page', 'Invalid page.');
     if (!tvq_rate($pdo, 'search:' . $username, 40, 60) || !tvq_rate($pdo, 'searchh:' . $username, 400, 3600)) tvq_err(429, 'busy', 'Too many searches. Please wait a moment.');
-    tvq_out(['ok' => true] + tvq_search($query, $page));
+    tvq_out(['ok' => true] + tvq_search($query, $page, $username));
   }
 
   if ($action === 'details' || $action === 'request') {
@@ -65,7 +65,7 @@ try {
     if (!is_int($id) || $id < 1 || $id > 99999999) tvq_err(400, 'id', 'Invalid title.');
     if ($action === 'details') {
       if (!tvq_rate($pdo, 'details:' . $username, 60, 60)) tvq_err(429, 'busy', 'Please wait a moment.');
-      tvq_out(['ok' => true, 'details' => tvq_details($type, $id)]);
+      tvq_out(['ok' => true, 'details' => tvq_details($type, $id, $username)]);
     }
     $seasons = $in['seasons'] ?? [];
     if (!is_array($seasons)) tvq_err(400, 'season', 'Invalid seasons.');

@@ -2,9 +2,15 @@
 /*
  * End-to-end test of the customer Requests API: the real api/tv-requests.php and
  * includes/tv_requests.php, plus OnePanel's own includes/seerr.php (fixture copy, unmodified),
- * served by `php -S` with several workers, against tests/fake_bootstrap.php (SQLite, fake Flix Town,
- * fake Seerr following the verified Seerr permission and duplicate rules). Never contacts a real
- * Seerr. Run: php panel/onepanel-tv-requests/tests/tv_requests_test.php
+ * served by `php -S` with several workers, against tests/fake_bootstrap.php (a real MySQL database,
+ * fake Flix Town adapter and catalog, fake Seerr following the verified Seerr permission and
+ * duplicate rules). Never contacts a real Seerr or Flix Town server.
+ *
+ * Needs a MySQL 8 (or MariaDB) server and an account that may create databases:
+ *   TVQ_MYSQL_HOST=127.0.0.1 TVQ_MYSQL_PORT=3306 TVQ_MYSQL_USER=root TVQ_MYSQL_PASS=... \
+ *   php panel/onepanel-tv-requests/tests/tv_requests_test.php
+ * A fresh database tvq_test_<pid> is created from sql/migrations/2026-10-14-tv-requests.sql as
+ * shipped, and dropped at the end when every check passed.
  */
 $root = dirname(__DIR__);
 $work = sys_get_temp_dir() . '/tvq-test-' . getmypid();
@@ -13,17 +19,21 @@ copy("$root/api/tv-requests.php", "$work/api/tv-requests.php");
 copy("$root/includes/tv_requests.php", "$work/includes/tv_requests.php");
 copy(__DIR__ . '/fixtures/seerr.php', "$work/includes/seerr.php");
 copy(__DIR__ . '/fake_bootstrap.php', "$work/includes/bootstrap.php");
-$db = "$work/t.sqlite"; $state = "$work/state.json"; $storage = "$work/storage"; $log = "$work/server.log";
-$env = ['TVQ_DB' => $db, 'TVQ_STATE' => $state, 'TVQ_STORAGE' => $storage, 'PHP_CLI_SERVER_WORKERS' => '4'];
+$state = "$work/state.json"; $storage = "$work/storage"; $log = "$work/server.log";
+$my = ['host' => getenv('TVQ_MYSQL_HOST') ?: '127.0.0.1', 'port' => getenv('TVQ_MYSQL_PORT') ?: '3306', 'user' => getenv('TVQ_MYSQL_USER') ?: 'root', 'pass' => (string)getenv('TVQ_MYSQL_PASS')];
+$dbName = 'tvq_test_' . getmypid();
+$env = ['TVQ_STATE' => $state, 'TVQ_STORAGE' => $storage, 'PHP_CLI_SERVER_WORKERS' => '6', 'TVQ_MYSQL_HOST' => $my['host'], 'TVQ_MYSQL_PORT' => $my['port'],
+  'TVQ_MYSQL_USER' => $my['user'], 'TVQ_MYSQL_PASS' => $my['pass'], 'TVQ_MYSQL_DB' => $dbName];
 foreach ($env as $k => $v) putenv("$k=$v");
 
-$pdo = new PDO("sqlite:$db", null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-$pdo->exec('PRAGMA journal_mode=WAL');
-$sql = file_get_contents("$root/sql/migrations/2026-10-14-tv-requests.sql");
-$sql = preg_replace(['/\) ENGINE=[^;]*;/', '/^\s*(UNIQUE KEY|INDEX) [^\n]*\n/m', '/--[^\n]*/', '/ UNSIGNED/', '/BIGINT AUTO_INCREMENT PRIMARY KEY/', '/,\s*\)/'],
-                    [');', '', '', '', 'INTEGER PRIMARY KEY AUTOINCREMENT', ')'], $sql);
-$pdo->exec($sql);
-$pdo->exec('CREATE UNIQUE INDEX uq_seerr ON tv_media_requests(seerr_request_id)');
+$opts = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
+$admin = new PDO("mysql:host={$my['host']};port={$my['port']};charset=utf8mb4", $my['user'], $my['pass'], $opts);
+$admin->exec("DROP DATABASE IF EXISTS `$dbName`"); $admin->exec("CREATE DATABASE `$dbName` CHARACTER SET utf8mb4");
+$pdo = new PDO("mysql:host={$my['host']};port={$my['port']};dbname=$dbName;charset=utf8mb4", $my['user'], $my['pass'], $opts);
+// The migration exactly as shipped, statement by statement (as the mysql client would run it).
+$migration = file_get_contents("$root/sql/migrations/2026-10-14-tv-requests.sql");
+foreach (array_filter(array_map('trim', explode(';', preg_replace('/^--[^\n]*$/m', '', $migration)))) as $stmt) $pdo->exec($stmt);
+$migrationTwice = true; try { foreach (array_filter(array_map('trim', explode(';', preg_replace('/^--[^\n]*$/m', '', $migration)))) as $stmt) $pdo->exec($stmt); } catch (Throwable $e) { $migrationTwice = false; }
 
 $future = gmdate('Y-m-d\TH:i:s', time() + 86400 * 30); $past = gmdate('Y-m-d\TH:i:s', time() - 86400);
 $seasons = function ($n) { $o = [['seasonNumber' => 0, 'name' => 'Specials', 'episodeCount' => 3]];
@@ -33,6 +43,10 @@ file_put_contents($state, json_encode([
     'alice' => ['username' => 'alice', 'password' => 'alice-pass', 'expires_at' => $future, 'enabled' => true],
     'bob' => ['username' => 'bob', 'password' => 'bob-pass', 'expires_at' => null, 'enabled' => true],
     'carol' => ['username' => 'carol', 'password' => 'carol-pass', 'expires_at' => $future, 'enabled' => true],
+    'dave' => ['username' => 'dave', 'password' => 'dave-pass', 'expires_at' => $future, 'enabled' => true],
+    'erin' => ['username' => 'erin', 'password' => 'erin-pass', 'expires_at' => $future, 'enabled' => true],
+    'gina' => ['username' => 'gina', 'password' => 'gina-pass', 'expires_at' => $future, 'enabled' => true],
+    'hank' => ['username' => 'hank', 'password' => 'hank-pass', 'expires_at' => $future, 'enabled' => true],
     'old' => ['username' => 'old', 'password' => 'old-pass', 'expires_at' => $past, 'enabled' => true],
   ],
   'users' => ['1' => ['permissions' => 2], '7' => ['permissions' => 32], '8' => ['permissions' => 32 | 128], '9' => ['permissions' => 2], '10' => ['permissions' => 64],
@@ -46,7 +60,35 @@ file_put_contents($state, json_encode([
     ['mediaType' => 'movie', 'id' => 106, 'title' => 'Race Movie', 'releaseDate' => '2022-01-01'],
     ['mediaType' => 'tv', 'id' => 201, 'name' => 'Alpha Show', 'firstAirDate' => '2015-02-03', 'posterPath' => '/show.jpg', 'seasons' => $seasons(4)],
     ['mediaType' => 'tv', 'id' => 203, 'name' => 'Race Show', 'firstAirDate' => '2012-01-01', 'seasons' => $seasons(5)],
+    ['mediaType' => 'movie', 'id' => 107, 'title' => 'Flix Movie', 'releaseDate' => '2020-03-01'],
+    ['mediaType' => 'movie', 'id' => 108, 'title' => 'Mistagged Movie', 'releaseDate' => '2022-03-01'],
+    ['mediaType' => 'movie', 'id' => 109, 'title' => 'Closed Movie', 'releaseDate' => '2019-03-01'],
+    ['mediaType' => 'movie', 'id' => 110, 'title' => 'Café 🎬 Night', 'releaseDate' => '2018-03-01'],
+    ['mediaType' => 'movie', 'id' => 111, 'title' => 'Guarded Movie', 'releaseDate' => '2017-03-01'],
+    ['mediaType' => 'movie', 'id' => 112, 'title' => 'Two Servers Movie', 'releaseDate' => '2016-03-01'],
+    ['mediaType' => 'movie', 'id' => 113, 'title' => 'Locked Movie', 'releaseDate' => '2015-03-01'],
+    ['mediaType' => 'tv', 'id' => 204, 'name' => 'Flix Show', 'firstAirDate' => '2016-05-01', 'seasons' => $seasons(3)],
+    ['mediaType' => 'tv', 'id' => 205, 'name' => 'Flat Show', 'firstAirDate' => '2011-05-01', 'seasons' => $seasons(2)],
     ['mediaType' => 'tv', 'id' => 202, 'name' => 'Complete Show', 'firstAirDate' => '2010-01-01', 'seasons' => $seasons(2)],
+  ],
+  // The customers' Flix Town catalog (player_api.php): what the TV app would list.
+  'flix_catalog' => [
+    'vod' => [
+      ['stream_id' => 5001, 'name' => 'Flix Movie (2020)', 'tmdb' => '107', 'year' => '2020'],
+      ['stream_id' => 5002, 'name' => 'Some Old Film', 'tmdb' => '108', 'year' => '1950'],   // wrong TMDB tag
+      ['stream_id' => 5003, 'name' => 'Untagged Film', 'tmdb' => ''],
+    ],
+    'series' => [
+      ['series_id' => 9001, 'name' => 'Flix Show', 'tmdb' => '204', 'releaseDate' => '2016-05-01'],
+      ['series_id' => 9002, 'name' => 'Flat Show (2011)', 'tmdb_id' => '205'],
+    ],
+    'info' => [
+      '9001' => ['episodes' => [
+        '1' => array_map(fn($e) => ['id' => "1$e", 'episode_num' => $e, 'season' => 1], range(1, 8)),   // whole season
+        '2' => array_map(fn($e) => ['id' => "2$e", 'episode_num' => $e, 'season' => 2], range(1, 3)),   // 3 of 8
+      ]],
+      '9002' => ['episodes' => array_map(fn($e) => ['id' => "9$e", 'episode_num' => $e, 'season' => 1], range(1, 8))],   // flat list
+    ],
   ],
   'media' => [
     'movie:102' => ['status' => 5], 'movie:103' => ['status' => 2], 'movie:104' => ['status' => 1], 'movie:105' => ['status' => 3],
@@ -84,6 +126,20 @@ function setst(callable $f): void { $h = fopen(getenv('TVQ_STATE'), 'c+'); flock
   $s = $f($s); ftruncate($h, 0); rewind($h); fwrite($h, json_encode($s)); flock($h, LOCK_UN); fclose($h); }
 function login($u, $p) { return call(['action' => 'session', 'username' => $u, 'password' => $p])['j']['session'] ?? ''; }
 $unavailable = 'Requests are temporarily unavailable.';
+
+// ---------------- MySQL schema (as created by the shipped migration) ----------------
+$serverVersion = $pdo->query('SELECT VERSION()')->fetchColumn();
+echo "MySQL server: $serverVersion, isolation " . $pdo->query('SELECT @@transaction_isolation')->fetchColumn() . "\n";
+$cols = []; foreach ($pdo->query("SELECT TABLE_NAME t, COLUMN_NAME c, COLUMN_TYPE ty, IS_NULLABLE n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$dbName'") as $r) $cols[$r['t'] . '.' . $r['c']] = $r['ty'] . ($r['n'] === 'YES' ? ' null' : '');
+$tables = []; foreach ($pdo->query("SELECT TABLE_NAME t, ENGINE e, TABLE_COLLATION c FROM information_schema.TABLES WHERE TABLE_SCHEMA='$dbName'") as $r) $tables[$r['t']] = $r['e'] . ' ' . $r['c'];
+$idx = []; foreach ($pdo->query("SELECT TABLE_NAME t, INDEX_NAME i, NON_UNIQUE nu, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) cols FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='$dbName' GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE") as $r) $idx[$r['t'] . '.' . $r['i']] = ($r['nu'] ? '' : 'unique ') . $r['cols'];
+check('schema: migration runs on MySQL as shipped, and again without error (IF NOT EXISTS)', $migrationTwice && count($tables) === 2);
+check('schema: both tables InnoDB, utf8mb4', ($tables['tv_media_requests'] ?? '') !== '' && !array_filter($tables, fn($v) => !preg_match('/^InnoDB utf8mb4_/', $v)), json_encode($tables));
+check('schema: ownership columns and types', ($cols['tv_media_requests.username'] ?? '') === 'varchar(120)' && ($cols['tv_media_requests.seerr_request_id'] ?? '') === 'int unsigned'
+  && ($cols['tv_media_requests.tmdb_id'] ?? '') === 'int unsigned' && ($cols['tv_media_requests.seasons'] ?? '') === 'varchar(255)' && ($cols['tv_media_requests.last_status'] ?? '') === 'tinyint unsigned', json_encode($cols));
+check('schema: one owner per Seerr request (unique), lookups indexed', ($idx['tv_media_requests.uq_tv_media_requests_seerr'] ?? '') === 'unique seerr_request_id'
+  && ($idx['tv_media_requests.idx_tv_media_requests_user'] ?? '') === 'username,id' && ($idx['tv_media_requests.idx_tv_media_requests_media'] ?? '') === 'media_type,tmdb_id,last_status'
+  && ($idx['tv_request_rate.PRIMARY'] ?? '') === 'unique k', json_encode($idx));
 
 // ---------------- authentication ----------------
 check('GET refused', call([], 'GET')['code'] === 405);
@@ -238,6 +294,92 @@ $server = serve(); for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++
 $A = login('alice', 'alice-pass'); $B = login('bob', 'bob-pass');
 
 $pdo->exec('DELETE FROM tv_request_rate');
+// ---------------- Flix Town catalog, checked on the server ----------------
+$D = login('dave', 'dave-pass'); $E = login('erin', 'erin-pass'); $G = login('gina', 'gina-pass'); $H = login('hank', 'hank-pass');
+$posts0 = count(st()['posts']);
+$m = call(['action' => 'details', 'session' => $D, 'type' => 'movie', 'id' => 107])['j']['details'] ?? [];
+check('catalog: a movie already in the customer\'s Flix Town is "local" (In Flix Town) and cannot be requested', ($m['state'] ?? '') === 'local' && $m['can_request'] === false && $m['flix_checked'] === true);
+$sr = []; foreach (call(['action' => 'search', 'session' => $D, 'query' => 'movie', 'page' => 1])['j']['results'] ?? [] as $x) $sr[$x['id']] = $x['state'];
+check('catalog: search shows that movie as In Flix Town, others unchanged', ($sr[107] ?? '') === 'local' && ($sr[108] ?? '') === 'requestable');
+$r = call(['action' => 'request', 'session' => $D, 'type' => 'movie', 'id' => 107]);
+check('catalog: a direct request for a movie already in Flix Town is refused (409), nothing sent to Seerr', $r['code'] === 409 && ($r['j']['message'] ?? '') === 'This is already in Flix Town.' && count(st()['posts']) === $posts0);
+$r = call(['action' => 'request', 'session' => $D, 'type' => 'movie', 'id' => 108]);
+check('catalog: a Flix entry with this TMDB id but a far-off year (mis-tagged) does not block', $r['code'] === 200);
+$t = call(['action' => 'details', 'session' => $D, 'type' => 'tv', 'id' => 204])['j']['details'] ?? []; $ss = []; foreach ($t['seasons'] ?? [] as $x) $ss[$x['number']] = $x['state'];
+check('catalog: a season with every episode in Flix Town is In Flix Town; a partly present season stays requestable', $ss === [1 => 'local', 2 => 'requestable', 3 => 'requestable'] && $t['state'] === 'partial' && $t['can_request'] === true, json_encode($ss));
+$p0 = count(st()['posts']);
+check('catalog: requests for a season already in Flix Town are refused even when the app sends them (409)',
+  call(['action' => 'request', 'session' => $D, 'type' => 'tv', 'id' => 204, 'seasons' => [1]])['code'] === 409
+  && call(['action' => 'request', 'session' => $D, 'type' => 'tv', 'id' => 204, 'seasons' => [1, 3]])['code'] === 409 && count(st()['posts']) === $p0);
+$r = call(['action' => 'request', 'session' => $D, 'type' => 'tv', 'id' => 204, 'seasons' => [3]]);
+check('catalog: the missing season goes through on its own', $r['code'] === 200 && end(st()['posts'])['seasons'] === [3]);
+$f = call(['action' => 'details', 'session' => $D, 'type' => 'tv', 'id' => 205])['j']['details'] ?? []; $fs = []; foreach ($f['seasons'] ?? [] as $x) $fs[$x['number']] = $x['state'];
+check('catalog: servers that list episodes flat (with "season") are read too', $fs === [1 => 'local', 2 => 'requestable'], json_encode($fs));
+check('catalog: read with each customer\'s own Flix Town line', !array_filter(st()['player_calls'], fn($c) => !$c['own_password']) && count(st()['player_calls']) > 0);
+$cache = ''; foreach (glob("$storage/tv-requests-catalog/*") as $file) $cache .= file_get_contents($file);
+check('catalog: the cache holds ids and years only, no passwords or usernames', $cache !== '' && !preg_match('/-pass|dave|erin/', $cache));
+setst(function ($s) { $s['player_down'] = true; return $s; });
+foreach (glob("$storage/tv-requests-catalog/*") as $file) unlink($file);   // nothing cached: the catalog must be read
+$p0 = count(st()['posts']);
+$d1 = call(['action' => 'details', 'session' => $E, 'type' => 'movie', 'id' => 109]);
+$r = call(['action' => 'request', 'session' => $E, 'type' => 'movie', 'id' => 109]);
+check('catalog unreadable: details still shown (marked unchecked), the request is refused (503), nothing sent', $d1['code'] === 200 && $d1['j']['details']['flix_checked'] === false
+  && $r['code'] === 503 && $r['j']['message'] === $unavailable && count(st()['posts']) === $p0);
+setst(function ($s) { unset($s['player_down']); return $s; });
+
+// ---------------- MySQL: ownership records ----------------
+$r = call(['action' => 'request', 'session' => $E, 'type' => 'movie', 'id' => 110]);
+$hist = call(['action' => 'history', 'session' => $E, 'page' => 1])['j']['requests'] ?? [];
+check('MySQL utf8mb4: a title with accents and emoji is stored and returned exactly', $r['code'] === 200 && in_array('Café 🎬 Night', array_column($hist, 'title'), true));
+$row = $pdo->query("SELECT username, media_type, seasons, last_status FROM tv_media_requests WHERE tmdb_id=204 AND media_type='tv'")->fetchAll();
+check('ownership row: customer, type, seasons and Pending status recorded', $row === [['username' => 'dave', 'media_type' => 'tv', 'seasons' => '3', 'last_status' => 1]], json_encode($row));
+$dupOk = false; try { $pdo->exec("INSERT INTO tv_media_requests(username,seerr_request_id,media_type,tmdb_id,created_ts) SELECT 'zed', seerr_request_id, 'movie', 1, 1 FROM tv_media_requests LIMIT 1"); } catch (PDOException $e) { $dupOk = $e->getCode() === '23000'; }
+check('MySQL refuses a second owner for one Seerr request (unique key, SQLSTATE 23000)', $dupOk);
+$pdo->exec("INSERT INTO tv_media_requests(username,seerr_request_id,media_type,tmdb_id,created_ts,last_status) VALUES('zed',950,'movie',111," . time() . ",1)");
+$p0 = count(st()['posts']); $r = call(['action' => 'request', 'session' => $E, 'type' => 'movie', 'id' => 111]);
+check('own records: a pending request recorded in OnePanel blocks a duplicate even if Seerr has not caught up', $r['code'] === 409 && count(st()['posts']) === $p0);
+$pdo->exec('DELETE FROM tv_request_rate');
+
+// ---------------- MySQL: duplicates across two web servers sharing the database ----------------
+$port2 = $port + 1; $storage2 = "$work/storage-2";
+$server2 = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port2", '-t', $work], [1 => ['file', '/dev/null', 'w'], 2 => ['file', $log, 'a']], $p2, null, ['TVQ_STORAGE' => $storage2] + $env);
+for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port2); $i++) usleep(100000);
+setst(function ($s) { $s['slow_post'] = true; return $s; });
+$mh = curl_multi_init(); $hs = [];
+foreach ([[$port, $D], [$port2, $E], [$port, $G], [$port2, $H], [$port2, $D], [$port, $E], [$port2, $G], [$port, $H]] as [$pt, $sess]) {
+  $ch = curl_init("http://127.0.0.1:$pt/api/tv-requests.php");
+  curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => 60, CURLOPT_POSTFIELDS => json_encode(['action' => 'request', 'session' => $sess, 'type' => 'movie', 'id' => 112]), CURLOPT_HTTPHEADER => ['Content-Type: application/json']]);
+  curl_multi_add_handle($mh, $ch); $hs[] = $ch; }
+do { curl_multi_exec($mh, $run); curl_multi_select($mh, 0.2); } while ($run);
+$codes = array_map(fn($h) => curl_getinfo($h, CURLINFO_RESPONSE_CODE), $hs); sort($codes);
+setst(function ($s) { unset($s['slow_post']); return $s; });
+$owners = (int)$pdo->query('SELECT COUNT(*) FROM tv_media_requests WHERE tmdb_id=112')->fetchColumn();
+check('two web servers, four customers, eight simultaneous submissions of one movie: one Seerr request, one owner row (' . implode(',', $codes) . ')',
+  count(array_filter(st()['posts'], fn($p) => $p['key'] === 'movie:112')) === 1 && $owners === 1 && $codes[0] === 200 && $codes[1] === 409 && $codes[7] === 409);
+proc_terminate($server2);
+// A submission that cannot get the title lock within 15 s gives up politely (429), sending nothing.
+$hold = 'tvq:' . substr(hash('sha256', 'title:movie:113'), 0, 40);
+$admin->query("SELECT GET_LOCK('$hold', 0)")->fetchColumn();
+$p0 = count(st()['posts']); $t0 = microtime(true);
+$r = call(['action' => 'request', 'session' => $G, 'type' => 'movie', 'id' => 113]);
+$admin->query("SELECT RELEASE_LOCK('$hold')")->fetchColumn();
+check('MySQL title lock held elsewhere: waits about 15 s, then 429 "try again", nothing sent', $r['code'] === 429 && ($r['j']['error'] ?? '') === 'busy' && count(st()['posts']) === $p0 && microtime(true) - $t0 >= 14);
+check('lock released: the same submission then goes through', call(['action' => 'request', 'session' => $G, 'type' => 'movie', 'id' => 113])['code'] === 200);
+
+// ---------------- MySQL: rate limiting under concurrency ----------------
+$pdo->exec('DELETE FROM tv_request_rate');
+$workers = [];
+for ($w = 0; $w < 8; $w++) { $proc = proc_open([PHP_BINARY, __DIR__ . '/rate_worker.php', $work, 'race-key', '50', '60', '20'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp, null, $env); $workers[] = [$proc, $pp]; }
+$allowed = 0; $errors = '';
+foreach ($workers as [$proc, $pp]) { $allowed += (int)stream_get_contents($pp[1]); $errors .= stream_get_contents($pp[2]); fclose($pp[1]); fclose($pp[2]); if (proc_close($proc) !== 0) $errors .= 'worker failed;'; }
+$row = $pdo->query("SELECT hits FROM tv_request_rate WHERE k='race-key'")->fetchColumn();
+check("rate limit under 8 parallel processes x 20 hits (limit 50): exactly 50 allowed, all 160 counted, no deadlock ($allowed allowed)", $allowed === 50 && (int)$row === 160 && $errors === '', substr($errors, 0, 200));
+$pdo->exec("UPDATE tv_request_rate SET window_start=window_start-61 WHERE k='race-key'");
+$one = proc_open([PHP_BINARY, __DIR__ . '/rate_worker.php', $work, 'race-key', '50', '60', '1'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp, null, $env);
+$again = (int)stream_get_contents($pp[1]); proc_close($one);
+check('rate limit: after the window passes the count starts again at 1', $again === 1 && (int)$pdo->query("SELECT hits FROM tv_request_rate WHERE k='race-key'")->fetchColumn() === 1);
+
+$pdo->exec('DELETE FROM tv_request_rate');
 // ---------------- failures and limits ----------------
 foreach (['down' => 'Seerr down', 'timeout' => 'Seerr timeout', '500' => 'Seerr 500', 'malformed' => 'malformed Seerr answer'] as $mode => $label) {
   setst(function ($s) use ($mode) { $s['seerr_mode'] = $mode; return $s; });
@@ -269,6 +411,6 @@ check('no API key, Flix token, password, Seerr user or email in any answer', !pr
 check('no API key, token or password in the server log', !preg_match('/SEERR-API-KEY|FLIX-ADMIN-TOKEN|alice-pass|bob-pass/', $logText));
 
 proc_terminate($server);
-if (!$fail) system('rm -rf ' . escapeshellarg($work)); else echo "kept $work\n";
+if (!$fail) { system('rm -rf ' . escapeshellarg($work)); $pdo = null; $admin->exec("DROP DATABASE `$dbName`"); } else echo "kept $work and database $dbName\n";
 echo "\nTV requests API: $pass passed, $fail failed\n";
 exit($fail ? 1 : 0);

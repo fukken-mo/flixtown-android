@@ -1,7 +1,8 @@
 <?php
 /*
- * Test stand-in for OnePanel's includes/bootstrap.php: SQLite, a fake Flix Town adapter and a fake
- * Seerr that follows the verified Seerr rules (server/middleware/auth.ts, entity/MediaRequest.ts):
+ * Test stand-in for OnePanel's includes/bootstrap.php: a real MySQL database opened exactly as
+ * OnePanel opens it (same DSN form and PDO options), a fake Flix Town adapter and player API
+ * (catalog), and a fake Seerr that follows the verified Seerr rules (server/middleware/auth.ts, entity/MediaRequest.ts):
  * an API-key call acts as user 1 unless X-API-User names another user; a request is approved at
  * once when the acting user has ADMIN/MANAGE_REQUESTS/AUTO_APPROVE*, otherwise Pending.
  * All state lives in one JSON file (TVQ_STATE) shared by the test and the php -S workers.
@@ -17,8 +18,13 @@ $config = [
   ],
 ];
 date_default_timezone_set('America/Denver');
-$pdo = new PDO('sqlite:' . getenv('TVQ_DB'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-$pdo->exec('PRAGMA busy_timeout=8000');
+// OnePanel includes/bootstrap.php: mysql:host=..;dbname=..;charset=utf8mb4 with these options.
+$pdo = new PDO(sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', getenv('TVQ_MYSQL_HOST'), getenv('TVQ_MYSQL_PORT'), getenv('TVQ_MYSQL_DB'), 'utf8mb4'),
+  getenv('TVQ_MYSQL_USER'), getenv('TVQ_MYSQL_PASS'), [
+  PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+  PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+  PDO::ATTR_EMULATE_PREPARES => false,
+]);
 function onepanel_storage_dir(): string { $d = getenv('TVQ_STORAGE'); if (!is_dir($d)) @mkdir($d, 0777, true); return $d; }
 
 function tvq_test_state(?callable $change = null): array {
@@ -35,6 +41,26 @@ function flix_api_request(string $method, string $path, ?array $payload = null):
   if (!$u) return ['ok' => false, 'status' => 404, 'data' => ['detail' => 'not found'], 'error' => 'not found'];
   return ['ok' => true, 'status' => 200, 'data' => ['success' => true, 'user' => $u], 'error' => ''];
 }
+
+/**
+ * The fake Flix Town player API (catalog). Answers get_vod_streams / get_series / get_series_info
+ * for the line whose password matches the adapter's record; records each call without the password.
+ */
+$GLOBALS['tvq_player_http'] = function (array $q) {
+  $out = null;
+  tvq_test_state(function ($s) use ($q, &$out) {
+    $u = $s['flix'][$q['username']] ?? null;
+    $okLine = $u && ($u['password'] ?? null) === $q['password'] || (($s['catalog_line'] ?? null) === [$q['username'], $q['password']]);
+    $s['player_calls'][] = ['action' => $q['action'] ?? '', 'username' => $q['username'], 'own_password' => (bool)$okLine, 'series_id' => $q['series_id'] ?? null];
+    if (!empty($s['player_down']) || !$okLine) return $s;   // null = unreadable / refused
+    $c = $s['flix_catalog'] ?? [];
+    if ($q['action'] === 'get_vod_streams') $out = $c['vod'] ?? [];
+    elseif ($q['action'] === 'get_series') $out = $c['series'] ?? [];
+    elseif ($q['action'] === 'get_series_info') $out = $c['info'][(string)$q['series_id']] ?? ['episodes' => []];
+    return $s;
+  });
+  return $out;
+};
 
 /** The fake Seerr. Delay/outage/malformed modes come from the state file. */
 $GLOBALS['tvq_seerr_http'] = function (string $method, string $path, array $query, ?array $body, int $asUser) {

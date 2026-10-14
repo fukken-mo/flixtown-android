@@ -19,6 +19,14 @@
  *
  * Ownership: OnePanel records which Flix Town customer made each Seerr request
  * (tv_media_requests); a customer's history only ever reads their own rows.
+ *
+ * Flix catalog: before a request is sent, the customer's own Flix Town line is asked for its
+ * catalog (player_api.php get_vod_streams / get_series / get_series_info, the same lists the TV
+ * app shows). A movie already there, or a season whose episodes are all there, is refused here,
+ * whatever the app sent. If the catalog cannot be read, the request is refused (fails closed).
+ *
+ * Database: MySQL/MariaDB (OnePanel's own). Duplicate protection uses MySQL named locks
+ * (GET_LOCK), which hold across PHP workers and web servers sharing the database.
  */
 
 if (!function_exists('tvq_config')) {
@@ -62,6 +70,10 @@ function tvq_config(): array {
     'open_limit' => max(1, (int)($raw['customer_open_limit'] ?? 10)),
     'allow_expired' => ($raw['customer_allow_expired'] ?? false) === true,
     'rerequest_declined' => ($raw['customer_allow_rerequest_declined'] ?? false) === true,
+    // Flix Town player API (catalog check). Defaults to the Flix Town adapter address.
+    'player_url' => rtrim((string)($raw['customer_player_api_url'] ?? ($config['services']['flix_town']['base_url'] ?? '')), '/'),
+    // Optional line used for the catalog check when the Flix Town adapter gives no line password.
+    'catalog_line' => [(string)($raw['customer_catalog_username'] ?? ''), (string)($raw['customer_catalog_password'] ?? '')],
   ];
 }
 /** '' when the customer API may run, else the (log-only) reason. */
@@ -96,27 +108,30 @@ function tvq_session_user($token, ?int $now = null): ?string {
 /* ---------------- rate limits and locks ---------------- */
 
 function tvq_rate(PDO $pdo, string $key, int $max, int $window): bool {
-  // Safe when several requests count the same key at once: insert-or-increment, never select-then-insert.
-  $now = time(); $key = substr($key, 0, 120);
-  $pdo->prepare('DELETE FROM tv_request_rate WHERE k=? AND window_start<=?')->execute([$key, $now - $window]);
-  try { $pdo->prepare('INSERT INTO tv_request_rate(k,window_start,hits) VALUES(?,?,1)')->execute([$key, $now]); return true; }
-  catch (PDOException $e) { /* the key exists: count this hit */ }
-  $pdo->prepare('UPDATE tv_request_rate SET hits=hits+1 WHERE k=?')->execute([$key]);
+  // One atomic MySQL statement per hit (no select-then-insert, no gap-lock deadlocks): a new key
+  // starts at 1, an expired window restarts at 1, otherwise the count goes up by one.
+  $now = time(); $key = substr($key, 0, 120); $old = $now - $window;
+  $pdo->prepare('INSERT INTO tv_request_rate(k,window_start,hits) VALUES(?,?,1)
+      ON DUPLICATE KEY UPDATE hits=IF(window_start<=?,1,hits+1), window_start=IF(window_start<=?,?,window_start)')
+      ->execute([$key, $now, $old, $old, $now]);
   $q = $pdo->prepare('SELECT hits FROM tv_request_rate WHERE k=?'); $q->execute([$key]);
   $hits = (int)$q->fetchColumn(); $q->closeCursor();
   return $hits <= $max;
 }
-/** Exclusive lock per title (file lock), so two customers cannot request the same title at once. */
-function tvq_lock(string $name) {
-  $dir = onepanel_storage_dir() . '/locks';
-  if (!is_dir($dir)) @mkdir($dir, 0750, true);
-  $h = @fopen($dir . '/tvq-' . preg_replace('/[^a-z0-9_-]/', '', strtolower($name)) . '.lock', 'c');
-  if (!$h) tvq_unavailable('cannot create lock file');
-  $waited = 0;
-  while (!flock($h, LOCK_EX | LOCK_NB)) { if (($waited += 100) > 15000) { fclose($h); tvq_fail(429, 'busy', 'Please try again in a moment.'); } usleep(100000); }
-  return $h;
+/**
+ * Exclusive lock (MySQL GET_LOCK, held by this request's database connection) so two customers,
+ * or two submissions of one customer, cannot work on the same thing at once. Waits up to 15 s.
+ */
+function tvq_lock(PDO $pdo, string $name): string {
+  $lock = 'tvq:' . substr(hash('sha256', $name), 0, 40);
+  $q = $pdo->prepare('SELECT GET_LOCK(?, 15)'); $q->execute([$lock]); $got = $q->fetchColumn(); $q->closeCursor();
+  if ($got === null || $got === false) tvq_unavailable('GET_LOCK failed');
+  if ((int)$got !== 1) tvq_fail(429, 'busy', 'Please try again in a moment.');
+  return $lock;
 }
-function tvq_unlock($h): void { if ($h) { flock($h, LOCK_UN); fclose($h); } }
+function tvq_unlock(PDO $pdo, string $lock): void {
+  try { $q = $pdo->prepare('SELECT RELEASE_LOCK(?)'); $q->execute([$lock]); $q->closeCursor(); } catch (Throwable $e) { /* released with the connection */ }
+}
 
 /* ---------------- Flix Town identity ---------------- */
 
@@ -149,6 +164,127 @@ function tvq_account_active(array $user): bool {
   $exp = $user['expires_at'] ?? null;
   if (!$exp) return true;   // Never Expire
   try { return (new DateTimeImmutable((string)$exp, new DateTimeZone('UTC')))->getTimestamp() > time(); } catch (Throwable $e) { return false; }
+}
+
+/* ---------------- Flix Town catalog ---------------- */
+/** array_is_list() for PHP before 8.1. */
+function tvq_is_list(array $a): bool { $i = 0; foreach ($a as $k => $v) { if ($k !== $i++) return false; } return true; }
+
+/** The customer's own Flix Town line for catalog reads; the password never leaves this request. */
+function tvq_flix_line(string $username): array {
+  static $lines = [];
+  if (isset($lines[$username])) return $lines[$username];
+  $r = flix_api_request('GET', '/api/onepanel/users/' . rawurlencode($username));
+  if (!$r['ok']) tvq_unavailable('Flix Town account lookup failed (catalog check)');
+  $data = is_array($r['data']) ? $r['data'] : [];
+  $user = is_array($data['user'] ?? null) ? $data['user'] : $data;
+  if ((string)($user['username'] ?? '') === $username && (string)($user['password'] ?? '') !== '') return $lines[$username] = [$username, (string)$user['password']];
+  $line = tvq_config()['catalog_line'];
+  if ($line[0] !== '' && $line[1] !== '') return $lines[$username] = $line;
+  tvq_unavailable('no Flix Town line password for the catalog check (set customer_catalog_username/password)');
+  return [];
+}
+/** One player_api.php read. Any failure or unreadable answer: unavailable (callers fail closed). */
+function tvq_player(array $line, array $params): array {
+  $query = ['username' => $line[0], 'password' => $line[1]] + $params;
+  if (isset($GLOBALS['tvq_player_http']) && is_callable($GLOBALS['tvq_player_http'])) $data = ($GLOBALS['tvq_player_http'])($query);
+  else {
+    $base = tvq_config()['player_url'];
+    if ($base === '') tvq_unavailable('Flix Town player API address is not configured');
+    $ch = curl_init($base . '/player_api.php?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986));
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 6, CURLOPT_TIMEOUT => 30,
+      CURLOPT_FOLLOWLOCATION => false, CURLOPT_USERAGENT => 'OnePanel/1.0 (tv-requests catalog)']);
+    $raw = curl_exec($ch); $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE); curl_close($ch);
+    $data = ($raw !== false && $status === 200) ? json_decode((string)$raw, true) : null;
+  }
+  if (!is_array($data)) tvq_unavailable('Flix Town catalog read failed (' . preg_replace('/[^a-z_]/', '', (string)($params['action'] ?? '')) . ')');
+  return $data;
+}
+/** Year of a catalog entry: "year", a release date, else "(2019)" at the end of the name; 0 if unknown. */
+function tvq_flix_year(array $row): int {
+  $y = (int)($row['year'] ?? 0); if ($y > 1870 && $y < 2100) return $y;
+  foreach (['releaseDate', 'release_date', 'releasedate', 'first_air_date'] as $f)
+    if (preg_match('/^(\d{4})-\d{2}-\d{2}/', (string)($row[$f] ?? ''), $m)) return (int)$m[1];
+  return preg_match('/\((\d{4})\)\s*$/', (string)($row['name'] ?? ''), $m) ? (int)$m[1] : 0;
+}
+/**
+ * TMDB id -> [[catalog id, year], ...] for this line's movies ("movie") or series ("tv").
+ * Kept up to $maxAge seconds in storage (ids and years only; the file name is a hash of the line).
+ */
+function tvq_flix_index(array $line, string $kind, int $maxAge): array {
+  $dir = onepanel_storage_dir() . '/tv-requests-catalog';
+  if (!is_dir($dir)) @mkdir($dir, 0750, true);
+  $file = $dir . '/' . hash('sha256', $kind . '|' . $line[0]) . '.json';
+  $c = is_file($file) ? json_decode((string)@file_get_contents($file), true) : null;
+  if (is_array($c) && ($c['t'] ?? 0) > time() - $maxAge && is_array($c['i'] ?? null)) return $c['i'];
+  $list = tvq_player($line, ['action' => $kind === 'movie' ? 'get_vod_streams' : 'get_series']);
+  if (!tvq_is_list($list)) tvq_unavailable('Flix Town catalog answer is not a list');
+  $index = [];
+  foreach ($list as $row) {
+    if (!is_array($row)) continue;
+    $tmdb = trim((string)($row['tmdb'] ?? ($row['tmdb_id'] ?? '')));
+    if (!preg_match('/^\d{1,9}$/', $tmdb) || $tmdb === '0') continue;
+    $index[$tmdb][] = [(string)($kind === 'movie' ? ($row['stream_id'] ?? '') : ($row['series_id'] ?? '')), tvq_flix_year($row)];
+  }
+  $tmp = $file . '.' . getmypid() . '.tmp';
+  if (@file_put_contents($tmp, json_encode(['t' => time(), 'i' => $index])) !== false) @rename($tmp, $file);
+  return $index;
+}
+/** Catalog ids with this TMDB id whose year agrees (within a year; an unknown year counts). */
+function tvq_flix_matches(array $index, int $tmdb, string $year): array {
+  $out = [];
+  foreach ($index[(string)$tmdb] ?? [] as $e) if ($year === '' || (int)$e[1] === 0 || abs((int)$e[1] - (int)$year) <= 1) $out[] = (string)$e[0];
+  return $out;
+}
+/** Is this movie already in the customer's Flix Town catalog? */
+function tvq_flix_has_movie(string $username, int $tmdb, string $year, int $maxAge): bool {
+  return (bool)tvq_flix_matches(tvq_flix_index(tvq_flix_line($username), 'movie', $maxAge), $tmdb, $year);
+}
+/** Season number -> episodes in the customer's Flix Town catalog for this series (all matching entries). */
+function tvq_flix_season_episodes(string $username, int $tmdb, string $year, int $maxAge): array {
+  $line = tvq_flix_line($username);
+  $counts = [];
+  foreach (tvq_flix_matches(tvq_flix_index($line, 'tv', $maxAge), $tmdb, $year) as $sid) {
+    if (!preg_match('/^\d{1,12}$/', $sid)) continue;
+    $info = tvq_player($line, ['action' => 'get_series_info', 'series_id' => $sid]);
+    $episodes = $info['episodes'] ?? [];
+    if (!is_array($episodes)) continue;
+    $per = [];
+    // A map of season -> episodes, or (some servers) one flat list of episodes carrying "season".
+    $groups = tvq_is_list($episodes) && isset($episodes[0]) && is_array($episodes[0]) && isset($episodes[0]['season']) ? ['' => $episodes] : $episodes;
+    foreach ($groups as $key => $group) {
+      if (!is_array($group)) continue;
+      foreach ($group as $i => $ep) {
+        if (!is_array($ep)) continue;
+        $n = (int)($ep['season'] ?? (is_numeric($key) ? $key : 0));
+        if ($n > 0) $per[$n][(string)($ep['episode_num'] ?? ($ep['id'] ?? $i))] = true;
+      }
+    }
+    foreach ($per as $n => $eps) $counts[$n] = max($counts[$n] ?? 0, count($eps));
+  }
+  return $counts;
+}
+/**
+ * Adds what the customer's Flix Town catalog already has to customer-safe details: a movie there
+ * becomes "local" (In Flix Town); a season whose episodes are all there becomes "local". Nothing
+ * "local" can be requested. A season only partly there stays requestable.
+ */
+function tvq_apply_flix(array $d, string $username, int $maxAge): array {
+  if ($d['type'] === 'movie') {
+    if (tvq_flix_has_movie($username, $d['id'], $d['year'], $maxAge)) { $d['state'] = 'local'; $d['can_request'] = false; }
+    return $d;
+  }
+  $have = tvq_flix_season_episodes($username, $d['id'], $d['year'], $maxAge);
+  foreach ($d['seasons'] as &$s) {
+    $in = $have[$s['number']] ?? 0;
+    if ($in > 0 && $in >= $s['episodes'] && $s['state'] !== 'available') $s['state'] = 'local';
+  }
+  unset($s);
+  $states = array_column($d['seasons'], 'state');
+  if ($states && !array_diff($states, ['available', 'local']) && in_array('local', $states, true)) $d['state'] = 'local';
+  elseif (in_array('local', $states, true) && $d['state'] === 'requestable') $d['state'] = 'partial';
+  $d['can_request'] = (bool)array_filter($d['seasons'], fn($s) => tvq_can($s['state']));
+  return $d;
 }
 
 /* ---------------- Seerr ---------------- */
@@ -281,7 +417,7 @@ function tvq_series_state(array $seasons, ?array $info): string {
 function tvq_can(string $state): bool { return $state === 'requestable' || ($state === 'declined' && tvq_config()['rerequest_declined']); }
 
 /** Customer-safe search results: only movies and series, only public fields. */
-function tvq_search(string $query, int $page): array {
+function tvq_search(string $query, int $page, string $username = ''): array {
   $d = tvq_read('/search', ['query' => $query, 'page' => $page, 'language' => 'en']);
   if (!isset($d['results']) || !is_array($d['results'])) tvq_unavailable('malformed search answer');
   $out = [];
@@ -296,10 +432,19 @@ function tvq_search(string $query, int $page): array {
       'year' => tvq_year($type === 'tv' ? ($r['firstAirDate'] ?? '') : ($r['releaseDate'] ?? '')),
       'poster' => tvq_img($r['posterPath'] ?? '', 'w342'), 'state' => $state];
   }
+  // Movies already in this customer's Flix Town catalog show as such (best effort: a catalog
+  // problem never breaks search; the request itself is always checked fresh).
+  if ($username !== '' && array_filter($out, fn($x) => $x['type'] === 'movie')) {
+    try {
+      $index = tvq_flix_index(tvq_flix_line($username), 'movie', 600);
+      foreach ($out as &$x) if ($x['type'] === 'movie' && tvq_flix_matches($index, $x['id'], $x['year'])) $x['state'] = 'local';
+      unset($x);
+    } catch (TvqException $e) { /* logged by tvq_unavailable */ }
+  }
   return ['page' => max(1, (int)($d['page'] ?? $page)), 'pages' => max(1, min(10, (int)($d['totalPages'] ?? 1))), 'results' => $out];
 }
 /** Customer-safe details, with season states for series. */
-function tvq_details(string $type, int $id): array {
+function tvq_details(string $type, int $id, string $username = '', int $flixAge = 600, bool $strict = false): array {
   $d = tvq_read('/' . $type . '/' . $id, ['language' => 'en']);
   if ((int)($d['id'] ?? 0) !== $id) tvq_unavailable('details answer for a different id');
   $info = is_array($d['mediaInfo'] ?? null) ? $d['mediaInfo'] : null;
@@ -315,7 +460,10 @@ function tvq_details(string $type, int $id): array {
     $out['state'] = tvq_movie_state($info);
     $out['can_request'] = tvq_can($out['state']);
   }
-  return $out;
+  if ($username === '') return $out;
+  // Browsing tolerates a catalog problem (the answer says it was not checked); a request does not.
+  try { return tvq_apply_flix($out, $username, $flixAge) + ['flix_checked' => true]; }
+  catch (TvqException $e) { if ($strict) throw $e; return $out + ['flix_checked' => false]; }
 }
 
 /**
@@ -325,8 +473,8 @@ function tvq_details(string $type, int $id): array {
 function tvq_request(PDO $pdo, string $username, string $type, int $id, array $seasons): array {
   $cfg = tvq_config();
   // One submission at a time per customer (limits stay exact), then one at a time per title.
-  $userLock = tvq_lock('u-' . substr(hash('sha256', $username), 0, 20));
-  try { return tvq_request_locked($pdo, $username, $type, $id, $seasons, $cfg); } finally { tvq_unlock($userLock); }
+  $userLock = tvq_lock($pdo, 'user:' . $username);
+  try { return tvq_request_locked($pdo, $username, $type, $id, $seasons, $cfg); } finally { tvq_unlock($pdo, $userLock); }
 }
 function tvq_request_locked(PDO $pdo, string $username, string $type, int $id, array $seasons, array $cfg): array {
   $today = (int)(floor(time() / 86400) * 86400);
@@ -338,9 +486,11 @@ function tvq_request_locked(PDO $pdo, string $username, string $type, int $id, a
   if ($n >= $cfg['open_limit']) tvq_fail(429, 'open_limit', 'You already have several requests waiting for approval.');
 
   tvq_check_requester($type);
-  $lock = tvq_lock($type . '-' . $id);
+  $lock = tvq_lock($pdo, 'title:' . $type . ':' . $id);
   try {
-    $d = tvq_details($type, $id);   // fresh, inside the lock
+    // Fresh, inside the lock: Seerr's state and the customer's Flix Town catalog (at most 2 minutes old).
+    $d = tvq_details($type, $id, $username, 120, true);
+    tvq_check_own_records($pdo, $type, $id, $seasons);
     if ($type === 'movie') {
       if (!$d['can_request']) tvq_fail(409, 'duplicate', tvq_state_message($d['state']));
       $body = ['mediaType' => 'movie', 'mediaId' => $id, 'is4k' => false];
@@ -366,16 +516,29 @@ function tvq_request_locked(PDO $pdo, string $username, string $type, int $id, a
         $pdo->prepare('INSERT INTO tv_media_requests(username,seerr_request_id,media_type,tmdb_id,seasons,title,year,poster,created_ts,last_status,last_media_status,last_checked_ts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
             ->execute([$username, (int)$r['data']['id'], $type, $id, $type === 'tv' ? implode(',', $seasons) : '', $d['title'], $d['year'], $d['poster'], time(), $status, TVQ_MEDIA_PENDING, time()]);
         $saved = true;
-      } catch (PDOException $e) { error_log('tv-requests: owner insert retry (database busy)'); usleep(200000); }
+      } catch (PDOException $e) { error_log('tv-requests: owner insert retry (database busy, SQLSTATE ' . $e->getCode() . ')'); usleep(200000); }
     }
     if (!$saved) error_log('tv-requests ALERT: Seerr request ' . (int)$r['data']['id'] . ' was created but its owner could not be recorded (tv_media_requests).');
     return ['request' => ['type' => $type, 'id' => $id, 'title' => $d['title'], 'seasons' => $type === 'tv' ? array_values($seasons) : [],
       'state' => tvq_history_state($status, TVQ_MEDIA_PENDING)]];
-  } finally { tvq_unlock($lock); }
+  } finally { tvq_unlock($pdo, $lock); }
+}
+/**
+ * A second guard from OnePanel's own records: a request of any customer for this movie, or for
+ * one of these seasons, that is still pending or approved is a duplicate (even if Seerr has not
+ * caught up yet). Runs inside the title lock.
+ */
+function tvq_check_own_records(PDO $pdo, string $type, int $id, array $seasons): void {
+  $q = $pdo->prepare('SELECT seasons FROM tv_media_requests WHERE media_type=? AND tmdb_id=? AND last_status IN (?,?)');
+  $q->execute([$type, $id, TVQ_REQ_PENDING, TVQ_REQ_APPROVED]); $rows = $q->fetchAll(PDO::FETCH_COLUMN); $q->closeCursor();
+  if (!$rows) return;
+  if ($type === 'movie') tvq_fail(409, 'duplicate', tvq_state_message('pending'));
+  foreach ($rows as $list) foreach (array_filter(explode(',', (string)$list), 'strlen') as $n)
+    if (in_array((int)$n, $seasons, true)) tvq_fail(409, 'duplicate', 'Season ' . (int)$n . ': ' . tvq_state_message('pending'));
 }
 function tvq_state_message(string $state): string {
   $m = ['available' => 'This is already available.', 'partial' => 'This is already partly available.', 'approved' => 'This was already approved and is being prepared.',
-    'pending' => 'This was already requested and is waiting for approval.', 'declined' => 'This request was declined.', 'unavailable' => 'This title cannot be requested.'];
+    'pending' => 'This was already requested and is waiting for approval.', 'declined' => 'This request was declined.', 'unavailable' => 'This title cannot be requested.', 'local' => 'This is already in Flix Town.'];
   return $m[$state] ?? 'This cannot be requested.';
 }
 function tvq_history_state(int $req, int $media): string {

@@ -1,6 +1,7 @@
 name: Requests flow check
 
-# Requests (Seerr through OnePanel): the OnePanel customer API tests (PHP, fake Seerr) and the TV
+# Requests (Seerr through OnePanel): the OnePanel customer API tests (PHP on MySQL 8 and MariaDB, fake
+# Seerr and Flix catalog) and the TV
 # screen with the QA build's demo server, D-pad only, on Android 9 (API 28) and 12 (API 31) at 1080p
 # and 720p. Runs on pushes to the feature/request-media branch that touch the Requests code or tests
 # (never on the production branch, never a release). Results are committed to qa/requests-flow-* only.
@@ -15,12 +16,35 @@ permissions:
 
 jobs:
   backend:
+    # The real migration and the real database engine (OnePanel uses MySQL/MariaDB): schema, rate
+    # limits, ownership records, MySQL named locks and concurrent duplicate submissions.
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db: ["mysql:8.0", "mariadb:10.11"]
+    services:
+      db:
+        image: ${{ matrix.db }}
+        env:
+          MYSQL_ROOT_PASSWORD: tvq-test-only
+          MARIADB_ROOT_PASSWORD: tvq-test-only
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptvq-test-only || healthcheck.sh --connect"
+          --health-interval=5s --health-timeout=5s --health-retries=30
     steps:
       - uses: actions/checkout@v5
-      - name: OnePanel customer requests API (php -S, SQLite, fake Seerr; no real Seerr)
+      - name: OnePanel customer requests API on ${{ matrix.db }} (php -S, fake Seerr and Flix catalog; no real servers)
+        env:
+          TVQ_MYSQL_HOST: 127.0.0.1
+          TVQ_MYSQL_PORT: "3306"
+          TVQ_MYSQL_USER: root
+          TVQ_MYSQL_PASS: tvq-test-only
         run: |
-          for f in panel/onepanel-tv-requests/api/*.php panel/onepanel-tv-requests/includes/*.php; do php -l "$f"; done
+          php -m | grep -qi pdo_mysql
+          for i in $(seq 1 30); do php -r 'new PDO("mysql:host=127.0.0.1;port=3306","root","tvq-test-only");' 2>/dev/null && break; sleep 2; done
+          for f in panel/onepanel-tv-requests/api/*.php panel/onepanel-tv-requests/includes/*.php panel/onepanel-tv-requests/tests/*.php; do php -l "$f"; done
           php panel/onepanel-tv-requests/tests/tv_requests_test.php
   apk-secret-scan:
     runs-on: ubuntu-latest

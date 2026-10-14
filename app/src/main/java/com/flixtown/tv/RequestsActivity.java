@@ -405,6 +405,7 @@ public class RequestsActivity extends Activity {
                 case "pending":return "This has already been requested and is waiting for approval.";
                 case "declined":return "This request was declined.";
                 case "unavailable":return "This title can't be requested.";
+                case "local":return "This is already in Flix Town.";
                 default:return "";
             }
         }

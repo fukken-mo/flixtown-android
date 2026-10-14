@@ -169,6 +169,8 @@ final class DemoData {
         if(action.equals("request")){String type=in.optString("type");int id=in.optInt("id");JSONArray seasons=in.optJSONArray("seasons");
             JSONObject t=null;for(int i=0;i<30;i++){JSONObject c=demoTitle(i);if(c.optString("type").equals(type)&&c.optInt("id")==id)t=c;}
             if(t==null)return new JSONObject().put("ok",false).put("error","id").put("message","Invalid title.").put("_http",400).toString();
+            if(type.equals("movie")&&"local".equals(t.optString("state")))
+                return new JSONObject().put("ok",false).put("error","duplicate").put("message","This is already in Flix Town.").put("_http",409).toString();
             if(type.equals("movie")&&(demoRequested.contains("movie:"+id)||!"requestable".equals(t.optString("state"))))
                 return new JSONObject().put("ok",false).put("error","duplicate").put("message","This was already requested and is waiting for approval.").put("_http",409).toString();
             if(type.equals("tv"))for(int k=0;seasons!=null&&k<seasons.length();k++){int n=seasons.optInt(k);
@@ -189,6 +191,8 @@ final class DemoData {
     private static JSONObject demoTitle(int i)throws Exception{
         String[] states={"requestable","available","pending","approved","declined"};
         if(i==5)return new JSONObject().put("type","tv").put("id",8205).put("title","Alpha Show").put("year","2015").put("poster","demo://poster/s3").put("state","partial");
+        // In this customer's Flix Town catalog on the server, not yet in the TV's own copy (stale app catalog).
+        if(i==7)return new JSONObject().put("type","movie").put("id",8107).put("title","Alpha Title 7").put("year","1997").put("poster","demo://poster/m27").put("state","local");
         if(i==6)return new JSONObject().put("type","movie").put("id",700003).put("title",title(3,1)).put("year",String.valueOf(movieYear(3))).put("poster","demo://poster/m3").put("state","requestable");
         return new JSONObject().put("type","movie").put("id",8100+i).put("title",(i==0?"Alpha Movie":"Alpha Title "+i)).put("year",String.valueOf(1990+i))
             .put("poster","demo://poster/m"+(20+i)).put("state",i<5?states[i]:"requestable");
