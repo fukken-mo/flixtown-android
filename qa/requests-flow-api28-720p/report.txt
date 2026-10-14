@@ -30,14 +30,11 @@ PASS  scrolling near the end loads page 2 (30 results)
 PASS  Up from the first row returns to the search box
 PASS  details: title, synopsis, Requestable, Request button focused
 PASS  Request: Pending approval, told where to find it
-FAIL  Back closes details and returns to the same card
-      at: RequestsActivity focus='Alpha Movie. Movie, 1990. Pending approval'
+PASS  Back closes details and returns to the same card
 PASS  the card now says Pending approval
-FAIL  reopened: no Request button (already requested)
-      at: RequestsActivity focus='Back'
+PASS  reopened: no Request button (already requested)
 PASS  declined: no Request button, explained
-FAIL  available: no Request button
-      at: RequestsActivity focus='Back'
+PASS  available: no Request button
 PASS  card 7 is the title already in Flix Town
 PASS  in Flix Town: Watch in Flix Town, no Request
 PASS  Watch opens the Flix Town title
@@ -47,8 +44,7 @@ PASS  series details: Choose seasons
 PASS  season picker: S1 available and S2 pending shown, not selectable
 PASS  focus starts on the first requestable season (Season 3)
 PASS  Up does not land on seasons that cannot be requested
-FAIL  OK selects Season 3 (✓) and the button says Request 1 season
-      at: RequestsActivity focus='✓  Season 3  ·  8 episodes'
+PASS  OK selects Season 3 (✓) and the button says Request 1 season
 PASS  Down: Season 4 (the last season that can be requested)
 PASS  Down from the last season: Request 1 season
 PASS  season request sent for S3 only, Pending approval
@@ -62,8 +58,7 @@ PASS  My Requests: focused card and its text fully visible
       server now: {"requests":"down"}
 PASS  service down: Requests are temporarily unavailable.
 PASS  Back leaves Requests for Home
-FAIL  browsing still works while Requests is down (Movies grid)
-      at: HomeActivity focus='Subscription. Status Active. Expiration 12/31/2027. Devices 1.'
+PASS  browsing still works while Requests is down (Movies grid)
 PASS  no crash during the whole run
 
-requests flow: 56 passed, 5 failed
+requests flow: 61 passed, 0 failed
