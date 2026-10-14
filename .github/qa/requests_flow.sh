@@ -45,9 +45,10 @@ x=sys.stdin.read();k=sys.argv[1]
 m=re.search(r"name=\""+k+r"\"(?: value=\"([^\"]*)\"\s*/>|>([^<]*)</string>|\s*/>)",x)
 print("" if not m else (m.group(1) or m.group(2) or ""))' "$1"; }
 server(){ printf '%s' "$1" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"; note "      server now: $1"; }
-crashes(){ adb logcat -d -b crash | grep -c "FATAL EXCEPTION.*" ; }
+# Only Flix Town's own process counts (the API 28 TV image's Live TV app crashes on its own; kept in crash.txt).
+crashes(){ adb logcat -d -b crash | grep -A1 "FATAL EXCEPTION" | grep -c "Process: com.flixtown.tv" ; }
 # The on-screen keyboard takes the D-pad while it is up; a viewer closes it with Back (or its search key).
-kb_shown(){ adb shell dumpsys input_method | grep -q "mInputShown=true"; }
+kb_shown(){ sleep 0.7; adb shell dumpsys input_method | grep -qE "mInputShown=true|mIsInputViewShown=true"; }
 close_kb(){ kb_shown && { key BACK; sleep 1; }; return 0; }
 qa(){ adb logcat -d -s FlixTownQA:I | grep " requests " ; }
 desc(){ grep -q "content-desc=\"$1" "$OUT/ui.xml"; }
@@ -69,7 +70,7 @@ print(sum(1 for t in tops if t==tops[0]) if tops else 1)
 ' "$OUT/ui.xml"; }
 # Focus result number N (0-based): back to the search box, then down and across.
 go_card(){ local n=$1 s; for i in $(seq 1 8); do in_field && break; key DPAD_UP; done
-  close_kb; key DPAD_DOWN; sleep 0.5; s=$(span)
+  sleep 0.5; close_kb; key DPAD_DOWN; sleep 0.5; in_field && { close_kb; key DPAD_DOWN; }; sleep 0.5; s=$(span)
   for i in $(seq 1 $((n / s))); do key DPAD_DOWN; done
   for i in $(seq 1 $((n % s))); do key DPAD_RIGHT; done; sleep 0.5; }
 
@@ -105,15 +106,21 @@ check "results: Movie, year and state on the cards" 'desc "Alpha Movie. Movie, 1
 check "states: Available, Pending approval, Approved, Declined" 'desc "Alpha Title 1. Movie, 1991. Available" && desc "Alpha Title 2. Movie, 1992. Pending approval" && desc "Alpha Title 3. Movie, 1993. Approved · processing" && desc "Alpha Title 4. Movie, 1994. Declined"'
 check "series shown as Partly available (never fully available)" 'desc "Alpha Show. TV Show, 2015. Partly available"'
 check "a movie already in this TV's catalog shows In Flix Town" 'grep -q "In Flix Town" "$OUT/ui.xml"'
-close_kb
-check "Back closes the keyboard and stays on Requests" 'in_activity RequestsActivity && in_field'
+kb_shown || { key DPAD_CENTER; sleep 1.5; }   # OK on the search box opens the keyboard
+check "the on-screen keyboard is open on the search box" 'kb_shown'
+key BACK; sleep 1
+check "Back closes the keyboard first and stays on Requests" 'in_activity RequestsActivity && in_field && ! kb_shown'
+key ENTER; sleep 1.5
+check "the keyboard's Search action moves focus to the first result" 'focused | grep -q "Alpha Movie"'
+key DPAD_UP; sleep 0.5; close_kb
+check "Up from the first result returns to the search box" 'in_field'
 key DPAD_DOWN; sleep 1
 check "Down from the search box: first result" 'focused | grep -q "Alpha Movie"'
 shot 02-search-results
 for i in 1 2 3 4; do key DPAD_DOWN; done; sleep 2
 check "scrolling near the end loads page 2 (30 results)" 'qa | grep -q "search q=alpha page=2 results=30"'
-for i in 1 2 3 4 5 6; do key DPAD_UP; done
-check "Up from the first row returns to the search box" 'in_field || { key DPAD_UP; in_field; }'
+for i in $(seq 1 8); do in_field && break; key DPAD_UP; done; close_kb
+check "Up from the first row returns to the search box" 'in_field'
 
 # ---------------- movie details and request ----------------
 go_card 0; key DPAD_CENTER; sleep 2

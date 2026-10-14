@@ -97,10 +97,18 @@ public class RequestsActivity extends Activity {
         field.addTextChangedListener(new TextWatcher(){
             @Override public void beforeTextChanged(CharSequence s,int a,int b,int c){}
             @Override public void onTextChanged(CharSequence s,int a,int b,int c){}
-            @Override public void afterTextChanged(Editable s){handler.removeCallbacks(debounced);handler.postDelayed(debounced,SEARCH_DELAY_MS);}
+            @Override public void afterTextChanged(Editable s){focusResults=false;handler.removeCallbacks(debounced);handler.postDelayed(debounced,SEARCH_DELAY_MS);}
         });
-        field.setOnEditorActionListener((v,action,event)->{handler.removeCallbacks(debounced);startSearch(true);hideKeyboard();
-            if(!entries.isEmpty())grid.post(this::focusGrid);return true;});
+        // The keyboard's Search key: search now, close the keyboard and go to the results (now, or when they arrive).
+        field.setOnEditorActionListener((v,action,event)->{handler.removeCallbacks(debounced);focusResults=true;startSearch(true);hideKeyboard();
+            if(!entries.isEmpty()){focusResults=false;grid.post(this::focusGrid);}return true;});
+        field.setOnFocusChangeListener((v,has)->{if(!has)hideKeyboard();});
+        // D-pad on the box itself (keyboard closed): Down to the results, Up to the tabs, on every Android version.
+        field.setOnKeyListener((v,code,ev)->{
+            if(ev.getAction()!=KeyEvent.ACTION_DOWN)return false;
+            if(code==KeyEvent.KEYCODE_DPAD_DOWN&&!entries.isEmpty()){hideKeyboard();focusGrid();return true;}
+            if(code==KeyEvent.KEYCODE_DPAD_UP){hideKeyboard();tabSearch.requestFocus();return true;}
+            return false;});
         field.setNextFocusUpId(tabSearch.getId());
 
         status=Ui.text(this,"",16);status.setTextColor(Ui.TEXT_2);
@@ -116,6 +124,7 @@ public class RequestsActivity extends Activity {
         details=new Details();
     }
     private final Runnable debounced=()->startSearch(false);
+    private boolean focusResults;
 
     private void showSearch(){
         mine=false;styleTabs();field.setVisibility(View.VISIBLE);
@@ -162,6 +171,7 @@ public class RequestsActivity extends Activity {
                 adapter.notifyItemRangeInserted(before,entries.size()-before);
                 if(BuildConfig.DEMO)Log.i("FlixTownQA","requests search q="+q+" page="+p+" results="+entries.size());
                 status.setText(entries.isEmpty()?"No movies or TV shows match “"+q+"”.":"");
+                if(focusResults && p==1){focusResults=false;if(!entries.isEmpty())grid.post(this::focusGrid);}
             });});
     }
     private void loadHistory(int p){
@@ -191,7 +201,8 @@ public class RequestsActivity extends Activity {
     private int adapterSpan(){return ((GridLayoutManager)grid.getLayoutManager()).getSpanCount();}
     /** Rebinds one card in place, so the card the details came from keeps its view and focus. */
     private void refreshCard(Entry e){int i=entries.indexOf(e);if(i>=0)adapter.notifyItemChanged(i);}
-    private void focusGrid(){RecyclerView.ViewHolder h=grid.findViewHolderForAdapterPosition(0);if(h!=null)h.itemView.requestFocus();else grid.requestFocus();}
+    private void focusGrid(){RecyclerView.ViewHolder h=grid.findViewHolderForAdapterPosition(0);if(h!=null){h.itemView.requestFocus();return;}
+        grid.scrollToPosition(0);grid.post(()->{RecyclerView.ViewHolder f=grid.findViewHolderForAdapterPosition(0);if(f!=null)f.itemView.requestFocus();else grid.requestFocus();});}
     private Catalog.Item localMatch(Entry e){
         Catalog.Item item=local.get(e.type+":"+e.id);
         if(item==null)return null;
