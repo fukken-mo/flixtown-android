@@ -3,7 +3,7 @@
 #   track "Plain"  (SRT, green):  one continuous cue after another, the usual bottom position
 #   track "Bottom" (ASS, yellow): cues placed by the file at the very bottom edge ({\an2\pos(640,720)}),
 #                                 like many episode subtitle tracks
-# Every cue lasts 4 s and they run back to back for 2 minutes, so they span the 3 s auto-hide of the
+# Every cue lasts 4 s and they run back to back for 5 minutes, so they span the 3 s auto-hide of the
 # controls. Subtitle pixels are found by colour in screenshots (the video is black; the controls are
 # white/red), with the controls shown and after they hid, for a movie and for an episode.
 # Needs TEST_STREAM (e.g. http://10.0.2.2:8000/subs.mkv). Results: $OUT/report.txt, $OUT/screens/*.png
