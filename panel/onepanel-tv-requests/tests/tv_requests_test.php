@@ -370,13 +370,13 @@ check('lock released: the same submission then goes through', call(['action' => 
 // ---------------- MySQL: rate limiting under concurrency ----------------
 $pdo->exec('DELETE FROM tv_request_rate');
 $workers = [];
-for ($w = 0; $w < 8; $w++) { $proc = proc_open([PHP_BINARY, __DIR__ . '/rate_worker.php', $work, 'race-key', '50', '60', '20'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp, null, $env); $workers[] = [$proc, $pp]; }
+for ($w = 0; $w < 16; $w++) { $proc = proc_open([PHP_BINARY, __DIR__ . '/rate_worker.php', $work, 'race-key', '100', '60', '25'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp, null, $env); $workers[] = [$proc, $pp]; }
 $allowed = 0; $errors = '';
 foreach ($workers as [$proc, $pp]) { $allowed += (int)stream_get_contents($pp[1]); $errors .= stream_get_contents($pp[2]); fclose($pp[1]); fclose($pp[2]); if (proc_close($proc) !== 0) $errors .= 'worker failed;'; }
 $row = $pdo->query("SELECT hits FROM tv_request_rate WHERE k='race-key'")->fetchColumn();
-check("rate limit under 8 parallel processes x 20 hits (limit 50): exactly 50 allowed, all 160 counted, no deadlock ($allowed allowed)", $allowed === 50 && (int)$row === 160 && $errors === '', substr($errors, 0, 200));
+check("rate limit under 16 parallel processes x 25 hits (limit 100): exactly 100 allowed, all 400 counted, no deadlock ($allowed allowed)", $allowed === 100 && (int)$row === 400 && $errors === '', substr($errors, 0, 200));
 $pdo->exec("UPDATE tv_request_rate SET window_start=window_start-61 WHERE k='race-key'");
-$one = proc_open([PHP_BINARY, __DIR__ . '/rate_worker.php', $work, 'race-key', '50', '60', '1'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp, null, $env);
+$one = proc_open([PHP_BINARY, __DIR__ . '/rate_worker.php', $work, 'race-key', '100', '60', '1'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pp, null, $env);
 $again = (int)stream_get_contents($pp[1]); proc_close($one);
 check('rate limit: after the window passes the count starts again at 1', $again === 1 && (int)$pdo->query("SELECT hits FROM tv_request_rate WHERE k='race-key'")->fetchColumn() === 1);
 

@@ -38,7 +38,9 @@ for n in r.iter('node'):
 EOF
 }
 focus_to(){ local k=$1 want=$2 n=${3:-6}; for i in $(seq 1 $n); do focused | grep -q -- "$want" && return 0; key "$k"; done; focused | grep -q -- "$want"; }
-check(){ if eval "$2"; then ok "$1"; else bad "$1"; note "      at: $(resumed | grep -o '[A-Za-z]*Activity' | tail -1) focus='$(focused)'"; fi; }
+# A check passes as soon as its condition holds; slow emulators get up to 5 fresh looks, 1 s apart.
+check(){ local t; for t in 1 2 3 4 5; do if eval "$2"; then ok "$1"; return 0; fi; [ $t = 5 ] || { sleep 1; dump; }; done
+  bad "$1"; note "      at: $(resumed | grep -o '[A-Za-z]*Activity' | tail -1) focus='$(focused)'"; }
 prefs(){ adb shell run-as $PKG cat shared_prefs/flix.xml 2>/dev/null; }
 pref(){ prefs | python3 -c 'import sys,re
 x=sys.stdin.read();k=sys.argv[1]
@@ -53,7 +55,7 @@ close_kb(){ kb_shown && { key BACK; sleep 1; }; return 0; }
 qa(){ adb logcat -d -s FlixTownQA:I | grep " requests " ; }
 desc(){ grep -q "content-desc=\"$1" "$OUT/ui.xml"; }
 text(){ grep -q "text=\"$1" "$OUT/ui.xml"; }
-menu_to(){ key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "$1" 9 >/dev/null; }
+menu_to(){ local t; for t in 1 2; do key DPAD_LEFT; sleep 0.8; focus_to DPAD_UP "^Search$" 8 >/dev/null; focus_to DPAD_DOWN "^$1$" 9 >/dev/null && return 0; done; return 1; }
 # Class of the focused view (the search box is the only EditText on the screen).
 focused_class(){ dump; python3 -c '
 import sys, xml.etree.ElementTree as ET

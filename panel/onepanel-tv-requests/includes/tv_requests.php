@@ -108,14 +108,16 @@ function tvq_session_user($token, ?int $now = null): ?string {
 /* ---------------- rate limits and locks ---------------- */
 
 function tvq_rate(PDO $pdo, string $key, int $max, int $window): bool {
-  // One atomic MySQL statement per hit (no select-then-insert, no gap-lock deadlocks): a new key
-  // starts at 1, an expired window restarts at 1, otherwise the count goes up by one.
+  // One atomic statement per hit (no select-then-insert, no gap-lock deadlocks): a new key starts
+  // at 1, an expired window restarts at 1, otherwise the count goes up by one. The count this hit
+  // produced comes back through LAST_INSERT_ID(expr) (per connection), so another process counting
+  // the same key at the same moment can never change what this hit sees.
   $now = time(); $key = substr($key, 0, 120); $old = $now - $window;
-  $pdo->prepare('INSERT INTO tv_request_rate(k,window_start,hits) VALUES(?,?,1)
-      ON DUPLICATE KEY UPDATE hits=IF(window_start<=?,1,hits+1), window_start=IF(window_start<=?,?,window_start)')
-      ->execute([$key, $now, $old, $old, $now]);
-  $q = $pdo->prepare('SELECT hits FROM tv_request_rate WHERE k=?'); $q->execute([$key]);
-  $hits = (int)$q->fetchColumn(); $q->closeCursor();
+  $st = $pdo->prepare('INSERT INTO tv_request_rate(k,window_start,hits) VALUES(?,?,1)
+      ON DUPLICATE KEY UPDATE hits=LAST_INSERT_ID(IF(window_start<=?,1,hits+1)), window_start=IF(window_start<=?,?,window_start)');
+  $st->execute([$key, $now, $old, $old, $now]);
+  if ($st->rowCount() === 1) return 1 <= $max;   // a new row: this is hit 1
+  $q = $pdo->query('SELECT LAST_INSERT_ID()'); $hits = (int)$q->fetchColumn(); $q->closeCursor();
   return $hits <= $max;
 }
 /**
