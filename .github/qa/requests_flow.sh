@@ -238,13 +238,17 @@ reenter_mine(){ for i in $(seq 1 6); do [ "$(focused)" = "My Requests" ] && brea
   key DPAD_LEFT DPAD_CENTER; sleep 2; close_kb; key DPAD_UP; sleep 0.5
   for i in $(seq 1 4); do [ "$(focused)" = "Search" ] && break; key DPAD_UP; done
   key DPAD_RIGHT DPAD_CENTER; sleep 3; dump; }
-card_n(){ for i in $(seq 1 6); do [ "$(focused)" = "My Requests" ] && break; key DPAD_UP; done; key DPAD_DOWN; sleep 0.8
-  for i in $(seq 1 "$1"); do key DPAD_RIGHT; done; sleep 0.8; }
-card_n 2
+# Focus the My Requests card whose description matches $1: into the grid from the tabs, then along the row.
+card_to(){ for i in $(seq 1 6); do [ "$(focused)" = "My Requests" ] && break; key DPAD_UP; done; key DPAD_DOWN; sleep 0.8
+  for i in 1 2 3 4; do focused | grep -q -- "$1" && return 0; key DPAD_LEFT; sleep 0.3; done
+  for i in 1 2 3 4; do focused | grep -q -- "$1" && return 0; key DPAD_RIGHT; sleep 0.3; done; focused | grep -q -- "$1"; }
+# The status badge of the open details ("●  <state>"), not the cards behind them.
+badge(){ grep -q "text=\"●  $1\"" "$OUT/ui.xml"; }
+card_to "Movie, [0-9]*\. In Flix Town"
 check "that card is focused" 'focused | grep -q "In Flix Town"'
 key DPAD_CENTER; sleep 1.5
 for i in $(seq 1 8); do dump; grep -q "Watch in Flix Town" "$OUT/ui.xml" && break; sleep 1; done
-check "its details agree: In Flix Town with Watch, no Pending approval" 'grep -q "In Flix Town" "$OUT/ui.xml" && text "Watch in Flix Town" && ! grep -q "Pending approval" "$OUT/ui.xml" && ! text "Request\""'
+check "its details agree: In Flix Town with Watch, no Request button" 'badge "In Flix Town" && text "Watch in Flix Town" && ! text "Request\""'
 shot 08b-my-requests-in-flix-town
 # leave for the title page while the server moves Alpha Movie to Approved; back here = refreshed in place
 server '{"request_states":{"movie:8100":"approved"}}'
@@ -252,21 +256,40 @@ focus_to DPAD_RIGHT "Watch in Flix Town" 3 >/dev/null; key DPAD_CENTER; wait_act
 key BACK; sleep 2; key BACK; sleep 2; dump
 check "back from Details: the same card keeps focus" 'focused | grep -q "In Flix Town"'
 check "back from the title: My Requests refreshed in place (Alpha Movie now Approved), no polling" 'desc "Alpha Movie. Movie, 1990. Approved · processing" && qa | grep -q "requests history refreshed in place"'
-# pending -> approved -> available -> declined, each seen on entering the tab
-server '{"request_states":{"movie:8100":"available"}}'; reenter_mine
-check "entering My Requests reloads: Alpha Movie Available" 'desc "Alpha Movie. Movie, 1990. Available"'
-server '{"request_states":{"movie:8100":"declined"}}'; reenter_mine
-check "entering My Requests reloads: Alpha Movie Declined" 'desc "Alpha Movie. Movie, 1990. Declined"'
+# Every status, movie and TV request: the card on entering My Requests, the same state in details,
+# and back on the same card. Approval alone is never "Available"; a TV request counts its own seasons.
+open_wait(){ key DPAD_CENTER; sleep 1.5; for i in $(seq 1 8); do dump; grep -q "A demo synopsis for $1" "$OUT/ui.xml" && break; sleep 1; done; }
+for pair in "pending|Pending approval" "approved|Approved · processing" "available|Available" "declined|Declined"; do
+  st="${pair%%|*}"; lab="${pair#*|}"
+  server "{\"request_states\":{\"movie:8100\":\"$st\"}}"; reenter_mine
+  check "movie $st: card on entering My Requests says $lab" "desc \"Alpha Movie. Movie, 1990. $lab\""
+  card_to "Alpha Movie. Movie, 1990"; open_wait "Alpha Movie"
+  check "movie $st: details say $lab too" "badge \"$lab\""
+  key BACK; sleep 1.5
+  check "movie $st: back on the same card, still $lab" "focused | grep -q \"Alpha Movie. Movie, 1990. $lab\""
+done
+for pair in "pending|Pending approval" "approved|Approved · processing" "partial|Partly available" "available|Available"; do
+  st="${pair%%|*}"; lab="${pair#*|}"
+  server "{\"request_states\":{\"tv:8205\":\"$st\"}}"; reenter_mine
+  check "TV S3 $st: card says $lab" "desc \"Alpha Show. TV Show, 2015. $lab\""
+  card_to "Alpha Show. TV Show"; open_wait "Alpha Show"
+  check "TV S3 $st: details say $lab (Season 3 only, not the whole show)" "badge \"$lab\""
+  key BACK; sleep 1.5
+  check "TV S3 $st: back on the same card, still $lab" "focused | grep -q \"Alpha Show. TV Show, 2015. $lab\""
+done
+loads(){ qa | grep -c "requests history \(loaded\|refreshed\)"; }
+before="$(loads)"; sleep 12
+check "no polling: 12 s idle on My Requests, no further status requests ($before loads so far)" '[ "$(loads)" = "$before" ]'
 # stale card: the server changes while the tab stays open; opening the title shows and keeps the new state
 server '{"request_states":{"movie:8100":"approved","tv:8205":"available"}}'
-card_n 1; key DPAD_CENTER; sleep 1.5
+card_to "Alpha Movie. Movie, 1990"; key DPAD_CENTER; sleep 1.5
 for i in $(seq 1 8); do dump; grep -q "A demo synopsis for Alpha Movie" "$OUT/ui.xml" && break; sleep 1; done
-check "stale card opened: details show the current state (Approved)" 'grep -q "Approved · processing" "$OUT/ui.xml"'
+check "stale card opened: details show the current state (Approved)" 'badge "Approved · processing"'
 key BACK; sleep 1.5
 check "back: the card now says Approved, focus on it" 'focused | grep -q "Alpha Movie. Movie, 1990. Approved · processing"'
-card_n 0; key DPAD_CENTER; sleep 1.5
+card_to "Alpha Show. TV Show"; key DPAD_CENTER; sleep 1.5
 for i in $(seq 1 8); do dump; grep -q "A demo synopsis for Alpha Show" "$OUT/ui.xml" && break; sleep 1; done
-check "TV request (S3) details: the state of Season 3, not the whole show (Available, not Partly available)" 'grep -q "●  Available" "$OUT/ui.xml" && ! grep -q "●  Partly available" "$OUT/ui.xml"'
+check "TV request (S3) details: the state of Season 3, not the whole show (Available, not Partly available)" 'badge "Available" && ! badge "Partly available"'
 key BACK; sleep 1.5
 check "back: the S3 card says Available, focus on it" 'focused | grep -q "Alpha Show. TV Show, 2015. Available"'
 server '{}'

@@ -205,6 +205,7 @@ public class RequestsActivity extends Activity {
                 page=p;pages=r.body.optBoolean("has_more")?p+1:p;
                 JSONArray list=r.body.optJSONArray("requests");int before=entries.size();
                 for(int i=0;list!=null&&i<list.length();i++){JSONObject o=list.optJSONObject(i);if(o!=null)entries.add(historyEntry(o));}
+                if(BuildConfig.DEMO)Log.i("FlixTownQA","requests history loaded page="+p);
                 adapter.notifyItemRangeInserted(before,entries.size()-before);
                 status.setText(entries.isEmpty()?"You haven't requested anything yet. Use Search to find a movie or show.":"");
                 if(before==0 && !entries.isEmpty())grid.post(this::focusGrid);
