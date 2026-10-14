@@ -1,63 +1,38 @@
+PASS  demo server points at the test video (http://10.0.2.2:8000/subs.mkv)
 PASS  movie: player opened
-INFO  10-14 22:43:51.119  2834  2834 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
-FAIL  movie: subtitle label says Plain
-INFO  plain, controls shown: 796 701 1128 741 1920 1080 2018
+PASS  movie: playing the test video (its subtitle tracks are listed)
+INFO  10-14 23:03:31.984  2836  2836 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
+FAIL  movie: subtitle label shows the Plain track (Subtitles · English)
+INFO  plain, controls shown (true): 796 700 1128 741 1920 1080 2123
 PASS  movie: Plain subtitles visible with the controls shown, above the controls
 PASS  movie: controls hid by themselves
-INFO  plain, controls hidden 1s: 796 937 1128 977 1920 1080 2022
+INFO  plain, controls hidden 1s: 796 936 1126 977 1920 1080 2090
 PASS  movie: Plain subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 4s: 796 937 1128 977 1920 1080 2022
+INFO  plain, controls hidden 4s: 780 937 1134 977 1920 1080 2088
 PASS  movie: Plain subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 8s: 796 937 1128 977 1920 1080 2022
+INFO  plain, controls hidden 8s: 780 936 1142 977 1920 1080 2184
 PASS  movie: Plain subtitles still visible 8s after the controls hid, inside the TV safe area
-INFO  10-14 22:44:11.507  2834  2834 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=1
-FAIL  movie: subtitle label says Bottom
-INFO  bottom, controls shown: 708 772 1216 823 1920 1080 3625
-PASS  movie: bottom-positioned subtitles visible with the controls shown, above the controls
-INFO  bottom, controls hidden 1s: 708 1008 1216 1060 1920 1080 3722
+INFO  focus: 10-14 23:04:28.418  2836  2836 I FlixTownQA: player controls=true focus=progress elapsed=112 audio=[Audio · On] subs=[Subtitles · English] card=[] cardmsg=[] subtitle=
+INFO  10-14 23:03:31.984  2836  2836 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
+FAIL  movie: subtitle label shows the Bottom track (Subtitles · English)
+INFO  bottom, controls shown (true): 0 0 0 0 1920 1080 0
+FAIL  movie: bottom-positioned subtitles visible with the controls shown, above the controls
+INFO  bottom, controls hidden 1s: 0 0 0 0 1920 1080 0
 FAIL  movie: bottom-positioned subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 4s: 708 1008 1216 1060 1920 1080 3722
+INFO  bottom, controls hidden 4s: 0 0 0 0 1920 1080 0
 FAIL  movie: bottom-positioned subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 8s: 708 1008 1216 1060 1920 1080 3722
+INFO  bottom, controls hidden 8s: 0 0 0 0 1920 1080 0
 FAIL  movie: bottom-positioned subtitles still visible 8s after the controls hid, inside the TV safe area
-PASS  movie: three show/hide cycles keep the subtitle choice (Subtitles · French)
+PASS  movie: three show/hide cycles keep the subtitle choice (Subtitles · English)
 FAIL  movie: subtitles still drawn after the cycles
-PASS  movie: seeking still works (+10 s: 25s -> 35s)
+FAIL  movie: seeking still works (+10 s: 120s -> 120s)
 FAIL  movie: subtitles shown again after seeking, same choice
-INFO  10-14 22:44:51.302  2834  2834 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=2
-PASS  movie: subtitle label says Off
+INFO  focus: 10-14 23:04:40.530  2836  2836 I FlixTownQA: player controls=false focus=other elapsed=120 audio=[Audio · On] subs=[Subtitles · English] card=[] cardmsg=[] subtitle=
+INFO  10-14 23:03:31.984  2836  2836 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
+FAIL  movie: subtitle label shows Off (Subtitles · English)
 PASS  movie: Off: no subtitles with the controls shown
 PASS  movie: Off: no subtitles with the controls hidden
-PASS  episode: player opened
-INFO  10-14 22:46:22.714  2834  2834 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
-FAIL  episode: subtitle label says Plain
-INFO  plain, controls shown: 780 700 1144 741 1920 1080 2202
-PASS  episode: Plain subtitles visible with the controls shown, above the controls
-PASS  episode: controls hid by themselves
-INFO  plain, controls hidden 1s: 780 936 1144 977 1920 1080 2209
-PASS  episode: Plain subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 4s: 780 936 1144 977 1920 1080 2209
-PASS  episode: Plain subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 8s: 780 936 1144 977 1920 1080 2209
-PASS  episode: Plain subtitles still visible 8s after the controls hid, inside the TV safe area
-INFO  10-14 22:46:42.858  2834  2834 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=1
-FAIL  episode: subtitle label says Bottom
-INFO  bottom, controls shown: 688 772 1236 823 1920 1080 3935
-PASS  episode: bottom-positioned subtitles visible with the controls shown, above the controls
-INFO  bottom, controls hidden 1s: 688 1008 1236 1060 1920 1080 4045
-FAIL  episode: bottom-positioned subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 4s: 688 1008 1236 1060 1920 1080 4045
-FAIL  episode: bottom-positioned subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 8s: 688 1008 1236 1060 1920 1080 4045
-FAIL  episode: bottom-positioned subtitles still visible 8s after the controls hid, inside the TV safe area
-PASS  episode: three show/hide cycles keep the subtitle choice (Subtitles · French)
-FAIL  episode: subtitles still drawn after the cycles
-PASS  episode: seeking still works (+10 s: 36s -> 46s)
-FAIL  episode: subtitles shown again after seeking, same choice
-INFO  10-14 22:47:22.735  2834  2834 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=2
-PASS  episode: subtitle label says Off
-PASS  episode: Off: no subtitles with the controls shown
-PASS  episode: Off: no subtitles with the controls hidden
+FAIL  episode: player did not open (    mResumedActivity: ActivityRecord{4c41e62 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.DetailsActivity t5})
 PASS  no Flix Town crash
 
-subtitles: 25 passed, 14 failed
+subtitles: 12 passed, 11 failed
