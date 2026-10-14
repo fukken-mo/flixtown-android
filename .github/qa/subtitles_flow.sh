@@ -89,14 +89,15 @@ print(("DOWN "*(t-sel) if t>sel else "UP "*(sel-t)).strip())' "$line" "$want")"
 
 run_case(){ local kind="$1"
   wait_activity PlayerActivity 15 && ok "$kind: player opened" || { bad "$kind: player did not open ($(resumed))"; return; }
-  sleep 6
+  for i in $(seq 1 40); do e="$(qaf elapsed)"; [ -n "$e" ] && [ "$e" -ge 3 ] 2>/dev/null && break; sleep 1; done
+  note "INFO  $kind: playing at ${e:-?}s"
   key DPAD_UP; sleep 0.6; player_focus subs DPAD_RIGHT; key DPAD_CENTER; sleep 1.5
   check "$kind: playing the test video (its subtitle tracks are listed)" 'picker_line | grep -q "Plain" && picker_line | grep -q "Bottom"'
   key BACK; sleep 1
   picker_line | grep -q "Plain" || { note "      $(picker_line)"; for i in 1 2 3; do in_activity PlayerActivity || break; key BACK; sleep 1; done; return; }
   # --- Plain (SRT) track ---
   choose_subs "Plain"
-  lab="$(qaf subs)"; check "$kind: subtitle label shows the Plain track ($lab)" 'echo "$lab" | grep -q "Plain"'
+  lab="$(qaf subs)"; check "$kind: subtitle label shows the Plain track, English ($lab)" 'echo "$lab" | grep -q "English"'
   b="$(shown_box "$kind-plain-controls" green)"; note "INFO  plain, controls shown ($(cat "$OUT/lc")): $b"
   check "$kind: Plain subtitles visible with the controls shown, above the controls" '[ "$(cat "$OUT/lc")" = true ] && above_controls "$b"'
   wait_qa controls false 8 && ok "$kind: controls hid by themselves" || bad "$kind: controls still up ($(qa_line))"
@@ -106,7 +107,7 @@ run_case(){ local kind="$1"
   done
   # --- Bottom-positioned (ASS) track, like episode subtitle files ---
   choose_subs "Bottom"
-  lab="$(qaf subs)"; check "$kind: subtitle label shows the Bottom track ($lab)" 'echo "$lab" | grep -q "Bottom"'
+  lab="$(qaf subs)"; check "$kind: subtitle label shows the Bottom track, French ($lab)" 'echo "$lab" | grep -q "French"'
   b="$(shown_box "$kind-bottom-controls" yellow)"; note "INFO  bottom, controls shown ($(cat "$OUT/lc")): $b"
   check "$kind: bottom-positioned subtitles visible with the controls shown, above the controls" '[ "$(cat "$OUT/lc")" = true ] && above_controls "$b"'
   wait_qa controls false 8
@@ -158,7 +159,9 @@ wait_activity DetailsActivity 8; key BACK; sleep 1.5
 # Episode
 key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 4 > /dev/null; key DPAD_CENTER; sleep 2.5
 key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4
-focus_to DPAD_DOWN "Season 1" 4 > /dev/null; key DPAD_DOWN; sleep 0.8; use_test_stream > /dev/null; key DPAD_CENTER
+focus_to DPAD_DOWN "Season 1" 4 > /dev/null; use_test_stream > /dev/null; key DPAD_DOWN; sleep 1.5
+note "INFO  episode row focus: $(focused)"
+for t in 1 2 3; do key DPAD_CENTER; wait_activity PlayerActivity 10 && break; done
 run_case episode
 crashes="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashes" = 0 ]'
