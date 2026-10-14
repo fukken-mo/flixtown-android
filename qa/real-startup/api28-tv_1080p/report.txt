@@ -15,7 +15,7 @@ PASS  [none:ok] no crash
 PASS  [none:slow] form filled (username field holds only the username)
 PASS  [none:slow] sign-in accepted, Home opened
 PASS  [none:slow] slow server (>15 s): the usual 'taking longer' message
-      catalog arrived 21 s after sign-in (no key pressed)
+      catalog arrived 20 s after sign-in (no key pressed)
 PASS  [none:slow] catalog arrived and the loading screen closed by itself
 PASS  [none:slow] Home shows titles
 PASS  [none:slow] Movies populated (12 posters on screen)
@@ -37,7 +37,7 @@ PASS  [none:cached] no crash
 == api28-tv_1080p · renewal API: probe · catalog: ok
 PASS  [probe:ok] form filled (username field holds only the username)
 PASS  [probe:ok] sign-in accepted, Home opened
-      catalog arrived 5 s after sign-in
+      catalog arrived 6 s after sign-in
 PASS  [probe:ok] startup refresh finished: updated
 PASS  [probe:ok] no 'taking longer than usual' message
 PASS  [probe:ok] Home shows titles
@@ -71,7 +71,7 @@ PASS  [ok:ok] no crash
 == api28-tv_1080p · renewal API: 500 · catalog: ok
 PASS  [500:ok] form filled (username field holds only the username)
 PASS  [500:ok] sign-in accepted, Home opened
-      catalog arrived 6 s after sign-in
+      catalog arrived 5 s after sign-in
 PASS  [500:ok] startup refresh finished: updated
 PASS  [500:ok] no 'taking longer than usual' message
 PASS  [500:ok] Home shows titles
@@ -87,7 +87,7 @@ PASS  [500:ok] no crash
 == api28-tv_1080p · renewal API: timeout · catalog: ok
 PASS  [timeout:ok] form filled (username field holds only the username)
 PASS  [timeout:ok] sign-in accepted, Home opened
-      catalog arrived 6 s after sign-in
+      catalog arrived 5 s after sign-in
 PASS  [timeout:ok] startup refresh finished: updated
 PASS  [timeout:ok] no 'taking longer than usual' message
 PASS  [timeout:ok] Home shows titles
