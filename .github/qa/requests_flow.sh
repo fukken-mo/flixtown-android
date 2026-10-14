@@ -208,7 +208,7 @@ shot 07-season-requested
 key BACK; sleep 1; key DPAD_CENTER; sleep 2; key DPAD_CENTER; sleep 1; dump
 check "reopened picker: Season 3 now pending, only Season 4 selectable" 'grep -q "Season 3  ·  8 episodes   —   Pending approval" "$OUT/ui.xml" && focused | grep -q "Season 4"'
 key BACK; sleep 1
-check "Back from the picker returns to the series details" 'text "Choose seasons"'
+check "Back from the picker returns to the series details" 'dump; [ "$(focused)" = "Choose seasons" ] && text "Choose seasons"'
 key BACK; sleep 1
 
 # ---------------- My Requests ----------------
