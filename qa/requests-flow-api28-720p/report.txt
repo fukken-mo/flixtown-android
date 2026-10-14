@@ -9,29 +9,30 @@ PASS  results: Movie, year and state on the cards
 PASS  states: Available, Pending approval, Approved, Declined
 PASS  series shown as Partly available (never fully available)
 PASS  a movie already in this TV's catalog shows In Flix Town
+PASS  Back closes the keyboard and stays on Requests
 FAIL  Down from the search box: first result
       at: RequestsActivity focus='alpha'
 FAIL  scrolling near the end loads page 2 (30 results)
       at: RequestsActivity focus='alpha'
 PASS  Up from the first row returns to the search box
 FAIL  details: title, synopsis, Requestable, Request button focused
-      at: RequestsActivity focus='alpha1'
+      at: RequestsActivity focus='alpha'
 FAIL  Request: Pending approval, told where to find it
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  Back closes details and returns to the same card
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  the card now says Pending approval
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  reopened: no Request button (already requested)
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  declined: no Request button, explained
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  available: no Request button
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  card 7 is the title already in Flix Town
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  in Flix Town: Watch in Flix Town, no Request
-      at: RequestsActivity focus='alpha11'
+      at: RequestsActivity focus='alpha1'
 FAIL  Watch did not open details
 PASS  Back from the title returns to Requests
 FAIL  series details: Choose seasons
@@ -68,4 +69,4 @@ FAIL  browsing still works while Requests is down (Movies grid)
 FAIL  no crash during the whole run
       at: DetailsActivity focus='▶  Play'
 
-requests flow: 13 passed, 28 failed
+requests flow: 14 passed, 28 failed
