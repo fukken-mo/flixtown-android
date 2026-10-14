@@ -19,9 +19,13 @@ PASS  series shown as Partly available (never fully available)
 PASS  a movie already in this TV's catalog shows In Flix Town
 PASS  Up returns to the first row
 PASS  scrolling down (row 2): focused card and its text fully visible
+PASS  scrolling down (row 2): nothing drawn over the header
 PASS  scrolling down (row 3): focused card and its text fully visible
+PASS  scrolling down (row 3): nothing drawn over the header
 PASS  scrolling down (row 4): focused card and its text fully visible
+PASS  scrolling down (row 4): nothing drawn over the header
 PASS  scrolling down (row 5): focused card and its text fully visible
+PASS  scrolling down (row 5): nothing drawn over the header
 PASS  scrolling near the end loads page 2 (30 results)
 PASS  Up from the first row returns to the search box
 PASS  details: title, synopsis, Requestable, Request button focused
@@ -40,16 +44,15 @@ PASS  season picker: S1 available and S2 pending shown, not selectable
 PASS  focus starts on the first requestable season (Season 3)
 PASS  Up does not land on seasons that cannot be requested
 PASS  OK selects Season 3 (✓) and the button says Request 1 season
-FAIL  season request sent for S3 only, Pending approval
-      at: RequestsActivity focus='Choose seasons'
-FAIL  reopened picker: Season 3 now pending, only Season 4 selectable
-      at: RequestsActivity focus='○  Season 3  ·  8 episodes'
+PASS  Down: Season 4 (the last season that can be requested)
+PASS  Down from the last season: Request 1 season
+PASS  season request sent for S3 only, Pending approval
+PASS  reopened picker: Season 3 now pending, only Season 4 selectable
 FAIL  Back from the picker returns to the series details
-      at: RequestsActivity focus='○  Season 3  ·  8 episodes'
+      at: RequestsActivity focus='Choose seasons'
 PASS  Up from the search box reaches the tabs
 PASS  Right: My Requests
-FAIL  My Requests: my movie (Pending approval) and my season (S3)
-      at: RequestsActivity focus='Alpha Earlier Request. Movie, 2020. Approved · processing'
+PASS  My Requests: my movie (Pending approval) and my season (S3)
 PASS  My Requests: an earlier request shows Approved · processing
 PASS  My Requests: focused card and its text fully visible
       server now: {"requests":"down"}
@@ -58,4 +61,4 @@ PASS  Back leaves Requests for Home
 PASS  browsing still works while Requests is down (Movies grid)
 PASS  no crash during the whole run
 
-requests flow: 50 passed, 4 failed
+requests flow: 59 passed, 1 failed
