@@ -80,6 +80,17 @@ ok = bool(f) and b(f[0])[1] >= top and b(f[0])[3] <= height and b(f[0])[3]-b(f[0
 print("card", b(f[0]) if f else None, "header bottom", top, "screen", height, file=sys.stderr)
 sys.exit(0 if ok else 1)
 ' "$OUT/ui.xml"; }
+# No card (poster or text) is drawn over the header after scrolling.
+header_clear(){ dump; python3 -c '
+import sys, re, xml.etree.ElementTree as ET
+nodes=list(ET.parse(sys.argv[1]).getroot().iter("node"))
+b=lambda n: [int(x) for x in re.findall(r"\d+", n.get("bounds"))]
+top=max([b(n)[3] for n in nodes if n.get("text") in ("Search","My Requests")] or [0])
+cards=[n for n in nodes if re.search(r"\. (Movie|TV Show)(, \d{4})?\. ", n.get("content-desc") or "")]
+over=[(n.get("content-desc"), b(n)) for n in cards for d in [n]+list(n.iter("node")) if b(d)[1] < top and b(d)[3] > b(d)[1]]
+print("over header:", over[:3], file=sys.stderr)
+sys.exit(1 if over else 0)
+' "$OUT/ui.xml"; }
 # Focus result number N (0-based): back to the search box, then down and across.
 go_card(){ local n=$1 s; for i in $(seq 1 8); do in_field && break; key DPAD_UP; done
   sleep 0.5; close_kb; key DPAD_DOWN; sleep 0.5; in_field && { close_kb; key DPAD_DOWN; }; sleep 0.5; s=$(span)
@@ -137,7 +148,8 @@ check "series shown as Partly available (never fully available)" 'desc "Alpha Sh
 check "a movie already in this TV's catalog shows In Flix Town" 'grep -q "In Flix Town" "$OUT/ui.xml"'
 key DPAD_UP; sleep 1
 check "Up returns to the first row" 'focused | grep -q "Alpha Movie"'
-for i in 1 2 3 4; do key DPAD_DOWN; sleep 0.8; check "scrolling down (row $((i+1))): focused card and its text fully visible" 'card_visible'; done
+for i in 1 2 3 4; do key DPAD_DOWN; sleep 0.8; check "scrolling down (row $((i+1))): focused card and its text fully visible" 'card_visible'
+  check "scrolling down (row $((i+1))): nothing drawn over the header" 'header_clear'; done
 shot 02b-search-scrolled; sleep 1.5
 check "scrolling near the end loads page 2 (30 results)" 'qa | grep -q "search q=alpha page=2 results=30"'
 for i in $(seq 1 8); do in_field && break; key DPAD_UP; done; close_kb

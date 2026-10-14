@@ -114,11 +114,13 @@ public class RequestsActivity extends Activity {
 
         // Results: the same leanback grid as Movies and TV Shows, four posters across. The status line
         // sits over the grid so it never pushes the cards down.
-        FrameLayout area=new FrameLayout(this);area.setClipChildren(false);area.setClipToPadding(false);
-        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,0,1);ap.topMargin=Ui.dp(this,12);page.addView(area,ap);
+        // The area clips at its top so rows scrolled up never draw over the header; the grid's own top
+        // padding leaves room for the focused card's glow and zoom.
+        FrameLayout area=new FrameLayout(this);area.setClipChildren(true);area.setClipToPadding(true);
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,0,1);ap.topMargin=Ui.dp(this,4);page.addView(area,ap);
         grid=new VerticalGridView(this);grid.setClipChildren(false);grid.setClipToPadding(false);grid.setItemAnimator(null);
         grid.setNumColumns(COLUMNS);grid.setHorizontalSpacing(0);grid.setVerticalSpacing(Ui.dp(this,4));
-        grid.setPadding(0,Ui.dp(this,4),0,Ui.safeY(this));grid.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+        grid.setPadding(0,Ui.dp(this,GRID_TOP_DP),0,Ui.safeY(this));grid.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         sizeCards();
         adapter=new Adapter();grid.setAdapter(adapter);
         area.addView(grid,new FrameLayout.LayoutParams(-1,-1));
@@ -127,7 +129,7 @@ public class RequestsActivity extends Activity {
         details=new Details();
     }
     private final Runnable debounced=()->startSearch(false);
-    static final int COLUMNS=4;
+    static final int COLUMNS=4,GRID_TOP_DP=16;
     /** Text under a poster: title (16sp), year · type (14sp) and the request state (14sp). */
     static final int TEXT_DP=70;
     private int cardWidth,artWidth,artHeight;
@@ -138,7 +140,7 @@ public class RequestsActivity extends Activity {
     private void sizeCards(){
         android.util.DisplayMetrics m=getResources().getDisplayMetrics();int glow=Ui.dp(this,PosterAdapter.GLOW_DP);
         cardWidth=(m.widthPixels-2*Ui.safeX(this))/COLUMNS;
-        int gridHeight=m.heightPixels-Ui.safeY(this)-Ui.dp(this,46+12)-Ui.dp(this,4)-Ui.safeY(this);
+        int gridHeight=m.heightPixels-Ui.safeY(this)-Ui.dp(this,46+4)-Ui.dp(this,GRID_TOP_DP)-Ui.safeY(this);
         artWidth=cardWidth-2*glow;artHeight=artWidth*3/2;
         int maxArt=gridHeight-2*glow-Ui.dp(this,TEXT_DP)-Ui.dp(this,8);
         if(artHeight>maxArt){artHeight=maxArt;artWidth=artHeight*2/3;}
