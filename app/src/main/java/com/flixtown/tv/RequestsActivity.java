@@ -26,7 +26,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.leanback.widget.VerticalGridView;
 import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -50,7 +50,7 @@ public class RequestsActivity extends Activity {
     private static final long SEARCH_DELAY_MS=700;
     private static final int MAX_PAGES=10;
     private final Handler handler=new Handler(Looper.getMainLooper());
-    private FrameLayout root;private EditText field;private TextView status;private RecyclerView grid;
+    private FrameLayout root;private EditText field;private TextView status;private VerticalGridView grid;
     private Button tabSearch,tabMine;private boolean mine;
     private final List<Entry> entries=new ArrayList<>();private Adapter adapter;
     private String query="";private int page,pages,generation;private boolean loading;
@@ -81,19 +81,20 @@ public class RequestsActivity extends Activity {
 
         LinearLayout header=Ui.row(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setClipChildren(false);
         page.addView(header,new LinearLayout.LayoutParams(-1,-2));
-        TextView title=Ui.heading(this,"Requests",30);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+        TextView title=Ui.heading(this,"Requests",30);header.addView(title,new LinearLayout.LayoutParams(-2,-2));
+        field=new EditText(this);
+        LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(0,Ui.dp(this,46),1);fp.leftMargin=Ui.dp(this,24);fp.rightMargin=Ui.dp(this,8);
+        header.addView(field,fp);
         tabSearch=Ui.button(this,"Search");tabMine=Ui.button(this,"My Requests");
         for(Button t:new Button[]{tabSearch,tabMine}){t.setTextSize(16);t.setId(View.generateViewId());
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46));p.leftMargin=Ui.dp(this,10);header.addView(t,p);}
         tabSearch.setOnClickListener(v->showSearch());tabMine.setOnClickListener(v->showMine());
 
-        field=new EditText(this);field.setHint("Search movies and TV shows");field.setSingleLine(true);field.setTextSize(18);
+        field.setHint("Search movies and TV shows");field.setSingleLine(true);field.setTextSize(17);
         field.setTextColor(Ui.TEXT);field.setHintTextColor(Ui.TEXT_3);field.setBackgroundResource(R.drawable.edit_field);
         field.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);field.setId(View.generateViewId());
         field.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         field.setImeOptions(EditorInfo.IME_ACTION_SEARCH|EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(Ui.dp(this,560),Ui.dp(this,52));fp.topMargin=Ui.dp(this,12);
-        page.addView(field,fp);
         field.addTextChangedListener(new TextWatcher(){
             @Override public void beforeTextChanged(CharSequence s,int a,int b,int c){}
             @Override public void onTextChanged(CharSequence s,int a,int b,int c){}
@@ -111,19 +112,37 @@ public class RequestsActivity extends Activity {
             return false;});
         field.setNextFocusUpId(tabSearch.getId());
 
-        status=Ui.text(this,"",16);status.setTextColor(Ui.TEXT_2);
-        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=Ui.dp(this,10);page.addView(status,sp);
-
-        grid=new RecyclerView(this);grid.setClipChildren(false);grid.setClipToPadding(false);grid.setItemAnimator(null);
+        // Results: the same leanback grid as Movies and TV Shows, four posters across. The status line
+        // sits over the grid so it never pushes the cards down.
+        FrameLayout area=new FrameLayout(this);area.setClipChildren(false);area.setClipToPadding(false);
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,0,1);ap.topMargin=Ui.dp(this,12);page.addView(area,ap);
+        grid=new VerticalGridView(this);grid.setClipChildren(false);grid.setClipToPadding(false);grid.setItemAnimator(null);
+        grid.setNumColumns(COLUMNS);grid.setHorizontalSpacing(0);grid.setVerticalSpacing(Ui.dp(this,4));
         grid.setPadding(0,Ui.dp(this,4),0,Ui.safeY(this));grid.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
-        int width=getResources().getDisplayMetrics().widthPixels-2*Ui.safeX(this);
-        int span=Math.max(3,width/(Card.width(this)));
-        grid.setLayoutManager(new GridLayoutManager(this,span));
+        sizeCards();
         adapter=new Adapter();grid.setAdapter(adapter);
-        LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,0,1);gp.topMargin=Ui.dp(this,6);page.addView(grid,gp);
+        area.addView(grid,new FrameLayout.LayoutParams(-1,-1));
+        status=Ui.text(this,"",16);status.setTextColor(Ui.TEXT_2);Ui.pad(status,this,PosterAdapter.GLOW_DP,6,0,0);
+        area.addView(status,new FrameLayout.LayoutParams(-1,-2));
         details=new Details();
     }
     private final Runnable debounced=()->startSearch(false);
+    static final int COLUMNS=4;
+    /** Text under a poster: title (16sp), year · type (14sp) and the request state (14sp). */
+    static final int TEXT_DP=70;
+    private int cardWidth,artWidth,artHeight;
+    /**
+     * Four columns across the page, 2:3 artwork as on Movies. The artwork is also kept short enough
+     * that one whole card (glow, poster and its text) fits under the header at 720p and 1080p.
+     */
+    private void sizeCards(){
+        android.util.DisplayMetrics m=getResources().getDisplayMetrics();int glow=Ui.dp(this,PosterAdapter.GLOW_DP);
+        cardWidth=(m.widthPixels-2*Ui.safeX(this))/COLUMNS;
+        int gridHeight=m.heightPixels-Ui.safeY(this)-Ui.dp(this,46+12)-Ui.dp(this,4)-Ui.safeY(this);
+        artWidth=cardWidth-2*glow;artHeight=artWidth*3/2;
+        int maxArt=gridHeight-2*glow-Ui.dp(this,TEXT_DP)-Ui.dp(this,8);
+        if(artHeight>maxArt){artHeight=maxArt;artWidth=artHeight*2/3;}
+    }
     private boolean focusResults;
 
     private void showSearch(){
@@ -198,11 +217,11 @@ public class RequestsActivity extends Activity {
         if(position<entries.size()-adapterSpan()*2)return;
         if(mine)loadHistory(page+1);else loadSearch(page+1);
     }
-    private int adapterSpan(){return ((GridLayoutManager)grid.getLayoutManager()).getSpanCount();}
+    private int adapterSpan(){return COLUMNS;}
     /** Rebinds one card in place, so the card the details came from keeps its view and focus. */
     private void refreshCard(Entry e){int i=entries.indexOf(e);if(i>=0)adapter.notifyItemChanged(i);}
     private void focusGrid(){RecyclerView.ViewHolder h=grid.findViewHolderForAdapterPosition(0);if(h!=null){h.itemView.requestFocus();return;}
-        grid.scrollToPosition(0);grid.post(()->{RecyclerView.ViewHolder f=grid.findViewHolderForAdapterPosition(0);if(f!=null)f.itemView.requestFocus();else grid.requestFocus();});}
+        grid.setSelectedPosition(0);grid.post(()->{RecyclerView.ViewHolder f=grid.findViewHolderForAdapterPosition(0);if(f!=null)f.itemView.requestFocus();else grid.requestFocus();});}
     private Catalog.Item localMatch(Entry e){
         Catalog.Item item=local.get(e.type+":"+e.id);
         if(item==null)return null;
@@ -242,8 +261,6 @@ public class RequestsActivity extends Activity {
     /* ---------------- cards ---------------- */
 
     static final class Card extends RecyclerView.ViewHolder{
-        static final int ART_DP=124,TEXT_DP=62;
-        static int width(Activity a){return Ui.dp(a,ART_DP+2*PosterAdapter.GLOW_DP+8);}
         final FrameLayout poster;final ImageView image;final TextView fallback,name,meta,badge;final GlowDrawable glow;final GradientDrawable ring;
         Card(View v,FrameLayout poster,ImageView image,TextView fallback,TextView name,TextView meta,TextView badge,GlowDrawable glow,GradientDrawable ring){
             super(v);this.poster=poster;this.image=image;this.fallback=fallback;this.name=name;this.meta=meta;this.badge=badge;this.glow=glow;this.ring=ring;}
@@ -251,26 +268,31 @@ public class RequestsActivity extends Activity {
     private final class Adapter extends RecyclerView.Adapter<Card>{
         @Override public int getItemCount(){return entries.size();}
         @Override public Card onCreateViewHolder(ViewGroup parent,int type){
-            Activity a=RequestsActivity.this;int glow=Ui.dp(a,PosterAdapter.GLOW_DP),w=Ui.dp(a,Card.ART_DP),h=w*3/2;
+            Activity a=RequestsActivity.this;int glow=Ui.dp(a,PosterAdapter.GLOW_DP),w=artWidth,h=artHeight;
             LinearLayout card=new LinearLayout(a);card.setOrientation(LinearLayout.VERTICAL);card.setClipChildren(false);
+            card.setGravity(Gravity.CENTER_HORIZONTAL);
             card.setFocusable(true);card.setFocusableInTouchMode(true);card.setClickable(true);
-            card.setLayoutParams(new RecyclerView.LayoutParams(Card.width(a),h+2*glow+Ui.dp(a,Card.TEXT_DP)));
+            card.setLayoutParams(new RecyclerView.LayoutParams(cardWidth,h+2*glow+Ui.dp(a,TEXT_DP)));
             FrameLayout poster=new FrameLayout(a);poster.setPadding(glow,glow,glow,glow);
             GlowDrawable glowDrawable=new GlowDrawable(glow,Ui.dp(a,6),Ui.GLOW);poster.setBackground(glowDrawable);
             card.addView(poster,new LinearLayout.LayoutParams(w+2*glow,h+2*glow));
             FrameLayout art=new FrameLayout(a);art.setBackgroundColor(0xFF17171C);int radius=Ui.dp(a,6);
             art.setOutlineProvider(new ViewOutlineProvider(){@Override public void getOutline(View v,Outline o){o.setRoundRect(0,0,v.getWidth(),v.getHeight(),radius);}});
             art.setClipToOutline(true);poster.addView(art,new FrameLayout.LayoutParams(-1,-1));
-            TextView fallback=Ui.text(a,"",14);fallback.setTextColor(Ui.TEXT_2);fallback.setGravity(Gravity.CENTER);fallback.setMaxLines(4);
+            TextView fallback=Ui.text(a,"",15);fallback.setTextColor(Ui.TEXT_2);fallback.setGravity(Gravity.CENTER);fallback.setMaxLines(4);
             fallback.setEllipsize(TextUtils.TruncateAt.END);Ui.pad(fallback,a,8,8,8,8);art.addView(fallback,new FrameLayout.LayoutParams(-1,-1));
             ImageView image=new ImageView(a);image.setScaleType(ImageView.ScaleType.CENTER_CROP);art.addView(image,new FrameLayout.LayoutParams(-1,-1));
             GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(radius);ring.setStroke(Ui.dp(a,2),0xFFE06A66);ring.setColor(0);
-            LinearLayout text=Ui.column(a);text.setPadding(glow,Ui.dp(a,2),glow,0);card.addView(text,new LinearLayout.LayoutParams(-1,Ui.dp(a,Card.TEXT_DP)));
-            TextView name=Ui.text(a,"",14);name.setTextColor(Ui.TEXT_2);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);name.setGravity(Gravity.CENTER_HORIZONTAL);
-            TextView meta=Ui.text(a,"",12);meta.setTextColor(Ui.TEXT_3);meta.setSingleLine(true);meta.setEllipsize(TextUtils.TruncateAt.END);meta.setGravity(Gravity.CENTER_HORIZONTAL);
-            TextView badge=Ui.text(a,"",12);badge.setSingleLine(true);badge.setEllipsize(TextUtils.TruncateAt.END);badge.setGravity(Gravity.CENTER_HORIZONTAL);
+            LinearLayout text=Ui.column(a);text.setPadding(glow,Ui.dp(a,4),glow,0);card.addView(text,new LinearLayout.LayoutParams(-1,Ui.dp(a,TEXT_DP)));
+            TextView name=Ui.text(a,"",16);name.setTextColor(Ui.TEXT_2);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);name.setGravity(Gravity.CENTER_HORIZONTAL);
+            TextView meta=Ui.text(a,"",14);meta.setTextColor(Ui.TEXT_2);meta.setSingleLine(true);meta.setEllipsize(TextUtils.TruncateAt.END);meta.setGravity(Gravity.CENTER_HORIZONTAL);
+            TextView badge=Ui.text(a,"",14);badge.setSingleLine(true);badge.setEllipsize(TextUtils.TruncateAt.END);badge.setGravity(Gravity.CENTER_HORIZONTAL);
             text.addView(name,new LinearLayout.LayoutParams(-1,-2));text.addView(meta,new LinearLayout.LayoutParams(-1,-2));text.addView(badge,new LinearLayout.LayoutParams(-1,-2));
             Card c=new Card(card,poster,image,fallback,name,meta,badge,glowDrawable,ring);
+            // Up from the top row goes back to the search box (or the tabs in My Requests), whichever column.
+            card.setOnKeyListener((v,code,ev)->{if(ev.getAction()!=KeyEvent.ACTION_DOWN||code!=KeyEvent.KEYCODE_DPAD_UP)return false;
+                int p=c.getBindingAdapterPosition();if(p<0||p>=COLUMNS)return false;
+                (mine?tabMine:field).requestFocus();return true;});
             card.setOnFocusChangeListener((v,f)->{c.glow.setOn(f);art.setForeground(f?ring:null);name.setTextColor(f?Ui.TEXT:Ui.TEXT_2);
                 float s=f?PosterAdapter.FOCUS_SCALE:1f;poster.animate().scaleX(s).scaleY(s).setDuration(120).start();
                 if(f){int p=c.getBindingAdapterPosition();if(p>=0)maybeLoadMore(p);}});
@@ -286,7 +308,7 @@ public class RequestsActivity extends Activity {
             else c.meta.setText(HomeCards.join(e.year,kind));
             c.badge.setText(label(e.state));c.badge.setTextColor(color(e.state));
             c.itemView.setContentDescription(e.title+". "+kind+(e.year.isEmpty()?"":", "+e.year)+". "+label(e.state));
-            Images.load(c.image,e.poster,Ui.dp(RequestsActivity.this,Card.ART_DP));
+            Images.load(c.image,e.poster,artWidth);
         }
     }
     static String seasonsText(int[] seasons){

@@ -68,6 +68,18 @@ tops=[int(re.findall(r"\d+",n.get("bounds"))[1]) for n in ET.parse(sys.argv[1]).
       if re.search(r"\. (Movie|TV Show)(, \d{4})?\. ", n.get("content-desc") or "")]
 print(sum(1 for t in tops if t==tops[0]) if tops else 1)
 ' "$OUT/ui.xml"; }
+# The focused card (artwork and its three lines of text) lies wholly below the header and on screen.
+card_visible(){ dump; python3 -c '
+import sys, re, xml.etree.ElementTree as ET
+nodes=list(ET.parse(sys.argv[1]).getroot().iter("node"))
+b=lambda n: [int(x) for x in re.findall(r"\d+", n.get("bounds"))]
+f=[n for n in nodes if n.get("focused")=="true" and re.search(r"\. (Movie|TV Show)(, \d{4})?\. ", n.get("content-desc") or "")]
+top=max([b(n)[3] for n in nodes if n.get("text") in ("Search","My Requests")] or [0])
+height=max(b(n)[3] for n in nodes)
+ok = bool(f) and b(f[0])[1] >= top and b(f[0])[3] <= height and b(f[0])[3]-b(f[0])[1] > 0
+print("card", b(f[0]) if f else None, "header bottom", top, "screen", height, file=sys.stderr)
+sys.exit(0 if ok else 1)
+' "$OUT/ui.xml"; }
 # Focus result number N (0-based): back to the search box, then down and across.
 go_card(){ local n=$1 s; for i in $(seq 1 8); do in_field && break; key DPAD_UP; done
   sleep 0.5; close_kb; key DPAD_DOWN; sleep 0.5; in_field && { close_kb; key DPAD_DOWN; }; sleep 0.5; s=$(span)
@@ -103,9 +115,7 @@ adb shell input text "alpha"; sleep 3
 check "typing searches after a short pause (debounced, one search)" '[ "$(qa | grep -c "search q=alpha page=1")" = 1 ]'
 dump
 check "results: Movie, year and state on the cards" 'desc "Alpha Movie. Movie, 1990. Requestable"'
-check "states: Available, Pending approval, Approved, Declined" 'desc "Alpha Title 1. Movie, 1991. Available" && desc "Alpha Title 2. Movie, 1992. Pending approval" && desc "Alpha Title 3. Movie, 1993. Approved · processing" && desc "Alpha Title 4. Movie, 1994. Declined"'
-check "series shown as Partly available (never fully available)" 'desc "Alpha Show. TV Show, 2015. Partly available"'
-check "a movie already in this TV's catalog shows In Flix Town" 'grep -q "In Flix Town" "$OUT/ui.xml"'
+check "states: Available, Pending approval, Approved" 'desc "Alpha Title 1. Movie, 1991. Available" && desc "Alpha Title 2. Movie, 1992. Pending approval" && desc "Alpha Title 3. Movie, 1993. Approved · processing"'
 kb_shown || { key DPAD_CENTER; sleep 1.5; }   # OK on the search box opens the keyboard
 check "the on-screen keyboard is open on the search box" 'kb_shown'
 key BACK; sleep 1
@@ -116,8 +126,17 @@ key DPAD_UP; sleep 0.5; close_kb
 check "Up from the first result returns to the search box" 'in_field'
 key DPAD_DOWN; sleep 1
 check "Down from the search box: first result" 'focused | grep -q "Alpha Movie"'
+check "four posters across, like the rest of the app" '[ "$(span)" = 4 ]'
+check "first card and its text fully visible" 'card_visible'
 shot 02-search-results
-for i in 1 2 3 4; do key DPAD_DOWN; done; sleep 2
+key DPAD_DOWN; sleep 1; dump
+check "states: Declined" 'desc "Alpha Title 4. Movie, 1994. Declined"'
+check "series shown as Partly available (never fully available)" 'desc "Alpha Show. TV Show, 2015. Partly available"'
+check "a movie already in this TV's catalog shows In Flix Town" 'grep -q "In Flix Town" "$OUT/ui.xml"'
+key DPAD_UP; sleep 1
+check "Up returns to the first row" 'focused | grep -q "Alpha Movie"'
+for i in 1 2 3 4; do key DPAD_DOWN; sleep 0.8; check "scrolling down (row $((i+1))): focused card and its text fully visible" 'card_visible'; done
+shot 02b-search-scrolled; sleep 1.5
 check "scrolling near the end loads page 2 (30 results)" 'qa | grep -q "search q=alpha page=2 results=30"'
 for i in $(seq 1 8); do in_field && break; key DPAD_UP; done; close_kb
 check "Up from the first row returns to the search box" 'in_field'
@@ -181,6 +200,7 @@ key DPAD_RIGHT; check "Right: My Requests" '[ "$(focused)" = "My Requests" ]'
 key DPAD_CENTER; sleep 3; dump
 check "My Requests: my movie (Pending approval) and my season (S3)" 'grep -q "Alpha Movie" "$OUT/ui.xml" && grep -q "Alpha Show" "$OUT/ui.xml" && grep -q "S3" "$OUT/ui.xml"'
 check "My Requests: an earlier request shows Approved · processing" 'grep -q "Alpha Earlier Request" "$OUT/ui.xml" && grep -q "Approved · processing" "$OUT/ui.xml"'
+check "My Requests: focused card and its text fully visible" 'card_visible'
 shot 08-my-requests
 
 # ---------------- unavailable ----------------
