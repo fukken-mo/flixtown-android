@@ -57,22 +57,48 @@ PASS  My Requests: an earlier request shows Approved · processing
 PASS  My Requests: focused card and its text fully visible
 PASS  older pending request for a movie already here: the card says In Flix Town, not Pending
 PASS  that card is focused
-FAIL  its details agree: In Flix Town with Watch, no Pending approval
-      at: RequestsActivity focus='Watch in Flix Town'
+PASS  its details agree: In Flix Town with Watch, no Request button
       server now: {"request_states":{"movie:8100":"approved"}}
 PASS  back from Details: the same card keeps focus
 PASS  back from the title: My Requests refreshed in place (Alpha Movie now Approved), no polling
+      server now: {"request_states":{"movie:8100":"pending"}}
+PASS  movie pending: card on entering My Requests says Pending approval
+PASS  movie pending: details say Pending approval too
+PASS  movie pending: back on the same card, still Pending approval
+      server now: {"request_states":{"movie:8100":"approved"}}
+PASS  movie approved: card on entering My Requests says Approved · processing
+PASS  movie approved: details say Approved · processing too
+PASS  movie approved: back on the same card, still Approved · processing
       server now: {"request_states":{"movie:8100":"available"}}
-PASS  entering My Requests reloads: Alpha Movie Available
+PASS  movie available: card on entering My Requests says Available
+PASS  movie available: details say Available too
+PASS  movie available: back on the same card, still Available
       server now: {"request_states":{"movie:8100":"declined"}}
-PASS  entering My Requests reloads: Alpha Movie Declined
+PASS  movie declined: card on entering My Requests says Declined
+PASS  movie declined: details say Declined too
+PASS  movie declined: back on the same card, still Declined
+      server now: {"request_states":{"tv:8205":"pending"}}
+PASS  TV S3 pending: card says Pending approval
+PASS  TV S3 pending: details say Pending approval (Season 3 only, not the whole show)
+PASS  TV S3 pending: back on the same card, still Pending approval
+      server now: {"request_states":{"tv:8205":"approved"}}
+PASS  TV S3 approved: card says Approved · processing
+PASS  TV S3 approved: details say Approved · processing (Season 3 only, not the whole show)
+PASS  TV S3 approved: back on the same card, still Approved · processing
+      server now: {"request_states":{"tv:8205":"partial"}}
+PASS  TV S3 partial: card says Partly available
+PASS  TV S3 partial: details say Partly available (Season 3 only, not the whole show)
+PASS  TV S3 partial: back on the same card, still Partly available
+      server now: {"request_states":{"tv:8205":"available"}}
+PASS  TV S3 available: card says Available
+PASS  TV S3 available: details say Available (Season 3 only, not the whole show)
+PASS  TV S3 available: back on the same card, still Available
+PASS  no polling: 12 s idle on My Requests, no further status requests (10 loads so far)
       server now: {"request_states":{"movie:8100":"approved","tv:8205":"available"}}
 PASS  stale card opened: details show the current state (Approved)
 PASS  back: the card now says Approved, focus on it
-FAIL  TV request (S3) details: the state of Season 3, not the whole show (Available, not Partly available)
-      at: RequestsActivity focus='Back'
-FAIL  back: the S3 card says Available, focus on it
-      at: RequestsActivity focus='Alpha Movie. Movie, 1990. Approved · processing'
+PASS  TV request (S3) details: the state of Season 3, not the whole show (Available, not Partly available)
+PASS  back: the S3 card says Available, focus on it
       server now: {}
       server now: {"requests":"down"}
 PASS  service down: Requests are temporarily unavailable.
@@ -80,4 +106,4 @@ PASS  Back leaves Requests for Home
 PASS  browsing still works while Requests is down (Movies grid)
 PASS  no crash during the whole run
 
-requests flow: 69 passed, 3 failed
+requests flow: 95 passed, 0 failed
