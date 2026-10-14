@@ -32,7 +32,7 @@ PASS  processing is never shown as a failure, and has nothing to cancel
 PASS  Back does not leave a payment that is being confirmed
       server now: {"expired":true,"connections":2,"plan":3,"exp":"1759968000","pay":"renewed"}
 PASS  renewal confirmed: Renewal Successful
-PASS  success shows the new expiration (11/09/2026)
+PASS  success shows the new expiration (11/13/2026)
 PASS  the code closes by itself and the renewal screen shows the new expiry
 PASS  heading: You are all set; message: Renewal successful
 PASS  account refreshed from the backend: Active, not expired
