@@ -47,6 +47,7 @@ file_put_contents($state, json_encode([
     'erin' => ['username' => 'erin', 'password' => 'erin-pass', 'expires_at' => $future, 'enabled' => true],
     'gina' => ['username' => 'gina', 'password' => 'gina-pass', 'expires_at' => $future, 'enabled' => true],
     'hank' => ['username' => 'hank', 'password' => 'hank-pass', 'expires_at' => $future, 'enabled' => true],
+    'ivy' => ['username' => 'ivy', 'password' => 'ivy-pass', 'expires_at' => $future, 'enabled' => true],
     'old' => ['username' => 'old', 'password' => 'old-pass', 'expires_at' => $past, 'enabled' => true],
   ],
   'users' => ['1' => ['permissions' => 2], '7' => ['permissions' => 32], '8' => ['permissions' => 32 | 128], '9' => ['permissions' => 2], '10' => ['permissions' => 64],
@@ -69,6 +70,10 @@ file_put_contents($state, json_encode([
     ['mediaType' => 'movie', 'id' => 113, 'title' => 'Locked Movie', 'releaseDate' => '2015-03-01'],
     ['mediaType' => 'tv', 'id' => 204, 'name' => 'Flix Show', 'firstAirDate' => '2016-05-01', 'seasons' => $seasons(3)],
     ['mediaType' => 'tv', 'id' => 205, 'name' => 'Flat Show', 'firstAirDate' => '2011-05-01', 'seasons' => $seasons(2)],
+    ['mediaType' => 'movie', 'id' => 114, 'title' => 'Life Movie', 'releaseDate' => '2014-03-01'],
+    ['mediaType' => 'movie', 'id' => 115, 'title' => 'Arriving Movie', 'releaseDate' => '2018-02-23'],
+    ['mediaType' => 'movie', 'id' => 116, 'title' => 'Refused Movie', 'releaseDate' => '2013-03-01'],
+    ['mediaType' => 'tv', 'id' => 206, 'name' => 'Life Show', 'firstAirDate' => '2019-05-01', 'seasons' => $seasons(3)],
     ['mediaType' => 'tv', 'id' => 202, 'name' => 'Complete Show', 'firstAirDate' => '2010-01-01', 'seasons' => $seasons(2)],
   ],
   // The customers' Flix Town catalog (player_api.php): what the TV app would list.
@@ -327,6 +332,60 @@ $r = call(['action' => 'request', 'session' => $E, 'type' => 'movie', 'id' => 10
 check('catalog unreadable: details still shown (marked unchecked), the request is refused (503), nothing sent', $d1['code'] === 200 && $d1['j']['details']['flix_checked'] === false
   && $r['code'] === 503 && $r['j']['message'] === $unavailable && count(st()['posts']) === $p0);
 setst(function ($s) { unset($s['player_down']); return $s; });
+
+$pdo->exec('DELETE FROM tv_request_rate');
+// ---------------- request status lifecycle (My Requests = Details, one rule) ----------------
+$I = login('ivy', 'ivy-pass');
+$flixReset = function () use ($storage) { foreach (glob("$storage/tv-requests-catalog/*") ?: [] as $f) unlink($f); };   // the Flix catalog changed
+$hist = function () use (&$I) { $m = []; foreach (call(['action' => 'history', 'session' => $I, 'page' => 1])['j']['requests'] ?? [] as $x) $m[$x['type'] . ':' . $x['id'] . ':' . implode(',', $x['seasons'])] = $x['state']; return $m; };
+$age = function (int $tmdb, int $seconds) use ($pdo) { $pdo->exec('UPDATE tv_media_requests SET last_checked_ts=' . (time() - $seconds) . " WHERE username='ivy' AND tmdb_id=$tmdb"); };
+$seerr = function (string $key, ?int $req, ?int $media, ?array $seasons = null) { setst(function ($s) use ($key, $req, $media, $seasons) {
+  foreach ($s['requests'] as &$r) if ($r['key'] === $key && $req !== null) $r['status'] = $req;
+  unset($r);
+  if ($media !== null) $s['media'][$key]['status'] = $media;
+  if ($seasons !== null) $s['media'][$key]['seasons'] = $seasons;
+  return $s; }); };
+call(['action' => 'request', 'session' => $I, 'type' => 'movie', 'id' => 114]);
+check('lifecycle: just requested = Pending approval', ($hist()['movie:114:'] ?? '') === 'pending');
+$seerr('movie:114', 2, 3); $age(114, 61);
+check('lifecycle: approved in Seerr (processing) = Approved, not available', ($hist()['movie:114:'] ?? '') === 'approved');
+$seerr('movie:114', 2, 2); $age(114, 61);
+check('lifecycle: approval alone (media not available) is never "available"', ($hist()['movie:114:'] ?? '') === 'approved');
+$seerr('movie:114', 5, 5); $age(114, 61);
+check('lifecycle: available in Seerr = Available', ($hist()['movie:114:'] ?? '') === 'available');
+// stale cache: Seerr changes, the stored status is under a minute old -> unchanged; older -> refreshed
+call(['action' => 'request', 'session' => $I, 'type' => 'movie', 'id' => 116]);
+$seerr('movie:116', 3, null); $age(116, 10);
+check('stale status: a status checked under a minute ago is reused', ($hist()['movie:116:'] ?? '') === 'pending');
+$age(116, 61);
+check('stale status: after a minute My Requests re-reads Seerr (Declined)', ($hist()['movie:116:'] ?? '') === 'declined');
+// the Flix Town catalog wins over pending / approved / declined, at once (no Seerr wait)
+call(['action' => 'request', 'session' => $I, 'type' => 'movie', 'id' => 115]);
+setst(function ($s) { $s['flix_catalog']['vod'][] = ['stream_id' => 5115, 'name' => 'Arriving Movie', 'tmdb' => '115', 'year' => '2018'];
+  $s['flix_catalog']['vod'][] = ['stream_id' => 5116, 'name' => 'Refused Movie', 'tmdb' => '116', 'year' => '2013']; return $s; });
+$flixReset();
+$h = $hist(); $d115 = call(['action' => 'details', 'session' => $I, 'type' => 'movie', 'id' => 115])['j']['details'] ?? [];
+check('catalog first: a pending request now in Flix Town shows In Flix Town in My Requests', ($h['movie:115:'] ?? '') === 'local');
+check('catalog first: card and Details agree (both In Flix Town, no Request button)', ($d115['state'] ?? '') === 'local' && $d115['can_request'] === false);
+check('catalog first: a declined title that arrived in Flix Town shows In Flix Town', ($h['movie:116:'] ?? '') === 'local');
+// TV: only the requested seasons count
+call(['action' => 'request', 'session' => $I, 'type' => 'tv', 'id' => 206, 'seasons' => [2, 3]]);
+$seerr('tv:206', null, 4, ['1' => 5, '2' => 2, '3' => 2]); $age(206, 61);
+check('TV: another season available in Seerr does not make the request available (still Pending)', ($hist()['tv:206:2,3'] ?? '') === 'pending');
+$seerr('tv:206', null, 4, ['1' => 5, '2' => 5, '3' => 2]); $age(206, 61);
+check('TV: one of the two requested seasons available in Seerr = Partly available', ($hist()['tv:206:2,3'] ?? '') === 'partial');
+$seerr('tv:206', null, 5, ['1' => 5, '2' => 5, '3' => 5]); $age(206, 61);
+check('TV: both requested seasons available in Seerr = Available', ($hist()['tv:206:2,3'] ?? '') === 'available');
+$seerr('tv:206', 1, 2, ['1' => 2, '2' => 2, '3' => 2]); $age(206, 61);
+$ep = fn($n, $count) => array_map(fn($e) => ['id' => "6$n$e", 'episode_num' => $e, 'season' => $n], range(1, $count));
+setst(function ($s) use ($ep) { $s['flix_catalog']['series'][] = ['series_id' => 9006, 'name' => 'Life Show', 'tmdb' => '206', 'year' => '2019'];
+  $s['flix_catalog']['info']['9006'] = ['episodes' => ['2' => $ep(2, 8), '3' => $ep(3, 5)]]; return $s; });
+$flixReset();
+$t = call(['action' => 'details', 'session' => $I, 'type' => 'tv', 'id' => 206])['j']['details'] ?? []; $ts = []; foreach ($t['seasons'] ?? [] as $x) $ts[$x['number']] = $x['state'];
+check('TV: Season 2 complete in Flix Town, Season 3 only 5 of 8 episodes = Partly available (never complete)', ($hist()['tv:206:2,3'] ?? '') === 'partial' && ($ts[2] ?? '') === 'local' && ($ts[3] ?? '') !== 'local');
+setst(function ($s) use ($ep) { $s['flix_catalog']['info']['9006'] = ['episodes' => ['2' => $ep(2, 8), '3' => $ep(3, 8)]]; return $s; });
+$flixReset();
+check('TV: every requested season complete in Flix Town = In Flix Town (Seerr still pending)', ($hist()['tv:206:2,3'] ?? '') === 'local');
 
 // ---------------- MySQL: ownership records ----------------
 $r = call(['action' => 'request', 'session' => $E, 'type' => 'movie', 'id' => 110]);

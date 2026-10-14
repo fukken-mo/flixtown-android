@@ -142,6 +142,11 @@ final class DemoData {
      * Search "alpha" has 30 results over 2 pages (movies in every state, a series with seasons in
      * different states, and one movie that is already in this TV's catalog); "zzz" finds nothing.
      */
+    /** The state the QA file gives a requested title ("request_states"), else the demo's own. */
+    private static String stateFor(JSONObject live,String key,String fallback){
+        JSONObject m=live==null?null:live.optJSONObject("request_states");
+        return m!=null&&m.has(key)?m.optString(key):fallback;
+    }
     private static String requests(JSONObject in)throws Exception{
         JSONObject live=live();
         if(live!=null && "down".equals(live.optString("requests")))
@@ -160,11 +165,11 @@ final class DemoData {
             JSONObject d=new JSONObject(t.toString()).put("overview","A demo synopsis for "+t.optString("title")+". Two strangers share one long night on the road, and the town is never quite the same.")
                 .put("backdrop","demo://backdrop/m"+(id%20));
             if(type.equals("tv")){JSONArray seasons=new JSONArray();String[] st={"available","pending","requestable","requestable"};
-                for(int n=1;n<=4;n++){String s=demoRequested.contains("tv:"+id+":"+n)?"pending":st[n-1];
+                for(int n=1;n<=4;n++){String s=demoRequested.contains("tv:"+id+":"+n)?stateFor(live,"tv:"+id,"pending"):st[n-1];
                     seasons.put(new JSONObject().put("number",n).put("name","Season "+n).put("episodes",8).put("state",s));}
                 d.put("seasons",seasons);boolean any=false;for(int n=0;n<4;n++)if("requestable".equals(seasons.getJSONObject(n).optString("state")))any=true;
                 d.put("state","partial").put("can_request",any);}
-            else{String s=demoRequested.contains("movie:"+id)?"pending":t.optString("state");d.put("state",s).put("can_request","requestable".equals(s));}
+            else{String s=demoRequested.contains("movie:"+id)?stateFor(live,"movie:"+id,"pending"):t.optString("state");d.put("state",s).put("can_request","requestable".equals(s));}
             return new JSONObject().put("ok",true).put("details",d).toString();}
         if(action.equals("request")){String type=in.optString("type");int id=in.optInt("id");JSONArray seasons=in.optJSONArray("seasons");
             JSONObject t=null;for(int i=0;i<30;i++){JSONObject c=demoTitle(i);if(c.optString("type").equals(type)&&c.optInt("id")==id)t=c;}
@@ -181,7 +186,11 @@ final class DemoData {
             demoRequests.add(0,row);
             return new JSONObject().put("ok",true).put("request",new JSONObject().put("type",type).put("id",id).put("title",t.optString("title")).put("state","pending")).toString();}
         if(action.equals("history")){JSONArray list=new JSONArray();   // newest first, as OnePanel answers
-            for(JSONObject r:demoRequests)list.put(r);
+            for(JSONObject r:demoRequests){JSONObject c=new JSONObject(r.toString());
+                c.put("state",stateFor(live,c.optString("type")+":"+c.optInt("id"),c.optString("state")));list.put(c);}
+            // An older request the server still has as pending, for a movie this TV's catalog already has.
+            list.put(new JSONObject().put("type","movie").put("id",700003).put("title",title(3,1)).put("year",String.valueOf(movieYear(3))).put("poster","demo://poster/m3")
+                .put("seasons",new JSONArray()).put("requested_at",base()-3*DAY).put("state","pending"));
             list.put(new JSONObject().put("type","movie").put("id",9101).put("title","Alpha Earlier Request").put("year","2020").put("poster","demo://poster/m11")
                 .put("seasons",new JSONArray()).put("requested_at",base()-5*DAY).put("state","approved"));
             return new JSONObject().put("ok",true).put("page",1).put("has_more",false).put("requests",list).toString();}

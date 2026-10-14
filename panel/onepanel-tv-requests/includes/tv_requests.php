@@ -248,6 +248,12 @@ function tvq_flix_season_episodes(string $username, int $tmdb, string $year, int
   $counts = [];
   foreach (tvq_flix_matches(tvq_flix_index($line, 'tv', $maxAge), $tmdb, $year) as $sid) {
     if (!preg_match('/^\d{1,12}$/', $sid)) continue;
+    $file = onepanel_storage_dir() . '/tv-requests-catalog/' . hash('sha256', 'info|' . $line[0] . '|' . $sid) . '.json';
+    $c = is_file($file) ? json_decode((string)@file_get_contents($file), true) : null;
+    if (is_array($c) && ($c['t'] ?? 0) > time() - $maxAge && is_array($c['n'] ?? null)) {
+      foreach ($c['n'] as $n => $k) $counts[(int)$n] = max($counts[(int)$n] ?? 0, (int)$k);
+      continue;
+    }
     $info = tvq_player($line, ['action' => 'get_series_info', 'series_id' => $sid]);
     $episodes = $info['episodes'] ?? [];
     if (!is_array($episodes)) continue;
@@ -262,7 +268,10 @@ function tvq_flix_season_episodes(string $username, int $tmdb, string $year, int
         if ($n > 0) $per[$n][(string)($ep['episode_num'] ?? ($ep['id'] ?? $i))] = true;
       }
     }
-    foreach ($per as $n => $eps) $counts[$n] = max($counts[$n] ?? 0, count($eps));
+    $mine = []; foreach ($per as $n => $eps) $mine[$n] = count($eps);
+    $tmp = $file . '.' . getmypid() . '.tmp';
+    if (@file_put_contents($tmp, json_encode(['t' => time(), 'n' => $mine])) !== false) @rename($tmp, $file);
+    foreach ($mine as $n => $k) $counts[$n] = max($counts[$n] ?? 0, $k);
   }
   return $counts;
 }
@@ -543,15 +552,72 @@ function tvq_state_message(string $state): string {
     'pending' => 'This was already requested and is waiting for approval.', 'declined' => 'This request was declined.', 'unavailable' => 'This title cannot be requested.', 'local' => 'This is already in Flix Town.'];
   return $m[$state] ?? 'This cannot be requested.';
 }
-function tvq_history_state(int $req, int $media): string {
+/**
+ * The state of one customer request, the same rule everywhere:
+ *   confirmed in the customer's Flix Town catalog (movie there / every requested season complete)
+ *     -> "local" (In Flix Town), whatever Seerr says; some requested seasons complete -> "partial";
+ *   then Seerr: removed, declined, available (media available or request completed), partly
+ *   available, approved/processing, pending. Approval alone is never "available".
+ * $media is the Seerr media status for the requested seasons only (see tvq_request_media_status).
+ */
+function tvq_history_state(int $req, int $media, string $flix = ''): string {
+  if ($flix === 'all') return 'local';
+  if ($flix === 'some') return 'partial';
   if ($req === 0) return 'removed';
   if ($req === TVQ_REQ_DECLINED) return 'declined';
   if ($req === TVQ_REQ_COMPLETED || $media === TVQ_MEDIA_AVAILABLE) return 'available';
   if ($media === TVQ_MEDIA_PARTIAL) return 'partial';
-  if ($req === TVQ_REQ_APPROVED || $req === TVQ_REQ_FAILED) return 'approved';
+  if ($req === TVQ_REQ_APPROVED || $req === TVQ_REQ_FAILED || $media === TVQ_MEDIA_PROCESSING) return 'approved';
   return 'pending';
 }
-/** This customer's own requests only, newest first; statuses refreshed from Seerr at most every 5 minutes. */
+/**
+ * Seerr media status for what was requested: the movie's status, or for a series the combined
+ * status of the requested seasons only (all available -> available, some -> partly available),
+ * never the whole show's status.
+ */
+function tvq_request_media_status(array $media, string $type, array $seasons): int {
+  $whole = (int)($media['status'] ?? TVQ_MEDIA_UNKNOWN);
+  if ($type !== 'tv' || !$seasons) return $whole;
+  $by = []; foreach ((array)($media['seasons'] ?? []) as $x) if (is_array($x) && isset($x['seasonNumber'])) $by[(int)$x['seasonNumber']] = (int)($x['status'] ?? TVQ_MEDIA_UNKNOWN);
+  $st = array_map(fn($n) => $by[$n] ?? TVQ_MEDIA_UNKNOWN, $seasons);
+  if (!array_diff($st, [TVQ_MEDIA_AVAILABLE])) return TVQ_MEDIA_AVAILABLE;
+  if (array_intersect($st, [TVQ_MEDIA_AVAILABLE, TVQ_MEDIA_PARTIAL])) return TVQ_MEDIA_PARTIAL;
+  if (in_array(TVQ_MEDIA_PROCESSING, $st, true)) return TVQ_MEDIA_PROCESSING;
+  return in_array(TVQ_MEDIA_PENDING, $st, true) || $whole === TVQ_MEDIA_PENDING ? TVQ_MEDIA_PENDING : TVQ_MEDIA_UNKNOWN;
+}
+/** Seerr episode counts per season of a series (for "every episode is in Flix Town"), kept 6 hours. */
+function tvq_tv_episode_counts(int $id): array {
+  $dir = onepanel_storage_dir() . '/tv-requests-catalog';
+  if (!is_dir($dir)) @mkdir($dir, 0750, true);
+  $file = $dir . '/' . hash('sha256', 'seerr-tv|' . $id) . '.json';
+  $c = is_file($file) ? json_decode((string)@file_get_contents($file), true) : null;
+  if (is_array($c) && ($c['t'] ?? 0) > time() - 21600 && is_array($c['n'] ?? null)) return $c['n'];
+  $d = tvq_read('/tv/' . $id, ['language' => 'en']);
+  $n = []; foreach ((array)($d['seasons'] ?? []) as $x) if ((int)($x['seasonNumber'] ?? 0) > 0) $n[(string)(int)$x['seasonNumber']] = (int)($x['episodeCount'] ?? 0);
+  $tmp = $file . '.' . getmypid() . '.tmp';
+  if (@file_put_contents($tmp, json_encode(['t' => time(), 'n' => $n])) !== false) @rename($tmp, $file);
+  return $n;
+}
+/**
+ * What the customer's Flix Town catalog has of one request: 'all' (the movie, or every requested
+ * season complete), 'some' (some requested seasons complete) or ''. Never fails: if the catalog
+ * cannot be read the request simply keeps its Seerr state.
+ */
+function tvq_request_flix(string $username, string $type, int $id, string $year, array $seasons): string {
+  try {
+    if ($type === 'movie') return tvq_flix_has_movie($username, $id, $year, 600) ? 'all' : '';
+    $have = tvq_flix_season_episodes($username, $id, $year, 600);
+    if (!$have || !$seasons) return '';
+    $need = tvq_tv_episode_counts($id);
+    $done = array_filter($seasons, fn($n) => ($have[$n] ?? 0) > 0 && ($have[$n] ?? 0) >= (int)($need[(string)$n] ?? PHP_INT_MAX));
+    return count($done) === count($seasons) ? 'all' : ($done ? 'some' : '');
+  } catch (TvqException $e) { return ''; }
+}
+/**
+ * This customer's own requests only, newest first. Seerr statuses are refreshed at most once a
+ * minute per request (the app asks again each time My Requests opens); the Flix Town catalog is
+ * checked on every call (from its 10-minute cache), so a title that arrived shows "In Flix Town".
+ */
 function tvq_history(PDO $pdo, string $username, int $page): array {
   $per = 20; $off = ($page - 1) * $per;
   $q = $pdo->prepare('SELECT * FROM tv_media_requests WHERE username=? ORDER BY id DESC LIMIT ' . ($per + 1) . ' OFFSET ' . $off);
@@ -559,20 +625,22 @@ function tvq_history(PDO $pdo, string $username, int $page): array {
   $more = count($rows) > $per; $rows = array_slice($rows, 0, $per);
   $out = [];
   foreach ($rows as $row) {
-    if ((int)$row['last_checked_ts'] < time() - 300 && (int)$row['last_status'] !== 0) {
+    $rowSeasons = $row['seasons'] === '' ? [] : array_map('intval', explode(',', $row['seasons']));
+    if ((int)$row['last_checked_ts'] < time() - 60 && (int)$row['last_status'] !== 0) {
       $r = tvq_seerr('GET', '/request/' . (int)$row['seerr_request_id']);
       if ($r['ok'] && is_array($r['data'])) {
         $row['last_status'] = (int)($r['data']['status'] ?? $row['last_status']);
-        $row['last_media_status'] = (int)($r['data']['media']['status'] ?? $row['last_media_status']);
+        if (is_array($r['data']['media'] ?? null)) $row['last_media_status'] = tvq_request_media_status($r['data']['media'], (string)$row['media_type'], $rowSeasons);
       } elseif ((int)$r['status'] === 404) { $row['last_status'] = 0; }
       // Seerr down: keep the last known status (the list still shows).
       if ($r['ok'] || (int)$r['status'] === 404)
         $pdo->prepare('UPDATE tv_media_requests SET last_status=?,last_media_status=?,last_checked_ts=? WHERE id=?')
             ->execute([(int)$row['last_status'], (int)$row['last_media_status'], time(), (int)$row['id']]);
     }
+    $flix = tvq_request_flix($username, (string)$row['media_type'], (int)$row['tmdb_id'], (string)$row['year'], $rowSeasons);
     $out[] = ['type' => $row['media_type'], 'id' => (int)$row['tmdb_id'], 'title' => (string)$row['title'], 'year' => (string)$row['year'],
-      'poster' => (string)$row['poster'], 'seasons' => $row['seasons'] === '' ? [] : array_map('intval', explode(',', $row['seasons'])),
-      'requested_at' => (int)$row['created_ts'], 'state' => tvq_history_state((int)$row['last_status'], (int)$row['last_media_status'])];
+      'poster' => (string)$row['poster'], 'seasons' => $rowSeasons,
+      'requested_at' => (int)$row['created_ts'], 'state' => tvq_history_state((int)$row['last_status'], (int)$row['last_media_status'], $flix)];
   }
   return ['page' => $page, 'has_more' => $more, 'requests' => $out];
 }

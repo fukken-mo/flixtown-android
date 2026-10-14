@@ -44,8 +44,13 @@ How it works
     Limit: a catalog entry without a TMDB id (or with a wrong one) cannot be matched.
   - Declined: a declined title or season is shown as Declined and not offered again (unless
     customer_allow_rerequest_declined is true). You can still request it yourself in Seerr.
-  - History: a customer only ever sees rows recorded for their own username. States are refreshed
-    from Seerr at most every 5 minutes; if Seerr is down the last known state is shown.
+  - History: a customer only ever sees rows recorded for their own username. One rule for every
+    request, the same as in details: in the customer's Flix Town catalog (the movie, or every
+    requested season complete) = "In Flix Town", whatever Seerr says; some requested seasons there =
+    partly available; then Seerr: declined, available, partly available, approved/processing, pending.
+    Approval alone is never "available". For a series only the requested seasons count, never the
+    whole show. Seerr states are re-read at most once a minute per request (the TV asks each time My
+    Requests opens or the customer comes back to it); if Seerr is down the last known state is shown.
   - Limits: 40 searches/minute (400/hour), 60 detail views/minute, 6 submissions per 10 minutes and
     customer_daily_limit per day per customer; 30 sign-ins and 10 wrong passwords per IP per 15 minutes.
   - Failures: any Seerr or Flix Town problem answers "Requests are temporarily unavailable." The rest

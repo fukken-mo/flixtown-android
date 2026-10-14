@@ -204,16 +204,63 @@ public class RequestsActivity extends Activity {
                 if(!r.ok){if(entries.isEmpty())status.setText(r.message);return;}
                 page=p;pages=r.body.optBoolean("has_more")?p+1:p;
                 JSONArray list=r.body.optJSONArray("requests");int before=entries.size();
-                for(int i=0;list!=null&&i<list.length();i++){JSONObject o=list.optJSONObject(i);if(o==null)continue;
-                    Entry e=new Entry();e.type=o.optString("type");e.id=o.optInt("id");e.title=o.optString("title");
-                    e.year=o.optString("year");e.poster=o.optString("poster");e.state=o.optString("state");
-                    e.requestedAt=o.optLong("requested_at");JSONArray s=o.optJSONArray("seasons");
-                    if(s!=null){e.seasons=new int[s.length()];for(int k=0;k<s.length();k++)e.seasons[k]=s.optInt(k);}
-                    entries.add(e);}
+                for(int i=0;list!=null&&i<list.length();i++){JSONObject o=list.optJSONObject(i);if(o!=null)entries.add(historyEntry(o));}
                 adapter.notifyItemRangeInserted(before,entries.size()-before);
                 status.setText(entries.isEmpty()?"You haven't requested anything yet. Use Search to find a movie or show.":"");
                 if(before==0 && !entries.isEmpty())grid.post(this::focusGrid);
             });});
+    }
+    /** One My Requests card. A movie this TV's catalog already has is "In Flix Town", as on search cards and in Details. */
+    private Entry historyEntry(JSONObject o){
+        Entry e=new Entry();e.type=o.optString("type");e.id=o.optInt("id");e.title=o.optString("title");
+        e.year=o.optString("year");e.poster=o.optString("poster");e.state=o.optString("state");
+        e.requestedAt=o.optLong("requested_at");JSONArray s=o.optJSONArray("seasons");
+        if(s!=null){e.seasons=new int[s.length()];for(int k=0;k<s.length();k++)e.seasons[k]=s.optInt(k);}
+        if(localMatch(e)!=null && "movie".equals(e.type))e.state="local";
+        return e;
+    }
+    /**
+     * Back on My Requests (from a title, or the TV coming back to the app): ask once for the latest
+     * states and update the cards in place, so focus and scroll stay where they were. No polling.
+     */
+    private void refreshMine(){
+        if(!mine||loading||entries.isEmpty()||(details!=null&&details.isOpen()))return;
+        int token=generation;
+        Api.IO.execute(()->{RequestsApi.Reply r=RequestsApi.history(this,1);
+            runOnUiThread(()->{if(token!=generation||isFinishing()||!r.ok)return;
+                JSONArray list=r.body.optJSONArray("requests");
+                for(int i=0;list!=null&&i<list.length();i++){JSONObject o=list.optJSONObject(i);if(o==null)continue;
+                    Entry fresh=historyEntry(o);
+                    for(int k=0;k<entries.size();k++){Entry e=entries.get(k);
+                        if(e.type.equals(fresh.type)&&e.id==fresh.id&&java.util.Arrays.equals(e.seasons,fresh.seasons)&&!e.state.equals(fresh.state)){
+                            e.state=fresh.state;adapter.notifyItemChanged(k);}}}
+                if(BuildConfig.DEMO)Log.i("FlixTownQA","requests history refreshed in place");
+            });});
+    }
+    private boolean refreshAfterDetails;
+    @Override protected void onRestart(){super.onRestart();
+        if(details!=null&&details.isOpen())refreshAfterDetails=true;   // e.g. back from Watch: refresh when the details close
+        else refreshMine();}
+    /**
+     * A TV request's state from the per-season states in Details, by the same rule as the server:
+     * In Flix Town only when every requested season is; partly available when some requested
+     * seasons are there; then approved, pending, declined. Other seasons of the show never count.
+     */
+    static String requestState(JSONArray seasons,int[] wanted){
+        if(seasons==null||wanted==null||wanted.length==0)return null;
+        java.util.Map<Integer,String> by=new java.util.HashMap<>();
+        for(int i=0;i<seasons.length();i++){JSONObject s=seasons.optJSONObject(i);if(s!=null)by.put(s.optInt("number"),s.optString("state"));}
+        int local=0,have=0,approved=0,pending=0,declined=0;
+        for(int n:wanted){String st=by.get(n);if(st==null)st="pending";
+            switch(st){case "local":local++;have++;break;case "available":have++;break;case "partial":have++;break;
+                case "approved":approved++;break;case "declined":declined++;break;default:pending++;}}
+        if(local==wanted.length)return "local";
+        if(local>0)return "partial";
+        if(have==wanted.length&&local==0){boolean all=true;for(int n:wanted)if(!"available".equals(by.get(n)))all=false;return all?"available":"partial";}
+        if(have>0)return "partial";
+        if(approved>0)return "approved";
+        if(pending>0)return "pending";
+        return declined>0?"declined":"pending";
     }
     /** Near the end of the grid: the next page (search) or more history. */
     private void maybeLoadMore(int position){
@@ -386,6 +433,7 @@ public class RequestsActivity extends Activity {
             Catalog.Item there=localMatch(entry);
             boolean movieHere=there!=null&&"movie".equals(entry.type);
             if(movieHere)state="local";
+            if(mine&&"tv".equals(entry.type)){String own=requestState(data.optJSONArray("seasons"),entry.seasons);if(own!=null)state=own;}
             setBadge(state);entry.state=state;refreshCard(entry);
             boolean can=data.optBoolean("can_request")&&!movieHere;
             List<String> labels=new ArrayList<>();List<Runnable> runs=new ArrayList<>();
@@ -488,6 +536,7 @@ public class RequestsActivity extends Activity {
             grid.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);field.setFocusable(true);field.setFocusableInTouchMode(true);
             tabSearch.setFocusable(true);tabMine.setFocusable(true);
             if(from!=null&&from.isAttachedToWindow())from.requestFocus();else if(!entries.isEmpty())focusGrid();else(mine?tabMine:field).requestFocus();
+            if(refreshAfterDetails){refreshAfterDetails=false;refreshMine();}
         }
         /** Back inside the overlay: seasons -> details -> the card it came from. */
         boolean back(){if(!isOpen())return false;if(seasonsOpen()){closeSeasons();show();}else close();return true;}

@@ -124,7 +124,9 @@ $GLOBALS['tvq_seerr_http'] = function (string $method, string $path, array $quer
     }
     if ($method === 'GET' && preg_match('#^/request/(\d+)$#', $path, $m)) {
       foreach ($s['requests'] ?? [] as $r) if ($r['id'] === (int)$m[1]) {
-        $out = ['ok' => true, 'status' => 200, 'data' => ['id' => $r['id'], 'status' => $r['status'], 'media' => ['status' => $s['media'][$r['key']]['status'] ?? 1],
+        $mm = $s['media'][$r['key']] ?? ['status' => 1, 'seasons' => []];
+        $out = ['ok' => true, 'status' => 200, 'data' => ['id' => $r['id'], 'status' => $r['status'], 'media' => ['status' => $mm['status'] ?? 1,
+          'seasons' => array_map(fn($n, $st) => ['seasonNumber' => (int)$n, 'status' => $st], array_keys($mm['seasons'] ?? []), $mm['seasons'] ?? [])],
           'requestedBy' => ['id' => $r['user'], 'email' => 'secret-user@example.test']], 'error' => '']; return $s; }
       $out = ['ok' => false, 'status' => 404, 'data' => null, 'error' => 'Seerr returned HTTP 404.']; return $s;
     }
