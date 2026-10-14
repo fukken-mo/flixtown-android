@@ -129,8 +129,9 @@ $unavailable = 'Requests are temporarily unavailable.';
 
 // ---------------- MySQL schema (as created by the shipped migration) ----------------
 $serverVersion = $pdo->query('SELECT VERSION()')->fetchColumn();
-echo "MySQL server: $serverVersion, isolation " . $pdo->query('SELECT @@transaction_isolation')->fetchColumn() . "\n";
-$cols = []; foreach ($pdo->query("SELECT TABLE_NAME t, COLUMN_NAME c, COLUMN_TYPE ty, IS_NULLABLE n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$dbName'") as $r) $cols[$r['t'] . '.' . $r['c']] = $r['ty'] . ($r['n'] === 'YES' ? ' null' : '');
+try { $iso = $pdo->query('SELECT @@transaction_isolation')->fetchColumn(); } catch (PDOException $e) { $iso = $pdo->query('SELECT @@tx_isolation')->fetchColumn(); }   // MariaDB name
+echo "Database server: $serverVersion, isolation $iso\n";
+$cols = []; foreach ($pdo->query("SELECT TABLE_NAME t, COLUMN_NAME c, COLUMN_TYPE ty, IS_NULLABLE n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$dbName'") as $r) $cols[$r['t'] . '.' . $r['c']] = preg_replace('/^(\w*int)\(\d+\)/', '$1', $r['ty']) . ($r['n'] === 'YES' ? ' null' : '');   // MariaDB adds int display widths
 $tables = []; foreach ($pdo->query("SELECT TABLE_NAME t, ENGINE e, TABLE_COLLATION c FROM information_schema.TABLES WHERE TABLE_SCHEMA='$dbName'") as $r) $tables[$r['t']] = $r['e'] . ' ' . $r['c'];
 $idx = []; foreach ($pdo->query("SELECT TABLE_NAME t, INDEX_NAME i, NON_UNIQUE nu, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) cols FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='$dbName' GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE") as $r) $idx[$r['t'] . '.' . $r['i']] = ($r['nu'] ? '' : 'unique ') . $r['cols'];
 check('schema: migration runs on MySQL as shipped, and again without error (IF NOT EXISTS)', $migrationTwice && count($tables) === 2);
