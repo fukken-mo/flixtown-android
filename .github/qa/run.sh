@@ -80,9 +80,9 @@ resume;                                     shot 30-returned 0.6;             fo
 sleep 3;                                    shot 31-after-refresh 0.3;        focus after-refresh
 key DPAD_LEFT DPAD_LEFT DPAD_LEFT;          shot 32-new-title-first 0.6;      focus new-title-first
 
-# --- Settings (menu is on Movies: Series, My List, Settings) ---
+# --- Settings (menu is on Movies: Series, My List, Requests, Settings) ---
 key DPAD_LEFT;                              shot 33-menu-from-movies 0.5
-key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; shot 34-settings 1.2;          focus settings-enter
+key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; shot 34-settings 1.2;          focus settings-enter
 key DPAD_DOWN DPAD_DOWN DPAD_DOWN;          shot 35-settings-autoplay 0.6;    focus settings-autoplay
 key DPAD_CENTER;                            shot 36-autoplay-off 0.5
 key DPAD_DOWN DPAD_CENTER;                  shot 37-audio-picker 0.8

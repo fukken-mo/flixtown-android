@@ -79,7 +79,7 @@ check "series without episode times, first check: no badge ($S3)" '! card "$S3" 
 check "first import: not every poster is NEW" '[ "$(grep -o "text=\"NEW [A-Z]*\"" "$OUT/ui.xml" | wc -l)" -le 2 ]'
 check "recently premiered series leads Latest TV Shows" 'python3 - "$OUT/ui.xml" "$S1" "$S1" <<EOF
 import sys, xml.etree.ElementTree as ET
-menu={"Search","Home","Movies","TV Shows","My List","Settings"}
+menu={"Search","Home","Movies","TV Shows","My List","Requests","Settings"}
 r=ET.parse(sys.argv[1]).getroot(); order=[n.get("content-desc") for n in r.iter("node") if n.get("content-desc") and n.get("content-desc") not in menu]
 sys.exit(0 if sys.argv[2] in order[:4] and sys.argv[3] in order[:4] else 1)
 EOF'
@@ -99,7 +99,7 @@ check "browse cards show year · ★ rating" 'grep -q "text=\"[0-9]\{4\}  ·  �
 check "browse cards without a rating show only the year" 'grep -q "text=\"[0-9]\{4\}\"" "$OUT/ui.xml"'
 
 # ---------- 4. A later catalog: new series appears, series without times gains an episode ----------
-key DPAD_LEFT DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.5    # menu on Movies → Settings
+key DPAD_LEFT DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.5    # menu on Movies → Settings (past Requests)
 dump settings
 python3 - "$OUT/ui.xml" <<'EOF' > "$OUT/refresh-xy"
 import sys, re, xml.etree.ElementTree as ET
@@ -111,7 +111,7 @@ if [ -s "$OUT/refresh-xy" ]; then adb shell input tap $(cat "$OUT/refresh-xy"); 
 key DPAD_CENTER                               # a tap only focuses the row on a TV; the remote's OK starts the check
 sleep 5;                                     shot 08-refreshed 0.3
 sleep 22                                      # episode checks for the changed series
-key DPAD_LEFT DPAD_UP DPAD_UP DPAD_UP DPAD_UP DPAD_CENTER; sleep 2.5   # menu on Settings → Home
+key DPAD_LEFT DPAD_UP DPAD_UP DPAD_UP DPAD_UP DPAD_UP DPAD_CENTER; sleep 2.5   # menu on Settings → Home (past Requests)
 key DPAD_DOWN DPAD_DOWN DPAD_DOWN;           shot 09-latest-tv-after-new-catalog 2; dump tv2
 note "  $S9: $(card "$S9")"; note "  $S3: $(card "$S3")"
 check "recent premiere added after the first import: NEW SERIES" 'card "$S9" | grep -q "NEW SERIES"'
