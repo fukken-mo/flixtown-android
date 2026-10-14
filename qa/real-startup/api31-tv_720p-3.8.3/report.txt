@@ -15,7 +15,7 @@ PASS  [none:ok] no crash
 PASS  [none:slow] form filled (username field holds only the username)
 PASS  [none:slow] sign-in accepted, Home opened
 PASS  [none:slow] slow server (>15 s): the usual 'taking longer' message
-      catalog arrived 21 s after sign-in (no key pressed)
+      catalog arrived 20 s after sign-in (no key pressed)
 PASS  [none:slow] catalog arrived and the loading screen closed by itself
 PASS  [none:slow] Home shows titles
 PASS  [none:slow] Movies populated (12 posters on screen)
