@@ -28,8 +28,7 @@ PASS  scrolling down (row 5): focused card and its text fully visible
 PASS  scrolling down (row 5): nothing drawn over the header
 PASS  scrolling near the end loads page 2 (30 results)
 PASS  Up from the first row returns to the search box
-FAIL  details: title, synopsis, Requestable, Request button focused
-      at: RequestsActivity focus='Request'
+PASS  details: title, synopsis, Requestable, Request button focused
 PASS  Request: Pending approval, told where to find it
 PASS  Back closes details and returns to the same card
 PASS  the card now says Pending approval
@@ -58,7 +57,8 @@ PASS  My Requests: focused card and its text fully visible
       server now: {"requests":"down"}
 PASS  service down: Requests are temporarily unavailable.
 PASS  Back leaves Requests for Home
-PASS  browsing still works while Requests is down (Movies grid)
+FAIL  browsing still works while Requests is down (Movies grid)
+      at: HomeActivity focus='The Crimson Garden'
 PASS  no crash during the whole run
 
 requests flow: 59 passed, 1 failed
