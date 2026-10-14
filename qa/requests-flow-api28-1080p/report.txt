@@ -6,72 +6,56 @@ PASS  Search is the main focus: the search box is focused
 PASS  tabs Search and My Requests
 PASS  typing searches after a short pause (debounced, one search)
 PASS  results: Movie, year and state on the cards
-PASS  states: Available, Pending approval, Approved, Declined
+PASS  states: Available, Pending approval, Approved
+PASS  the on-screen keyboard is open on the search box
+PASS  Back closes the keyboard first and stays on Requests
+PASS  the keyboard's Search action moves focus to the first result
+PASS  Up from the first result returns to the search box
+PASS  Down from the search box: first result
+PASS  four posters across, like the rest of the app
+PASS  first card and its text fully visible
+PASS  states: Declined
 PASS  series shown as Partly available (never fully available)
 PASS  a movie already in this TV's catalog shows In Flix Town
-PASS  the on-screen keyboard is open on the search box
-FAIL  Back closes the keyboard first and stays on Requests
-      at: RequestsActivity focus='alpha'
-PASS  the keyboard's Search action moves focus to the first result
-FAIL  Up from the first result returns to the search box
-      at: HomeActivity focus='Watch Now'
-FAIL  Down from the search box: first result
-      at: HomeActivity focus='Northern Letters'
-FAIL  scrolling near the end loads page 2 (30 results)
-      at: HomeActivity focus='Iron Protocol'
-FAIL  Up from the first row returns to the search box
-      at: HomeActivity focus='Stay'
-FAIL  details: title, synopsis, Requestable, Request button focused
-      at: DetailsActivity focus='▶  Play'
-FAIL  Request: Pending approval, told where to find it
-      at: PlayerActivity focus=''
-FAIL  Back closes details and returns to the same card
-      at: DetailsActivity focus='▶  Play'
-FAIL  the card now says Pending approval
-      at: DetailsActivity focus='▶  Play'
-FAIL  reopened: no Request button (already requested)
-      at: PlayerActivity focus=''
-FAIL  declined: no Request button, explained
-      at: DetailsActivity focus='▶  Watch Now'
-FAIL  available: no Request button
-      at: HomeActivity focus='Watch Now'
-FAIL  card 7 is the title already in Flix Town
-      at: HomeActivity focus='Watch Now'
-FAIL  in Flix Town: Watch in Flix Town, no Request
-      at: HomeActivity focus='Watch Now'
-FAIL  Watch did not open details
-FAIL  Back from the title returns to Requests
-      at: HomeActivity focus='Watch Now'
-FAIL  series details: Choose seasons
-      at: HomeActivity focus='Watch Now'
-FAIL  season picker: S1 available and S2 pending shown, not selectable
-      at: HomeActivity focus='Watch Now'
-FAIL  focus starts on the first requestable season (Season 3)
-      at: HomeActivity focus='Watch Now'
-FAIL  Up does not land on seasons that cannot be requested
-      at: HomeActivity focus='Watch Now'
-FAIL  OK selects Season 3 (✓) and the button says Request 1 season
-      at: HomeActivity focus='Watch Now'
+PASS  Up returns to the first row
+PASS  scrolling down (row 2): focused card and its text fully visible
+PASS  scrolling down (row 3): focused card and its text fully visible
+PASS  scrolling down (row 4): focused card and its text fully visible
+PASS  scrolling down (row 5): focused card and its text fully visible
+PASS  scrolling near the end loads page 2 (30 results)
+PASS  Up from the first row returns to the search box
+PASS  details: title, synopsis, Requestable, Request button focused
+PASS  Request: Pending approval, told where to find it
+PASS  Back closes details and returns to the same card
+PASS  the card now says Pending approval
+PASS  reopened: no Request button (already requested)
+PASS  declined: no Request button, explained
+PASS  available: no Request button
+PASS  card 7 is the title already in Flix Town
+PASS  in Flix Town: Watch in Flix Town, no Request
+PASS  Watch opens the Flix Town title
+PASS  Back from the title returns to Requests
+PASS  series details: Choose seasons
+PASS  season picker: S1 available and S2 pending shown, not selectable
+PASS  focus starts on the first requestable season (Season 3)
+PASS  Up does not land on seasons that cannot be requested
+PASS  OK selects Season 3 (✓) and the button says Request 1 season
 FAIL  season request sent for S3 only, Pending approval
-      at: HomeActivity focus='Watch Now'
+      at: RequestsActivity focus='Choose seasons'
 FAIL  reopened picker: Season 3 now pending, only Season 4 selectable
-      at: HomeActivity focus='Watch Now'
+      at: RequestsActivity focus='○  Season 3  ·  8 episodes'
 FAIL  Back from the picker returns to the series details
-      at: HomeActivity focus='Watch Now'
-FAIL  Up from the search box reaches the tabs
-      at: HomeActivity focus='Watch Now'
-FAIL  Right: My Requests
-      at: HomeActivity focus='Watch Now'
+      at: RequestsActivity focus='○  Season 3  ·  8 episodes'
+PASS  Up from the search box reaches the tabs
+PASS  Right: My Requests
 FAIL  My Requests: my movie (Pending approval) and my season (S3)
-      at: HomeActivity focus='Watch Now'
-FAIL  My Requests: an earlier request shows Approved · processing
-      at: HomeActivity focus='Watch Now'
+      at: RequestsActivity focus='Alpha Earlier Request. Movie, 2020. Approved · processing'
+PASS  My Requests: an earlier request shows Approved · processing
+PASS  My Requests: focused card and its text fully visible
       server now: {"requests":"down"}
-FAIL  service down: Requests are temporarily unavailable.
-      at: HomeActivity focus='Watch Now'
+PASS  service down: Requests are temporarily unavailable.
 PASS  Back leaves Requests for Home
-FAIL  browsing still works while Requests is down (Movies grid)
-      at: HomeActivity focus='Watch Now'
+PASS  browsing still works while Requests is down (Movies grid)
 PASS  no crash during the whole run
 
-requests flow: 15 passed, 30 failed
+requests flow: 50 passed, 4 failed
