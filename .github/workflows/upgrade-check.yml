@@ -1,7 +1,7 @@
-name: Production upgrade check (3.8.8)
+name: Production upgrade check (3.8.9)
 
-# The "upgrade" job of release-production.yml, run against the APK that production run 38622975721
-# already built and signed (FlixTown-PRODUCTION-signed-3.8.8-10028), so the tested file is exactly the
+# The "upgrade" job of release-production.yml, run against the APK that production run 38634481580
+# already built and signed (FlixTown-PRODUCTION-signed-3.8.9-10029), so the tested file is exactly the
 # delivered one. Installs it over earlier production builds on an offline TV emulator. Build artifacts
 # only; nothing is signed, published or deployed here.
 on:
@@ -20,7 +20,10 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.8-10028, path: new, run-id: 38622975721, github-token: "${{ github.token }}" }
+        with: { name: FlixTown-PRODUCTION-signed-3.8.9-10029, path: new, run-id: 38634481580, github-token: "${{ github.token }}" }
+      - uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.8-10028, path: old-10028, run-id: 38622975721, github-token: "${{ github.token }}" }
+        continue-on-error: true
       - uses: actions/download-artifact@v4
         with: { name: FlixTown-PRODUCTION-signed-3.8.6-10026, path: old-10026, run-id: 38071832546, github-token: "${{ github.token }}" }
       - uses: actions/download-artifact@v4
@@ -57,7 +60,7 @@ jobs:
           cat > upgrade.sh <<'SH'
           set -u; P=com.myflixtown.tv.native; NEW="$(ls new/*.apk)"; fail=0; mkdir -p shots
           adb shell svc wifi disable; adb shell svc data disable; sleep 2
-          for OLD in old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
+          for OLD in old-10028/*.apk old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
             [ -f "$OLD" ] || continue; tag="$(basename "$OLD" .apk)"; tested=$((${tested:-0}+1))
             adb uninstall $P >/dev/null 2>&1; adb logcat -c
             adb install "$OLD" >/dev/null || { echo "FAIL  install $tag"; fail=1; continue; }

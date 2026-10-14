@@ -197,6 +197,7 @@ jobs:
         continue-on-error: true
       - uses: actions/download-artifact@v4
         with: { name: FlixTown-PRODUCTION-signed-3.7.1-10016, path: old-10016, run-id: 37385757309, github-token: "${{ github.token }}" }
+        continue-on-error: true   # that run no longer exists on GitHub
       - uses: actions/download-artifact@v4
         with: { name: FlixTown-PRODUCTION-signed-3.7.0-10015, path: old-10015, run-id: 36939071160, github-token: "${{ github.token }}" }
         continue-on-error: true
