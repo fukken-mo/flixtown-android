@@ -48,8 +48,7 @@ PASS  Down: Season 4 (the last season that can be requested)
 PASS  Down from the last season: Request 1 season
 PASS  season request sent for S3 only, Pending approval
 PASS  reopened picker: Season 3 now pending, only Season 4 selectable
-FAIL  Back from the picker returns to the series details
-      at: RequestsActivity focus='Choose seasons'
+PASS  Back from the picker returns to the series details
 PASS  Up from the search box reaches the tabs
 PASS  Right: My Requests
 PASS  My Requests: my movie (Pending approval) and my season (S3)
@@ -61,4 +60,4 @@ PASS  Back leaves Requests for Home
 PASS  browsing still works while Requests is down (Movies grid)
 PASS  no crash during the whole run
 
-requests flow: 59 passed, 1 failed
+requests flow: 60 passed, 0 failed
