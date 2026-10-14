@@ -47,7 +47,8 @@ player_focus(){ for i in 1 2 3 4 5; do [ "$(qaf focus)" = "$1" ] && return 0; ke
 picker_line(){ adb logcat -d -s FlixTownQA:I | grep " picker Subtitles" | tail -1; }
 
 # Screenshot -> where pixels of a colour are: "x0 y0 x1 y1 W H count" (count 0 = none).
-sub_box(){ adb exec-out screencap > "$OUT/s.raw"; adb shell screencap -p /sdcard/s.png; adb pull /sdcard/s.png "$SHOTS/$1.png" > /dev/null
+sub_box(){ adb exec-out screencap > "$OUT/s.raw"; qaf controls > "$OUT/lc"
+  adb shell screencap -p /sdcard/s.png; adb pull /sdcard/s.png "$SHOTS/$1.png" > /dev/null
   python3 - "$OUT/s.raw" "$2" <<'PYEOF'
 import sys, struct
 d=open(sys.argv[1],'rb').read(); w,h=struct.unpack('<II',d[:8]); hdr=len(d)-w*h*4   # 12 or 16 byte header
@@ -68,6 +69,8 @@ absent(){ set -- $1; [ "$7" -le 3 ]; }
 # With the controls up, the subtitles sit above them (actions row + progress line = 122 dp from the bottom).
 above_controls(){ set -- $1; [ "$7" -gt 20 ] && [ "$4" -le $(($6 - $6*122/540)) ]; }
 
+# Capture with the controls up: shown right before (the auto-hide is 3 s), retried if they had gone.
+shown_box(){ local r; for t in 1 2 3; do key DPAD_UP; sleep 0.5; r="$(sub_box "$1" "$2")"; [ "$(cat "$OUT/lc")" = true ] && break; done; echo "$r"; }
 # Picks a subtitle track by label through the player's Subtitles menu.
 choose_subs(){ local want="$1"
   key DPAD_UP; sleep 0.6; wait_qa controls true 3
@@ -87,11 +90,15 @@ print(("DOWN "*(t-sel) if t>sel else "UP "*(sel-t)).strip())' "$line" "$want")"
 run_case(){ local kind="$1"
   wait_activity PlayerActivity 15 && ok "$kind: player opened" || { bad "$kind: player did not open ($(resumed))"; return; }
   sleep 6
+  key DPAD_UP; sleep 0.6; player_focus subs DPAD_RIGHT; key DPAD_CENTER; sleep 1.5
+  check "$kind: playing the test video (its subtitle tracks are listed)" 'picker_line | grep -q "Plain" && picker_line | grep -q "Bottom"'
+  key BACK; sleep 1
+  picker_line | grep -q "Plain" || { note "      $(picker_line)"; for i in 1 2 3; do in_activity PlayerActivity || break; key BACK; sleep 1; done; return; }
   # --- Plain (SRT) track ---
   choose_subs "Plain"
-  check "$kind: subtitle label says Plain" 'qaf subs | grep -q "Plain"'
-  b="$(sub_box "$kind-plain-controls" green)"; note "INFO  plain, controls shown: $b"
-  check "$kind: Plain subtitles visible with the controls shown, above the controls" 'above_controls "$b"'
+  lab="$(qaf subs)"; check "$kind: subtitle label shows the Plain track ($lab)" 'echo "$lab" | grep -q "Plain"'
+  b="$(shown_box "$kind-plain-controls" green)"; note "INFO  plain, controls shown ($(cat "$OUT/lc")): $b"
+  check "$kind: Plain subtitles visible with the controls shown, above the controls" '[ "$(cat "$OUT/lc")" = true ] && above_controls "$b"'
   wait_qa controls false 8 && ok "$kind: controls hid by themselves" || bad "$kind: controls still up ($(qa_line))"
   for t in 1 4 8; do sleep $([ $t = 1 ] && echo 1 || echo 3)
     b="$(sub_box "$kind-plain-hidden-${t}s" green)"; note "INFO  plain, controls hidden ${t}s: $b"
@@ -99,9 +106,9 @@ run_case(){ local kind="$1"
   done
   # --- Bottom-positioned (ASS) track, like episode subtitle files ---
   choose_subs "Bottom"
-  check "$kind: subtitle label says Bottom" 'qaf subs | grep -q "Bottom"'
-  b="$(sub_box "$kind-bottom-controls" yellow)"; note "INFO  bottom, controls shown: $b"
-  check "$kind: bottom-positioned subtitles visible with the controls shown, above the controls" 'above_controls "$b"'
+  lab="$(qaf subs)"; check "$kind: subtitle label shows the Bottom track ($lab)" 'echo "$lab" | grep -q "Bottom"'
+  b="$(shown_box "$kind-bottom-controls" yellow)"; note "INFO  bottom, controls shown ($(cat "$OUT/lc")): $b"
+  check "$kind: bottom-positioned subtitles visible with the controls shown, above the controls" '[ "$(cat "$OUT/lc")" = true ] && above_controls "$b"'
   wait_qa controls false 8
   for t in 1 4 8; do sleep $([ $t = 1 ] && echo 1 || echo 3)
     b="$(sub_box "$kind-bottom-hidden-${t}s" yellow)"; note "INFO  bottom, controls hidden ${t}s: $b"
@@ -122,8 +129,8 @@ run_case(){ local kind="$1"
   check "$kind: subtitles shown again after seeking, same choice" 'safe "$b" && [ "$(qaf subs)" = "$s1" ]'
   # --- Off ---
   choose_subs "Off"
-  check "$kind: subtitle label says Off" 'qaf subs | grep -q "Off"'
-  b="$(sub_box "$kind-off-controls" yellow)"; g="$(sub_box "$kind-off-controls-g" green)"
+  lab="$(qaf subs)"; check "$kind: subtitle label shows Off ($lab)" 'echo "$lab" | grep -q "Off"'
+  b="$(shown_box "$kind-off-controls" yellow)"; g="$(shown_box "$kind-off-controls-g" green)"
   check "$kind: Off: no subtitles with the controls shown" 'absent "$b" && absent "$g"'
   wait_qa controls false 8; sleep 2
   b="$(sub_box "$kind-off-hidden" yellow)"; g="$(sub_box "$kind-off-hidden-g" green)"
@@ -135,18 +142,23 @@ run_case(){ local kind="$1"
 adb shell am force-stop $PKG
 adb shell am start -W $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" --ez demo_reset true > /dev/null
 wait_activity HomeActivity 60 || bad "Home did not open ($(resumed))"
-printf '%s' "{\"stream\":\"$TEST_STREAM\"}" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"
+sleep 8   # let the demo reset finish before pointing the demo server at the test video
+use_test_stream(){ for t in 1 2 3; do
+  printf '%s' "{\"stream\":\"$TEST_STREAM\"}" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"; sleep 1
+  adb shell "run-as $PKG cat files/demo_account.json" | grep -q "$TEST_STREAM" && return 0; sleep 2; done; return 1; }
+use_test_stream && ok "demo server points at the test video ($TEST_STREAM)" || bad "could not set the test video"
 adb logcat -c
 # Movie
 key DPAD_LEFT DPAD_DOWN DPAD_CENTER; sleep 3
 key DPAD_RIGHT DPAD_CENTER; wait_activity DetailsActivity 10; sleep 3
+use_test_stream > /dev/null
 key DPAD_CENTER
 run_case movie
 wait_activity DetailsActivity 8; key BACK; sleep 1.5
 # Episode
 key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 4 > /dev/null; key DPAD_CENTER; sleep 2.5
 key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4
-focus_to DPAD_DOWN "Season 1" 4 > /dev/null; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER
+focus_to DPAD_DOWN "Season 1" 4 > /dev/null; key DPAD_DOWN; sleep 0.8; use_test_stream > /dev/null; key DPAD_CENTER
 run_case episode
 crashes="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashes" = 0 ]'
