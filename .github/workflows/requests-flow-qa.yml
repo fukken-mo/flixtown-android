@@ -22,6 +22,28 @@ jobs:
         run: |
           for f in panel/onepanel-tv-requests/api/*.php panel/onepanel-tv-requests/includes/*.php; do php -l "$f"; done
           php panel/onepanel-tv-requests/tests/tv_requests_test.php
+  apk-secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug and QA APKs
+        run: for attempt in 1 2 3; do ./gradlew -q :app:assembleDebug :app:assembleQa && break; sleep $((attempt*20)); done
+      - name: Scan APKs for secrets and backend names
+        run: |
+          fail=0
+          for apk in app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/qa/app-qa.apk; do
+            rm -rf scan && mkdir scan && unzip -q -o "$apk" -d scan
+            strings -n 6 scan/classes*.dex scan/resources.arsc scan/AndroidManifest.xml > scan/all.txt
+            echo "== $apk ($(wc -l < scan/all.txt) strings)"
+            for pat in 'X-Api-Key' 'X-API-User' 'requests\.myflixtown\.com' '[Ss]eerr' '[Rr]adarr' '[Ss]onarr' '[Jj]ellyfin' 'api_key' 'apiKey' 'sk_live' 'EAAA[A-Za-z0-9_-]{20,}' 'session_secret' 'requester_user_id' 'Bearer '; do
+              hits=$(grep -E -c -- "$pat" scan/all.txt || true)
+              printf '  %-28s %s\n' "$pat" "$hits"; [ "$hits" = 0 ] || { grep -E -- "$pat" scan/all.txt | head -3; fail=1; }
+            done
+          done
+          exit $fail
   emulator:
     runs-on: ubuntu-latest
     timeout-minutes: 45
