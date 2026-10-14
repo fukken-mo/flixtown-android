@@ -2,9 +2,13 @@ name: Requests flow check
 
 # Requests (Seerr through OnePanel): the OnePanel customer API tests (PHP, fake Seerr) and the TV
 # screen with the QA build's demo server, D-pad only, on Android 9 (API 28) and 12 (API 31) at 1080p
-# and 720p. Manual runs only. Results are committed to qa/requests-flow-* only.
+# and 720p. Runs on pushes to the feature/request-media branch that touch the Requests code or tests
+# (never on the production branch, never a release). Results are committed to qa/requests-flow-* only.
 on:
   workflow_dispatch:
+  push:
+    branches: ["feature/request-media"]
+    paths: ["app/**", "panel/onepanel-tv-requests/**", ".github/qa/requests_flow.sh", ".github/workflows/requests-flow-qa.yml"]
 
 permissions:
   contents: write
