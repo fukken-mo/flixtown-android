@@ -113,8 +113,8 @@ key BACK;                                   shot 56-home-after-player 1.2
 launch;                                     shot 57-launch-loading 0.2
 sleep 1.5;                                  shot 58-launch-home 0.3;          focus launch-home
 
-# --- Sign out for real (menu opens on Home: Movies, TV Shows, My List, Settings) ---
-key DPAD_LEFT DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.2
+# --- Sign out for real (menu opens on Home: Movies, TV Shows, My List, Requests, Settings) ---
+key DPAD_LEFT DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.2
 key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN
 shot 59-sign-out-row 0.4;                   focus sign-out-row
 key DPAD_CENTER DPAD_RIGHT;                 shot 60-sign-out-focus 0.4

@@ -33,6 +33,8 @@ final class NavIcon extends View {
             case 4:
                 for(int i=0;i<10;i++){double a=-Math.PI/2+i*Math.PI/5;float radius=(i%2==0)?12:5.5f;float x=16+(float)Math.cos(a)*radius,y=16+(float)Math.sin(a)*radius;
                     if(i==0)p.moveTo(x,y);else p.lineTo(x,y);}p.close();canvas.drawPath(p,pen);break;
+            case 6:   // Requests: a film frame with a plus
+                canvas.drawRoundRect(4,7,28,25,3,3,pen);canvas.drawLine(16,11,16,21,pen);canvas.drawLine(11,16,21,16,pen);break;
             default:
                 canvas.drawCircle(16,16,8,pen);
                 for(int i=0;i<8;i++){double a=i*Math.PI/4;canvas.drawLine(16+(float)Math.cos(a)*10,16+(float)Math.sin(a)*10,16+(float)Math.cos(a)*13,16+(float)Math.sin(a)*13,pen);}

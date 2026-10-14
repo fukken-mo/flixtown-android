@@ -159,7 +159,7 @@ key DPAD_DOWN DPAD_CENTER;                   sleep 1.5
 check "sorted by title" 'has "Sort: Title A–Z"'
 order="$(dump; python3 - "$OUT/ui.xml" <<'EOF'
 import sys, xml.etree.ElementTree as ET
-menu={"Search","Home","Movies","TV Shows","My List","Settings"}
+menu={"Search","Home","Movies","TV Shows","My List","Requests","Settings"}
 names=[n.get('content-desc') for n in ET.parse(sys.argv[1]).getroot().iter('node') if n.get('content-desc') and n.get('content-desc') not in menu and n.get('clickable')=='true' and n.get('class','').endswith('LinearLayout')]
 print("ok" if len(names)>=4 and [x.lower() for x in names[:6]]==sorted(x.lower() for x in names[:6]) else "bad "+"|".join(names[:6]))
 EOF

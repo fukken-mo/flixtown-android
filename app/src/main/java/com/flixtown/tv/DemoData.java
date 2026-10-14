@@ -45,8 +45,10 @@ final class DemoData {
         if(url.contains("config.php"))return new JSONObject().put("xtream_url","https://demo.flixtown.invalid").put("intro_enabled",intro)
             .put("intro_url",intro?STREAM:"").put("cashapp_url","https://cash.app/$FlixTownDemo")
             .put("plans",new JSONObject().put("1m","15").put("3m","40").put("6m","75").put("12m","140"))
-            .put("renewal_api_url",legacyRenewal||(live()!=null&&live().optBoolean("legacy_renewal"))?"":RENEWAL_URL).toString();
+            .put("renewal_api_url",legacyRenewal||(live()!=null&&live().optBoolean("legacy_renewal"))?"":RENEWAL_URL)
+            .put("requests_api_url",live()!=null&&live().optBoolean("no_requests")?"":REQUESTS_URL).toString();
         if(url.startsWith(RENEWAL_URL))return renewal(new JSONObject(body==null?"{}":body));
+        if(url.startsWith(REQUESTS_URL))return requests(new JSONObject(body==null?"{}":body));
         if(url.contains("pair-start")){polls=0;return new JSONObject().put("code","FT4K2Q").put("verifier","demo")
             .put("activation_url","https://myflixtown.com/activate.php?code=FT4K2Q").toString();}
         if(url.contains("pair-poll")){polls++;
@@ -129,6 +131,68 @@ final class DemoData {
     static volatile java.io.File accountFile;
     static volatile boolean legacyRenewal;
     static final String RENEWAL_URL="https://demo.flixtown.invalid/onepanel/api/tv-renewal.php";
+    static final String REQUESTS_URL="https://demo.flixtown.invalid/onepanel/api/tv-requests.php";
+    /** Demo requests made in this process (the demo server's own "database"). */
+    private static final java.util.List<JSONObject> demoRequests=new java.util.ArrayList<>();
+    private static final java.util.Set<String> demoRequested=new java.util.HashSet<>();
+
+    /**
+     * Demo of the OnePanel requests API (same answers as panel/onepanel-tv-requests). QA file keys:
+     * "requests":"down" -> every call answers 503 unavailable; "no_requests":true -> no address in config.
+     * Search "alpha" has 30 results over 2 pages (movies in every state, a series with seasons in
+     * different states, and one movie that is already in this TV's catalog); "zzz" finds nothing.
+     */
+    private static String requests(JSONObject in)throws Exception{
+        JSONObject live=live();
+        if(live!=null && "down".equals(live.optString("requests")))
+            return new JSONObject().put("ok",false).put("error","unavailable").put("message","Requests are temporarily unavailable.").put("_http",503).toString();
+        String action=in.optString("action");
+        if(action.equals("session"))return new JSONObject().put("ok",true).put("session","demo-requests").put("session_ttl",1800).toString();
+        if(!"demo-requests".equals(in.optString("session")))return new JSONObject().put("ok",false).put("error","session").put("message","Please sign in again.").put("_http",401).toString();
+        if(action.equals("search")){String q=in.optString("query").toLowerCase(Locale.US);int page=in.optInt("page",1);
+            JSONArray all=new JSONArray();
+            if(q.contains("alpha"))for(int i=0;i<30;i++)all.put(demoTitle(i));
+            JSONArray results=new JSONArray();for(int i=(page-1)*20;i<Math.min(all.length(),page*20);i++)results.put(all.get(i));
+            return new JSONObject().put("ok",true).put("page",page).put("pages",all.length()>20?2:1).put("results",results).toString();}
+        if(action.equals("details")){String type=in.optString("type");int id=in.optInt("id");
+            JSONObject t=null;for(int i=0;i<30;i++){JSONObject c=demoTitle(i);if(c.optString("type").equals(type)&&c.optInt("id")==id)t=c;}
+            if(t==null)return new JSONObject().put("ok",false).put("error","unavailable").put("message","Requests are temporarily unavailable.").put("_http",503).toString();
+            JSONObject d=new JSONObject(t.toString()).put("overview","A demo synopsis for "+t.optString("title")+". Two strangers share one long night on the road, and the town is never quite the same.")
+                .put("backdrop","demo://backdrop/m"+(id%20));
+            if(type.equals("tv")){JSONArray seasons=new JSONArray();String[] st={"available","pending","requestable","requestable"};
+                for(int n=1;n<=4;n++){String s=demoRequested.contains("tv:"+id+":"+n)?"pending":st[n-1];
+                    seasons.put(new JSONObject().put("number",n).put("name","Season "+n).put("episodes",8).put("state",s));}
+                d.put("seasons",seasons);boolean any=false;for(int n=0;n<4;n++)if("requestable".equals(seasons.getJSONObject(n).optString("state")))any=true;
+                d.put("state","partial").put("can_request",any);}
+            else{String s=demoRequested.contains("movie:"+id)?"pending":t.optString("state");d.put("state",s).put("can_request","requestable".equals(s));}
+            return new JSONObject().put("ok",true).put("details",d).toString();}
+        if(action.equals("request")){String type=in.optString("type");int id=in.optInt("id");JSONArray seasons=in.optJSONArray("seasons");
+            JSONObject t=null;for(int i=0;i<30;i++){JSONObject c=demoTitle(i);if(c.optString("type").equals(type)&&c.optInt("id")==id)t=c;}
+            if(t==null)return new JSONObject().put("ok",false).put("error","id").put("message","Invalid title.").put("_http",400).toString();
+            if(type.equals("movie")&&(demoRequested.contains("movie:"+id)||!"requestable".equals(t.optString("state"))))
+                return new JSONObject().put("ok",false).put("error","duplicate").put("message","This was already requested and is waiting for approval.").put("_http",409).toString();
+            if(type.equals("tv"))for(int k=0;seasons!=null&&k<seasons.length();k++){int n=seasons.optInt(k);
+                if(n<3||demoRequested.contains("tv:"+id+":"+n))return new JSONObject().put("ok",false).put("error","duplicate").put("message","Season "+n+": This was already requested.").put("_http",409).toString();}
+            if(type.equals("movie"))demoRequested.add("movie:"+id);else for(int k=0;k<seasons.length();k++)demoRequested.add("tv:"+id+":"+seasons.optInt(k));
+            JSONObject row=new JSONObject().put("type",type).put("id",id).put("title",t.optString("title")).put("year",t.optString("year"))
+                .put("poster",t.optString("poster")).put("seasons",seasons==null?new JSONArray():seasons).put("requested_at",System.currentTimeMillis()/1000).put("state","pending");
+            demoRequests.add(0,row);
+            return new JSONObject().put("ok",true).put("request",new JSONObject().put("type",type).put("id",id).put("title",t.optString("title")).put("state","pending")).toString();}
+        if(action.equals("history")){JSONArray list=new JSONArray();
+            list.put(new JSONObject().put("type","movie").put("id",9101).put("title","Alpha Earlier Request").put("year","2020").put("poster","demo://poster/m11")
+                .put("seasons",new JSONArray()).put("requested_at",base()-5*DAY).put("state","approved"));
+            for(JSONObject r:demoRequests)list.put(r);
+            return new JSONObject().put("ok",true).put("page",1).put("has_more",false).put("requests",list).toString();}
+        return new JSONObject().put("ok",false).put("error","bad_request").put("message","Unknown action.").put("_http",400).toString();
+    }
+    /** Demo search titles: 0 requestable movie, 1 available, 2 pending, 3 approved, 4 declined, 5 series, 6 in this TV's catalog. */
+    private static JSONObject demoTitle(int i)throws Exception{
+        String[] states={"requestable","available","pending","approved","declined"};
+        if(i==5)return new JSONObject().put("type","tv").put("id",8205).put("title","Alpha Show").put("year","2015").put("poster","demo://poster/s3").put("state","partial");
+        if(i==6)return new JSONObject().put("type","movie").put("id",700003).put("title",title(3,1)).put("year",String.valueOf(movieYear(3))).put("poster","demo://poster/m3").put("state","requestable");
+        return new JSONObject().put("type","movie").put("id",8100+i).put("title",(i==0?"Alpha Movie":"Alpha Title "+i)).put("year",String.valueOf(1990+i))
+            .put("poster","demo://poster/m"+(20+i)).put("state",i<5?states[i]:"requestable");
+    }
     /** After a demo renewal: the new expiry (seconds), which wins over the QA file's "expired". */
     private static volatile long renewedUntil;
     private static JSONObject payment;

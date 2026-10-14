@@ -74,7 +74,9 @@ class H(BaseHTTPRequestHandler):
             elif m == "500": cfg["renewal_api_url"] = "https://httpbin.org/status/500"
             elif m == "timeout": cfg["renewal_api_url"] = "https://httpbin.org/delay/40"
             elif m == "unreachable": cfg["renewal_api_url"] = "https://10.255.255.1/api/tv-renewal.php"
-            elif m == "probe": cfg["renewal_api_url"] = "https://10.0.2.2:8443/api/tv-renewal.php"
+            elif m == "probe":
+                cfg["renewal_api_url"] = "https://10.0.2.2:8443/api/tv-renewal.php"
+                cfg["requests_api_url"] = "https://10.0.2.2:8443/api/tv-requests.php"   # counted the same way
             return self.send_json(cfg)
         if p == "/api/app-update.php": return self.send_json({"ok": True, "update_version_code": 0, "message": "No update"})
         if p in ("/api/trending.php",): return self.send_json({"movies": [], "series": []})

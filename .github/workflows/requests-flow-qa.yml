@@ -1,0 +1,68 @@
+name: Requests flow check
+
+# Requests (Seerr through OnePanel): the OnePanel customer API tests (PHP, fake Seerr) and the TV
+# screen with the QA build's demo server, D-pad only, on Android 9 (API 28) and 12 (API 31) at 1080p
+# and 720p. Manual runs only. Results are committed to qa/requests-flow-* only.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: OnePanel customer requests API (php -S, SQLite, fake Seerr; no real Seerr)
+        run: |
+          for f in panel/onepanel-tv-requests/api/*.php panel/onepanel-tv-requests/includes/*.php; do php -l "$f"; done
+          php panel/onepanel-tv-requests/tests/tv_requests_test.php
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 31, profile: tv_1080p, out: qa/requests-flow-api31-1080p }
+          - { api: 31, profile: tv_720p, out: qa/requests-flow-api31-720p }
+          - { api: 28, profile: tv_1080p, out: qa/requests-flow-api28-1080p }
+          - { api: 28, profile: tv_720p, out: qa/requests-flow-api28-720p }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and QA APK
+        run: |
+          for attempt in 1 2 3; do ./gradlew :app:testDebugUnitTest :app:assembleQa --stacktrace && break; sleep $((attempt*20)); done
+          test -f app/build/outputs/apk/qa/app-qa.apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Requests flow on an Android TV emulator (API ${{ matrix.api }})
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: QA_OUT=${{ matrix.out }} bash .github/qa/requests_flow.sh || true
+      - name: Result
+        if: always()
+        run: |
+          cat ${{ matrix.out }}/report.txt || true
+          ! grep -h '^FAIL' ${{ matrix.out }}/report.txt
+      - name: Commit screenshots
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ${{ matrix.out }}
+          git commit -m "Requests flow check from TV emulator, API ${{ matrix.api }} ${{ matrix.profile }} (${GITHUB_SHA::7})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*5)); done

@@ -12,6 +12,7 @@
         <activity android:name=".IntroActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".DetailsActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".ActorActivity" android:exported="false" android:screenOrientation="landscape"/>
+        <activity android:name=".RequestsActivity" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="adjustNothing|stateHidden"/>
         <activity android:name=".HomeActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".LoginActivity" android:exported="true" android:screenOrientation="landscape" android:banner="@drawable/tv_banner">
             <intent-filter>

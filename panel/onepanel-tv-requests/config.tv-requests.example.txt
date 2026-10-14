@@ -1,0 +1,15 @@
+Flix Town TV media requests — add these lines INSIDE the existing 'seerr' => [ ... ] block of
+config/config.php (next to base_url / api_key / actions_enabled). Do not commit real values.
+
+      // Customer requests from the Flix Town TV app (api/tv-requests.php). Off unless literally true.
+      'customer_requests_enabled' => false,
+      // ID of a dedicated Seerr user (e.g. a local user "Flix Town TV") that has Request (movie + series)
+      // and NOTHING that approves: no Admin, no Manage Requests, no Auto-Approve (any kind).
+      // Never 1 (the Seerr administrator). OnePanel checks this before every request and refuses otherwise.
+      'requester_user_id' => 0,
+      // 32+ random characters, e.g. the output of: php -r 'echo bin2hex(random_bytes(32));'
+      'customer_session_secret' => 'CHANGE_ME_TO_A_LONG_RANDOM_VALUE',
+      'customer_daily_limit' => 5,            // new requests per customer per day
+      'customer_open_limit' => 10,            // requests a customer may have waiting for approval
+      'customer_allow_expired' => false,      // expired customers cannot request
+      'customer_allow_rerequest_declined' => false,   // a declined title/season is not offered again

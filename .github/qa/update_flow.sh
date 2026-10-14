@@ -60,7 +60,8 @@ for node in re.findall(r"<node [^>]*>",xml):
   return 1
 }
 # Settings rows: 0 Subscription, 1 Renew subscription (in-app renewal offered by the demo panel), … 4 Autoplay … 8 Check for app updates, 9 App version, 10 Sign out
-open_settings(){ key DPAD_LEFT; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.2; }
+# Menu from Home: Movies, TV Shows, My List, Requests, Settings (five steps down).
+open_settings(){ key DPAD_LEFT; key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER; sleep 1.2; }
 
 OLD=10010; NEW=10011
 popup(){ screen_has "Update available" || screen_has "Update required"; }

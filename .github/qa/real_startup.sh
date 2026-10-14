@@ -183,7 +183,7 @@ for SC in $MODES; do
     library;;
   esac
   if [ "$RENEWAL" = probe ]; then
-    check "[$SC] no renewal network call during sign-in, startup or catalog loading ($(renewal_conns) connections)" '[ "$(renewal_conns)" = 0 ]'
+    check "[$SC] no renewal or requests network call during sign-in, startup or catalog loading ($(renewal_conns) connections)" '[ "$(renewal_conns)" = 0 ]'
   fi
   if [ "$RENEWAL" != none ] && [ -n "${NO_RENEWAL:-}" ]; then
     note "INFO  [$SC] baseline build without in-app renewal: renewal screen not checked"

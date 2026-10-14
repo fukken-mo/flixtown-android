@@ -88,9 +88,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private AppUpdates updates;
     private Catalog.Item pendingFocusItem;
     private SettingsPage settingsPage;
-    private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Settings"};
-    private static final String[] TAB_NAMES={"Search","Home","Movies","TV Shows","My List","Settings"};
-    private static final int[] ICONS={1,0,2,3,4,5};
+    private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Requests","Settings"};
+    private static final String[] TAB_NAMES={"Search","Home","Movies","TV Shows","My List","Requests","Settings"};
+    private static final int[] ICONS={1,0,2,3,4,6,5};
     private static final String[] SORTS={"Recently Added","Title A–Z","Top Rated","Release Year"};
 
     @Override public void onCreate(Bundle state){super.onCreate(state);
@@ -346,7 +346,10 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
 
     /* ---------------- Navigation ---------------- */
 
-    @Override public void onSelect(String target){selectTab(target);}
+    @Override public void onSelect(String target){
+        // Requests is its own screen; Home keeps its page and focus underneath.
+        if(target.equals("Requests")){closeMenu();startActivity(new Intent(this,RequestsActivity.class));return;}
+        selectTab(target);}
     @Override public void onClose(){closeMenu();}
     private void openMenu(){if(nav.isOpen()||overlayUp)return;
         lastContentFocus=getCurrentFocus();
