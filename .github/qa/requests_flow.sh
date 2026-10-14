@@ -48,7 +48,7 @@ server(){ printf '%s' "$1" | adb shell "run-as $PKG sh -c 'cat > files/demo_acco
 # Only Flix Town's own process counts (the API 28 TV image's Live TV app crashes on its own; kept in crash.txt).
 crashes(){ adb logcat -d -b crash | grep -A1 "FATAL EXCEPTION" | grep -c "Process: com.flixtown.tv" ; }
 # The on-screen keyboard takes the D-pad while it is up; a viewer closes it with Back (or its search key).
-kb_shown(){ sleep 0.7; adb shell dumpsys input_method | grep -qE "mInputShown=true|mIsInputViewShown=true"; }
+kb_shown(){ sleep 0.7; adb shell dumpsys input_method | grep -q "mInputShown=true"; }
 close_kb(){ kb_shown && { key BACK; sleep 1; }; return 0; }
 qa(){ adb logcat -d -s FlixTownQA:I | grep " requests " ; }
 desc(){ grep -q "content-desc=\"$1" "$OUT/ui.xml"; }
