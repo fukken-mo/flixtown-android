@@ -46,6 +46,9 @@ m=re.search(r"name=\""+k+r"\"(?: value=\"([^\"]*)\"\s*/>|>([^<]*)</string>|\s*/>
 print("" if not m else (m.group(1) or m.group(2) or ""))' "$1"; }
 server(){ printf '%s' "$1" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"; note "      server now: $1"; }
 crashes(){ adb logcat -d -b crash | grep -c "FATAL EXCEPTION.*" ; }
+# The on-screen keyboard takes the D-pad while it is up; a viewer closes it with Back (or its search key).
+kb_shown(){ adb shell dumpsys input_method | grep -q "mInputShown=true"; }
+close_kb(){ kb_shown && { key BACK; sleep 1; }; return 0; }
 qa(){ adb logcat -d -s FlixTownQA:I | grep " requests " ; }
 desc(){ grep -q "content-desc=\"$1" "$OUT/ui.xml"; }
 text(){ grep -q "text=\"$1" "$OUT/ui.xml"; }
@@ -66,7 +69,7 @@ print(sum(1 for t in tops if t==tops[0]) if tops else 1)
 ' "$OUT/ui.xml"; }
 # Focus result number N (0-based): back to the search box, then down and across.
 go_card(){ local n=$1 s; for i in $(seq 1 8); do in_field && break; key DPAD_UP; done
-  key DPAD_DOWN; sleep 0.5; s=$(span)
+  close_kb; key DPAD_DOWN; sleep 0.5; s=$(span)
   for i in $(seq 1 $((n / s))); do key DPAD_DOWN; done
   for i in $(seq 1 $((n % s))); do key DPAD_RIGHT; done; sleep 0.5; }
 
@@ -102,6 +105,8 @@ check "results: Movie, year and state on the cards" 'desc "Alpha Movie. Movie, 1
 check "states: Available, Pending approval, Approved, Declined" 'desc "Alpha Title 1. Movie, 1991. Available" && desc "Alpha Title 2. Movie, 1992. Pending approval" && desc "Alpha Title 3. Movie, 1993. Approved · processing" && desc "Alpha Title 4. Movie, 1994. Declined"'
 check "series shown as Partly available (never fully available)" 'desc "Alpha Show. TV Show, 2015. Partly available"'
 check "a movie already in this TV's catalog shows In Flix Town" 'grep -q "In Flix Town" "$OUT/ui.xml"'
+close_kb
+check "Back closes the keyboard and stays on Requests" 'in_activity RequestsActivity && in_field'
 key DPAD_DOWN; sleep 1
 check "Down from the search box: first result" 'focused | grep -q "Alpha Movie"'
 shot 02-search-results
@@ -163,7 +168,7 @@ check "Back from the picker returns to the series details" 'text "Choose seasons
 key BACK; sleep 1
 
 # ---------------- My Requests ----------------
-for i in $(seq 1 10); do [ "$(focused)" = "Search" ] && break; key DPAD_UP; done
+for i in $(seq 1 10); do close_kb; [ "$(focused)" = "Search" ] && break; key DPAD_UP; done
 check "Up from the search box reaches the tabs" '[ "$(focused)" = "Search" ]'
 key DPAD_RIGHT; check "Right: My Requests" '[ "$(focused)" = "My Requests" ]'
 key DPAD_CENTER; sleep 3; dump
@@ -184,4 +189,5 @@ check "browsing still works while Requests is down (Movies grid)" 'grep -q "All 
 adb shell "run-as $PKG rm -f files/demo_account.json"
 
 check "no crash during the whole run" '[ "$(crashes)" = "0" ]'
+adb logcat -d -b crash > "$OUT/crash.txt" 2>/dev/null; [ -s "$OUT/crash.txt" ] || rm -f "$OUT/crash.txt"
 note ""; note "requests flow: $PASS passed, $FAIL failed"
