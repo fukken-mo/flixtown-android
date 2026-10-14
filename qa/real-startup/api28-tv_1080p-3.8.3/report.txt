@@ -37,14 +37,14 @@ PASS  [none:cached] no crash
 == api28-tv_1080p-3.8.3 · renewal API: probe · catalog: ok
 PASS  [probe:ok] form filled (username field holds only the username)
 PASS  [probe:ok] sign-in accepted, Home opened
-      catalog arrived 6 s after sign-in
+      catalog arrived 5 s after sign-in
 PASS  [probe:ok] startup refresh finished: updated
 PASS  [probe:ok] no 'taking longer than usual' message
 PASS  [probe:ok] Home shows titles
 PASS  [probe:ok] Movies populated (12 posters on screen)
 PASS  [probe:ok] TV Shows populated (12 posters on screen)
 PASS  [probe:ok] exactly one catalog download, no retries
-PASS  [probe:ok] no renewal network call during sign-in, startup or catalog loading (0 connections)
+PASS  [probe:ok] no renewal or requests network call during sign-in, startup or catalog loading (0 connections)
 INFO  [probe:ok] baseline build without in-app renewal: renewal screen not checked
 PASS  [probe:ok] no crash
 
