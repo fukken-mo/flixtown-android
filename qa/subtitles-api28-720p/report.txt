@@ -1,0 +1,34 @@
+PASS  movie: player opened
+INFO  10-14 22:43:29.666  3054  3054 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+FAIL  movie: subtitle label says Plain
+INFO  plain, controls shown: 0 0 0 0 1280 720 0
+FAIL  movie: Plain subtitles visible with the controls shown, above the controls
+PASS  movie: controls hid by themselves
+INFO  plain, controls hidden 1s: 0 0 0 0 1280 720 0
+FAIL  movie: Plain subtitles still visible 1s after the controls hid, inside the TV safe area
+INFO  plain, controls hidden 4s: 0 0 0 0 1280 720 0
+FAIL  movie: Plain subtitles still visible 4s after the controls hid, inside the TV safe area
+INFO  plain, controls hidden 8s: 0 0 0 0 1280 720 0
+FAIL  movie: Plain subtitles still visible 8s after the controls hid, inside the TV safe area
+INFO  10-14 22:43:50.549  3054  3054 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+FAIL  movie: subtitle label says Bottom
+INFO  bottom, controls shown: 0 0 0 0 1280 720 0
+FAIL  movie: bottom-positioned subtitles visible with the controls shown, above the controls
+INFO  bottom, controls hidden 1s: 0 0 0 0 1280 720 0
+FAIL  movie: bottom-positioned subtitles still visible 1s after the controls hid, inside the TV safe area
+INFO  bottom, controls hidden 4s: 0 0 0 0 1280 720 0
+FAIL  movie: bottom-positioned subtitles still visible 4s after the controls hid, inside the TV safe area
+INFO  bottom, controls hidden 8s: 0 0 0 0 1280 720 0
+FAIL  movie: bottom-positioned subtitles still visible 8s after the controls hid, inside the TV safe area
+PASS  movie: three show/hide cycles keep the subtitle choice (Subtitles · Off)
+FAIL  movie: subtitles still drawn after the cycles
+PASS  movie: seeking still works (+10 s: 13s -> 23s)
+FAIL  movie: subtitles shown again after seeking, same choice
+INFO  10-14 22:44:31.138  3054  3054 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+PASS  movie: subtitle label says Off
+PASS  movie: Off: no subtitles with the controls shown
+PASS  movie: Off: no subtitles with the controls hidden
+FAIL  episode: player did not open (    mResumedActivity: ActivityRecord{3c6ba39 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5})
+PASS  no Flix Town crash
+
+subtitles: 8 passed, 13 failed
