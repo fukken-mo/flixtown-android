@@ -28,7 +28,8 @@ PASS  scrolling down (row 5): focused card and its text fully visible
 PASS  scrolling down (row 5): nothing drawn over the header
 PASS  scrolling near the end loads page 2 (30 results)
 PASS  Up from the first row returns to the search box
-PASS  details: title, synopsis, Requestable, Request button focused
+FAIL  details: title, synopsis, Requestable, Request button focused
+      at: RequestsActivity focus='Request'
 PASS  Request: Pending approval, told where to find it
 PASS  Back closes details and returns to the same card
 PASS  the card now says Pending approval
@@ -60,4 +61,4 @@ PASS  Back leaves Requests for Home
 PASS  browsing still works while Requests is down (Movies grid)
 PASS  no crash during the whole run
 
-requests flow: 60 passed, 0 failed
+requests flow: 59 passed, 1 failed
