@@ -9,21 +9,20 @@ PASS  results: Movie, year and state on the cards
 PASS  states: Available, Pending approval, Approved, Declined
 PASS  series shown as Partly available (never fully available)
 PASS  a movie already in this TV's catalog shows In Flix Town
-FAIL  Down from the search box: first result
-      at: RequestsActivity focus='alpha'
-FAIL  scrolling near the end loads page 2 (30 results)
-      at: RequestsActivity focus='alpha'
+PASS  Back closes the keyboard and stays on Requests
+PASS  Down from the search box: first result
+PASS  scrolling near the end loads page 2 (30 results)
 PASS  Up from the first row returns to the search box
 FAIL  details: title, synopsis, Requestable, Request button focused
-      at: RequestsActivity focus='alphaw'
+      at: RequestsActivity focus='alpha'
 FAIL  Request: Pending approval, told where to find it
-      at: RequestsActivity focus='alphaww'
+      at: RequestsActivity focus='alphaq'
 FAIL  Back closes details and returns to the same card
-      at: RequestsActivity focus='alphaww'
+      at: RequestsActivity focus='alphaq'
 FAIL  the card now says Pending approval
-      at: RequestsActivity focus='alphaww'
+      at: RequestsActivity focus='alphaq'
 FAIL  reopened: no Request button (already requested)
-      at: RequestsActivity focus='alphaww'
+      at: RequestsActivity focus='alphaq'
 PASS  declined: no Request button, explained
 FAIL  available: no Request button
       at: RequestsActivity focus='Alpha Earlier Request. Movie, 2020. Approved · processing'
@@ -67,4 +66,4 @@ FAIL  browsing still works while Requests is down (Movies grid)
       at: DetailsActivity focus='▶  Play'
 PASS  no crash during the whole run
 
-requests flow: 15 passed, 26 failed
+requests flow: 18 passed, 24 failed
