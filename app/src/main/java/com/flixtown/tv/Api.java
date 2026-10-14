@@ -61,7 +61,7 @@ final class Api {
             + "/player_api.php?username="+enc(account[0])+"&password="+enc(account[1]);
     }
     static String stream(Context c, String type, String id, String extension) {
-        if (BuildConfig.DEMO) return DemoData.STREAM;
+        if (BuildConfig.DEMO) return DemoData.stream();
         SharedPreferences p = prefs(c);
         String[] account=AccountStore.read(c);if(account==null)throw new IllegalStateException("Sign in required");
         return p.getString("server", "http://streamtown.live:8080").replaceAll("/+$", "")

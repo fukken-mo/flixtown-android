@@ -86,6 +86,7 @@ public class PlayerActivity extends Activity {
         video.setUseController(false);
         video.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);
         video.setShutterBackgroundColor(0xFF000000);
+        keepSubtitlesInSafeArea();
         buildControls();
         root.requestFocus();
     }
@@ -149,6 +150,19 @@ public class PlayerActivity extends Activity {
         if(dialog!=null || pendingSeek>=0){scheduleHide();return;}
         controls.setVisibility(View.GONE);status.setVisibility(View.GONE);liftSubtitles(false);root.requestFocus();
     };
+    /**
+     * Subtitles are laid out inside the TV safe area, with or without the controls. Cues that carry
+     * their own position (common in episode subtitle tracks, e.g. ASS/SSA) are otherwise pinned to the
+     * very bottom edge of the screen, which many TVs crop: they then vanished when the controls hid
+     * (and came back when the controls lifted them). The padding goes on the subtitle drawing layer,
+     * so the text size stays as before; the subtitle selection is untouched.
+     */
+    private void keepSubtitlesInSafeArea(){
+        androidx.media3.ui.SubtitleView subs=video.getSubtitleView();if(subs==null)return;
+        View layer=subs.getChildCount()>0?subs.getChildAt(0):subs;
+        int x=Ui.safeX(this),y=Ui.safeY(this);
+        layer.setPadding(x,y,x,y);
+    }
     /** Keeps subtitles above the controls while they are shown, and at the normal height otherwise. */
     private void liftSubtitles(boolean up){
         // Moving the whole layer also works for cues that carry their own position (common in WebVTT/ASS).

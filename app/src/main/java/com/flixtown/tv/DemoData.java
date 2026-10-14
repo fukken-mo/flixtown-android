@@ -21,6 +21,8 @@ final class DemoData {
     private DemoData(){}
     /** Public test stream with several audio languages and subtitle tracks. */
     static final String STREAM="https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8";
+    /** The movie/episode stream: STREAM, or the QA file's "stream" (e.g. a local test video with known subtitle cues). */
+    static String stream(){JSONObject live=live();String s=live==null?"":live.optString("stream","");return s.startsWith("http")?s:STREAM;}
     private static final String[] A={"Silent","Crimson","Last","Midnight","Broken","Golden","Hidden","Northern","Electric","Lost","Wild","Paper","Iron","Distant","Hollow"};
     private static final String[] B={"Harbor","Frontier","Signal","Garden","Kingdom","Horizon","Letters","Station","Empire","Tide","Orchard","Protocol","Summer","Voyage","Circuit"};
     private static final String[] MOVIE_CATS={"Action","Drama","Comedy","Thriller","Family","Sci-Fi"};
