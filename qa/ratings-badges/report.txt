@@ -23,10 +23,9 @@ PASS  details page shows the TMDB rating ★ x.x
 PASS  details page never shows the provider 10
 PASS  browse cards show year · ★ rating
 PASS  browse cards without a rating show only the year
-  (refresh row not found by text)
-  The Night Shift Files: 
-  Paper Garden: 
-FAIL  recent premiere added after the first import: NEW SERIES
+  The Night Shift Files: The Night Shift Files|NEW SERIES|The Night Shift Files|2026  ·  ★ 8.6  ·  Series
+  Paper Garden: Paper Garden|Paper Garden|2008  ·  Series
+PASS  recent premiere added after the first import: NEW SERIES
 PASS  importing an old episode does not earn NEW (Paper Garden)
 PASS  old show stays unbadged after refresh (The Golden Harbor)
 PASS  unchanged series still without badge (Broken Station)
@@ -34,4 +33,4 @@ PASS  after restart: imported old show stays unbadged (The Golden Harbor)
 PASS  after restart: unchanged series still without badge (Broken Station)
 PASS  after restart: ratings shown from the saved cache
 PASS  no crash
-ratings & badges: 28 passed, 1 failed
+ratings & badges: 29 passed, 0 failed

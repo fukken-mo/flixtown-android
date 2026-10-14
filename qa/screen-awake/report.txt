@@ -12,26 +12,3 @@ PASS  player: still awake after 30s without remote input
 PASS  Back from the player returns to Details
 PASS  after playback: Details flag set again
 PASS  after playback: player window gone or flag cleared
-PASS  after playback, Details: still awake after 45s idle
-PASS  Back returns to Home
-PASS  after playback, Home: still awake after 45s idle
-PASS  backgrounded: Flix Town is not in front
-PASS  backgrounded: keep-screen-on cleared on every Flix Town window
-PASS  backgrounded: TV reached its screensaver/sleep (Dreaming)
-PASS  reopened: Home in front
-PASS  reopened: keep-screen-on flag set again
-PASS  reopened: still awake after 45s idle
-PASS  closed: TV reached its screensaver/sleep (Dreaming)
-INFO  10-14 09:26:36.921 14235 14235 I FlixTownQA: screen_awake HomeActivity=true
-INFO  10-14 09:28:21.062 14235 14235 I FlixTownQA: screen_awake HomeActivity=false
-INFO  10-14 09:28:21.090 14235 14235 I FlixTownQA: screen_awake DetailsActivity=true
-INFO  10-14 09:29:09.874 14235 14235 I FlixTownQA: screen_awake DetailsActivity=false
-INFO  10-14 09:29:09.991 14235 14235 I FlixTownQA: screen_awake PlayerActivity=true
-INFO  10-14 09:29:45.528 14235 14235 I FlixTownQA: screen_awake PlayerActivity=false
-INFO  10-14 09:29:45.604 14235 14235 I FlixTownQA: screen_awake DetailsActivity=true
-INFO  10-14 09:30:32.444 14235 14235 I FlixTownQA: screen_awake DetailsActivity=false
-INFO  10-14 09:30:32.504 14235 14235 I FlixTownQA: screen_awake HomeActivity=true
-INFO  10-14 09:31:19.000 14235 14235 I FlixTownQA: screen_awake HomeActivity=false
-INFO  10-14 09:32:10.085 14235 14235 I FlixTownQA: screen_awake HomeActivity=true
-PASS  no crash during the run
-screen awake: 24 passed, 0 failed
