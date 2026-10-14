@@ -2,32 +2,32 @@ PASS  demo server points at the test video (http://10.0.2.2:8000/subs.mkv)
 PASS  movie: player opened
 INFO  movie: playing at 3s
 PASS  movie: playing the test video (its subtitle tracks are listed)
-INFO  10-14 23:34:13.454  3094  3094 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
+INFO  10-14 23:54:47.004  3042  3042 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
 PASS  movie: subtitle label shows the Plain track, English (Subtitles · English)
 INFO  plain, controls shown (true): 544 441 738 465 1280 720 734
 PASS  movie: Plain subtitles visible with the controls shown, above the controls
 PASS  movie: controls hid by themselves
 INFO  plain, controls hidden 1s: 544 598 738 622 1280 720 712
 PASS  movie: Plain subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 4s: 544 598 738 622 1280 720 712
+INFO  plain, controls hidden 4s: 544 598 738 622 1280 720 745
 PASS  movie: Plain subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 8s: 544 598 738 622 1280 720 745
+INFO  plain, controls hidden 8s: 544 598 736 622 1280 720 725
 PASS  movie: Plain subtitles still visible 8s after the controls hid, inside the TV safe area
-INFO  10-14 23:34:35.508  3094  3094 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=1
+INFO  10-14 23:55:12.526  3042  3042 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=1
 PASS  movie: subtitle label shows the Bottom track, French (Subtitles · French)
-INFO  bottom, controls shown (true): 458 479 814 512 1280 720 1698
+INFO  bottom, controls shown (true): 458 479 822 512 1280 720 1749
 PASS  movie: bottom-positioned subtitles visible with the controls shown, above the controls
-INFO  bottom, controls hidden 1s: 458 635 822 669 1280 720 1864
+INFO  bottom, controls hidden 1s: 458 635 822 669 1280 720 1874
 PASS  movie: bottom-positioned subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 4s: 458 635 822 669 1280 720 1874
+INFO  bottom, controls hidden 4s: 458 635 824 669 1280 720 1869
 PASS  movie: bottom-positioned subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 8s: 458 635 824 669 1280 720 1869
+INFO  bottom, controls hidden 8s: 458 635 822 669 1280 720 1879
 PASS  movie: bottom-positioned subtitles still visible 8s after the controls hid, inside the TV safe area
 PASS  movie: three show/hide cycles keep the subtitle choice (Subtitles · French)
 PASS  movie: subtitles still drawn after the cycles
-PASS  movie: seeking still works (+10 s: 68s -> 81s)
+PASS  movie: seeking still works (+10 s: 75s -> 88s)
 PASS  movie: subtitles shown again after seeking, same choice
-INFO  10-14 23:35:17.773  3094  3094 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=2
+INFO  10-14 23:55:58.591  3042  3042 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=2
 PASS  movie: subtitle label shows Off (Subtitles · Off)
 PASS  movie: Off: no subtitles with the controls shown
 PASS  movie: Off: no subtitles with the controls hidden
@@ -35,32 +35,32 @@ INFO  episode row focus: Broken Summer
 PASS  episode: player opened
 INFO  episode: playing at 3s
 PASS  episode: playing the test video (its subtitle tracks are listed)
-INFO  10-14 23:36:45.906  3094  3094 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
+INFO  10-14 23:57:30.204  3042  3042 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
 PASS  episode: subtitle label shows the Plain track, English (Subtitles · English)
 INFO  plain, controls shown (true): 544 441 738 465 1280 720 734
 PASS  episode: Plain subtitles visible with the controls shown, above the controls
 PASS  episode: controls hid by themselves
-INFO  plain, controls hidden 1s: 544 598 738 622 1280 720 734
+INFO  plain, controls hidden 1s: 544 598 738 622 1280 720 712
 PASS  episode: Plain subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 4s: 544 598 738 622 1280 720 712
+INFO  plain, controls hidden 4s: 544 598 738 622 1280 720 745
 PASS  episode: Plain subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  plain, controls hidden 8s: 544 598 738 622 1280 720 745
+INFO  plain, controls hidden 8s: 544 598 736 622 1280 720 725
 PASS  episode: Plain subtitles still visible 8s after the controls hid, inside the TV safe area
-INFO  10-14 23:37:08.471  3094  3094 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=1
+INFO  10-14 23:57:55.719  3042  3042 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=1
 PASS  episode: subtitle label shows the Bottom track, French (Subtitles · French)
-INFO  bottom, controls shown (true): 458 479 814 512 1280 720 1698
+INFO  bottom, controls shown (true): 458 479 822 512 1280 720 1757
 PASS  episode: bottom-positioned subtitles visible with the controls shown, above the controls
-INFO  bottom, controls hidden 1s: 458 635 822 669 1280 720 1864
+INFO  bottom, controls hidden 1s: 458 635 824 669 1280 720 1869
 PASS  episode: bottom-positioned subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 4s: 458 635 822 669 1280 720 1874
+INFO  bottom, controls hidden 4s: 458 635 822 669 1280 720 1879
 PASS  episode: bottom-positioned subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 8s: 458 635 824 669 1280 720 1869
+INFO  bottom, controls hidden 8s: 458 635 822 669 1280 720 1884
 PASS  episode: bottom-positioned subtitles still visible 8s after the controls hid, inside the TV safe area
 PASS  episode: three show/hide cycles keep the subtitle choice (Subtitles · French)
 PASS  episode: subtitles still drawn after the cycles
-PASS  episode: seeking still works (+10 s: 68s -> 81s)
+PASS  episode: seeking still works (+10 s: 77s -> 90s)
 PASS  episode: subtitles shown again after seeking, same choice
-INFO  10-14 23:37:50.939  3094  3094 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=2
+INFO  10-14 23:58:43.257  3042  3042 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=2
 PASS  episode: subtitle label shows Off (Subtitles · Off)
 PASS  episode: Off: no subtitles with the controls shown
 PASS  episode: Off: no subtitles with the controls hidden
