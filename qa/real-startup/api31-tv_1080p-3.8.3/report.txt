@@ -2,7 +2,7 @@
 == api31-tv_1080p-3.8.3 · renewal API: none · catalog: ok
 PASS  [none:ok] form filled (username field holds only the username)
 PASS  [none:ok] sign-in accepted, Home opened
-      catalog arrived 6 s after sign-in
+      catalog arrived 5 s after sign-in
 PASS  [none:ok] startup refresh finished: updated
 PASS  [none:ok] no 'taking longer than usual' message
 PASS  [none:ok] Home shows titles
