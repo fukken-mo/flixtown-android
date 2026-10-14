@@ -84,7 +84,9 @@ sys.exit(0 if ok else 1)
 go_card(){ local n=$1 s; for i in $(seq 1 8); do in_field && break; key DPAD_UP; done
   sleep 0.5; close_kb; key DPAD_DOWN; sleep 0.5; in_field && { close_kb; key DPAD_DOWN; }; sleep 0.5; s=$(span)
   for i in $(seq 1 $((n / s))); do key DPAD_DOWN; done
-  for i in $(seq 1 $((n % s))); do key DPAD_RIGHT; done; sleep 0.5; }
+  for i in $(seq 1 $((n % s))); do key DPAD_RIGHT; done; sleep 0.8
+  # When a title is given, make sure the move landed on it (the grid may still have been scrolling).
+  if [ -n "$2" ] && ! focused | grep -q -- "$2"; then sleep 1; go_card "$n"; fi; }
 
 adb logcat -c; adb logcat -b crash -c 2>/dev/null || true
 launch --ez demo_reset true
@@ -142,7 +144,7 @@ for i in $(seq 1 8); do in_field && break; key DPAD_UP; done; close_kb
 check "Up from the first row returns to the search box" 'in_field'
 
 # ---------------- movie details and request ----------------
-go_card 0; key DPAD_CENTER; sleep 2
+go_card 0 "Alpha Movie"; key DPAD_CENTER; sleep 2
 dump
 check "details: title, synopsis, Requestable, Request button focused" 'text "Alpha Movie" && grep -q "A demo synopsis for Alpha Movie" "$OUT/ui.xml" && [ "$(focused)" = "Request" ]'
 shot 03-details-movie
@@ -157,15 +159,15 @@ check "reopened: no Request button (already requested)" '! text "Request\"" && g
 key BACK; sleep 1
 
 # declined and available: nothing to request
-go_card 4; key DPAD_CENTER; sleep 2; dump
+go_card 4 "Alpha Title 4"; key DPAD_CENTER; sleep 2; dump
 check "declined: no Request button, explained" '! text "Request\"" && grep -q "declined" "$OUT/ui.xml"'
 key BACK; sleep 1
-go_card 1; key DPAD_CENTER; sleep 2; dump
+go_card 1 "Alpha Title 1"; key DPAD_CENTER; sleep 2; dump
 check "available: no Request button" '! text "Request\"" && grep -q "already available" "$OUT/ui.xml"'
 key BACK; sleep 1
 
 # already in Flix Town: Watch instead of Request
-go_card 6; check "card 7 is the title already in Flix Town" 'focused | grep -q "In Flix Town"'; key DPAD_CENTER; sleep 2; dump
+go_card 6 "In Flix Town"; check "card 7 is the title already in Flix Town" 'focused | grep -q "In Flix Town"'; key DPAD_CENTER; sleep 2; dump
 check "in Flix Town: Watch in Flix Town, no Request" 'text "Watch in Flix Town" && ! text "Request\""'
 shot 05-in-flix-town
 key DPAD_CENTER; wait_activity DetailsActivity 8 && ok "Watch opens the Flix Town title" || bad "Watch did not open details"
@@ -174,7 +176,7 @@ check "Back from the title returns to Requests" 'in_activity RequestsActivity'
 key BACK; sleep 1
 
 # ---------------- series: season picker ----------------
-go_card 5; key DPAD_CENTER; sleep 2; dump
+go_card 5 "Alpha Show"; key DPAD_CENTER; sleep 2; dump
 check "series details: Choose seasons" '[ "$(focused)" = "Choose seasons" ]'
 key DPAD_CENTER; sleep 1; dump
 check "season picker: S1 available and S2 pending shown, not selectable" 'grep -q "Season 1  ·  8 episodes   —   Available" "$OUT/ui.xml" && grep -q "Season 2  ·  8 episodes   —   Pending approval" "$OUT/ui.xml"'
@@ -184,7 +186,11 @@ key DPAD_UP; sleep 0.5
 check "Up does not land on seasons that cannot be requested" 'focused | grep -q "Season 3"'
 key DPAD_CENTER; sleep 0.5
 check "OK selects Season 3 (✓) and the button says Request 1 season" 'focused | grep -q "✓  Season 3" && { dump; text "Request 1 season"; }'
-focus_to DPAD_DOWN "Request 1 season" 4 >/dev/null; key DPAD_CENTER; sleep 2; dump
+key DPAD_DOWN; sleep 0.5
+check "Down: Season 4 (the last season that can be requested)" 'focused | grep -q "Season 4"'
+key DPAD_DOWN; sleep 0.5
+check "Down from the last season: Request 1 season" '[ "$(focused)" = "Request 1 season" ]'
+key DPAD_CENTER; sleep 2; dump
 check "season request sent for S3 only, Pending approval" 'qa | grep -q "submit tv:8205 seasons=S3 ok=true" && grep -q "Requested S3" "$OUT/ui.xml"'
 shot 07-season-requested
 key BACK; sleep 1; key DPAD_CENTER; sleep 2; key DPAD_CENTER; sleep 1; dump

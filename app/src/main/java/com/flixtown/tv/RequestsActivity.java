@@ -420,7 +420,7 @@ public class RequestsActivity extends Activity {
         /* Season picker: real seasons only; seasons that cannot be requested are shown but not focusable. */
         void openSeasons(){
             chosen.clear();seasonList.removeAllViews();
-            JSONArray seasons=data.optJSONArray("seasons");View firstFocus=null;
+            JSONArray seasons=data.optJSONArray("seasons");View firstFocus=null,lastFocus=null;
             for(int i=0;seasons!=null&&i<seasons.length();i++){JSONObject s=seasons.optJSONObject(i);if(s==null)continue;
                 int n=s.optInt("number");String st=s.optString("state");boolean can="requestable".equals(st);
                 Button b=Ui.button(RequestsActivity.this,"");b.setTextSize(17);b.setGravity(Gravity.CENTER_VERTICAL|Gravity.START);
@@ -432,7 +432,8 @@ public class RequestsActivity extends Activity {
                 paint.run();b.setEnabled(can);b.setFocusable(can);
                 b.setOnClickListener(v->{if(chosen.contains(n))chosen.remove((Integer)n);else chosen.add(n);paint.run();updateSeasonButton();});
                 LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,Ui.dp(RequestsActivity.this,50));p.bottomMargin=Ui.dp(RequestsActivity.this,6);
-                seasonList.addView(b,p);if(can&&firstFocus==null)firstFocus=b;}
+                b.setId(View.generateViewId());
+                seasonList.addView(b,p);if(can&&firstFocus==null)firstFocus=b;if(can)lastFocus=b;}
             overview.setVisibility(View.GONE);actions.setVisibility(View.GONE);seasonScroll.setVisibility(View.VISIBLE);
             seasonActions.removeAllViews();seasonActions.setVisibility(View.VISIBLE);
             Button send=Ui.primaryButton(RequestsActivity.this,"Request");send.setTextSize(18);send.setTag("send");
@@ -441,6 +442,9 @@ public class RequestsActivity extends Activity {
             LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(RequestsActivity.this,54));cp.topMargin=Ui.dp(RequestsActivity.this,10);cp.leftMargin=Ui.dp(RequestsActivity.this,12);
             send.setMinWidth(Ui.dp(RequestsActivity.this,200));cancel.setMinWidth(Ui.dp(RequestsActivity.this,150));
             seasonActions.addView(send,sp);seasonActions.addView(cancel,cp);
+            // Remote paths: Down from the last season that can be requested goes to Request, Up comes back to it.
+            send.setId(View.generateViewId());cancel.setId(View.generateViewId());
+            if(lastFocus!=null){lastFocus.setNextFocusDownId(send.getId());send.setNextFocusUpId(lastFocus.getId());cancel.setNextFocusUpId(lastFocus.getId());}
             send.setOnClickListener(v->{if(chosen.isEmpty()){note.setText("Choose at least one season.");return;}
                 int[] list=new int[chosen.size()];for(int i=0;i<list.length;i++)list[i]=chosen.get(i);java.util.Arrays.sort(list);submit(list);});
             cancel.setOnClickListener(v->{closeSeasons();show();});
