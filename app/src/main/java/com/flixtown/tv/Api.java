@@ -37,14 +37,24 @@ final class Api {
         }
         int status = connection.getResponseCode();
         try (InputStream stream = status >= 400 ? connection.getErrorStream() : connection.getInputStream()) {
-            if (stream == null) throw new IllegalStateException("Server returned " + status);
+            if (stream == null) throw new HttpError(status, "Server returned " + status);
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[8192]; int count;
             while ((count = stream.read(buffer)) != -1) bytes.write(buffer, 0, count);
             String result = bytes.toString("UTF-8");
-            if (status >= 400) throw new IllegalStateException(new JSONObject(result).optString("error", "Server returned " + status));
+            if (status >= 400) throw new HttpError(status, errorMessage(status, result));
             return result;
         } finally { connection.disconnect(); }
+    }
+    /** An HTTP error answer (4xx/5xx). Still an IllegalStateException, as before, for existing callers. */
+    static final class HttpError extends IllegalStateException {
+        final int status;
+        HttpError(int status, String message) { super(message); this.status = status; }
+    }
+    /** The server's own "error" text, or "Server returned N" when the answer is not JSON (a proxy or HTML page). */
+    static String errorMessage(int status, String body) {
+        try { String e = new JSONObject(body).optString("error", "").trim(); if (!e.isEmpty()) return e; } catch (Exception ignored) {}
+        return "Server returned " + status;
     }
     static String enc(String s) { try { return URLEncoder.encode(s, "UTF-8"); } catch (Exception e) { throw new IllegalStateException(e); } }
     static String xtream(Context c, String action, String extra) {

@@ -27,12 +27,12 @@ final class DemoData {
     private static final String[] B={"Harbor","Frontier","Signal","Garden","Kingdom","Horizon","Letters","Station","Empire","Tide","Orchard","Protocol","Summer","Voyage","Circuit"};
     private static final String[] MOVIE_CATS={"Action","Drama","Comedy","Thriller","Family","Sci-Fi"};
     private static final String[] SERIES_CATS={"Crime","Documentary","Animation","Reality"};
-    private static int polls;
+    private static int polls,pairStarts;
 
     static String title(int i,int salt){String t=A[(i*7+salt)%A.length]+" "+B[(i*11+salt*3)%B.length];
         return i%9==4?"The "+t+" and the Long Road Home":i%5==0?"The "+t:t;}
 
-    static volatile boolean offline,slow,intro,holdPairing;
+    static volatile boolean offline,slow,intro,holdPairing,expireFirstCode;
     /** Catalog downloads in this process; from the second one on, the demo server has one new movie,
      *  one new series and a new episode for series 5003. */
     private static int movieFetches,seriesFetches;
@@ -51,9 +51,12 @@ final class DemoData {
             .put("requests_api_url",live()!=null&&live().optBoolean("no_requests")?"":REQUESTS_URL).toString();
         if(url.startsWith(RENEWAL_URL))return renewal(new JSONObject(body==null?"{}":body));
         if(url.startsWith(REQUESTS_URL))return requests(new JSONObject(body==null?"{}":body));
-        if(url.contains("pair-start")){polls=0;return new JSONObject().put("code","FT4K2Q").put("verifier","demo")
-            .put("activation_url","https://myflixtown.com/activate.php?code=FT4K2Q").toString();}
+        if(url.contains("pair-start")){polls=0;pairStarts++;String c=expireFirstCode&&pairStarts>1?"FT7N3R":"FT4K2Q";
+            return new JSONObject().put("code",c).put("verifier","demo")
+            .put("activation_url","https://myflixtown.com/activate.php?code="+c).toString();}
         if(url.contains("pair-poll")){polls++;
+            // demo_qr_expire: the first code runs out after a few polls (the panel then stops answering "pending").
+            if(expireFirstCode && pairStarts==1 && polls>=3)return new JSONObject().put("status","expired").toString();
             // Stays pending long enough to capture the QR screen, then approves a digits-only account with
             // leading zeros (the format the panel generates), so QA proves they survive pairing.
             return polls<5||holdPairing?new JSONObject().put("status","pending").toString()

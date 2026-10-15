@@ -239,7 +239,9 @@ public class PlayerActivity extends Activity {
             @Override public void onPlayerError(PlaybackException error){
                 android.util.Log.w("FlixTownPlayer","Playback failed",error);
                 hideNow();cardForError=true;
-                boolean network=error.errorCode>=PlaybackException.ERROR_CODE_IO_UNSPECIFIED && error.errorCode<PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED;
+                // Connection problems (including a stream that timed out) are not a format problem.
+                boolean network=(error.errorCode>=PlaybackException.ERROR_CODE_IO_UNSPECIFIED && error.errorCode<PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
+                    || error.errorCode==PlaybackException.ERROR_CODE_TIMEOUT;
                 showCard("This title couldn't be played",network?"The server didn't send the video. Check the connection and try again."
                         :"This video's format isn't supported on this TV.",
                     new String[]{"Try again","Back"},0,i->{if(i==0)retry();else finish();});

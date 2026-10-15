@@ -34,10 +34,15 @@ import java.util.Map;
 public class LoginActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private boolean polling;private String pairCode,verifier;
+    /** The approved account from pair-poll. The panel hands it out only once, so it is kept until it is saved. */
+    private volatile JSONObject approved;
+    /** Which code is on screen; a poll still running for an earlier code stops instead of starting a second loop. */
+    private volatile int pairRound;
     private TextView message,code,status;private ImageView image;private View qrPanel,remotePanel;
     @Override public void onCreate(Bundle b){super.onCreate(b);
         if(BuildConfig.DEMO)applyDemoExtras();
-        if(AccountStore.read(this)!=null){continueSignedIn();return;}
+        String[] saved=AccountStore.read(this);
+        if(saved!=null){SignOut.rememberOwner(this,saved[0]);continueSignedIn();return;}
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
         setContentView(R.layout.activity_login);
         qrPanel=findViewById(R.id.qr_panel);remotePanel=findViewById(R.id.remote_panel);
@@ -71,6 +76,7 @@ public class LoginActivity extends Activity {
         DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);
         DemoData.intro=getIntent().getBooleanExtra("demo_intro",false);
         DemoData.holdPairing=getIntent().getBooleanExtra("demo_hold_qr",false);
+        DemoData.expireFirstCode=getIntent().getBooleanExtra("demo_qr_expire",false);
         if(getIntent().getBooleanExtra("demo_continue",false)){
             // Fixed starting point for the Continue Watching test: a show at S1 E2 and a movie, both at 0:20.
             Catalog.saveProgress(this,"series","5002","9102","mkv","9103","mkv",20000,3000000);
@@ -130,8 +136,11 @@ public class LoginActivity extends Activity {
         say("Checking your account…",Ui.TEXT_2);Api.IO.execute(()->{try{
             JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");String server=config.getString("xtream_url");
             JSONObject account=Api.get(server.replaceAll("/+$","")+"/player_api.php?username="+Api.enc(user)+"&password="+Api.enc(pass));
-            JSONObject info=account.optJSONObject("user_info");if(info==null||(!"Active".equalsIgnoreCase(info.optString("status"))&&
-                !"Expired".equalsIgnoreCase(info.optString("status"))))throw new IllegalArgumentException("That username and password were not recognised.");
+            JSONObject info=account.optJSONObject("user_info");String state=info==null?"":info.optString("status","").trim();
+            if(state.equalsIgnoreCase("Disabled")||state.equalsIgnoreCase("Banned"))
+                throw new IllegalArgumentException("This account is disabled. Please contact Flix Town support.");
+            if(!"Active".equalsIgnoreCase(state)&&!"Expired".equalsIgnoreCase(state))throw new IllegalArgumentException("That username and password were not recognised.");
+            SignOut.beforeSignIn(this,user);   // before this account's details are saved below
             Api.prefs(this).edit().putBoolean("expired",!"Active".equalsIgnoreCase(info.optString("status")))
                 .apply();
             AccountInfo.save(this,account);   // status, expiration and connections for Settings
@@ -147,19 +156,37 @@ public class LoginActivity extends Activity {
         int[] pixels=new int[size*size];
         for(int y=0;y<size;y++)for(int x=0;x<size;x++)pixels[y*size+x]=matrix.get(x,y)?Color.BLACK:Color.WHITE;
         Bitmap b=Bitmap.createBitmap(pixels,size,size,Bitmap.Config.RGB_565);
-        runOnUiThread(()->{if(isFinishing())return;image.setImageBitmap(b);code.setText(pairCode);
+        runOnUiThread(()->{if(isFinishing())return;pairRound++;image.setImageBitmap(b);code.setText(pairCode);
             status.setText("Waiting for your phone…");polling=true;poll();});
     }catch(Exception e){runOnUiThread(()->{code.setText("—");status.setText("QR activation is unavailable right now. Use Sign in with remote.");});}});}
-    private void poll(){if(!polling||isFinishing())return;Api.IO.execute(()->{try{
-        JSONObject result=Api.post("pair-poll",new JSONObject().put("code",pairCode).put("verifier",verifier));
-        if("approved".equals(result.optString("status"))){JSONObject account=result.getJSONObject("account");
-            JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");
-            Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
-            runOnUiThread(()->{status.setText("Approved. Opening Flix Town…");
-                saveAndGo(config.optString("xtream_url"),account.optString("username"),account.optString("password"));});
-        }else handler.postDelayed(this::poll,3000);
-    }catch(Exception e){handler.postDelayed(this::poll,4000);}});}
-    private void saveAndGo(String server,String user,String pass){polling=false;try{AccountStore.save(this,user,pass,server);continueSignedIn();}
+    private void poll(){poll(pairRound);}
+    private void poll(int round){if(!polling||isFinishing()||round!=pairRound)return;Api.IO.execute(()->{try{
+        JSONObject account=approved;
+        if(account==null){
+            JSONObject result=Api.post("pair-poll",new JSONObject().put("code",pairCode).put("verifier",verifier));
+            int next=Pairing.next(result.optString("status"));
+            if(next==Pairing.NEW_CODE){runOnUiThread(()->renewCode(round));return;}
+            if(next==Pairing.WAIT){handler.postDelayed(()->poll(round),3000);return;}
+            account=result.getJSONObject("account");approved=account;
+        }
+        // Approved: if the panel's config can't be read yet, retry with the same approval (no new scan needed).
+        JSONObject config=Api.get(BuildConfig.PANEL_URL+"config.php");
+        Api.prefs(this).edit().putString("intro_url",config.optBoolean("intro_enabled")?config.optString("intro_url",""):"").apply();
+        JSONObject signedIn=account;
+        runOnUiThread(()->{status.setText("Approved. Opening Flix Town…");
+            saveAndGo(config.optString("xtream_url"),signedIn.optString("username"),signedIn.optString("password"));});
+    }catch(Api.HttpError e){
+        if(approved==null && Pairing.afterError(e.status)==Pairing.NEW_CODE)runOnUiThread(()->renewCode(round));
+        else handler.postDelayed(()->poll(round),4000);
+    }catch(Exception e){handler.postDelayed(()->poll(round),4000);}});}
+    /** The code on screen expired (10 minutes) or was used: show a fresh one instead of waiting forever. */
+    private void renewCode(int round){
+        if(isFinishing() || !polling || approved!=null || round!=pairRound)return;
+        polling=false;pairRound++;handler.removeCallbacksAndMessages(null);pairCode=null;
+        status.setText("This code expired. Getting a new one…");startPair();
+    }
+    private void saveAndGo(String server,String user,String pass){polling=false;try{
+        SignOut.beforeSignIn(this,user);AccountStore.save(this,user,pass,server);continueSignedIn();}
         catch(Exception e){say("Could not save the account on this TV.",0xFFF0A29F);}}
     /** Fresh launch: start the catalog refresh first so it runs during any intro. */
     private void continueSignedIn(){

@@ -124,7 +124,7 @@ public class RenewalActivity extends Activity {
         status=Ui.text(this,"",15);status.setTextColor(Ui.TEXT_2);status.setMaxLines(3);
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=Ui.dp(this,8);left.addView(status,sp);
         logout.setOnClickListener(v->Ui.dialog(this,"Sign out of this account?","You can sign in with another account on the next screen.",
-            new String[]{"Cancel","Sign out"},0,i->{if(i==1){AccountStore.clear(this);Api.prefs(this).edit().remove("expired").apply();
+            new String[]{"Cancel","Sign out"},0,i->{if(i==1){SignOut.run(this);
                 startActivity(new Intent(this,LoginActivity.class));finish();}},null));
 
         // Cash App card
@@ -278,7 +278,7 @@ public class RenewalActivity extends Activity {
         actions.addView(secondary,sbp);
         secondary.setOnClickListener(v->{if(early){finish();return;}
             Ui.dialog(this,"Sign out of this account?","You can sign in with another account on the next screen.",
-                new String[]{"Cancel","Sign out"},0,i->{if(i==1){AccountStore.clear(this);RenewalApi.forget();Api.prefs(this).edit().remove("expired").apply();
+                new String[]{"Cancel","Sign out"},0,i->{if(i==1){SignOut.run(this);
                     startActivity(new Intent(this,LoginActivity.class));finish();}},null);});
 
         // D-pad: plans (Left/Right) → Pay → Check again / second button; nothing wraps or escapes sideways.
