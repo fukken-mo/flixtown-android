@@ -1,9 +1,12 @@
 PASS  demo server points at the test video (http://10.0.2.2:8000/subs.mkv)
 PASS  movie: player opened
-INFO  movie: playing at 3s
+INFO  movie: playing at 4s
 PASS  movie: playing the test video (its subtitle tracks are listed)
-INFO  Subtitles menu did not open (attempt 1)
-INFO  focus: 10-14 23:54:51.262  2780  2780 I FlixTownQA: player controls=false focus=other elapsed=20 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  10-15 00:05:46.826  2985  2985 I FlixTownQA: picker Subtitles: Off|English (Plain)|French (Bottom) selected=0
+INFO  label after choosing subs: Subtitles · Off (attempt 1)
+INFO  after Up: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus audio: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus subs: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
 INFO  Subtitles menu did not open (attempt 2)
 FAIL  movie: subtitle label shows the Plain track, English (Subtitles · Off)
 INFO  plain, controls shown (false): 0 0 0 0 1920 1080 0
@@ -15,32 +18,40 @@ INFO  plain, controls hidden 4s: 0 0 0 0 1920 1080 0
 FAIL  movie: Plain subtitles still visible 4s after the controls hid, inside the TV safe area
 INFO  plain, controls hidden 8s: 0 0 0 0 1920 1080 0
 FAIL  movie: Plain subtitles still visible 8s after the controls hid, inside the TV safe area
-INFO  focus: 10-14 23:54:51.262  2780  2780 I FlixTownQA: player controls=false focus=other elapsed=20 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  after Up: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus audio: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus subs: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
 INFO  Subtitles menu did not open (attempt 1)
-INFO  focus: 10-14 23:54:51.262  2780  2780 I FlixTownQA: player controls=false focus=other elapsed=20 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  after Up: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus audio: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus subs: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
 INFO  Subtitles menu did not open (attempt 2)
 FAIL  movie: subtitle label shows the Bottom track, French (Subtitles · Off)
-INFO  bottom, controls shown (false): 64 115 78 121 1920 1080 8
+INFO  bottom, controls shown (false): 0 0 0 0 1920 1080 0
 FAIL  movie: bottom-positioned subtitles visible with the controls shown, above the controls
-INFO  bottom, controls hidden 1s: 64 115 78 121 1920 1080 8
+INFO  bottom, controls hidden 1s: 0 0 0 0 1920 1080 0
 FAIL  movie: bottom-positioned subtitles still visible 1s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 4s: 64 115 78 121 1920 1080 8
+INFO  bottom, controls hidden 4s: 0 0 0 0 1920 1080 0
 FAIL  movie: bottom-positioned subtitles still visible 4s after the controls hid, inside the TV safe area
-INFO  bottom, controls hidden 8s: 64 115 78 121 1920 1080 8
+INFO  bottom, controls hidden 8s: 0 0 0 0 1920 1080 0
 FAIL  movie: bottom-positioned subtitles still visible 8s after the controls hid, inside the TV safe area
 PASS  movie: three show/hide cycles keep the subtitle choice (Subtitles · Off)
 FAIL  movie: subtitles still drawn after the cycles
-FAIL  movie: seeking still works (+10 s: 20s -> 20s)
+FAIL  movie: seeking still works (+10 s: 23s -> 23s)
 FAIL  movie: subtitles shown again after seeking, same choice
-INFO  focus: 10-14 23:54:51.262  2780  2780 I FlixTownQA: player controls=false focus=other elapsed=20 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  after Up: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus audio: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus subs: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
 INFO  Subtitles menu did not open (attempt 1)
-INFO  focus: 10-14 23:54:51.262  2780  2780 I FlixTownQA: player controls=false focus=other elapsed=20 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  after Up: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus audio: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
+INFO  expected focus subs: 10-15 00:05:52.767  2985  2985 I FlixTownQA: player controls=false focus=other elapsed=23 audio=[Audio · On] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=
 INFO  Subtitles menu did not open (attempt 2)
 PASS  movie: subtitle label shows Off (Subtitles · Off)
-FAIL  movie: Off: no subtitles with the controls shown
-FAIL  movie: Off: no subtitles with the controls hidden
-INFO  episode row focus: Movie or show title
-FAIL  episode: player did not open (    mResumedActivity: ActivityRecord{256d551 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5})
+PASS  movie: Off: no subtitles with the controls shown
+PASS  movie: Off: no subtitles with the controls hidden
+INFO  episode row focus: Stay
+FAIL  episode: player did not open (    mResumedActivity: ActivityRecord{9bde9a6 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5})
 PASS  no Flix Town crash
 
-subtitles: 7 passed, 16 failed
+subtitles: 9 passed, 14 failed
