@@ -33,9 +33,11 @@ final class Images {
     static void load(ImageView view, String url, int maxWidth) { load(view, url, maxWidth, null); }
 
     /** Loads into {@code view}; {@code ready} runs on the main thread once the bitmap is set (not on failure). */
-    static void load(ImageView view, String url, int maxWidth, Runnable ready) {
+    static void load(ImageView view, String url, int maxWidth, Runnable ready) { load(view, url, maxWidth, ready, null); }
+    /** As above; {@code failed} runs on the main thread when this image cannot be shown (bad address, download or decode). */
+    static void load(ImageView view, String url, int maxWidth, Runnable ready, Runnable failed) {
         view.setTag(url); view.setImageDrawable(null);
-        if (!valid(url)) return;
+        if (!valid(url)) { if (failed != null) failed.run(); return; }
         String key = maxWidth + ":" + url;
         Bitmap cached = MEMORY.get(key);
         if (cached != null) { view.setImageBitmap(cached); if (ready != null) ready.run(); return; }
@@ -44,6 +46,7 @@ final class Images {
             if (!url.equals(view.getTag())) return;
             Bitmap bmp = fetch(url, maxWidth);
             if (bmp != null) view.post(() -> { if (url.equals(view.getTag())) { view.setImageBitmap(bmp); if (ready != null) ready.run(); } });
+            else if (failed != null) view.post(() -> { if (url.equals(view.getTag())) failed.run(); });
         });
     }
     /** Warms the memory cache for one image that is about to be shown (the next hero backdrop). */

@@ -404,7 +404,8 @@ public class DetailsActivity extends Activity {
         String art=EpisodePreview.art(ep);
         if(art.isEmpty()){clearEpisodeArtwork();return;}
         if(episodeBackdrop.getVisibility()==View.VISIBLE && art.equals(episodeBackdrop.getTag()))return;
-        // Decode into the hidden buffer. Leave the previous still visible until a successful swap.
+        // Decode into the hidden buffer. The previous still stays visible only while this one loads;
+        // if it cannot be loaded, the series backdrop shows instead of another episode's still.
         ImageView target=nextEpisodeBackdrop;
         target.setVisibility(View.INVISIBLE);
         Images.load(target,art,960,()->{
@@ -412,6 +413,9 @@ public class DetailsActivity extends Activity {
             ImageView previous=episodeBackdrop;
             target.setVisibility(View.VISIBLE);previous.setVisibility(View.INVISIBLE);
             episodeBackdrop=target;nextEpisodeBackdrop=previous;
+        },()->{
+            if(generation!=previewArtGeneration || previewEpisode!=ep || isFinishing() || isDestroyed())return;
+            clearEpisodeArtwork();
         });
     }
     private void clearEpisodeArtwork(){
