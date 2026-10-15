@@ -2,6 +2,8 @@ package com.flixtown.tv;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -28,7 +30,9 @@ final class SignOut {
         File[] files=new File(c.getFilesDir(),"catalog").listFiles();
         if(files!=null)for(File f:files)f.delete();
         Catalog.Store.set(Collections.<Catalog.Item>emptyList(),Collections.<Catalog.Item>emptyList());
-        StartupRefresh.reset();RenewalApi.forget();RequestsApi.forget();
+        // StartupRefresh is main-thread state; remote sign-in reaches here from its background thread.
+        if(Looper.myLooper()==Looper.getMainLooper())StartupRefresh.reset();else new Handler(Looper.getMainLooper()).post(StartupRefresh::reset);
+        RenewalApi.forget();RequestsApi.forget();
     }
 
     /**
