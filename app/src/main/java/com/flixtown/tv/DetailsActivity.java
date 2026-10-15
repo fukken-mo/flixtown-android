@@ -44,7 +44,13 @@ public class DetailsActivity extends Activity {
     private String id,kind,title,extension,categoryId;
     private LinearLayout content,episodeArea,seasonContent,castSection,moreSection;
     private HorizontalGridView castRow,moreRow;
-    private TextView summary,metaLine;private ImageView backdrop;
+    private TextView summary,metaLine,episodePreviewTitle;private ImageView backdrop,episodeBackdrop;
+    private Button episodeMoreInfo;
+    private final android.os.Handler previewHandler=new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable pendingPreview;
+    private JSONObject previewEpisode;
+    private String seriesPlot="",seriesArt="";
+    private android.view.ViewTreeObserver.OnGlobalFocusChangeListener previewFocusListener;
     private Button trailerButton,watch,favorite;
     private boolean enrichedCast,movie;
     private final List<JSONObject> castPeople=new ArrayList<>();
@@ -53,7 +59,7 @@ public class DetailsActivity extends Activity {
     private String openPlayMode;
     /** This title as the catalog knows it (for its TMDB rating), and the server's details once loaded. */
     private Catalog.Item self;private JSONObject lastInfo;
-    private final Runnable ratingChanged=()->{if(!isFinishing() && metaLine!=null)metaLine.setText(lastInfo!=null?metaText(lastInfo):join(yearText(),Ratings.label(self)));};
+    private final Runnable ratingChanged=()->{if(!isFinishing() && metaLine!=null)metaLine.setText(previewEpisode!=null?EpisodePreview.meta(previewEpisode):lastInfo!=null?metaText(lastInfo):join(yearText(),Ratings.label(self)));};
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -65,7 +71,15 @@ public class DetailsActivity extends Activity {
         Images.init(this);self=catalogItem();draw();details();cast();if(movie)loadSimilar();
         Ratings.init(this);Ratings.listen(ratingChanged);Ratings.want(self);
     }
-    @Override protected void onDestroy(){Ratings.unlisten(ratingChanged);super.onDestroy();}
+    @Override protected void onDestroy(){
+        cancelEpisodePreview();
+        if(previewFocusListener!=null && content!=null && content.getViewTreeObserver().isAlive())
+            content.getViewTreeObserver().removeOnGlobalFocusChangeListener(previewFocusListener);
+        Ratings.unlisten(ratingChanged);super.onDestroy();
+    }
+    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);
+        if(!focused)cancelEpisodePreview();
+    }
     private Catalog.Item catalogItem(){
         for(Catalog.Item i:movie?Catalog.Store.movies:Catalog.Store.series)if(i.id.equals(id))return i;
         JSONObject j=new JSONObject();
@@ -90,7 +104,14 @@ public class DetailsActivity extends Activity {
         FrameLayout shell=new FrameLayout(this);shell.setBackgroundColor(Ui.BG);setContentView(shell);
         backdrop=new ImageView(this);backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);
         shell.addView(backdrop,new FrameLayout.LayoutParams(-1,Math.round(screenH*.70f)));
-        Images.load(backdrop,getIntent().getStringExtra("backdrop"),1280);
+        seriesArt=getIntent().getStringExtra("backdrop");
+        Images.load(backdrop,seriesArt,1280);
+        if(!movie){
+            // A second image keeps the previous art visible until the next cached/decoded still is ready.
+            episodeBackdrop=new ImageView(this);episodeBackdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            episodeBackdrop.setVisibility(View.INVISIBLE);
+            shell.addView(episodeBackdrop,new FrameLayout.LayoutParams(-1,Math.round(screenH*.70f)));
+        }
         View scrim=new View(this);scrim.setBackgroundResource(R.drawable.details_scrim);
         shell.addView(scrim,new FrameLayout.LayoutParams(-1,Math.round(screenH*.72f)));
 
@@ -101,19 +122,24 @@ public class DetailsActivity extends Activity {
             shell.addView(content,new FrameLayout.LayoutParams(-1,-1));
         }else{
             ScrollView page=new ScrollView(this);page.setVerticalScrollBarEnabled(false);page.setFillViewport(true);
-            page.setSmoothScrollingEnabled(true);page.setClipChildren(false);
+            page.setSmoothScrollingEnabled(true);page.setClipChildren(false);page.setClipToPadding(false);
             shell.addView(page,new FrameLayout.LayoutParams(-1,-1));
             page.addView(content,new FrameLayout.LayoutParams(-1,-2));
         }
 
-        TextView titleView=Ui.heading(this,title,32);titleView.setMaxLines(movie?1:2);titleView.setEllipsize(TextUtils.TruncateAt.END);
+        TextView titleView=Ui.heading(this,title,32);titleView.setMaxLines(1);titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setShadowLayer(12,0,2,0xAA000000);
-        content.addView(titleView,new LinearLayout.LayoutParams(Ui.dp(this,640),movie?Ui.dp(this,TITLE_DP):-2));
+        content.addView(titleView,new LinearLayout.LayoutParams(Ui.dp(this,640),Ui.dp(this,TITLE_DP)));
+        if(!movie){
+            episodePreviewTitle=Ui.heading(this,"Series overview",21);
+            episodePreviewTitle.setSingleLine(true);episodePreviewTitle.setEllipsize(TextUtils.TruncateAt.END);
+            content.addView(episodePreviewTitle,new LinearLayout.LayoutParams(-1,Ui.dp(this,30)));
+        }
         metaLine=Ui.text(this,join(yearText(),Ratings.label(self)),16);metaLine.setTextColor(Ui.TEXT_2);metaLine.setSingleLine(true);metaLine.setEllipsize(TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,640),movie?Ui.dp(this,META_DP):-2);mp.topMargin=Ui.dp(this,4);content.addView(metaLine,mp);
+        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,640),Ui.dp(this,META_DP));mp.topMargin=Ui.dp(this,4);content.addView(metaLine,mp);
         summary=Ui.text(this,"Loading details…",15);summary.setTextColor(0xFFD9D4CF);summary.setMaxLines(3);summary.setEllipsize(TextUtils.TruncateAt.END);
         summary.setLineSpacing(0,1.12f);
-        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,580),movie?Ui.dp(this,SUMMARY_DP):-2);sp.topMargin=Ui.dp(this,8);content.addView(summary,sp);
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,580),Ui.dp(this,SUMMARY_DP));sp.topMargin=Ui.dp(this,8);content.addView(summary,sp);
 
         LinearLayout actions=Ui.row(this);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setClipChildren(false);actions.setClipToPadding(false);
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-2,-2);ap.topMargin=Ui.dp(this,12);ap.leftMargin=-Ui.dp(this,Ui.HALO);content.addView(actions,ap);
@@ -132,6 +158,22 @@ public class DetailsActivity extends Activity {
         favorite=Ui.button(this,favoriteLabel());actions.addView(favorite,actionParams(true));
         favorite.setOnClickListener(v->{toggleFavorite();favorite.setText(favoriteLabel());});
 
+        if(!movie){
+            episodeMoreInfo=Ui.button(this,"More info");actions.addView(episodeMoreInfo,actionParams(true));
+            episodeMoreInfo.setOnClickListener(v->{
+                JSONObject ep=previewEpisode;
+                Ui.dialog(this,ep==null?title:EpisodePreview.title(ep),ep==null?seriesPlot:EpisodePreview.description(ep),
+                    new String[]{"Close"},0,i->{},null);
+            });
+            // Global focus observation does not replace Ui's existing button focus/glow listeners.
+            previewFocusListener=(oldFocus,newFocus)->{
+                if(newFocus==null)return;
+                if(newFocus==episodeMoreInfo)return;
+                if(isEpisodeCard(newFocus))return;
+                restoreSeriesPreview();
+            };
+            content.getViewTreeObserver().addOnGlobalFocusChangeListener(previewFocusListener);
+        }
         if(movie){
             castSection=Ui.column(this);castSection.setVisibility(View.INVISIBLE);castSection.setClipChildren(false);
             LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,Ui.dp(this,CAST_ROW_DP));cp.topMargin=Ui.dp(this,CAST_GAP_DP);
@@ -196,10 +238,10 @@ public class DetailsActivity extends Activity {
         String trailer=info.optString("youtube_trailer","");
         if(!trailer.isEmpty())enableTrailer(trailer);
         String plot=info.optString("plot",info.optString("description","")).trim();
-        summary.setText(plot.isEmpty()?"":plot);
-        metaLine.setText(metaText(info));
+        seriesPlot=plot;
+        if(previewEpisode==null){summary.setText(plot);metaLine.setText(metaText(info));}
         String art=firstBackdrop(info);
-        if(art!=null)Images.load(backdrop,art,1280);
+        if(art!=null){seriesArt=art;Images.load(backdrop,art,1280);}
         if(!enrichedCast && castPeople.isEmpty()){
             String actorNames=info.optString("cast",info.optString("actors",""));
             if(!actorNames.isEmpty()){
@@ -291,6 +333,7 @@ public class DetailsActivity extends Activity {
     }
     private static int parseSeason(String value){try{return Integer.parseInt(value);}catch(Exception e){return Integer.MAX_VALUE;}}
     private void showSeason(JSONObject seasons,String season,List<JSONObject> ordered){
+        restoreSeriesPreview();
         JSONArray list=seasons.optJSONArray(season);seasonContent.removeAllViews();if(list==null)return;
         HorizontalScrollView scroller=new HorizontalScrollView(this);scroller.setHorizontalScrollBarEnabled(false);
         scroller.setClipChildren(false);scroller.setClipToPadding(false);scroller.setPadding(0,Ui.dp(this,8),Ui.dp(this,10),Ui.dp(this,9));
@@ -310,6 +353,48 @@ public class DetailsActivity extends Activity {
         }
         // Bring the episode being watched into view (without taking focus away from Watch).
         if(resume!=null){View target=resume;scroller.post(()->scroller.scrollTo(Math.max(0,target.getLeft()-Ui.dp(this,8)),0));}
+    }
+    /* Preview reads the already-loaded episode payload; focus never causes an API request. */
+    private boolean isEpisodeCard(View v){
+        return v.getTag() instanceof JSONObject && seasonContent!=null && isInside(v,seasonContent);
+    }
+    private static boolean isInside(View v,View parent){
+        for(android.view.ViewParent p=v.getParent();p!=null;p=p.getParent())if(p==parent)return true;
+        return v==parent;
+    }
+    private void cancelEpisodePreview(){
+        if(pendingPreview!=null){previewHandler.removeCallbacks(pendingPreview);pendingPreview=null;}
+    }
+    private void scheduleEpisodePreview(JSONObject ep,View card){
+        cancelEpisodePreview();
+        pendingPreview=()->{
+            pendingPreview=null;
+            if(isFinishing() || isDestroyed() || !card.hasFocus())return;
+            previewEpisode=ep;
+            episodePreviewTitle.setText(EpisodePreview.title(ep));
+            metaLine.setText(EpisodePreview.meta(ep));
+            summary.setText(EpisodePreview.description(ep));
+            String art=EpisodePreview.art(ep);
+            if(art.isEmpty()){
+                // No episode still: retain the series backdrop, never a stretched portrait poster.
+                Images.load(episodeBackdrop,null,960);episodeBackdrop.setVisibility(View.INVISIBLE);
+            }else{
+                episodeBackdrop.setVisibility(View.INVISIBLE);
+                Images.load(episodeBackdrop,art,960,()->{
+                    if(previewEpisode==ep && !isFinishing())episodeBackdrop.setVisibility(View.VISIBLE);
+                });
+            }
+        };
+        previewHandler.postDelayed(pendingPreview,250);
+    }
+    private void restoreSeriesPreview(){
+        cancelEpisodePreview();
+        if(movie || episodePreviewTitle==null)return;
+        previewEpisode=null;
+        episodePreviewTitle.setText("Series overview");
+        summary.setText(seriesPlot);
+        metaLine.setText(lastInfo==null?join(yearText(),Ratings.label(self)):metaText(lastInfo));
+        Images.load(episodeBackdrop,null,960);episodeBackdrop.setVisibility(View.INVISIBLE);
     }
     private void enableTrailer(String url){trailerButton.setTag(url);trailerButton.setEnabled(true);trailerButton.setAlpha(1f);}
     /** Plays the episode saved for this show, using the loaded episode list to find the next one when possible. */
@@ -348,7 +433,9 @@ public class DetailsActivity extends Activity {
         Ui.pad(label,this,12,0,12,8);
         frame.addView(label,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
         GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(radius);ring.setStroke(Ui.dp(this,3),0xFFE06A66);ring.setColor(0);
+        frame.setTag(ep);
         frame.setOnFocusChangeListener((v,focused)->{
+            if(focused)scheduleEpisodePreview(ep,frame);else cancelEpisodePreview();
             frame.setForeground(focused?ring:null);image.setAlpha(focused?1f:.75f);
             v.animate().scaleX(focused?1.05f:1f).scaleY(focused?1.05f:1f).setDuration(120).start();
         });
