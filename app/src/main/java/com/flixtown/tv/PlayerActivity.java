@@ -479,7 +479,11 @@ public class PlayerActivity extends Activity {
         if("series".equals(kind) && nextSubtitle!=null && !nextSubtitle.isEmpty())Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,nextSubtitle).apply();}}
     private void showNext(){
         hideNow();
-        showCard("Up next","",new String[]{"Play now","Cancel"},0,i->{if(i==0)playNext();else nextCanceled=true;});
+        // A "Play now" that arrives just after the episode ended (autoplay already moved on) must not skip one more.
+        String shownFor=episodeId;
+        showCard("Up next","",new String[]{"Play now","Cancel"},0,i->{
+            if(!java.util.Objects.equals(shownFor,episodeId))return;
+            if(i==0)playNext();else nextCanceled=true;});
         cardForNext=true;
     }
     private void playNext(){
