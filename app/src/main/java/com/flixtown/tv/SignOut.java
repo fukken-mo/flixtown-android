@@ -16,6 +16,11 @@ import java.util.Map;
  * Playback settings, watch progress and My List stay on the TV, so signing back in to the same
  * account keeps them. When a different account signs in, the previous account's My List, watch
  * progress and Continue Watching are removed first (see {@link #beforeSignIn}).
+ *
+ * Migration from versions without an owner record: a TV that is still signed in records its
+ * account as the owner when the app next starts or refreshes ({@link #rememberOwner}), so that
+ * customer keeps everything. Data found with no owner at sign-in (the TV was signed out before
+ * updating) cannot be attributed to anyone and is removed.
  */
 final class SignOut {
     private SignOut(){}
@@ -42,7 +47,9 @@ final class SignOut {
      */
     static void beforeSignIn(Context c,String username){
         String owner=Api.prefs(c).getString(OWNER,""),mine=ownerId(username);
-        if(!owner.isEmpty() && !owner.equals(mine)){
+        // No recorded owner (data left by a version before this check, after its account signed out):
+        // ownership cannot be verified, so the data is treated as another customer's and removed.
+        if(!owner.equals(mine)){
             run(c);
             SharedPreferences.Editor e=Api.prefs(c).edit();
             for(Map.Entry<String,?> entry:Api.prefs(c).getAll().entrySet())if(isPersonalKey(entry.getKey()))e.remove(entry.getKey());

@@ -44,7 +44,7 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
     private ValueAnimator sweep;
 
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);
+        super.onCreate(state);Logs.quietMedia();
         root=new FrameLayout(this);root.setBackgroundColor(Ui.BG);setContentView(root);
         showBrand();
         StartupRefresh.listen(this);
@@ -90,7 +90,7 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
                 if(state==Player.STATE_READY)handler.removeCallbacks(loadTimeout);
                 if(state==Player.STATE_ENDED)openHome();
             }
-            @Override public void onPlayerError(PlaybackException error){android.util.Log.w("FlixTownIntro","Intro failed",error);openHome();}
+            @Override public void onPlayerError(PlaybackException error){android.util.Log.w("FlixTownIntro","Intro failed: "+error.getErrorCodeName()+" "+Logs.safe(error));openHome();}
         });
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
         handler.postDelayed(loadTimeout,LOAD_TIMEOUT_MS);

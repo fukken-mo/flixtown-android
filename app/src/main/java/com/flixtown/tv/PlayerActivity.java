@@ -59,16 +59,21 @@ public class PlayerActivity extends Activity {
     private long pendingSeek=-1,lastRepeatAt;
     private Dialog dialog;
     private long lastSavedAt;
+    /** Episodes after the next one (from Details), so autoplay keeps going through the series. */
+    static final int MAX_QUEUE=200;
+    private String[] laterIds,laterExts,laterLabels;private int laterIndex;
     private final Handler handler=new Handler(Looper.getMainLooper());
 
     @Override public void onCreate(Bundle state) {
-        super.onCreate(state);
+        super.onCreate(state);Logs.quietMedia();
         url=getIntent().getStringExtra("url");
         nextUrl=getIntent().getStringExtra("next_url");
         title=getIntent().getStringExtra("title");subtitle=getIntent().getStringExtra("subtitle");nextSubtitle=getIntent().getStringExtra("next_subtitle");
         kind=getIntent().getStringExtra("content_kind");contentId=getIntent().getStringExtra("content_id");
         episodeId=getIntent().getStringExtra("episode_id");episodeExt=getIntent().getStringExtra("episode_ext");
         nextEpisodeId=getIntent().getStringExtra("next_episode_id");nextEpisodeExt=getIntent().getStringExtra("next_episode_ext");
+        laterIds=getIntent().getStringArrayExtra("later_episode_ids");laterExts=getIntent().getStringArrayExtra("later_episode_exts");
+        laterLabels=getIntent().getStringArrayExtra("later_episode_labels");
         if(kind!=null && contentId!=null && !contentId.isEmpty() && !getIntent().getBooleanExtra("start_over",false)){
             String key=kind+":"+contentId;
             position=Api.prefs(this).getLong("resume_position_"+key,0);
@@ -237,7 +242,7 @@ public class PlayerActivity extends Activity {
             @Override public void onPlayWhenReadyChanged(boolean playWhenReady,int reason){updatePlayIcon();}
             @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();}
             @Override public void onPlayerError(PlaybackException error){
-                android.util.Log.w("FlixTownPlayer","Playback failed",error);
+                android.util.Log.w("FlixTownPlayer","Playback failed: "+error.getErrorCodeName()+" "+Logs.safe(error));
                 hideNow();cardForError=true;
                 // Connection problems (including a stream that timed out) are not a format problem.
                 boolean network=(error.errorCode>=PlaybackException.ERROR_CODE_IO_UNSPECIFIED && error.errorCode<PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
@@ -481,7 +486,18 @@ public class PlayerActivity extends Activity {
         url=nextUrl;nextUrl="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
+        queueFollowingEpisode();
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
+    }
+    /** After moving on to the next episode: the one after it becomes "next" (Up next card, autoplay, Continue Watching). */
+    private void queueFollowingEpisode(){
+        if(laterIds==null || laterExts==null || laterIndex>=laterIds.length || laterIndex>=laterExts.length)return;
+        String id=laterIds[laterIndex],ext=laterExts[laterIndex]==null||laterExts[laterIndex].isEmpty()?"mp4":laterExts[laterIndex];
+        String label=laterLabels!=null && laterIndex<laterLabels.length && laterLabels[laterIndex]!=null?laterLabels[laterIndex]:"";
+        laterIndex++;
+        if(id==null || id.isEmpty())return;
+        try{nextUrl=Api.stream(this,"series",id,ext);}catch(Exception e){nextUrl="";return;}   // signed out meanwhile
+        nextEpisodeId=id;nextEpisodeExt=ext;nextSubtitle=label;
     }
     @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}

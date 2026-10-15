@@ -2,7 +2,11 @@
 # Focused check for the production audit fixes (QA build, offline demo server):
 #  1. an expired QR code is replaced by a fresh one and pairing still completes;
 #  2. signing in with a DIFFERENT account removes the previous account's Continue Watching / progress;
-#     signing back in to the SAME account keeps them (the existing behaviour).
+#     signing back in to the SAME account keeps them (the existing behaviour);
+#  3. migration: data with no recorded owner is kept for a TV still signed in (owner recorded on start)
+#     and removed when an account signs in on a TV that was signed out before updating;
+#  4. next-episode autoplay continues E1 -> E2 -> E3 (not only one episode), Continue Watching follows;
+#  5. a failing stream's address and credentials do not appear in the log.
 # Results: qa/login-audit/report.txt and screens.
 set -u
 PKG=com.myflixtown.tv.native.qa
@@ -37,6 +41,20 @@ EOF
 }
 focus_to(){ local k=$1 want=$2 n=${3:-6}; for i in $(seq 1 $n); do focused | grep -q -- "$want" && return 0; key "$k"; done; focused | grep -q -- "$want"; }
 prefs(){ adb shell "run-as $PKG cat shared_prefs/flix.xml" 2>/dev/null; }
+drop_owner(){ adb shell am force-stop $PKG; sleep 1; adb shell "run-as $PKG sed -i '/name=\"account_owner\"/d' shared_prefs/flix.xml"; }
+pref_value(){ prefs | grep -o "name=\"$1\">[^<]*" | sed 's/.*>//'; }
+qa_line(){ adb logcat -d -s FlixTownQA:I | grep " player " | tail -1; }
+qaf(){ qa_line | python3 -c 'import re,sys
+l=sys.stdin.read();k=sys.argv[1]
+m=re.search(k+r"=\[([^\]]*)\]",l) or re.search(k+r"=(\S+)",l)
+print(m.group(1).strip() if m else "")' "$1"; }
+wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && return 0; sleep 1; t=$((t+1)); done; return 1; }
+demo_live(){ printf '%s' "$1" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"; }
+open_first_episode(){ key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 6 > /dev/null; key DPAD_CENTER; sleep 2.5
+  key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4
+  focus_to DPAD_DOWN "Season" 5 > /dev/null; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER; wait_activity PlayerActivity 10; sleep 4
+  if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi; }
+to_end(){ key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.5; for i in $(seq 1 12); do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.15; done; }
 progress_keys(){ prefs | grep -cE 'name="(continue_ids|resume_[a-z_]*)' ; }
 continue_ids(){ prefs | grep -o 'name="continue_ids">[^<]*' | sed 's/.*>//'; }
 signed_in_as(){ key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "Settings" 8 >/dev/null; key DPAD_CENTER; sleep 2
@@ -62,6 +80,7 @@ check "QR: signed in as the approved account ($who)" '[ "$who" = "Signed in as 0
 key BACK; sleep 1
 
 # ---------------- 2. Account switch ----------------
+demo_live '{"hold_qr":true}'   # the demo QR stays pending, so only the remote sign-ins below sign in
 launch --ez demo_continue true; wait_activity HomeActivity 45; sleep 6   # A: progress for a show and a movie
 a_ids="$(continue_ids)"; note "INFO  account A Continue Watching: $a_ids"
 check "account A has Continue Watching progress" '[ -n "$a_ids" ] && [ "$(progress_keys)" -ge 2 ]'
@@ -81,6 +100,46 @@ b_ids="$(continue_ids)"
 sign_out
 remote_sign_in 0012345678 0000123456789012
 check "signing back in to the same account keeps its progress ($b_ids)" '[ -n "$b_ids" ] && [ "$(continue_ids)" = "$b_ids" ]'
+
+# ---------------- 3. Migration: data with no recorded owner ----------------
+launch --ez demo_continue true; wait_activity HomeActivity 45; sleep 6
+drop_owner                                        # as if updated from 3.8.13 while signed in
+launch; wait_activity HomeActivity 45; sleep 6
+check "migration, signed in: the owner is recorded on start" '[ -n "$(pref_value account_owner)" ]'
+c_ids="$(continue_ids)"
+sign_out; remote_sign_in 0012345678 0000123456789012
+check "migration, signed in: the same customer keeps progress after signing out and in ($c_ids)" '[ -n "$c_ids" ] && [ "$(continue_ids)" = "$c_ids" ]'
+sign_out; drop_owner                              # as if signed out on 3.8.13 before updating
+launch; wait_activity LoginActivity 20; sleep 3
+remote_sign_in 0012345678 0000123456789012
+check "migration, signed out: data with no owner is not handed to the next sign-in" '[ -z "$(continue_ids)" ] && [ "$(progress_keys)" = 0 ]'
+
+# ---------------- 4. Autoplay through several episodes ----------------
+adb logcat -b main -c
+open_first_episode
+e1="$(qaf subtitle)"; note "INFO  playing: $e1"
+to_end; wait_qa card "Up next" 150 && ok "Up next offered at the end of the first episode" || bad "no Up next after the first episode ($(qa_line))"
+key DPAD_CENTER; sleep 6; e2="$(qaf subtitle)"
+check "autoplay: first -> second episode ($e1 -> $e2)" '[ -n "$e2" ] && [ "$e2" != "$e1" ]'
+to_end; wait_qa card "Up next" 150 && ok "Up next offered again at the end of the second episode" || bad "no Up next after the second episode ($(qa_line))"
+key DPAD_CENTER; sleep 6; e3="$(qaf subtitle)"
+check "autoplay: second -> third episode ($e2 -> $e3)" '[ -n "$e3" ] && [ "$e3" != "$e2" ] && [ "$e3" != "$e1" ]'
+check "Continue Watching keeps the show after two episodes" 'continue_ids | grep -q "series:"'
+key BACK; sleep 1; in_activity PlayerActivity && key BACK; sleep 1
+key BACK; sleep 1
+
+# ---------------- 5. No stream address or credentials in the log ----------------
+adb logcat -b main -c
+demo_live '{"hold_qr":true,"stream":"http://10.0.2.2:9/series/AUDITUSER77/AUDITPASS88/9101.mkv"}'
+open_first_episode; sleep 8
+check "a failing stream shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
+adb logcat -d > "$OUT/logcat.txt"
+check "the log names the playback failure" 'grep -q "Playback failed:" "$OUT/logcat.txt"'
+check "the log contains no stream credentials" '! grep -q "AUDITPASS88\|AUDITUSER77" "$OUT/logcat.txt"'
+grep "Playback failed:" "$OUT/logcat.txt" | head -2 | sed 's/^/INFO  /' | tee -a "$REPORT"
+rm -f "$OUT/logcat.txt"
+key BACK; sleep 1; demo_live '{"hold_qr":true}'
+
 crashes="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashes" = 0 ]'
 note ""; note "login audit: $PASS passed, $FAIL failed"

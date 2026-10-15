@@ -111,6 +111,7 @@ final class StartupRefresh {
 
     private static void run(Context c,boolean manual,int token){
         try{
+            String[] signedIn=AccountStore.read(c);if(signedIn!=null)SignOut.rememberOwner(c,signedIn[0]);
             JSONObject cfg=Api.get(BuildConfig.PANEL_URL+"config.php");
             boolean introOn=cfg.optBoolean("intro_enabled");
             Api.prefs(c).edit().putString("intro_url",introOn?cfg.optString("intro_url",""):"").apply();
@@ -142,8 +143,8 @@ final class StartupRefresh {
             Api.prefs(c).edit().putLong(SettingsPage.LAST_REFRESH,System.currentTimeMillis()).apply();
             finish(token,new Result(DONE,manual,null,movies,series,Catalog.parseCategories(mcs),Catalog.parseCategories(scs)));
         }catch(Exception e){
-            android.util.Log.w("FlixTown","Startup refresh failed; cached titles remain",e);
-            finish(token,new Result(FAILED,manual,e.getMessage(),null,null,null,null));
+            android.util.Log.w("FlixTown","Startup refresh failed; cached titles remain: "+Logs.safe(e));
+            finish(token,new Result(FAILED,manual,Logs.redact(e.getMessage()),null,null,null,null));
         }
     }
     private static void finish(int token,Result r){

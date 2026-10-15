@@ -59,7 +59,7 @@ final class DemoData {
             if(expireFirstCode && pairStarts==1 && polls>=3)return new JSONObject().put("status","expired").toString();
             // Stays pending long enough to capture the QR screen, then approves a digits-only account with
             // leading zeros (the format the panel generates), so QA proves they survive pairing.
-            return polls<5||holdPairing?new JSONObject().put("status","pending").toString()
+            return polls<5||holdPairing||(live()!=null&&live().optBoolean("hold_qr"))?new JSONObject().put("status","pending").toString()
                 :new JSONObject().put("status","approved").put("account",new JSONObject().put("username","0048213977").put("password","0000731946205518")).toString();}
         if(url.contains("renewal-request"))return new JSONObject().put("ok",true).toString();
         if(url.contains("tmdb.php")){JSONArray cast=new JSONArray();

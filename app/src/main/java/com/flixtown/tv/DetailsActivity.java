@@ -487,7 +487,7 @@ public class DetailsActivity extends Activity {
             +(year>1900?"&year="+year:"");
         JSONObject tmdb=Api.get(endpoint);
         runOnUiThread(()->{if(!isFinishing())showCast(tmdb);});
-    }catch(Exception e){android.util.Log.w("FlixTownCast","Cast lookup failed",e);}});}
+    }catch(Exception e){android.util.Log.w("FlixTownCast","Cast lookup failed: "+Logs.safe(e));}});}
     private void showCast(JSONObject data){
         String trailer=data.optString("trailer","");if(!trailer.isEmpty() && (trailerButton.getTag()==null || "".equals(trailerButton.getTag())))enableTrailer(trailer);
         JSONArray cast=data.optJSONArray("cast");if(cast==null||cast.length()==0)return;
@@ -589,8 +589,20 @@ public class DetailsActivity extends Activity {
         intent.putExtra("episode_id",streamId);intent.putExtra("episode_ext",ext);
         intent.putExtra("next_episode_id",nextId);intent.putExtra("next_episode_ext",nextExt);
         intent.putExtra("subtitle",label);intent.putExtra("next_subtitle",nextLabel);
+        addLaterEpisodes(intent,nextId);
         if(openPlayMode!=null){intent.putExtra(openPlayMode,true);openPlayMode=null;}
         startActivity(intent);
+    }
+    /** The episodes after the next one, in order, so autoplay continues E2 → E3 → … (the player has no episode list). */
+    private void addLaterEpisodes(Intent intent,String nextId){
+        if(orderedEpisodes==null || nextId==null || nextId.isEmpty())return;
+        int from=-1;for(int i=0;i<orderedEpisodes.size();i++)if(nextId.equals(orderedEpisodes.get(i).optString("id"))){from=i+1;break;}
+        if(from<0)return;
+        int count=Math.max(0,Math.min(PlayerActivity.MAX_QUEUE,orderedEpisodes.size()-from));
+        String[] ids=new String[count],exts=new String[count],labels=new String[count];
+        for(int i=0;i<count;i++){JSONObject ep=orderedEpisodes.get(from+i);
+            ids[i]=ep.optString("id");exts[i]=extensionOf(ep,"mp4");labels[i]=episodeLabel(ep);}
+        intent.putExtra("later_episode_ids",ids);intent.putExtra("later_episode_exts",exts);intent.putExtra("later_episode_labels",labels);
     }
     private void playUrl(String url,boolean track){
         if(track)Catalog.remember(this,new Catalog.Item(itemJson(),kind));

@@ -1,0 +1,24 @@
+name: Endpoint scheme check
+
+# Read-only: which configured endpoints use http or https (.github/qa/endpoint_schemes.py).
+# Reports scheme://host only; no credentials; nothing created or changed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: python3 .github/qa/endpoint_schemes.py
+      - name: Commit report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qa/endpoints
+          git commit -m "Endpoint scheme check (${GITHUB_SHA::7})" || exit 0
+          for i in 1 2 3; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*5)); done

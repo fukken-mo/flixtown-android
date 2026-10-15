@@ -117,7 +117,7 @@ public class RenewalActivity extends Activity {
             Api.IO.execute(()->{try{Api.post("renewal-request",new JSONObject()
                 .put("username",account[0]).put("phone",phone.getText().toString().trim()).put("plan",selected));
                 runOnUiThread(()->status.setText("Request sent. After you pay, Flix Town reopens here as soon as the payment is confirmed."));
-            }catch(Exception e){runOnUiThread(()->{status.setTextColor(0xFFF0A29F);status.setText("Couldn't send the request: "+e.getMessage());});}});
+            }catch(Exception e){runOnUiThread(()->{status.setTextColor(0xFFF0A29F);status.setText("Couldn't send the request: "+Logs.redact(e.getMessage()));});}});
         });
         Button check=Ui.button(this,"Check again");actions.addView(check,buttonParams(0,12));check.setOnClickListener(v->checkAccount(true));
         // The answer to "Send" / "Check again" sits right under those buttons, inside the safe area.

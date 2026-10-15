@@ -368,7 +368,7 @@ final class AppUpdates {
             intent.setDataAndType(content,"application/vnd.android.package-archive");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK);
             activity.startActivity(intent);
-        }catch(Exception e){android.util.Log.w(TAG,"Installer could not be opened",e);
+        }catch(Exception e){android.util.Log.w(TAG,"Installer could not be opened: "+Logs.safe(e));
             failure="installer";installFailed=true;setState(State.FAILED);showInstallFailed();}
     }
     /**

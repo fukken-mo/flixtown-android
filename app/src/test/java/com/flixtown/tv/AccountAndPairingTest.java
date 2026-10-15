@@ -39,4 +39,22 @@ public class AccountAndPairingTest {
         assertEquals("Server returned 502",Api.errorMessage(502,"<html><body>Bad gateway</body></html>"));
         assertEquals("Server returned 500",Api.errorMessage(500,"{\"error\":\"\"}"));
     }
+    @Test public void logTextKeepsOnlySchemeAndHostOfAddresses(){
+        String raw="Unable to connect to http://cdn.example.com:8080/series/0048213977/0000731946205518/9101.mkv?token=abc";
+        String safe=Logs.redact(raw);
+        assertTrue(safe,safe.contains("http://cdn.example.com:8080/[redacted]"));
+        assertFalse(safe,safe.contains("0048213977"));assertFalse(safe,safe.contains("0000731946205518"));assertFalse(safe,safe.contains("abc"));
+    }
+    @Test public void logTextRemovesCredentialParametersOutsideUrls(){
+        String safe=Logs.redact("player_api.php?username=0048213977&password=0000731946205518&action=get_series");
+        assertFalse(safe,safe.contains("0048213977"));assertFalse(safe,safe.contains("0000731946205518"));
+        assertTrue(safe,safe.contains("username=[redacted]") && safe.contains("password=[redacted]"));
+    }
+    @Test public void exceptionSummaryIncludesCausesButNoAddresses(){
+        Exception e=new java.io.IOException("Source error",new IllegalStateException("GET https://s.example.com/movie/u1/p2/7.mp4 failed"));
+        String safe=Logs.safe(e);
+        assertTrue(safe,safe.startsWith("IOException: Source error <- IllegalStateException: GET https://s.example.com/[redacted]"));
+        assertFalse(safe,safe.contains("p2"));
+        assertEquals("",Logs.redact(null));
+    }
 }
