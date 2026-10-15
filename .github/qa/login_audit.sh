@@ -51,7 +51,8 @@ m=re.search(k+r"=\[([^\]]*)\]",l) or re.search(k+r"=(\S+)",l)
 print(m.group(1).strip() if m else "")' "$1"; }
 wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && return 0; sleep 1; t=$((t+1)); done; return 1; }
 demo_live(){ printf '%s' "$1" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"; }
-to_end(){ key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.5; for i in $(seq 1 12); do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.15; done; }
+# Near the end without running past it: +40 s leaves the Up next countdown time to show (the demo episode is ~60 s).
+to_end(){ key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.5; for i in 1 2 3 4; do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.15; done; }
 progress_keys(){ prefs | grep -cE 'name="(continue_ids|resume_[a-z_]*)' ; }
 continue_ids(){ prefs | grep -o 'name="continue_ids">[^<]*' | sed 's/.*>//'; }
 signed_in_as(){ key DPAD_LEFT; focus_to DPAD_UP "Search" 8 >/dev/null; focus_to DPAD_DOWN "Settings" 8 >/dev/null; key DPAD_CENTER; sleep 2
