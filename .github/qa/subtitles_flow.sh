@@ -74,10 +74,13 @@ shown_box(){ local r; for t in 1 2 3; do key DPAD_UP; sleep 0.5; r="$(sub_box "$
 pickers(){ adb logcat -d -s FlixTownQA:I | grep -c " picker Subtitles"; }
 # Opens the Subtitles menu and waits until it is really open (its QA line appears).
 open_picker(){ local n0; n0="$(pickers)"
-  key DPAD_UP; sleep 0.6; wait_qa controls true 3
-  # Right on the progress bar seeks; move up to the buttons row first.
-  for i in 1 2 3; do [ "$(qaf focus)" = progress ] || break; key DPAD_UP; sleep 0.5; done
-  player_focus subs DPAD_RIGHT || note "INFO  focus: $(qa_line)"
+  # Deterministic start: controls hidden, then Up opens them with Play focused (PlayerActivity).
+  if [ "$(qaf controls)" = true ]; then key BACK; wait_qa controls false 6; fi
+  key DPAD_UP; wait_qa focus play 5 || note "INFO  after Up: $(qa_line)"
+  # Play -> Audio -> Subtitles, one step at a time, each confirmed by the QA state before the next.
+  for want in audio subs; do [ "$(qaf focus)" = subs ] && break
+    adb shell input keyevent KEYCODE_DPAD_RIGHT; wait_qa focus "$want" 4 || note "INFO  expected focus $want: $(qa_line)"; done
+  [ "$(qaf focus)" = subs ] || return 1
   key DPAD_CENTER
   for i in $(seq 1 12); do [ "$(pickers)" -gt "$n0" ] && return 0; sleep 0.5; done; return 1; }
 # Picks a subtitle track by label through the player's Subtitles menu; checks the label after, once more if needed.
