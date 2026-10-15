@@ -1,28 +1,47 @@
 PASS  set up: 'The Crimson Garden' added to My List
-PASS  Continue Watching shows the seeded movie and show (The Crimson Garden|Broken Station)
-PASS  the movie card is the one in My List
-PASS  focus on the first Continue Watching card (The Crimson Garden)
-PASS  holding OK opens the menu
-PASS  Resume is focused first
-PASS  the press did not also open the title (still on Home)
-PASS  D-pad Down: Start over
-PASS  D-pad Down: Remove from Continue Watching
-PASS  Back closes the menu, nothing removed, focus back on the card
-PASS  focus on the movie card
-PASS  normal OK on a movie: player asks 'Continue watching?' (unchanged)
-PASS  Resume: plays from the saved position (0:20) without asking (24s)
-PASS  Start over (show): the saved episode from 0:00, no prompt (3s)
-PASS  after Start over the row still has both titles (nothing lost)
-PASS  focus on the show card before removing
-PASS  Remove: the show leaves the row at once (The Crimson Garden)
-PASS  the show's saved progress is gone (episode, queued next episode, row entry)
-PASS  focus moves to the nearest remaining card (The Crimson Garden)
-PASS  removing the last card removes the row (still on Home)
+FAIL  Continue Watching shows the seeded movie and show ()
+      at: HomeActivity focus='Northern Letters'
+FAIL  the movie card is the one in My List
+      at: HomeActivity focus='Northern Letters'
+FAIL  focus on the first Continue Watching card ()
+      at: HomeActivity focus='Northern Letters'
+FAIL  holding OK opens the menu
+      at: DetailsActivity focus='▶  Play'
+FAIL  Resume is focused first
+      at: DetailsActivity focus='▶  Play'
+FAIL  the press did not also open the title (still on Home)
+      at: DetailsActivity focus='▶  Play'
+FAIL  D-pad Down: Start over
+      at: DetailsActivity focus='Ava Moreno'
+FAIL  D-pad Down: Remove from Continue Watching
+      at: DetailsActivity focus='Broken Summer'
+FAIL  Back closes the menu, nothing removed, focus back on the card
+      at: HomeActivity focus='Northern Letters'
+FAIL  focus on the movie card
+      at: HomeActivity focus='Northern Letters'
+FAIL  normal OK on a movie: player asks 'Continue watching?' (unchanged)
+      at: DetailsActivity focus='▶  Play'
+FAIL  Resume: plays from the saved position (0:20) without asking (2s)
+      at: PlayerActivity focus=''
+FAIL  Start over (show): the saved episode from 0:00, no prompt (s)
+      at: ActorActivity focus='The Crimson Garden'
+FAIL  after Start over the row still has both titles (nothing lost)
+      at: HomeActivity focus='Northern Letters'
+FAIL  focus on the show card before removing
+      at: HomeActivity focus='Northern Letters'
+PASS  Remove: the show leaves the row at once ()
+FAIL  the show's saved progress is gone (episode, queued next episode, row entry)
+      at: DetailsActivity focus='▶  Play'
+FAIL  focus moves to the nearest remaining card ()
+      at: DetailsActivity focus='▶  Play'
+FAIL  removing the last card removes the row (still on Home)
+      at: PlayerActivity focus=''
 PASS  the movie's saved progress is gone too
 PASS  My List entry for the movie is still stored
-PASS  focus is on the next row, not lost ('Northern Letters')
-PASS  My List still has 'The Crimson Garden'
+FAIL  focus is on the next row, not lost ('')
+      at: PlayerActivity focus=''
+PASS  My List still has ''
 PASS  reopened app: Continue Watching stays empty
 PASS  reopened app: no saved progress came back
 PASS  no crash during the run
-continue menu: 27 passed, 0 failed
+continue menu: 8 passed, 19 failed
