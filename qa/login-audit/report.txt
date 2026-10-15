@@ -14,19 +14,19 @@ PASS  signing back in to the same account keeps its progress (movie:1000,series:
 PASS  migration, signed in: the owner is recorded on start
 PASS  migration, signed in: the same customer keeps progress after signing out and in (movie:1000,series:5002)
 PASS  migration, signed out: data with no owner is not handed to the next sign-in
-PASS  4a: first episode plays ()
-FAIL  4a: autoplay continues E1 -> E2 -> E3 ( ->  -> )
-FAIL  4b: across the season boundary ( ->  -> )
-FAIL  4c: resumed from Continue Watching, autoplay continues ( ->  -> )
-      no Up next: 10-15 11:37:29.364  7254  7254 I FlixTownQA: player controls=false focus=other elapsed=59 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E6   Chapter 6: Summer
-FAIL  4d: with a cut-off queue, autoplay still reaches the queued episodes ( ->  -> )
-FAIL  4d: player did not close (10-15 11:40:26.129  7254  7254 I FlixTownQA: player controls=false focus=other elapsed=59 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E6   Chapter 6: Summer)
+PASS  4a: first episode plays (S1 · E1)
+FAIL  4a: autoplay continues E1 -> E2 -> E3 (S1 · E1 -> S1 · E3 -> S1 · E4)
+FAIL  4b: across the season boundary (S1 · E8 -> S2 · E1 -> S2 · E3)
+FAIL  4c: resumed from Continue Watching, autoplay continues (S2 · E3 -> S2 · E5 -> S2 · E7)
+      no Up next: 10-15 12:18:41.069  7204  7204 I FlixTownQA: player controls=true focus=progress elapsed=60 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E7   Chapter 7: Voyage
+FAIL  4d: with a cut-off queue (limit 1), autoplay reaches the two queued episodes (S2 · E5 -> S2 · E7 -> S2 · E7)
+PASS  4d: after the last queued episode the player closes (no Up next)
 PASS  4d: the show stays in Continue Watching
-FAIL  4d: Continue Watching moves on to S1 E4 (9104), nothing marked complete
+PASS  4d: Continue Watching moves on to the episode after S2 · E7 (9208), nothing marked complete
 PASS  5: the player opened the failing stream and shows the error card
 PASS  5: the log names the playback failure
 PASS  5: the log contains no stream credentials
 INFO  Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ConnectException: Failed to connect to /10.0.2.2:9 <- ConnectException: Failed to connect to /10.0.2.2:9
 PASS  no Flix Town crash
 
-login audit: 21 passed, 6 failed
+login audit: 23 passed, 4 failed
