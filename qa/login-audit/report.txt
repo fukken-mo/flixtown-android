@@ -11,6 +11,18 @@ PASS  account B does not get account A's Continue Watching or progress
 PASS  account B's Home shows no Continue Watching row
 PASS  Settings shows account B (Signed in as 0012345678)
 PASS  signing back in to the same account keeps its progress (movie:1000,series:5002)
+PASS  migration, signed in: the owner is recorded on start
+PASS  migration, signed in: the same customer keeps progress after signing out and in (movie:1000,series:5002)
+PASS  migration, signed out: data with no owner is not handed to the next sign-in
+INFO  playing: 
+FAIL  no Up next after the first episode ()
+FAIL  autoplay: first -> second episode ( -> )
+FAIL  no Up next after the second episode ()
+FAIL  autoplay: second -> third episode ( -> )
+FAIL  Continue Watching keeps the show after two episodes
+FAIL  a failing stream shows the error card
+FAIL  the log names the playback failure
+PASS  the log contains no stream credentials
 PASS  no Flix Town crash
 
-login audit: 13 passed, 0 failed
+login audit: 17 passed, 7 failed
