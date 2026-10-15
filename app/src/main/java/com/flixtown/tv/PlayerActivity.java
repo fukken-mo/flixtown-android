@@ -43,6 +43,8 @@ import java.util.Locale;
  * Partially watched titles open with a compact Continue / Start over choice.
  */
 public class PlayerActivity extends Activity {
+    /** Height of the bottom controls (row, progress line and margins); subtitles sit above it. */
+    private static final int CONTROLS_DP=122;
     private static final long HIDE_MS=3000,SEEK_STEP_MS=10000,SEEK_COMMIT_MS=450,REPEAT_GAP_MS=150;
     private ExoPlayer player;
     private PlayerView video;
@@ -140,7 +142,7 @@ public class PlayerActivity extends Activity {
     /** Shows the overlay and focuses {@code target} (or keeps the current control focused). */
     private void showControls(View target){
         if(card.getVisibility()==View.VISIBLE)return;
-        controls.setVisibility(View.VISIBLE);liftSubtitles(true);
+        controls.setVisibility(View.VISIBLE);
         if(target!=null)target.requestFocus();
         else if(!controls.hasFocus())playButton.requestFocus();
         updateProgressUi();scheduleHide();
@@ -148,26 +150,21 @@ public class PlayerActivity extends Activity {
     private void scheduleHide(){handler.removeCallbacks(hideControls);if(dialog==null)handler.postDelayed(hideControls,HIDE_MS);}
     private final Runnable hideControls=()->{
         if(dialog!=null || pendingSeek>=0){scheduleHide();return;}
-        controls.setVisibility(View.GONE);status.setVisibility(View.GONE);liftSubtitles(false);root.requestFocus();
+        controls.setVisibility(View.GONE);status.setVisibility(View.GONE);root.requestFocus();
     };
     /**
-     * Subtitles are laid out inside the TV safe area, with or without the controls. Cues that carry
-     * their own position (common in episode subtitle tracks, e.g. ASS/SSA) are otherwise pinned to the
-     * very bottom edge of the screen, which many TVs crop: they then vanished when the controls hid
-     * (and came back when the controls lifted them). The padding goes on the subtitle drawing layer,
-     * so the text size stays as before; the subtitle selection is untouched.
+     * Subtitles stay at one fixed place, inside the TV safe area and just above where the controls
+     * sit, whether the controls are shown or hidden. Nothing moves them when the controls toggle: the
+     * earlier lift (a translationY animation on the subtitle view over the video surface) left them
+     * clipped to a thin strip or gone on some TVs once the controls hid. The padding goes on the
+     * subtitle drawing layer, so the text size stays as before; the subtitle selection is untouched.
      */
     private void keepSubtitlesInSafeArea(){
         androidx.media3.ui.SubtitleView subs=video.getSubtitleView();if(subs==null)return;
+        subs.setTranslationY(0);
         View layer=subs.getChildCount()>0?subs.getChildAt(0):subs;
         int x=Ui.safeX(this),y=Ui.safeY(this);
-        layer.setPadding(x,y,x,y);
-    }
-    /** Keeps subtitles above the controls while they are shown, and at the normal height otherwise. */
-    private void liftSubtitles(boolean up){
-        // Moving the whole layer also works for cues that carry their own position (common in WebVTT/ASS).
-        androidx.media3.ui.SubtitleView subs=video.getSubtitleView();
-        if(subs!=null)subs.animate().translationY(up?-Ui.dp(this,118):0).setDuration(150).start();
+        layer.setPadding(x,y,x,Math.max(y,Ui.dp(this,CONTROLS_DP)));
     }
     private void hideNow(){handler.removeCallbacks(hideControls);hideControls.run();}
     private void flash(String text){status.setText(text);status.setVisibility(View.VISIBLE);}
