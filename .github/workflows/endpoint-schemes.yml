@@ -4,6 +4,9 @@ name: Endpoint scheme check
 # Reports scheme://host only; no credentials; nothing created or changed.
 on:
   workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths: [".github/qa/endpoint_schemes.py", ".github/workflows/endpoint-schemes.yml"]
 
 permissions:
   contents: write
