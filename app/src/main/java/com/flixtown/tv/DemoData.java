@@ -89,7 +89,9 @@ final class DemoData {
             for(int s=1;s<=3;s++){JSONArray list=new JSONArray();
                 for(int e=1;e<=8;e++){JSONObject ep=new JSONObject().put("id",String.valueOf(9000+s*100+e)).put("episode_num",e).put("season",s)
                     .put("title","Chapter "+e+": "+B[(s*3+e)%B.length]).put("container_extension","mkv")
-                    .put("info",new JSONObject().put("movie_image","demo://backdrop/e"+(s*10+e)));
+                    .put("info",new JSONObject().put("movie_image","demo://backdrop/e"+(s*10+e))
+                        .put("plot","Episode "+e+": A new lead brings the town closer to a secret. Each choice changes who can be trusted.")
+                        .put("duration_secs",2880).put("air_date","2026-01-15"));
                     long added=episodeAdded(sid,s,e,base());if(added>0)ep.put("added",String.valueOf(added));
                     list.put(ep);}
                 if(s==3 && sid==5003 && seriesFetches>=2)list.put(new JSONObject().put("id","9399").put("episode_num",9).put("season",3)

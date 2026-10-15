@@ -1,0 +1,27 @@
+name: Episode preview candidate
+on:
+  push:
+    branches: [codex/episode-focus-preview]
+    paths:
+      - 'app/src/**'
+      - '.github/workflows/episode-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test and build separate Preview app only
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug -PflixPreview=true -PflixVersionName=3.8.12-episode-preview --console=plain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-Episode-Preview-test-only
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
