@@ -15,10 +15,10 @@ PASS  migration, signed in: the owner is recorded on start
 PASS  migration, signed in: the same customer keeps progress after signing out and in (movie:1000,series:5002)
 PASS  migration, signed out: data with no owner is not handed to the next sign-in
 PASS  4a: first episode plays (S1 · E1)
-FAIL  4a: autoplay continues E1 -> E2 -> E3 (S1 · E1 -> S1 · E3 -> S1 · E4)
+FAIL  4a: autoplay continues E1 -> E2 -> E3 (S1 · E1 -> S1 · E2 -> S1 · E4)
 FAIL  4b: across the season boundary (S1 · E8 -> S2 · E1 -> S2 · E3)
-FAIL  4c: resumed from Continue Watching, autoplay continues (S2 · E3 -> S2 · E5 -> S2 · E7)
-      no Up next: 10-15 12:18:41.069  7204  7204 I FlixTownQA: player controls=true focus=progress elapsed=60 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E7   Chapter 7: Voyage
+FAIL  4c: resumed from Continue Watching, autoplay continues (S2 · E3 -> S2 · E4 -> S2 · E6)
+      no Up next: 10-15 12:42:23.444  7216  7216 I FlixTownQA: player controls=true focus=progress elapsed=60 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E7   Chapter 7: Voyage
 FAIL  4d: with a cut-off queue (limit 1), autoplay reaches the two queued episodes (S2 · E5 -> S2 · E7 -> S2 · E7)
 PASS  4d: after the last queued episode the player closes (no Up next)
 PASS  4d: the show stays in Continue Watching
