@@ -61,7 +61,9 @@ public class PlayerActivity extends Activity {
     private long lastSavedAt;
     /** Episodes after the next one (from Details), so autoplay keeps going through the series. */
     static final int MAX_QUEUE=200;
-    private String[] laterIds,laterExts,laterLabels;private int laterIndex;
+    private String[] laterIds,laterExts,laterLabels;private int laterIndex;private boolean laterTruncated;
+    /** True when an empty "next" really is the end of the show (Details sent the complete list of later episodes). */
+    private boolean endKnown(){return laterIds!=null && !laterTruncated;}
     private final Handler handler=new Handler(Looper.getMainLooper());
 
     @Override public void onCreate(Bundle state) {
@@ -73,7 +75,7 @@ public class PlayerActivity extends Activity {
         episodeId=getIntent().getStringExtra("episode_id");episodeExt=getIntent().getStringExtra("episode_ext");
         nextEpisodeId=getIntent().getStringExtra("next_episode_id");nextEpisodeExt=getIntent().getStringExtra("next_episode_ext");
         laterIds=getIntent().getStringArrayExtra("later_episode_ids");laterExts=getIntent().getStringArrayExtra("later_episode_exts");
-        laterLabels=getIntent().getStringArrayExtra("later_episode_labels");
+        laterLabels=getIntent().getStringArrayExtra("later_episode_labels");laterTruncated=getIntent().getBooleanExtra("later_truncated",false);
         if(kind!=null && contentId!=null && !contentId.isEmpty() && !getIntent().getBooleanExtra("start_over",false)){
             String key=kind+":"+contentId;
             position=Api.prefs(this).getLong("resume_position_"+key,0);
@@ -466,14 +468,14 @@ public class PlayerActivity extends Activity {
     }
     private void saveProgress(long current,long duration){
         if(!ended && kind!=null && contentId!=null && !contentId.isEmpty()){
-            Catalog.saveProgress(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,current,duration);
+            Catalog.saveProgress(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,current,duration,endKnown());
             // "S2 · E4  Title" for the Continue Watching card on Home.
             if("series".equals(kind) && subtitle!=null && current>=15000)Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,subtitle).apply();
         }
     }
     /** A finished movie leaves Continue Watching; a finished episode queues the next one there. */
     private void finishProgress(){if(kind!=null && contentId!=null && !contentId.isEmpty()){
-        Catalog.markFinished(this,kind,contentId,nextEpisodeId,nextEpisodeExt);
+        Catalog.markFinished(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,endKnown());
         if("series".equals(kind) && nextSubtitle!=null && !nextSubtitle.isEmpty())Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,nextSubtitle).apply();}}
     private void showNext(){
         hideNow();

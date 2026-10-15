@@ -221,7 +221,8 @@ sleep 25;                                    shot 16-episode-playing 0.2
 key BACK;                                    sleep 1; in_activity PlayerActivity && key BACK
 wait_activity DetailsActivity 6; sleep 1.5
 check "details now offers Continue for the show" 'has "Continue"'
-focus_to DPAD_UP "Continue" 4; key DPAD_CENTER
+# Since the episode preview (PR #1), Up from an episode goes season selector -> More info; Continue is to its left.
+focus_to DPAD_UP "More info" 4; focus_to DPAD_LEFT "Continue" 4; key DPAD_CENTER
 wait_for "Continue watching?" 15 && ok "resume prompt: 'Continue watching?'" || bad "no resume prompt"
 check "resume prompt offers Continue from … and Start over" 'has "Continue from" && has "Start over"'
 shot 17-resume-prompt 0.2

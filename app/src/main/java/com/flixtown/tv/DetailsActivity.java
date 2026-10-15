@@ -90,7 +90,9 @@ public class DetailsActivity extends Activity {
     private static String join(String a,String b){return a.isEmpty()?b:b.isEmpty()?a:a+"   ·   "+b;}
     @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
-    @Override protected void onRestart(){super.onRestart();if(watch!=null)watch.setText(watchLabel());}
+    @Override protected void onRestart(){super.onRestart();
+        if(orderedEpisodes!=null)resolveFinished(orderedEpisodes);   // back from the player: move past a finished episode
+        if(watch!=null)watch.setText(watchLabel());}
     private String resumeKey(){return kind+":"+id;}
     private String watchLabel(){
         if(!movie)return Api.prefs(this).getString("resume_episode_"+resumeKey(),"").isEmpty()?"▶  Watch Now":"▶  Continue";
@@ -326,6 +328,7 @@ public class DetailsActivity extends Activity {
             JSONObject episode=list.optJSONObject(i);if(episode!=null)ordered.add(episode);
         }}
         orderedEpisodes=ordered;
+        resolveFinished(ordered);
         episodeArea.removeAllViews();
         seasonContent=Ui.column(this);seasonContent.setClipChildren(false);episodeArea.addView(seasonContent);
         if(seasons.isEmpty()){TextView none=Ui.text(this,"No episodes available yet",15);none.setTextColor(Ui.TEXT_3);episodeArea.addView(none,0);return;}
@@ -436,6 +439,7 @@ public class DetailsActivity extends Activity {
     private void enableTrailer(String url){trailerButton.setTag(url);trailerButton.setEnabled(true);trailerButton.setAlpha(1f);}
     /** Plays the episode saved for this show, using the loaded episode list to find the next one when possible. */
     private void resumeSeries(){
+        if(orderedEpisodes!=null)resolveFinished(orderedEpisodes);
         String key=resumeKey();
         String episode=Api.prefs(this).getString("resume_episode_"+key,"");
         String ext=Api.prefs(this).getString("resume_extension_"+key,"mp4");
@@ -593,12 +597,35 @@ public class DetailsActivity extends Activity {
         if(openPlayMode!=null){intent.putExtra(openPlayMode,true);openPlayMode=null;}
         startActivity(intent);
     }
+    /**
+     * An episode finished in the player when the one after it was not known (the list had not loaded,
+     * or it was past the player's queue): now that the list is here, Continue Watching moves on to the
+     * next episode, or the show leaves it if that really was the last one.
+     */
+    private void resolveFinished(List<JSONObject> ordered){
+        String key=resumeKey();android.content.SharedPreferences p=Api.prefs(this);
+        if(!p.getBoolean(Catalog.DONE+key,false))return;
+        String done=p.getString("resume_episode_"+key,"");
+        for(int i=0;i<ordered.size();i++)if(done.equals(ordered.get(i).optString("id"))){
+            if(i+1<ordered.size()){JSONObject next=ordered.get(i+1);
+                p.edit().putString("resume_episode_"+key,next.optString("id")).putString("resume_extension_"+key,extensionOf(next,"mp4"))
+                    .putString("resume_label_"+key,episodeLabel(next)).remove(Catalog.DONE+key).apply();}
+            else Catalog.clearProgress(this,kind,id);
+            if(watch!=null)watch.setText(watchLabel());
+            return;
+        }
+    }
     /** The episodes after the next one, in order, so autoplay continues E2 → E3 → … (the player has no episode list). */
     private void addLaterEpisodes(Intent intent,String nextId){
-        if(orderedEpisodes==null || nextId==null || nextId.isEmpty())return;
-        int from=-1;for(int i=0;i<orderedEpisodes.size();i++)if(nextId.equals(orderedEpisodes.get(i).optString("id"))){from=i+1;break;}
-        if(from<0)return;
-        int count=Math.max(0,Math.min(PlayerActivity.MAX_QUEUE,orderedEpisodes.size()-from));
+        if(orderedEpisodes==null)return;                       // list not loaded: the player treats the end as unknown
+        if(nextId==null || nextId.isEmpty()){                   // this is the last episode: an empty, complete list
+            intent.putExtra("later_episode_ids",new String[0]);intent.putExtra("later_episode_exts",new String[0]);
+            intent.putExtra("later_episode_labels",new String[0]);return;}
+        int nextIndex=-1;for(int i=0;i<orderedEpisodes.size();i++)if(nextId.equals(orderedEpisodes.get(i).optString("id"))){nextIndex=i;break;}
+        if(nextIndex<0)return;
+        int max=BuildConfig.DEMO?DemoData.queueLimit(PlayerActivity.MAX_QUEUE):PlayerActivity.MAX_QUEUE;
+        int[] w=EpisodeQueue.window(orderedEpisodes.size(),nextIndex,max);int from=w[0],count=w[1];
+        if(w[2]==1)intent.putExtra("later_truncated",true);
         String[] ids=new String[count],exts=new String[count],labels=new String[count];
         for(int i=0;i<count;i++){JSONObject ep=orderedEpisodes.get(from+i);
             ids[i]=ep.optString("id");exts[i]=extensionOf(ep,"mp4");labels[i]=episodeLabel(ep);}

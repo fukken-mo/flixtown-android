@@ -57,4 +57,14 @@ public class AccountAndPairingTest {
         assertFalse(safe,safe.contains("p2"));
         assertEquals("",Logs.redact(null));
     }
+    @Test public void queueCoversTheRestOfTheShowAcrossSeasons(){
+        // 24 episodes (3 seasons of 8): S1E8 playing, next S2E1 at index 8 -> 15 later episodes, complete.
+        assertArrayEquals(new int[]{9,15,0},EpisodeQueue.window(24,8,200));
+    }
+    @Test public void aCutOffQueueIsFlaggedSoTheShowIsNotTreatedAsFinished(){
+        assertArrayEquals(new int[]{2,200,1},EpisodeQueue.window(500,1,200));
+        assertArrayEquals(new int[]{2,1,1},EpisodeQueue.window(24,1,1));
+        // the next episode is the last one: nothing later, and that is complete
+        assertArrayEquals(new int[]{24,0,0},EpisodeQueue.window(24,23,200));
+    }
 }

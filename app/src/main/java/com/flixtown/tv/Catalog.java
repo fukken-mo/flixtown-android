@@ -138,15 +138,22 @@ final class Catalog {
         return result;
     }
     static void remember(Context c,Item item) { remember(c,item.kind+":"+item.id); }
+    /** An episode was finished but the one after it is not known yet: Details moves the show on (see resolveFinished). */
+    static final String DONE="resume_done_";
     static void saveProgress(Context c,String kind,String id,String episodeId,String episodeExt,
                              String nextId,String nextExt,long position,long duration) {
+        saveProgress(c,kind,id,episodeId,episodeExt,nextId,nextExt,position,duration,true);
+    }
+    /** {@code endKnown}: an empty nextId really means the last episode (false when the episode list was not available). */
+    static void saveProgress(Context c,String kind,String id,String episodeId,String episodeExt,
+                             String nextId,String nextExt,long position,long duration,boolean endKnown) {
         if(kind==null || id==null || id.isEmpty() || position<15000)return;
         String key=kind+":"+id;
         if(duration>0 && (position>=duration-30000 || position*100>=duration*95)){
-            markFinished(c,kind,id,nextId,nextExt);return;
+            markFinished(c,kind,id,episodeId,episodeExt,nextId,nextExt,endKnown);return;
         }
         android.content.SharedPreferences.Editor edit=Api.prefs(c).edit();
-        edit.putLong("resume_position_"+key,position).putLong("resume_duration_"+key,duration);
+        edit.putLong("resume_position_"+key,position).putLong("resume_duration_"+key,duration).remove(DONE+key);
         if("series".equals(kind)){
             edit.putString("resume_episode_"+key,episodeId==null?"":episodeId);
             edit.putString("resume_extension_"+key,episodeExt==null?"mp4":episodeExt);
@@ -158,9 +165,20 @@ final class Catalog {
     }
     /** Movie finished: forget it. Episode finished: queue the next episode so Continue Watching moves on. */
     static void markFinished(Context c,String kind,String id,String nextId,String nextExt) {
-        if(!"series".equals(kind) || nextId==null || nextId.isEmpty()){clearProgress(c,kind,id);return;}
+        markFinished(c,kind,id,null,null,nextId,nextExt,true);
+    }
+    static void markFinished(Context c,String kind,String id,String episodeId,String episodeExt,String nextId,String nextExt,boolean endKnown) {
         String key=kind+":"+id;
-        Api.prefs(c).edit().remove("resume_position_"+key).remove("resume_duration_"+key)
+        boolean noNext=nextId==null || nextId.isEmpty();
+        if("series".equals(kind) && noNext && !endKnown && episodeId!=null && !episodeId.isEmpty()){
+            // Not necessarily the last episode: keep the show in Continue Watching on the finished episode.
+            Api.prefs(c).edit().remove("resume_position_"+key).remove("resume_duration_"+key).remove("resume_label_"+key)
+                .putString("resume_episode_"+key,episodeId).putString("resume_extension_"+key,episodeExt==null||episodeExt.isEmpty()?"mp4":episodeExt)
+                .putString("resume_next_"+key,"").putString("resume_next_ext_"+key,"mp4").putBoolean(DONE+key,true).apply();
+            remember(c,key);return;
+        }
+        if(!"series".equals(kind) || noNext){clearProgress(c,kind,id);return;}
+        Api.prefs(c).edit().remove("resume_position_"+key).remove("resume_duration_"+key).remove(DONE+key)
             .putString("resume_episode_"+key,nextId).putString("resume_extension_"+key,nextExt==null||nextExt.isEmpty()?"mp4":nextExt)
             .putString("resume_next_"+key,"").putString("resume_next_ext_"+key,"mp4").apply();
         remember(c,key);
@@ -179,7 +197,7 @@ final class Catalog {
         Api.prefs(c).edit().remove("resume_position_"+key).remove("resume_duration_"+key)
             .remove("resume_label_"+key).remove("resume_art_"+key)
             .remove("resume_episode_"+key).remove("resume_extension_"+key)
-            .remove("resume_next_"+key).remove("resume_next_ext_"+key)
+            .remove("resume_next_"+key).remove("resume_next_ext_"+key).remove(DONE+key)
             .putString("continue_ids",updated.toString()).apply();
     }
 }

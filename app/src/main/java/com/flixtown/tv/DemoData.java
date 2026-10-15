@@ -217,6 +217,8 @@ final class DemoData {
     private static volatile long renewedUntil;
     private static JSONObject payment;
 
+    /** QA: a smaller autoplay queue (demo_account.json "queue_limit") so the cut-off case can be tested. */
+    static int queueLimit(int normal){JSONObject l=live();int n=l==null?0:l.optInt("queue_limit",0);return n>0?n:normal;}
     private static JSONObject live(){
         try{if(accountFile!=null && accountFile.exists()){
             java.io.FileInputStream in=new java.io.FileInputStream(accountFile);byte[] data=new byte[(int)accountFile.length()];

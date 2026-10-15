@@ -5,7 +5,8 @@
 #     signing back in to the SAME account keeps them (the existing behaviour);
 #  3. migration: data with no recorded owner is kept for a TV still signed in (owner recorded on start)
 #     and removed when an account signs in on a TV that was signed out before updating;
-#  4. next-episode autoplay continues E1 -> E2 -> E3 (not only one episode), Continue Watching follows;
+#  4. next-episode autoplay continues E1 -> E2 -> E3, across a season boundary, after resuming from
+#     Continue Watching, and with a cut-off queue the show stays in Continue Watching on the next episode;
 #  5. a failing stream's address and credentials do not appear in the log.
 # Results: qa/login-audit/report.txt and screens.
 set -u
@@ -50,10 +51,6 @@ m=re.search(k+r"=\[([^\]]*)\]",l) or re.search(k+r"=(\S+)",l)
 print(m.group(1).strip() if m else "")' "$1"; }
 wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && return 0; sleep 1; t=$((t+1)); done; return 1; }
 demo_live(){ printf '%s' "$1" | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"; }
-open_first_episode(){ key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 6 > /dev/null; key DPAD_CENTER; sleep 2.5
-  key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4
-  focus_to DPAD_DOWN "Season" 5 > /dev/null; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER; wait_activity PlayerActivity 10; sleep 4
-  if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi; }
 to_end(){ key DPAD_UP; sleep 0.5; key DPAD_DOWN; sleep 0.5; for i in $(seq 1 12); do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.15; done; }
 progress_keys(){ prefs | grep -cE 'name="(continue_ids|resume_[a-z_]*)' ; }
 continue_ids(){ prefs | grep -o 'name="continue_ids">[^<]*' | sed 's/.*>//'; }
@@ -114,31 +111,63 @@ launch; wait_activity LoginActivity 20; sleep 3
 remote_sign_in 0012345678 0000123456789012
 check "migration, signed out: data with no owner is not handed to the next sign-in" '[ -z "$(continue_ids)" ] && [ "$(progress_keys)" = 0 ]'
 
-# ---------------- 4. Autoplay through several episodes ----------------
+# ---------------- 4. Autoplay: several episodes, season boundary, after resuming, cut-off queue ----------------
+launch --ez demo_reset true; wait_activity HomeActivity 60; sleep 8      # fresh QR sign-in, no saved progress
+episode_now(){ qaf subtitle | grep -o 'S[0-9]* · E[0-9]*'; }
+wait_episode(){ local t=0; while [ $t -lt 15 ]; do e="$(episode_now)"; [ -n "$e" ] && [ "$e" != "$1" ] && { echo "$e"; return 0; }; sleep 1; t=$((t+1)); done; episode_now; }
+next_now(){ to_end; wait_qa card "Up next" 150 || { note "      no Up next: $(qa_line)"; return 1; }; key DPAD_CENTER; sleep 4; }
+open_show(){ back_home; key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 8 > /dev/null; key DPAD_CENTER; sleep 2.5
+  key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4; }
+play_episode(){ focus_to DPAD_DOWN "Season" 5 > /dev/null; key DPAD_DOWN; sleep 0.8
+  for i in $(seq 2 "$1"); do key DPAD_RIGHT; done; sleep 0.5; key DPAD_CENTER
+  wait_activity PlayerActivity 10 || { shot "no-player-e$1" 0.2; note "      player not opened: $(resumed) focus='$(focused)'"; return 1; }
+  sleep 4; if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_CENTER; sleep 3; fi; }
+leave_player(){ for i in 1 2 3; do in_activity PlayerActivity || break; key BACK; sleep 1.2; done; }
+back_home(){ for i in 1 2 3 4 5 6 7; do in_activity HomeActivity && return 0; key BACK; sleep 1.5; done; in_activity HomeActivity; }
+home_row(){ back_home; focus_to DPAD_LEFT "Home" 8 > /dev/null; focus_to DPAD_UP "Home" 5 > /dev/null; key DPAD_CENTER; sleep 2.5
+  key DPAD_UP DPAD_UP DPAD_UP; sleep 0.8; key DPAD_DOWN; sleep 1.5; }
+
+# 4a. E1 -> E2 -> E3
 adb logcat -b main -c
-open_first_episode
-e1="$(qaf subtitle)"; note "INFO  playing: $e1"
-to_end; wait_qa card "Up next" 150 && ok "Up next offered at the end of the first episode" || bad "no Up next after the first episode ($(qa_line))"
-key DPAD_CENTER; sleep 6; e2="$(qaf subtitle)"
-check "autoplay: first -> second episode ($e1 -> $e2)" '[ -n "$e2" ] && [ "$e2" != "$e1" ]'
-to_end; wait_qa card "Up next" 150 && ok "Up next offered again at the end of the second episode" || bad "no Up next after the second episode ($(qa_line))"
-key DPAD_CENTER; sleep 6; e3="$(qaf subtitle)"
-check "autoplay: second -> third episode ($e2 -> $e3)" '[ -n "$e3" ] && [ "$e3" != "$e2" ] && [ "$e3" != "$e1" ]'
-check "Continue Watching keeps the show after two episodes" 'continue_ids | grep -q "series:"'
-key BACK; sleep 1; in_activity PlayerActivity && key BACK; sleep 1
-key BACK; sleep 1
+open_show; play_episode 1 && ok "4a: first episode plays ($(episode_now))" || bad "4a: first episode did not play"
+shot 04-e1-playing 0.2
+e1="$(episode_now)"; next_now; e2="$(wait_episode "$e1")"; next_now; e3="$(wait_episode "$e2")"
+check "4a: autoplay continues E1 -> E2 -> E3 ($e1 -> $e2 -> $e3)" '[ "$e1" = "S1 · E1" ] && [ "$e2" = "S1 · E2" ] && [ "$e3" = "S1 · E3" ]'
+leave_player
+# 4b. Season boundary: S1 E8 -> S2 E1 -> S2 E2
+open_show; play_episode 8
+b1="$(episode_now)"; next_now; b2="$(wait_episode "$b1")"; next_now; b3="$(wait_episode "$b2")"
+check "4b: across the season boundary ($b1 -> $b2 -> $b3)" '[ "$b1" = "S1 · E8" ] && [ "$b2" = "S2 · E1" ] && [ "$b3" = "S2 · E2" ]'
+leave_player
+# 4c. Resume from Continue Watching, then autoplay keeps going
+home_row; shot 05-continue-row 0.2
+key DPAD_CENTER; wait_activity PlayerActivity 20; sleep 4
+if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_CENTER; sleep 3; fi
+r1="$(episode_now)"; next_now; r2="$(wait_episode "$r1")"; next_now; r3="$(wait_episode "$r2")"
+check "4c: resumed from Continue Watching, autoplay continues ($r1 -> $r2 -> $r3)" '[ "$r1" = "S2 · E2" ] && [ "$r2" = "S2 · E3" ] && [ "$r3" = "S2 · E4" ]'
+leave_player
+# 4d. Cut-off queue (QA limit 1): the last episode the player knows is not the end of the show
+demo_live '{"queue_limit":1}'
+open_show; play_episode 1
+c1="$(episode_now)"; next_now; c2="$(wait_episode "$c1")"; next_now; c3="$(wait_episode "$c2")"
+check "4d: with a cut-off queue, autoplay still reaches the queued episodes ($c1 -> $c2 -> $c3)" '[ "$c3" = "S1 · E3" ]'
+to_end; wait_activity DetailsActivity 150 && ok "4d: after the last queued episode the player closes (no Up next)" || bad "4d: player did not close ($(qa_line))"
+sleep 2
+check "4d: the show stays in Continue Watching" 'continue_ids | grep -q "series:"'
+check "4d: Continue Watching moves on to S1 E4 (9104), nothing marked complete" 'prefs | grep -q "name=\"resume_episode_series:[0-9]*\">9104<" && ! prefs | grep -q "name=\"resume_done_"'
+key BACK; sleep 1; demo_live '{}'
 
 # ---------------- 5. No stream address or credentials in the log ----------------
 adb logcat -b main -c
-demo_live '{"hold_qr":true,"stream":"http://10.0.2.2:9/series/AUDITUSER77/AUDITPASS88/9101.mkv"}'
-open_first_episode; sleep 8
-check "a failing stream shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
+demo_live '{"stream":"http://10.0.2.2:9/series/AUDITUSER77/AUDITPASS88/9101.mkv"}'
+open_show; play_episode 1; sleep 6
+check "5: the player opened the failing stream and shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
 adb logcat -d > "$OUT/logcat.txt"
-check "the log names the playback failure" 'grep -q "Playback failed:" "$OUT/logcat.txt"'
-check "the log contains no stream credentials" '! grep -q "AUDITPASS88\|AUDITUSER77" "$OUT/logcat.txt"'
-grep "Playback failed:" "$OUT/logcat.txt" | head -2 | sed 's/^/INFO  /' | tee -a "$REPORT"
+check "5: the log names the playback failure" 'grep -q "Playback failed:" "$OUT/logcat.txt"'
+check "5: the log contains no stream credentials" 'grep -q "Playback failed:" "$OUT/logcat.txt" && ! grep -q "AUDITPASS88\|AUDITUSER77" "$OUT/logcat.txt"'
+grep "Playback failed:" "$OUT/logcat.txt" | head -2 | sed 's/^.*Playback failed/INFO  Playback failed/' | tee -a "$REPORT"
 rm -f "$OUT/logcat.txt"
-key BACK; sleep 1; demo_live '{"hold_qr":true}'
+leave_player; demo_live '{}'
 
 crashes="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashes" = 0 ]'
