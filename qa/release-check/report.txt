@@ -52,12 +52,12 @@ PASS  resume prompt offers Continue from … and Start over
 PASS  Start over plays from the beginning (5s)
 PASS  Up shows the player controls
 PASS  controls hide by themselves
-PASS  seeking: Right +10s, Left ×2 −20s (11s → 22s → 3s)
-INFO  10-15 09:49:58.679  5243  5243 I FlixTownQA: tracks type=1 count=6 [English · Stereo · AAC, German · Stereo · AAC, Italian · Stereo · AAC, French · Stereo · AAC, Spanish · Stereo · AAC, English · 5.1 · AAC]
-INFO  10-15 09:49:58.679  5243  5243 I FlixTownQA: picker Audio: English · Stereo · AAC|German · Stereo · AAC|Italian · Stereo · AAC|French · Stereo · AAC|Spanish · Stereo · AAC|English · 5.1 · AAC selected=0
+PASS  seeking: Right +10s, Left ×2 −20s (11s → 22s → 2s)
+INFO  10-15 11:27:49.703  5118  5118 I FlixTownQA: tracks type=1 count=6 [English · Stereo · AAC, German · Stereo · AAC, Italian · Stereo · AAC, French · Stereo · AAC, Spanish · Stereo · AAC, English · 5.1 · AAC]
+INFO  10-15 11:27:49.703  5118  5118 I FlixTownQA: picker Audio: English · Stereo · AAC|German · Stereo · AAC|Italian · Stereo · AAC|French · Stereo · AAC|Spanish · Stereo · AAC|English · 5.1 · AAC selected=0
 PASS  audio picker lists the stream's audio tracks
 PASS  audio track changed (Audio · English → Audio · German)
-INFO  10-15 09:50:10.593  5243  5243 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
+INFO  10-15 11:28:02.112  5118  5118 I FlixTownQA: picker Subtitles: Off|English|Greek|French|pt-br selected=0
 PASS  subtitle picker offers Off and the stream's languages
 PASS  subtitles changed (Subtitles · Off → Subtitles · English)
 PASS  Back with controls shown: hides them, stays in the player
@@ -73,10 +73,10 @@ PASS  renewal shows the panel's Cash App details
 PASS  renewal request is sent
 PASS  after the payment is confirmed (account active) Flix Town reopens
 PASS  renewal kept the same account (Signed in as 0012345678)
-INFO  emulator frames: Total frames rendered: 117
-INFO  emulator frames: Janky frames: 117 (100.00%)
-INFO  emulator frames: Janky frames (legacy): 117 (100.00%)
-INFO  emulator frames: 50th percentile: 150ms
-INFO  emulator frames: 90th percentile: 150ms
+INFO  emulator frames: Total frames rendered: 89
+INFO  emulator frames: Janky frames: 89 (100.00%)
+INFO  emulator frames: Janky frames (legacy): 89 (100.00%)
+INFO  emulator frames: 50th percentile: 200ms
+INFO  emulator frames: 90th percentile: 250ms
 PASS  no crash during the run
 release check: 72 passed, 0 failed
