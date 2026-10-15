@@ -44,12 +44,13 @@ public class DetailsActivity extends Activity {
     private String id,kind,title,extension,categoryId;
     private LinearLayout content,episodeArea,seasonContent,castSection,moreSection;
     private HorizontalGridView castRow,moreRow;
-    private TextView summary,metaLine,episodePreviewTitle;private ImageView backdrop,episodeBackdrop;
-    private Button episodeMoreInfo;
+    private TextView summary,metaLine,episodePreviewTitle;private ImageView backdrop,episodeBackdrop,nextEpisodeBackdrop;
+    private Button episodeMoreInfo,seasonSelector;
+    private long previewArtGeneration;
     private final android.os.Handler previewHandler=new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable pendingPreview;
     private JSONObject previewEpisode;
-    private String seriesPlot="",seriesArt="";
+    private String seriesPlot="Loading details…",seriesArt="";
     private android.view.ViewTreeObserver.OnGlobalFocusChangeListener previewFocusListener;
     private Button trailerButton,watch,favorite;
     private boolean enrichedCast,movie;
@@ -111,6 +112,9 @@ public class DetailsActivity extends Activity {
             episodeBackdrop=new ImageView(this);episodeBackdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);
             episodeBackdrop.setVisibility(View.INVISIBLE);
             shell.addView(episodeBackdrop,new FrameLayout.LayoutParams(-1,Math.round(screenH*.70f)));
+            nextEpisodeBackdrop=new ImageView(this);nextEpisodeBackdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            nextEpisodeBackdrop.setVisibility(View.INVISIBLE);
+            shell.addView(nextEpisodeBackdrop,new FrameLayout.LayoutParams(-1,Math.round(screenH*.70f)));
         }
         View scrim=new View(this);scrim.setBackgroundResource(R.drawable.details_scrim);
         shell.addView(scrim,new FrameLayout.LayoutParams(-1,Math.round(screenH*.72f)));
@@ -129,17 +133,26 @@ public class DetailsActivity extends Activity {
 
         TextView titleView=Ui.heading(this,title,32);titleView.setMaxLines(1);titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setShadowLayer(12,0,2,0xAA000000);
-        content.addView(titleView,new LinearLayout.LayoutParams(Ui.dp(this,640),Ui.dp(this,TITLE_DP)));
+        int titleHeight=Ui.dp(this,TITLE_DP);
+        if(!movie){
+            titleView.setMaxLines(2);
+            int lines=titleView.getPaint().measureText(title)>Ui.dp(this,640)?2:1;
+            titleHeight=Math.max(titleHeight,Math.round(titleView.getPaint().getFontSpacing()*lines)+titleView.getCompoundPaddingTop()+titleView.getCompoundPaddingBottom());
+        }
+        content.addView(titleView,new LinearLayout.LayoutParams(Ui.dp(this,640),titleHeight));
         if(!movie){
             episodePreviewTitle=Ui.heading(this,"Series overview",21);
             episodePreviewTitle.setSingleLine(true);episodePreviewTitle.setEllipsize(TextUtils.TruncateAt.END);
-            content.addView(episodePreviewTitle,new LinearLayout.LayoutParams(-1,Ui.dp(this,30)));
+            content.addView(episodePreviewTitle,new LinearLayout.LayoutParams(-1,Math.max(Ui.dp(this,30),Math.round(episodePreviewTitle.getPaint().getFontSpacing())+episodePreviewTitle.getCompoundPaddingTop()+episodePreviewTitle.getCompoundPaddingBottom())));
         }
         metaLine=Ui.text(this,join(yearText(),Ratings.label(self)),16);metaLine.setTextColor(Ui.TEXT_2);metaLine.setSingleLine(true);metaLine.setEllipsize(TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,640),Ui.dp(this,META_DP));mp.topMargin=Ui.dp(this,4);content.addView(metaLine,mp);
+        int metaHeight=movie?Ui.dp(this,META_DP):Math.max(Ui.dp(this,META_DP),Math.round(metaLine.getPaint().getFontSpacing())+metaLine.getCompoundPaddingTop()+metaLine.getCompoundPaddingBottom());
+        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(Ui.dp(this,640),metaHeight);mp.topMargin=Ui.dp(this,4);content.addView(metaLine,mp);
         summary=Ui.text(this,"Loading details…",15);summary.setTextColor(0xFFD9D4CF);summary.setMaxLines(3);summary.setEllipsize(TextUtils.TruncateAt.END);
         summary.setLineSpacing(0,1.12f);
-        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,580),Ui.dp(this,SUMMARY_DP));sp.topMargin=Ui.dp(this,8);content.addView(summary,sp);
+        int summaryHeight=movie?Ui.dp(this,SUMMARY_DP):Math.max(Ui.dp(this,SUMMARY_DP),
+            Math.round(summary.getPaint().getFontSpacing()*1.12f*3)+summary.getCompoundPaddingTop()+summary.getCompoundPaddingBottom());
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,580),summaryHeight);sp.topMargin=Ui.dp(this,8);content.addView(summary,sp);
 
         LinearLayout actions=Ui.row(this);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setClipChildren(false);actions.setClipToPadding(false);
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-2,-2);ap.topMargin=Ui.dp(this,12);ap.leftMargin=-Ui.dp(this,Ui.HALO);content.addView(actions,ap);
@@ -159,7 +172,7 @@ public class DetailsActivity extends Activity {
         favorite.setOnClickListener(v->{toggleFavorite();favorite.setText(favoriteLabel());});
 
         if(!movie){
-            episodeMoreInfo=Ui.button(this,"More info");actions.addView(episodeMoreInfo,actionParams(true));
+            episodeMoreInfo=Ui.button(this,"More info");episodeMoreInfo.setId(View.generateViewId());actions.addView(episodeMoreInfo,actionParams(true));
             episodeMoreInfo.setOnClickListener(v->{
                 JSONObject ep=previewEpisode;
                 Ui.dialog(this,ep==null?title:EpisodePreview.title(ep),ep==null?seriesPlot:EpisodePreview.description(ep),
@@ -168,7 +181,8 @@ public class DetailsActivity extends Activity {
             // Global focus observation does not replace Ui's existing button focus/glow listeners.
             previewFocusListener=(oldFocus,newFocus)->{
                 if(newFocus==null)return;
-                if(newFocus==episodeMoreInfo)return;
+                // Keep episode context along the explicit card -> season -> More info D-pad route.
+                if(newFocus==episodeMoreInfo || newFocus==seasonSelector)return;
                 if(isEpisodeCard(newFocus))return;
                 restoreSeriesPreview();
             };
@@ -228,7 +242,11 @@ public class DetailsActivity extends Activity {
             try {
                 JSONObject data=Api.get(Api.xtream(this,movie?"get_vod_info":"get_series_info","&"+(movie?"vod_id=":"series_id=")+Api.enc(id)));
                 runOnUiThread(()->{if(!isFinishing())renderDetails(data);});
-            } catch(Exception e){runOnUiThread(()->summary.setText("Details are unavailable right now. You can still play this title."));}
+            } catch(Exception e){runOnUiThread(()->{
+                if(isFinishing() || isDestroyed())return;
+                seriesPlot="Details are unavailable right now. You can still play this title.";
+                if(previewEpisode==null)summary.setText(seriesPlot);
+            });}
         });
     }
     private void renderDetails(JSONObject data) {
@@ -317,6 +335,8 @@ public class DetailsActivity extends Activity {
             if(list!=null)for(int j=0;j<list.length();j++){JSONObject ep=list.optJSONObject(j);if(ep!=null && saved.equals(ep.optString("id")))seasonIndex=i;}}
         String[] names=new String[seasons.size()];for(int i=0;i<seasons.size();i++)names[i]="Season "+seasons.get(i);
         Button select=Ui.button(this,names[seasonIndex]+"  ›");select.setTextSize(16);
+        seasonSelector=select;select.setId(View.generateViewId());
+        select.setNextFocusUpId(episodeMoreInfo.getId());episodeMoreInfo.setNextFocusDownId(select.getId());
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,46));sp.bottomMargin=Ui.dp(this,4);
         episodeArea.addView(select,0,sp);
         select.setOnClickListener(v->Ui.picker(this,"Select season",names,seasonIndex,index->{
@@ -348,6 +368,7 @@ public class DetailsActivity extends Activity {
             FrameLayout card=episodeCard(ep,ep.optInt("episode_num",i+1),episodeId.equals(saved));
             LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,206),Ui.dp(this,116));bp.setMargins(i==0?0:Ui.dp(this,8),0,Ui.dp(this,12),0);row.addView(card,bp);
             String label=episodeLabel(ep),nextLabel=next==null?"":episodeLabel(next);
+            card.setNextFocusUpId(seasonSelector.getId());
             card.setOnClickListener(v->{rememberArt(ep);playEpisode(episodeId,ext,nextId,nextExt,label,nextLabel);});
             if(episodeId.equals(saved))resume=card;
         }
@@ -374,18 +395,30 @@ public class DetailsActivity extends Activity {
             episodePreviewTitle.setText(EpisodePreview.title(ep));
             metaLine.setText(EpisodePreview.meta(ep));
             summary.setText(EpisodePreview.description(ep));
-            String art=EpisodePreview.art(ep);
-            if(art.isEmpty()){
-                // No episode still: retain the series backdrop, never a stretched portrait poster.
-                Images.load(episodeBackdrop,null,960);episodeBackdrop.setVisibility(View.INVISIBLE);
-            }else{
-                episodeBackdrop.setVisibility(View.INVISIBLE);
-                Images.load(episodeBackdrop,art,960,()->{
-                    if(previewEpisode==ep && !isFinishing())episodeBackdrop.setVisibility(View.VISIBLE);
-                });
-            }
+            showEpisodeArtwork(ep);
         };
         previewHandler.postDelayed(pendingPreview,250);
+    }
+    private void showEpisodeArtwork(JSONObject ep){
+        final long generation=++previewArtGeneration;
+        String art=EpisodePreview.art(ep);
+        if(art.isEmpty()){clearEpisodeArtwork();return;}
+        if(episodeBackdrop.getVisibility()==View.VISIBLE && art.equals(episodeBackdrop.getTag()))return;
+        // Decode into the hidden buffer. Leave the previous still visible until a successful swap.
+        ImageView target=nextEpisodeBackdrop;
+        target.setVisibility(View.INVISIBLE);
+        Images.load(target,art,960,()->{
+            if(generation!=previewArtGeneration || previewEpisode!=ep || isFinishing() || isDestroyed())return;
+            ImageView previous=episodeBackdrop;
+            target.setVisibility(View.VISIBLE);previous.setVisibility(View.INVISIBLE);
+            episodeBackdrop=target;nextEpisodeBackdrop=previous;
+        });
+    }
+    private void clearEpisodeArtwork(){
+        ++previewArtGeneration;
+        if(episodeBackdrop==null)return;
+        Images.load(episodeBackdrop,null,960);Images.load(nextEpisodeBackdrop,null,960);
+        episodeBackdrop.setVisibility(View.INVISIBLE);nextEpisodeBackdrop.setVisibility(View.INVISIBLE);
     }
     private void restoreSeriesPreview(){
         cancelEpisodePreview();
@@ -394,7 +427,7 @@ public class DetailsActivity extends Activity {
         episodePreviewTitle.setText("Series overview");
         summary.setText(seriesPlot);
         metaLine.setText(lastInfo==null?join(yearText(),Ratings.label(self)):metaText(lastInfo));
-        Images.load(episodeBackdrop,null,960);episodeBackdrop.setVisibility(View.INVISIBLE);
+        clearEpisodeArtwork();
     }
     private void enableTrailer(String url){trailerButton.setTag(url);trailerButton.setEnabled(true);trailerButton.setAlpha(1f);}
     /** Plays the episode saved for this show, using the loaded episode list to find the next one when possible. */
