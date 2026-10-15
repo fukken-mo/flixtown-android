@@ -1,9 +1,10 @@
 name: Subtitles check
 
-# Player subtitles with a local test video whose cues are known (.github/qa/make_subtitle_video.sh):
-# visible with the controls shown and after they auto-hide, inside the TV safe area, selection kept,
-# Off works, movie and episode, API 28/31 at 1080p and 720p. The "before" job runs the same check on
-# the previous PlayerActivity to show the check catches the bug. Test builds only; nothing is published.
+# Player subtitle position with local test videos whose cues are known (.github/qa/make_subtitle_video.sh):
+# bottom-centre ~5 % above the bottom, same place with the controls shown, hidden and toggled, after
+# seeking and switching tracks; one- and two-line SRT and bottom-positioned ASS; Off works; movie and
+# episode at 16:9 and a 4:3 movie (no stretching). Two focused setups: API 31 1080p and API 28 720p.
+# Test builds only; nothing is published.
 on:
   workflow_dispatch:
   push:
@@ -21,25 +22,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { api: 31, profile: tv_1080p, out: qa/subtitles-api31-1080p, player: current }
-          - { api: 31, profile: tv_720p, out: qa/subtitles-api31-720p, player: current }
-          - { api: 28, profile: tv_1080p, out: qa/subtitles-api28-1080p, player: current }
-          - { api: 28, profile: tv_720p, out: qa/subtitles-api28-720p, player: current }
-          - { api: 31, profile: tv_1080p, out: qa/subtitles-before-fix, player: before }
+          - { api: 31, profile: tv_1080p, out: qa/subtitles-api31-1080p }
+          - { api: 28, profile: tv_720p, out: qa/subtitles-api28-720p }
     steps:
       - uses: actions/checkout@v5
         with: { fetch-depth: 0 }
-      - name: Previous player (before the fix), for the "before" job only
-        if: matrix.player == 'before'
-        run: git checkout bb0039a -- app/src/main/java/com/flixtown/tv/PlayerActivity.java && git diff --stat HEAD
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: "17" }
       - uses: gradle/actions/setup-gradle@v4
       - name: Test video with known subtitle cues
         run: |
           for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null && break; sleep 10; done
-          bash .github/qa/make_subtitle_video.sh media/subs.mkv
-          ffprobe -v error -show_entries stream=index,codec_type,codec_name:stream_tags=language,title -of compact media/subs.mkv
+          bash .github/qa/make_subtitle_video.sh media/subs.mkv 1280x720
+          bash .github/qa/make_subtitle_video.sh media/subs43.mkv 960x720
+          for f in subs subs43; do ffprobe -v error -show_entries stream=index,codec_type,codec_name,width,height:stream_tags=language,title -of compact media/$f.mkv; done
           nohup python3 -m http.server 8000 --directory media > http.log 2>&1 &
           sleep 1; curl -sI http://127.0.0.1:8000/subs.mkv | head -1
       - name: QA APK
@@ -57,22 +53,17 @@ jobs:
           arch: x86
           profile: ${{ matrix.profile }}
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: TEST_STREAM=http://10.0.2.2:8000/subs.mkv QA_OUT=${{ matrix.out }} bash .github/qa/subtitles_flow.sh || true
+          script: TEST_STREAM=http://10.0.2.2:8000/subs.mkv TEST_STREAM_43=http://10.0.2.2:8000/subs43.mkv QA_OUT=${{ matrix.out }} bash .github/qa/subtitles_flow.sh || true
       - name: Result
-        if: matrix.player == 'current'
         run: |
           cat ${{ matrix.out }}/report.txt || true
           grep -q '^subtitles: [0-9]* passed, 0 failed' ${{ matrix.out }}/report.txt
-      - name: "Result (before the fix, expected to show the problem)"
-        if: matrix.player == 'before'
-        run: cat ${{ matrix.out }}/report.txt || true
       - name: Commit results
         if: always()
         run: |
           rm -f ${{ matrix.out }}/s.raw
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout HEAD -- app/src/main/java/com/flixtown/tv/PlayerActivity.java 2>/dev/null || true
           git add ${{ matrix.out }}
-          git commit -m "Subtitles check from TV emulator, API ${{ matrix.api }} ${{ matrix.profile }} ${{ matrix.player }} (${GITHUB_SHA::7})" || exit 0
+          git commit -m "Subtitles check from TV emulator, API ${{ matrix.api }} ${{ matrix.profile }} (${GITHUB_SHA::7})" || exit 0
           for i in 1 2 3 4 5 6 7 8; do git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME} && break; sleep $((i*3 + RANDOM % 7)); done

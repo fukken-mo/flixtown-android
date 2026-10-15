@@ -43,8 +43,6 @@ import java.util.Locale;
  * Partially watched titles open with a compact Continue / Start over choice.
  */
 public class PlayerActivity extends Activity {
-    /** Height of the bottom controls (row, progress line and margins); subtitles sit above it. */
-    private static final int CONTROLS_DP=122;
     private static final long HIDE_MS=3000,SEEK_STEP_MS=10000,SEEK_COMMIT_MS=450,REPEAT_GAP_MS=150;
     private ExoPlayer player;
     private PlayerView video;
@@ -153,18 +151,19 @@ public class PlayerActivity extends Activity {
         controls.setVisibility(View.GONE);status.setVisibility(View.GONE);root.requestFocus();
     };
     /**
-     * Subtitles stay at one fixed place, inside the TV safe area and just above where the controls
-     * sit, whether the controls are shown or hidden. Nothing moves them when the controls toggle: the
-     * earlier lift (a translationY animation on the subtitle view over the video surface) left them
-     * clipped to a thin strip or gone on some TVs once the controls hid. The padding goes on the
+     * Subtitles stay at one fixed place, bottom-centre inside the TV safe area (5 % margins), whether
+     * the controls are shown or hidden. Nothing moves them when the controls toggle: the earlier lift
+     * (a translationY animation on the subtitle view over the video surface) left them clipped to a
+     * thin strip or gone on some TVs once the controls hid. The safe margin is the only bottom offset:
+     * Media3's own 8 % bottom gap is turned off so the two do not add up. The padding goes on the
      * subtitle drawing layer, so the text size stays as before; the subtitle selection is untouched.
      */
     private void keepSubtitlesInSafeArea(){
         androidx.media3.ui.SubtitleView subs=video.getSubtitleView();if(subs==null)return;
-        subs.setTranslationY(0);
+        subs.setTranslationY(0);subs.setBottomPaddingFraction(0f);
         View layer=subs.getChildCount()>0?subs.getChildAt(0):subs;
         int x=Ui.safeX(this),y=Ui.safeY(this);
-        layer.setPadding(x,y,x,Math.max(y,Ui.dp(this,CONTROLS_DP)));
+        layer.setPadding(x,y,x,y);
     }
     private void hideNow(){handler.removeCallbacks(hideControls);hideControls.run();}
     private void flash(String text){status.setText(text);status.setVisibility(View.VISIBLE);}
