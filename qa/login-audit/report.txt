@@ -14,29 +14,19 @@ PASS  signing back in to the same account keeps its progress (movie:1000,series:
 PASS  migration, signed in: the owner is recorded on start
 PASS  migration, signed in: the same customer keeps progress after signing out and in (movie:1000,series:5002)
 PASS  migration, signed out: data with no owner is not handed to the next sign-in
-      player not opened:     mResumedActivity: ActivityRecord{9fad963 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t11} focus='Movie or show title'
-FAIL  4a: first episode did not play
-      no Up next: 
-      no Up next: 
+PASS  4a: first episode plays ()
 FAIL  4a: autoplay continues E1 -> E2 -> E3 ( ->  -> )
-      player not opened:     mResumedActivity: ActivityRecord{9fad963 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t11} focus='Movie or show title'
-      no Up next: 
-      no Up next: 
 FAIL  4b: across the season boundary ( ->  -> )
-      no Up next: 
-      no Up next: 
 FAIL  4c: resumed from Continue Watching, autoplay continues ( ->  -> )
-      player not opened:     mResumedActivity: ActivityRecord{9fad963 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t11} focus='u q'
-      no Up next: 
-      no Up next: 
+      no Up next: 10-15 11:37:29.364  7254  7254 I FlixTownQA: player controls=false focus=other elapsed=59 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E6   Chapter 6: Summer
 FAIL  4d: with a cut-off queue, autoplay still reaches the queued episodes ( ->  -> )
-FAIL  4d: player did not close ()
-FAIL  4d: the show stays in Continue Watching
+FAIL  4d: player did not close (10-15 11:40:26.129  7254  7254 I FlixTownQA: player controls=false focus=other elapsed=59 audio=[Audio · English] subs=[Subtitles · Off] card=[] cardmsg=[] subtitle=S2 · E6   Chapter 6: Summer)
+PASS  4d: the show stays in Continue Watching
 FAIL  4d: Continue Watching moves on to S1 E4 (9104), nothing marked complete
-      player not opened:     mResumedActivity: ActivityRecord{9fad963 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t11} focus='u qq'
-FAIL  5: the player opened the failing stream and shows the error card
-FAIL  5: the log names the playback failure
-FAIL  5: the log contains no stream credentials
+PASS  5: the player opened the failing stream and shows the error card
+PASS  5: the log names the playback failure
+PASS  5: the log contains no stream credentials
+INFO  Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ConnectException: Failed to connect to /10.0.2.2:9 <- ConnectException: Failed to connect to /10.0.2.2:9
 PASS  no Flix Town crash
 
-login audit: 16 passed, 11 failed
+login audit: 21 passed, 6 failed
