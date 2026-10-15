@@ -22,16 +22,16 @@ PASS  reopened: Home in front
 PASS  reopened: keep-screen-on flag set again
 PASS  reopened: still awake after 45s idle
 PASS  closed: TV reached its screensaver/sleep (Dreaming)
-INFO  10-14 23:29:04.499 14432 14432 I FlixTownQA: screen_awake HomeActivity=true
-INFO  10-14 23:30:49.147 14432 14432 I FlixTownQA: screen_awake HomeActivity=false
-INFO  10-14 23:30:49.184 14432 14432 I FlixTownQA: screen_awake DetailsActivity=true
-INFO  10-14 23:31:37.972 14432 14432 I FlixTownQA: screen_awake DetailsActivity=false
-INFO  10-14 23:31:38.113 14432 14432 I FlixTownQA: screen_awake PlayerActivity=true
-INFO  10-14 23:32:14.533 14432 14432 I FlixTownQA: screen_awake PlayerActivity=false
-INFO  10-14 23:32:14.586 14432 14432 I FlixTownQA: screen_awake DetailsActivity=true
-INFO  10-14 23:33:01.811 14432 14432 I FlixTownQA: screen_awake DetailsActivity=false
-INFO  10-14 23:33:01.909 14432 14432 I FlixTownQA: screen_awake HomeActivity=true
-INFO  10-14 23:33:48.427 14432 14432 I FlixTownQA: screen_awake HomeActivity=false
-INFO  10-14 23:34:39.566 14432 14432 I FlixTownQA: screen_awake HomeActivity=true
+INFO  10-15 09:17:46.024 13757 13757 I FlixTownQA: screen_awake HomeActivity=true
+INFO  10-15 09:19:29.899 13757 13757 I FlixTownQA: screen_awake HomeActivity=false
+INFO  10-15 09:19:29.937 13757 13757 I FlixTownQA: screen_awake DetailsActivity=true
+INFO  10-15 09:20:18.686 13757 13757 I FlixTownQA: screen_awake DetailsActivity=false
+INFO  10-15 09:20:18.788 13757 13757 I FlixTownQA: screen_awake PlayerActivity=true
+INFO  10-15 09:20:53.955 13757 13757 I FlixTownQA: screen_awake PlayerActivity=false
+INFO  10-15 09:20:53.972 13757 13757 I FlixTownQA: screen_awake DetailsActivity=true
+INFO  10-15 09:21:40.830 13757 13757 I FlixTownQA: screen_awake DetailsActivity=false
+INFO  10-15 09:21:40.898 13757 13757 I FlixTownQA: screen_awake HomeActivity=true
+INFO  10-15 09:22:27.325 13757 13757 I FlixTownQA: screen_awake HomeActivity=false
+INFO  10-15 09:23:18.336 13757 13757 I FlixTownQA: screen_awake HomeActivity=true
 PASS  no crash during the run
 screen awake: 24 passed, 0 failed

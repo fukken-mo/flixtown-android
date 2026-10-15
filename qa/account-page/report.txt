@@ -18,7 +18,7 @@ PASS  Never Expire saved as no date (not a guessed one)
 PASS  Never Expire is not treated as expired
       server now: {"offline":true}
       card: Subscription. Status Active. Expiration Never. Devices 10.
-      detail: Signed in as 0048213977  ·  Couldn't refresh. Showing details from 1 minute ago.
+      detail: Signed in as 0048213977  ·  Couldn't refresh. Showing details from just now.
 PASS  server unreachable: the last valid details stay (Active, Never, 10)
 PASS  server unreachable: a subtle note says the refresh failed
 PASS  server unreachable: the account is not marked expired and the app stays on Home
