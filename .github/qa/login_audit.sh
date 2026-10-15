@@ -116,7 +116,7 @@ launch --ez demo_reset true; wait_activity HomeActivity 60; sleep 8      # fresh
 episode_now(){ qaf subtitle | grep -o 'S[0-9]* · E[0-9]*'; }
 wait_episode(){ local t=0; while [ $t -lt 15 ]; do e="$(episode_now)"; [ -n "$e" ] && [ "$e" != "$1" ] && { echo "$e"; return 0; }; sleep 1; t=$((t+1)); done; episode_now; }
 next_now(){ to_end; wait_qa card "Up next" 150 || { note "      no Up next: $(qa_line)"; return 1; }; key DPAD_CENTER; sleep 4; }
-open_show(){ back_home; key DPAD_LEFT; focus_to DPAD_UP "TV Shows" 8 > /dev/null; key DPAD_CENTER; sleep 2.5
+open_show(){ back_home; focus_to DPAD_LEFT "Home" 8 > /dev/null; focus_to DPAD_DOWN "TV Shows" 4 > /dev/null; key DPAD_CENTER; sleep 2.5
   key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4; }
 play_episode(){ focus_to DPAD_DOWN "Season" 5 > /dev/null; key DPAD_DOWN; sleep 0.8
   for i in $(seq 2 "$1"); do key DPAD_RIGHT; done; sleep 0.5; key DPAD_CENTER

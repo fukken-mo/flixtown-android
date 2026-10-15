@@ -81,6 +81,10 @@ public class LoginActivity extends Activity {
             // Fixed starting point for the Continue Watching test: a show at S1 E2 and a movie, both at 0:20.
             Catalog.saveProgress(this,"series","5002","9102","mkv","9103","mkv",20000,3000000);
             Catalog.saveProgress(this,"movie","1000",null,null,null,null,20000,6840000);
+            // The seeded progress belongs to the demo account the QR pairing signs in (0048213977), so the
+            // "different account" cleanup at sign-in keeps it, as it would for that customer's own data.
+            if(Api.prefs(this).getString(SignOut.OWNER,"").isEmpty() && AccountStore.read(this)==null)
+                Api.prefs(this).edit().putString(SignOut.OWNER,SignOut.ownerId("0048213977")).apply();
         }
         if(getIntent().getBooleanExtra("demo_clear_cache",false)){
             java.io.File dir=new java.io.File(getFilesDir(),"catalog");java.io.File[] files=dir.listFiles();
