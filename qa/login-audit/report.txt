@@ -1,0 +1,16 @@
+PASS  QR: first code shown (FT4K2Q)
+PASS  QR: the expired code was replaced by a fresh one (FT7N3R)
+PASS  QR: approval of the fresh code opens Home
+PASS  QR: signed in as the approved account (Signed in as 0048213977)
+INFO  account A Continue Watching: movie:1000,series:5002
+PASS  account A has Continue Watching progress
+PASS  after signing out, the login screen is shown
+PASS  signing out alone keeps this TV's progress (as before)
+PASS  account B signed in (Home)
+PASS  account B does not get account A's Continue Watching or progress
+PASS  account B's Home shows no Continue Watching row
+PASS  Settings shows account B (Signed in as 0012345678)
+PASS  signing back in to the same account keeps its progress (movie:1000,series:5002)
+PASS  no Flix Town crash
+
+login audit: 13 passed, 0 failed
