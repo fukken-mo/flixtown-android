@@ -1,0 +1,18 @@
+== Panel config.php (address fields, origin only)
+  cashapp_url: https://cash.app
+  intro_url: https://panelsandapps.com
+  requests_api_url: https://panelsandapps.com
+  update_apk_url: https://panelsandapps.com
+  xtream_url: https://api.myflixtown.com
+== app-update.php (production package)
+  update_apk_url: https://panelsandapps.com  versionCode=10033
+== Content server (Xtream) used for catalog, account and playback URLs
+  configured: https://api.myflixtown.com
+  https://api.myflixtown.com/player_api.php (no credentials) -> 200 
+  stream-shaped URL with placeholder credentials -> 401 (no redirect)
+== Other service hosts (root, no credentials)
+  https://panel.myflixtown.com -> 307 redirect (none)
+  https://api.myflixtown.com -> 307 redirect (none)
+  https://requests.myflixtown.com -> 307 redirect (none)
+  https://panelsandapps.com -> 302 redirect (none)
+  https://panelsandapps.com -> 200 
