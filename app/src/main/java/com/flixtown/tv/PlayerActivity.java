@@ -489,6 +489,8 @@ public class PlayerActivity extends Activity {
     private void playNext(){
         if(nextUrl==null || nextUrl.isEmpty() || player==null)return;
         if(card.getVisibility()==View.VISIBLE)hideCard();
+        // A seek still waiting to be applied belongs to the episode that just ended, not to the next one.
+        handler.removeCallbacks(commitSeek);pendingSeek=-1;
         url=nextUrl;nextUrl="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
