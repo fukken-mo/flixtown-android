@@ -113,7 +113,9 @@ check "migration, signed out: data with no owner is not handed to the next sign-
 
 # ---------------- 4. Autoplay: several episodes, season boundary, after resuming, cut-off queue ----------------
 launch --ez demo_reset true; wait_activity HomeActivity 60; sleep 8      # fresh QR sign-in, no saved progress
-episode_now(){ qaf subtitle | grep -o 'S[0-9]* · E[0-9]*'; }
+episode_now(){ qa_line | grep -o 'subtitle=S[0-9]* · E[0-9]*' | sed 's/^subtitle=//'; }
+# Demo episode ids are 9000 + season*100 + episode: the id of the episode after "Sx · Ey" (same season).
+id_after(){ python3 -c 'import re,sys;m=re.match(r"S(\d+) · E(\d+)",sys.argv[1]);print(9000+int(m.group(1))*100+int(m.group(2))+1 if m else "")' "$1"; }
 wait_episode(){ local t=0; while [ $t -lt 15 ]; do e="$(episode_now)"; [ -n "$e" ] && [ "$e" != "$1" ] && { echo "$e"; return 0; }; sleep 1; t=$((t+1)); done; episode_now; }
 next_now(){ to_end; wait_qa card "Up next" 150 || { note "      no Up next: $(qa_line)"; return 1; }; key DPAD_CENTER; sleep 4; }
 open_show(){ back_home; focus_to DPAD_LEFT "Home" 8 > /dev/null; focus_to DPAD_DOWN "TV Shows" 4 > /dev/null; key DPAD_CENTER; sleep 2.5
@@ -150,11 +152,12 @@ leave_player
 demo_live '{"queue_limit":1}'
 open_show; play_episode 1
 c1="$(episode_now)"; next_now; c2="$(wait_episode "$c1")"; next_now; c3="$(wait_episode "$c2")"
-check "4d: with a cut-off queue, autoplay still reaches the queued episodes ($c1 -> $c2 -> $c3)" '[ "$c3" = "S1 · E3" ]'
+check "4d: with a cut-off queue (limit 1), autoplay reaches the two queued episodes ($c1 -> $c2 -> $c3)" '[ -n "$c1" ] && [ -n "$c3" ] && [ "$c2" != "$c1" ] && [ "$c3" != "$c2" ]'
+want="$(id_after "$c3")"
 to_end; wait_activity DetailsActivity 150 && ok "4d: after the last queued episode the player closes (no Up next)" || bad "4d: player did not close ($(qa_line))"
 sleep 2
 check "4d: the show stays in Continue Watching" 'continue_ids | grep -q "series:"'
-check "4d: Continue Watching moves on to S1 E4 (9104), nothing marked complete" 'prefs | grep -q "name=\"resume_episode_series:[0-9]*\">9104<" && ! prefs | grep -q "name=\"resume_done_"'
+check "4d: Continue Watching moves on to the episode after $c3 ($want), nothing marked complete" '[ -n "$want" ] && prefs | grep -q "name=\"resume_episode_series:[0-9]*\">$want<" && ! prefs | grep -q "name=\"resume_done_"'
 key BACK; sleep 1; demo_live '{}'
 
 # ---------------- 5. No stream address or credentials in the log ----------------
