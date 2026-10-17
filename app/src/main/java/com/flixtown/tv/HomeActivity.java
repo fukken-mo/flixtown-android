@@ -459,7 +459,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             for(Catalog.Item item:series)if(saved.contains("|series:"+item.id+"|"))source.add(item);
         }
         ArrayList<Catalog.Item> filtered=new ArrayList<>();for(Catalog.Item item:source)if(category.isEmpty()||category.equals(item.categoryId))filtered.add(item);
-        if(sortMode==0)filtered=new ArrayList<>(Catalog.recent(filtered,filtered.size()));
+        if(sortMode==0)filtered=new ArrayList<>(tab.equals("Series")
+            ?Catalog.recentSeries(filtered):Catalog.recent(filtered,filtered.size()));
         if(sortMode==1)java.util.Collections.sort(filtered,(a,b)->a.title.compareToIgnoreCase(b.title));
         if(sortMode==2)filtered=new ArrayList<>(Catalog.topRated(filtered,filtered.size()));   // TMDB ratings known so far
         if(sortMode==3)java.util.Collections.sort(filtered,(a,b)->Integer.compare(b.year,a.year));

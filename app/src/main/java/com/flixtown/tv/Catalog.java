@@ -97,6 +97,14 @@ final class Catalog {
             else if(item.added>queue.peek().added){queue.poll();queue.add(item);}}
         ArrayList<Item> sorted=new ArrayList<>(queue);sorted.sort((a,b)->Integer.compare(b.added,a.added));return sorted;
     }
+    /** Full Series browse order. A stable sort keeps the provider's order when import dates
+     *  are equal or unavailable; a PriorityQueue loses that order even when retaining all rows.
+     *  Release/premiere dates deliberately do not participate in Recently Added. */
+    static List<Item> recentSeries(List<Item> original) {
+        ArrayList<Item> sorted=new ArrayList<>(original);
+        sorted.sort((a,b)->Integer.compare(b.added,a.added));
+        return sorted;
+    }
     /** Best TMDB-rated first (titles without a known rating last, newest first). */
     static List<Item> topRated(List<Item> original,int limit) {
         ArrayList<Item> sorted=new ArrayList<>(original);

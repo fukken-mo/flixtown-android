@@ -34,6 +34,21 @@ public class HomeLogicTest {
         List<Catalog.Item> r=Catalog.recent(Arrays.asList(movie("1","A",5,t-300,"1",null),movie("2","B",5,t-100,"1",null),movie("3","C",5,t-200,"1",null)),2);
         assertEquals(Arrays.asList("B","C"),Arrays.asList(r.get(0).title,r.get(1).title));
     }
+    @Test public void seriesRecentKeepsTiesAndMissingDatesInProviderOrder()throws Exception{
+        Catalog.Item a=movie("1","First",0,100,"1",null),b=movie("2","Second",0,100,"1",null);
+        Catalog.Item c=movie("3","Missing first",0,0,"1",null),d=movie("4","Missing second",0,0,"1",null);
+        List<Catalog.Item> input=Arrays.asList(c,a,d,b);
+        assertEquals(Arrays.asList(a,b,c,d),Catalog.recentSeries(input));
+        assertEquals(Arrays.asList(c,a,d,b),input);
+    }
+    @Test public void seriesRecentUsesAdditionNotPremiereOrTitle()throws Exception{
+        Catalog.Item old=new Catalog.Item(new JSONObject().put("series_id","1").put("name","Z Old show")
+            .put("added",200).put("last_modified",50).put("release_date","2010-01-01"),"series");
+        Catalog.Item newer=new Catalog.Item(new JSONObject().put("series_id","2").put("name","A New show")
+            .put("added",100).put("last_modified",300).put("release_date","2026-01-01"),"series");
+        assertEquals(Arrays.asList(old,newer),Catalog.recentSeries(Arrays.asList(newer,old)));
+        assertTrue(Catalog.recentSeries(new ArrayList<>()).isEmpty());
+    }
     @Test public void becauseYouWatchedUsesSameCategoryAndSkipsSelf()throws Exception{
         Catalog.Item seed=movie("1","Seed",7,now(),"5",null);
         List<Catalog.Item> pool=Arrays.asList(seed,movie("2","Same",6,now(),"5",null),movie("3","Other",9,now(),"8",null));
