@@ -5,7 +5,7 @@ if(!preg_match('/dbname=([a-zA-Z0-9_]+_test)(?:;|$)/',$dsn))throw new RuntimeExc
 $pdo=new PDO($dsn,getenv('REPORTS_TEST_USER')?:'root',getenv('REPORTS_TEST_PASSWORD')?:'',[
  PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]);
 $config=['services'=>['playback_reports'=>['enabled'=>true,'session_secret'=>str_repeat('fixture-only-',4)],
- 'flix_town'=>['base_url'=>'https://fixture.invalid'],'seerr'=>[]]];
+ 'flix_town'=>['base_url'=>'https://fixture.invalid'],'seerr'=>['customer_session_secret'=>str_repeat('fixture-only-',4)]]];
 function flix_api_request($method,$path){
  $u=rawurldecode(basename($path));
  if($u==='outage')return ['ok'=>false,'status'=>503,'data'=>[]];

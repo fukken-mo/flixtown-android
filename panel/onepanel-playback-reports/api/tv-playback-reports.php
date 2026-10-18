@@ -20,7 +20,7 @@ try {
   if($action==='session') {
     if(!tvr_rate($pdo,'login:'.$ip,20,900))tvr_fail(429,'busy','Please wait a few minutes.');
     $u=$in['username']??null;$pw=$in['password']??null;
-    if(!tvq_valid_username($u)||!is_string($pw)||$pw===''||strlen($pw)>100)tvr_fail(401,'auth','Please sign in again.');
+    if(!tvr_valid_username($u)||!is_string($pw)||$pw===''||strlen($pw)>100)tvr_fail(401,'auth','Please sign in again.');
     $user=tvq_flix_login($u,$pw);
     if(!$user)tvr_fail(401,'auth','Please sign in again.');
     if(!tvq_account_active($user))tvr_fail(403,'inactive','Please sign in with an active Flix Town account.');

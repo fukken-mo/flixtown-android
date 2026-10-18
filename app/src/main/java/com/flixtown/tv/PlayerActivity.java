@@ -60,7 +60,7 @@ public class PlayerActivity extends Activity {
     private Dialog dialog;
     private long lastSavedAt;
     private View reportButton;
-    private boolean reporting,reportWasPlaying,reportFromError,stopping;
+    private boolean reporting,reportWasPlaying,reportFromError,stopping,reportEnded;
     private String lastPlayerError="";private boolean lastErrorNetwork;
     private ExoPlayer reportPlayer;private Boolean reportRestartReady;
 
@@ -242,7 +242,7 @@ public class PlayerActivity extends Activity {
         applyPreferences(this,player);
         player.addListener(new Player.Listener(){
             @Override public void onPlaybackStateChanged(int state){
-                if(state==Player.STATE_ENDED){ended=true;finishProgress();
+                if(state==Player.STATE_ENDED){if(reporting){reportEnded=true;return;}ended=true;finishProgress();
                     if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && !nextCanceled && nextUrl!=null && !nextUrl.isEmpty())playNext();
                     else finish();}
                 updatePlayIcon();
@@ -251,7 +251,8 @@ public class PlayerActivity extends Activity {
                 // Stop Google TV's ambient mode from starting during a movie.
                 video.setKeepScreenOn(playing);updatePlayIcon();
             }
-            @Override public void onPlayWhenReadyChanged(boolean playWhenReady,int reason){updatePlayIcon();}
+            @Override public void onPlayWhenReadyChanged(boolean playWhenReady,int reason){
+                if(reporting&&playWhenReady&&player!=null){player.pause();return;}updatePlayIcon();}
             @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();}
             @Override public void onPlayerError(PlaybackException error){
                 android.util.Log.w("FlixTownPlayer","Playback failed: "+error.getErrorCodeName()+" "+Logs.safe(error));
@@ -313,7 +314,7 @@ public class PlayerActivity extends Activity {
         // Capture exactly this episode, before autoplay can change any IDs or track information.
         handler.removeCallbacks(commitSeek);if(pendingSeek>=0){player.seekTo(pendingSeek);pendingSeek=-1;}
         reportFromError=cardForError;reportWasPlaying=player.getPlayWhenReady()&&!reportFromError;
-        reportPlayer=player;reporting=true;player.pause();handler.removeCallbacks(hideControls);
+        reportPlayer=player;reportEnded=false;reporting=true;player.pause();handler.removeCallbacks(hideControls);
         Format vf=player.getVideoFormat(),af=player.getAudioFormat();
         PlaybackReport snapshot=new PlaybackReport(kind,contentId,episodeId,player.getCurrentPosition(),android.os.Build.VERSION.SDK_INT,
             android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL,reportFormat(vf),reportFormat(af),lastPlayerError);
@@ -360,6 +361,11 @@ public class PlayerActivity extends Activity {
         reporting=false;
         if(stopping||isFinishing()||player==null||player!=reportPlayer)return;
         if(reportFromError||player.getPlayerError()!=null){showPlaybackError();return;}
+        if(reportEnded){
+            ended=true;finishProgress();
+            if(Api.prefs(this).getBoolean("autoplay_next",true)&&!nextCanceled&&nextUrl!=null&&!nextUrl.isEmpty())playNext();else finish();
+            return;
+        }
         if(reportWasPlaying)player.play();
         showControls(reportButton!=null?reportButton:playButton);
     }
@@ -490,86 +496,7 @@ public class PlayerActivity extends Activity {
     private static String trackLabel(Format f,int type,int number){
         String language=f.language==null||f.language.isEmpty()||"und".equals(f.language)?"":new Locale(f.language).getDisplayLanguage(Locale.US);
         // Prefer the language; add the stream's own label only when it says something more (e.g. "Commentary").
-        boolean usefulLabel=f.label!=null && !f.label.isEmpty() && !f.label.matches("(?i)(stream|track|audio|sub(title)?s?)[ _-]?\\d*") && !f.label.equalsIgnoreCase(language);
-        String name=!language.isEmpty()?(usefulLabel?language+" ("+f.label+")":language):usefulLabel?f.label:(type==C.TRACK_TYPE_TEXT?"Subtitle ":"Track ")+number;
-        StringBuilder out=new StringBuilder(name);
-        if(type==C.TRACK_TYPE_AUDIO){
-            int ch=f.channelCount;
-            if(ch==1)out.append(" · Mono");else if(ch==2)out.append(" · Stereo");else if(ch==6)out.append(" · 5.1");else if(ch==8)out.append(" · 7.1");else if(ch>0)out.append(" · ").append(ch).append(" ch");
-            String codec=codecName(f.sampleMimeType);if(!codec.isEmpty())out.append(" · ").append(codec);
-        }else if(type==C.TRACK_TYPE_TEXT && (f.selectionFlags&C.SELECTION_FLAG_FORCED)!=0)out.append(" (forced)");
-        return out.toString();
-    }
-    private static String codecName(String mime){
-        if(mime==null)return "";
-        switch(mime){
-            case "audio/mp4a-latm":return "AAC";
-            case "audio/ac3":return "Dolby Digital";
-            case "audio/eac3":case "audio/eac3-joc":return "Dolby Digital Plus";
-            case "audio/true-hd":return "Dolby TrueHD";
-            case "audio/vnd.dts":case "audio/vnd.dts.hd":return "DTS";
-            case "audio/mpeg":return "MP3";
-            case "audio/opus":return "Opus";
-            default:return "";
-        }
-    }
-
-    /* ---------------- Progress and next episode ---------------- */
-
-    private final Runnable progress=new Runnable(){@Override public void run(){
-        if(player==null)return;
-        qaState();
-        long duration=player.getDuration(),current=player.getCurrentPosition();
-        if(player.isPlaying() && current>=15000 && current/5000!=lastSavedAt/5000){saveProgress(current,duration);lastSavedAt=current;}
-        if(controlsVisible())updateProgressUi();
-        if(duration>0 && duration!=C.TIME_UNSET){
-            long left=duration-current;
-            if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && left>0){
-                if(left<=25000 && !promptShown && !reporting && player.isPlaying()){promptShown=true;showNext();}
-                if(cardForNext && card.getVisibility()==View.VISIBLE){
-                    cardMessage.setText("Starts in "+Math.max(1,(left+999)/1000)+" seconds"+(nextSubtitle!=null&&!nextSubtitle.isEmpty()?"  ·  "+nextSubtitle:""));
-                    cardMessage.setVisibility(View.VISIBLE);}   // the card opens with an empty (hidden) message line
-            }
-        }
-        handler.postDelayed(this,500);
-    }};
-    /** QA build only: the player's visible state for the emulator test (UI dumps fail while video plays). */
-    private String qaLast="";private View audioButton,subsButton;
-    private void qaState(){
-        if(!BuildConfig.DEMO || player==null)return;
-        View f=getCurrentFocus();
-        String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==progressLine?"progress":"other";
-        String s="controls="+controlsVisible()+" playing="+player.isPlaying()+" reporting="+reporting+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
-            +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
-            +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] cardmsg=["+(card.getVisibility()==View.VISIBLE && cardMessage.getVisibility()==View.VISIBLE?cardMessage.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
-        if(!s.equals(qaLast)){qaLast=s;android.util.Log.i("FlixTownQA","player "+s);}
-    }
-    private void saveProgress(long current,long duration){
-        if(!ended && kind!=null && contentId!=null && !contentId.isEmpty()){
-            Catalog.saveProgress(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,current,duration,endKnown());
-            // "S2 · E4  Title" for the Continue Watching card on Home.
-            if("series".equals(kind) && subtitle!=null && current>=15000)Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,subtitle).apply();
-        }
-    }
-    /** A finished movie leaves Continue Watching; a finished episode queues the next one there. */
-    private void finishProgress(){if(kind!=null && contentId!=null && !contentId.isEmpty()){
-        Catalog.markFinished(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,endKnown());
-        if("series".equals(kind) && nextSubtitle!=null && !nextSubtitle.isEmpty())Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,nextSubtitle).apply();}}
-    private void showNext(){
-        hideNow();
-        // A "Play now" that arrives just after the episode ended (autoplay already moved on) must not skip one more.
-        String shownFor=episodeId;
-        showCard("Up next","",new String[]{"Play now","Cancel"},0,i->{
-            if(!java.util.Objects.equals(shownFor,episodeId))return;
-            if(i==0)playNext();else nextCanceled=true;});
-        cardForNext=true;
-    }
-    private void playNext(){
-        if(nextUrl==null || nextUrl.isEmpty() || player==null)return;
-        if(card.getVisibility()==View.VISIBLE)hideCard();
-        // A seek still waiting to be applied belongs to the episode that just ended, not to the next one.
-        handler.removeCallbacks(commitSeek);pendingSeek=-1;
-        url=nextUrl;nextUrl="";lastPlayerError="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
+        boolean usefulLabel=f.label!=null && !f.label.isEmpty() && !f.label.matches("(?i)…1445 tokens truncated…PlayerError="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
         queueFollowingEpisode();

@@ -15,6 +15,8 @@ check(true,'migration re-runs without error');
 $token=tvr_token('alice',1000);check(tvr_user($token,1001)==='alice','valid session');check(tvr_user($token,1900)===null,'expired session');
 check(tvr_user($token.'x',1001)===null,'tampered session');check(tvr_user(tvq_session_issue('alice',1000),1001)===null,'request session cannot authorize reports');
 check(tvq_session_user($token,1001)===null,'report session cannot authorize requests');check(tvr_user(['x'])===null,'array session refused');
+check(!tvr_valid_username("alice\n"),'username trailing newline rejected');
+check(strlen(tvr_text(str_repeat('é',200),120))===240,'Unicode truncation stays valid UTF-8');
 check(tvq_flix_login('alice','bad')===null,'wrong credentials rejected');check(tvq_flix_login('alice','fixture-password')!==null,'existing Flix identity works');
 $r=payload();$r['url']='https://fixture.invalid/secret';$r['username']='victim';$r['password']='secret';$r['title']='Forged';
 $clean=tvr_validate($r);check(!array_intersect(['url','username','password','title'],array_keys($clean)),'untrusted fields stripped');

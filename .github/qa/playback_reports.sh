@@ -41,6 +41,10 @@ wait_text 'No sound';ok 'issue list appears'
 qa | grep -q 'playing=false reporting=true';ok 'playback pauses while reporting'
 key BACK;sleep 1
 qa | grep -q 'focus=report' && ok 'Back restores Report focus'
+# A viewer who paused before reporting must remain paused afterwards.
+key MEDIA_PAUSE;report_focus;key DPAD_CENTER;wait_text 'Video stutters';key BACK;sleep 1
+qa | grep -q 'playing=false reporting=false';ok 'previously paused playback stays paused after cancel'
+key MEDIA_PLAY
 # Report without typing. Confirm, submit, acknowledge, return.
 report_focus;key DPAD_CENTER;wait_text 'Video stutters';key DPAD_CENTER;wait_text 'Send report?';shot 03-confirm
 key DPAD_CENTER;wait_text 'Thank you';wait_text 'Report sent';shot 04-sent;key DPAD_CENTER;sleep 1
@@ -55,7 +59,7 @@ report_focus;key DPAD_CENTER;wait_text 'Video stutters';key DPAD_CENTER;wait_tex
 key DPAD_RIGHT DPAD_CENTER;sleep 1;activity | grep -q PlayerActivity;ok 'report outage returns to player'
 live '{}'
 back_details;key BACK;wait_activity HomeActivity;sleep 1
-key DPAD_LEFT;focus_to DPAD_DOWN 'TV Shows';key DPAD_CENTER;sleep 2;key DPAD_RIGHT DPAD_CENTER
+key BACK;sleep 1;key DPAD_LEFT;focus_to DPAD_DOWN 'TV Shows';key DPAD_CENTER;sleep 2;key DPAD_RIGHT DPAD_CENTER
 wait_activity DetailsActivity;sleep 3;key DPAD_CENTER;sleep 1;key DPAD_CENTER
 wait_activity PlayerActivity;sleep 3
 report_focus;key DPAD_CENTER;wait_text 'Video stutters';key DPAD_DOWN DPAD_CENTER;wait_text 'Send report?';key DPAD_CENTER;wait_text 'Report sent';shot 06-episode-sent;key DPAD_CENTER
@@ -68,7 +72,7 @@ back_details;activity | grep -q DetailsActivity;ok 'Back returns to Details'
 key BACK;wait_activity HomeActivity
 # Force a local failing test stream. No credential or live request is involved.
 live '{"stream":"http://10.0.2.2:9/movie/FAKE_USER/FAKE_PASSWORD/1.mp4"}'
-key DPAD_LEFT;focus_to DPAD_UP 'Movies';key DPAD_CENTER;sleep 2;key DPAD_RIGHT DPAD_CENTER
+key BACK;sleep 1;key DPAD_LEFT;focus_to DPAD_DOWN 'Movies';key DPAD_CENTER;sleep 2;key DPAD_RIGHT DPAD_CENTER
 wait_activity DetailsActivity;sleep 2;key DPAD_CENTER;wait_activity PlayerActivity
 wait_text "couldn.t be played";shot 08-playback-error
 key DPAD_RIGHT DPAD_CENTER;wait_text 'Report a problem';focus_to DPAD_DOWN "Video won.t play";key DPAD_CENTER;wait_text 'Send report?';key DPAD_CENTER;wait_text 'Report sent';key DPAD_CENTER

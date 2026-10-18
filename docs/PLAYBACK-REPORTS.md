@@ -4,7 +4,7 @@ Base: production source db00197 (3.8.14 / 10034). Production version, package an
 The separate Preview build uses versionName 3.8.14-reports-test; QA reports go to DemoData only.
 
 Android files: PlayerActivity.java, PlayerIcon.java, PlaybackReport.java, ReportsApi.java;
-DemoData.java for offline fixtures; PlaybackReportTest.java for payload/endpoint validation.
+Ui.java allows an unselected issue list to start at the top; DemoData.java for offline fixtures; PlaybackReportTest.java for payload/endpoint validation.
 Backend files and installation: panel/onepanel-playback-reports/README.txt.
 
 The UI captures current IDs/position before pausing, confirms submission, sends asynchronously,

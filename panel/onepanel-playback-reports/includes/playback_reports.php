@@ -18,6 +18,7 @@ class TvrError extends Exception {
   function __construct(int $http,string $reason,string $message) {parent::__construct($message);$this->http=$http;$this->reason=$reason;}
 }
 function tvr_fail(int $http,string $reason,string $message): void {throw new TvrError($http,$reason,$message);}
+function tvr_valid_username($u): bool {return is_string($u)&&strlen($u)<=100&&preg_match('/^[A-Za-z0-9._@-]+$/D',$u)===1;}
 function tvr_token(string $username,?int $now=null): string {
   $body=tvq_b64(json_encode(['u'=>$username,'p'=>'playback_reports','exp'=>($now??time())+TVR_TTL]));
   return $body.'.'.tvq_b64(hash_hmac('sha256',$body,tvr_config()['secret'],true));
@@ -28,7 +29,7 @@ function tvr_user($token,?int $now=null): ?string {
   if(!hash_equals(tvq_b64(hash_hmac('sha256',$body,tvr_config()['secret'],true)),$sig))return null;
   $d=json_decode((string)tvq_unb64($body),true);
   if(!is_array($d)||($d['p']??'')!=='playback_reports'||!is_int($d['exp']??null)||$d['exp']<=($now??time()))return null;
-  return tvq_valid_username($d['u']??null)?$d['u']:null;
+  return tvr_valid_username($d['u']??null)?$d['u']:null;
 }
 function tvr_int(array $in,string $key,int $min,int $max): int {
   $v=$in[$key]??null;
@@ -38,7 +39,7 @@ function tvr_int(array $in,string $key,int $min,int $max): int {
 /* Only bounded display text, never free text, URLs, headers or raw player errors. */
 function tvr_text($v,int $max): string {
   if(!is_string($v)||strlen($v)>$max*4||!preg_match('//u',$v)||preg_match('/[\x00-\x1F\x7F]|https?:\/\/|(?:password|token|session|username)\s*[=:]/i',$v))return '';
-  return function_exists('mb_substr')?mb_substr(trim($v),0,$max):substr(trim($v),0,$max);
+  return preg_match('/^.{0,'.$max.'}/us',trim($v),$m)?$m[0]:'';
 }
 function tvr_validate(array $in): array {
   $type=$in['type']??null;$issue=$in['issue']??null;

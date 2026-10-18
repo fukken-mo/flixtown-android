@@ -306,7 +306,7 @@ final class Ui {
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(activity,rows*52+10));lp.topMargin=dp(activity,12);
         body.addView(list,lp);dialog.setContentView(body);
         showWindow(activity,dialog,470,false,0);
-        manager.scrollToPositionWithOffset(Math.max(0,selected),dp(activity,rows>3?104:0));
+        manager.scrollToPositionWithOffset(Math.max(0,selected),dp(activity,rows>3&&selected>=0?104:0));
         // Focus the current choice once it is laid out, so one OK press confirms the highlighted row.
         afterLayout(list,()->{RecyclerView.ViewHolder holder=list.findViewHolderForAdapterPosition(Math.max(0,selected));
             if(holder!=null)holder.itemView.requestFocus();else list.requestFocus();});
