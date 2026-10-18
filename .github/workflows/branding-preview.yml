@@ -1,0 +1,23 @@
+name: Flix Town 2027 branding Preview
+on:
+  push:
+    branches: [codex/branding-2027]
+    paths: ['app/src/main/res/**', '.github/workflows/branding-preview.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and separate Preview APK only
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug -PflixPreview=true -PflixVersionName=3.8.14-branding-2027 --console=plain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-2027-Branding-PREVIEW-test-only
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
