@@ -9,7 +9,7 @@ import android.view.View;
 
 /** Small vector glyphs for the player controls, drawn on a 24-unit grid. */
 final class PlayerIcon extends View {
-    static final int PLAY=0,PAUSE=1,AUDIO=2,SUBTITLES=3;
+    static final int PLAY=0,PAUSE=1,AUDIO=2,SUBTITLES=3,REPORT=4;
     private final Paint pen=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path=new Path();
     private final RectF rect=new RectF();
@@ -34,6 +34,11 @@ final class PlayerIcon extends View {
                 pen.setStyle(Paint.Style.STROKE);pen.setStrokeWidth(1.8f);pen.setStrokeCap(Paint.Cap.ROUND);
                 rect.set(10,8,18,16);canvas.drawArc(rect,-50,100,false,pen);
                 rect.set(9,4.5f,21.5f,19.5f);canvas.drawArc(rect,-50,100,false,pen);break;
+            case REPORT:
+                pen.setStyle(Paint.Style.STROKE);pen.setStrokeWidth(1.8f);pen.setStrokeCap(Paint.Cap.ROUND);
+                canvas.drawLine(6,3,6,21,pen);
+                path.moveTo(6,4);path.lineTo(20,4);path.lineTo(17,9);path.lineTo(20,14);path.lineTo(6,14);
+                canvas.drawPath(path,pen);break;
             default:
                 pen.setStyle(Paint.Style.STROKE);pen.setStrokeWidth(1.8f);pen.setStrokeCap(Paint.Cap.ROUND);
                 rect.set(2.5f,5,21.5f,19);canvas.drawRoundRect(rect,2.5f,2.5f,pen);

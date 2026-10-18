@@ -48,9 +48,11 @@ final class DemoData {
             .put("intro_url",intro?STREAM:"").put("cashapp_url","https://cash.app/$FlixTownDemo")
             .put("plans",new JSONObject().put("1m","15").put("3m","40").put("6m","75").put("12m","140"))
             .put("renewal_api_url",legacyRenewal||(live()!=null&&live().optBoolean("legacy_renewal"))?"":RENEWAL_URL)
-            .put("requests_api_url",live()!=null&&live().optBoolean("no_requests")?"":REQUESTS_URL).toString();
+            .put("requests_api_url",live()!=null&&live().optBoolean("no_requests")?"":REQUESTS_URL)
+            .put("reports_api_url",live()!=null&&live().optBoolean("no_reports")?"":REPORTS_URL).toString();
         if(url.startsWith(RENEWAL_URL))return renewal(new JSONObject(body==null?"{}":body));
         if(url.startsWith(REQUESTS_URL))return requests(new JSONObject(body==null?"{}":body));
+        if(url.startsWith(REPORTS_URL))return reports(new JSONObject(body==null?"{}":body));
         if(url.contains("pair-start")){polls=0;pairStarts++;String c=expireFirstCode&&pairStarts>1?"FT7N3R":"FT4K2Q";
             return new JSONObject().put("code",c).put("verifier","demo")
             .put("activation_url","https://myflixtown.com/activate.php?code="+c).toString();}
@@ -139,6 +141,19 @@ final class DemoData {
     static volatile boolean legacyRenewal;
     static final String RENEWAL_URL="https://demo.flixtown.invalid/onepanel/api/tv-renewal.php";
     static final String REQUESTS_URL="https://demo.flixtown.invalid/onepanel/api/tv-requests.php";
+    static final String REPORTS_URL="https://demo.flixtown.invalid/onepanel/api/tv-playback-reports.php";
+    private static final java.util.Set<String> reported=new java.util.HashSet<>();
+    private static String reports(JSONObject in)throws Exception{
+        JSONObject live=live();
+        if(live!=null&&live.optBoolean("reports_down"))throw new java.io.IOException("Demo report unavailable");
+        if("session".equals(in.optString("action")))return new JSONObject().put("ok",true).put("session","demo-report-session").toString();
+        if(!"demo-report-session".equals(in.optString("session")))return new JSONObject().put("ok",false).put("error","session").toString();
+        if(live!=null&&live.optBoolean("reports_fail"))return new JSONObject().put("ok",false).put("error","unavailable").toString();
+        String key=in.optString("type")+":"+in.optInt("media_id")+":"+in.optInt("episode_id")+":"+in.optString("issue");
+        boolean duplicate=!reported.add(key);
+        android.util.Log.i("FlixTownQA","report type="+in.optString("type")+" media="+in.optInt("media_id")+" episode="+in.optInt("episode_id")+" issue="+in.optString("issue")+" duplicate="+duplicate);
+        return new JSONObject().put("ok",true).put("duplicate",duplicate).toString();
+    }
     /** Demo requests made in this process (the demo server's own "database"). */
     private static final java.util.List<JSONObject> demoRequests=new java.util.ArrayList<>();
     private static final java.util.Set<String> demoRequested=new java.util.HashSet<>();

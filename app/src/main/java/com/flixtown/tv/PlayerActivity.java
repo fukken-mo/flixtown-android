@@ -59,6 +59,11 @@ public class PlayerActivity extends Activity {
     private long pendingSeek=-1,lastRepeatAt;
     private Dialog dialog;
     private long lastSavedAt;
+    private View reportButton;
+    private boolean reporting,reportWasPlaying,reportFromError,stopping;
+    private String lastPlayerError="";private boolean lastErrorNetwork;
+    private ExoPlayer reportPlayer;private Boolean reportRestartReady;
+
     /** Episodes after the next one (from Details), so autoplay keeps going through the series. */
     static final int MAX_QUEUE=200;
     private String[] laterIds,laterExts,laterLabels;private int laterIndex;private boolean laterTruncated;
@@ -123,6 +128,10 @@ public class PlayerActivity extends Activity {
         audioLabel=(TextView)audio.getChildAt(1);
         LinearLayout subs=controlButton(actions,PlayerIcon.SUBTITLES,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));subsButton=subs;
         subtitleLabel=(TextView)subs.getChildAt(1);
+        if(reportable()){
+            reportButton=controlButton(actions,PlayerIcon.REPORT,"Report",this::showReport);
+            reportButton.setContentDescription("Report a problem");
+        }
     }
     private void showSubtitle(){TextView sub=findViewById(R.id.player_subtitle);
         sub.setVisibility(subtitle==null||subtitle.isEmpty()?View.GONE:View.VISIBLE);sub.setText(subtitle);}
@@ -223,6 +232,7 @@ public class PlayerActivity extends Activity {
     @Override protected void onStart(){
         super.onStart();
         if(url==null)return;
+        stopping=false;
         // Xtream servers commonly redirect streams to another host, sometimes from http to https.
         DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true).setConnectTimeoutMs(15000).setReadTimeoutMs(20000);
@@ -249,14 +259,13 @@ public class PlayerActivity extends Activity {
                 // Connection problems (including a stream that timed out) are not a format problem.
                 boolean network=(error.errorCode>=PlaybackException.ERROR_CODE_IO_UNSPECIFIED && error.errorCode<PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
                     || error.errorCode==PlaybackException.ERROR_CODE_TIMEOUT;
-                showCard("This title couldn't be played",network?"The server didn't send the video. Check the connection and try again."
-                        :"This video's format isn't supported on this TV.",
-                    new String[]{"Try again","Back"},0,i->{if(i==0)retry();else finish();});
+                lastPlayerError=error.getErrorCodeName();lastErrorNetwork=network;
+                if(!reporting)showPlaybackError();
             }
         });
         player.setMediaItem(MediaItem.fromUri(url));
         if(position>0)player.seekTo(position);
-        player.setPlayWhenReady(resumeAsked);
+        player.setPlayWhenReady(reportRestartReady==null?resumeAsked:reportRestartReady);reportRestartReady=null;
         player.prepare();
         if(!resumeAsked)askResume();
         handler.post(progress);
@@ -285,6 +294,75 @@ public class PlayerActivity extends Activity {
         cardActions.getChildAt(Math.max(0,Math.min(focusIndex,labels.length-1))).requestFocus();
     }
     private void hideCard(){card.setVisibility(View.GONE);cardForNext=false;cardForError=false;root.requestFocus();}
+
+    /* ---------------- Customer playback reports ---------------- */
+
+    private boolean reportable(){
+        return ("movie".equals(kind)||"series".equals(kind)) && PlaybackReport.id(contentId)>0
+            && (!"series".equals(kind)||PlaybackReport.id(episodeId)>0) && !ReportsApi.url(this).isEmpty();
+    }
+    private void showPlaybackError(){
+        cardForError=true;
+        String message=lastErrorNetwork?"The server didn't send the video. Check the connection and try again.":"This video's format isn't supported on this TV.";
+        if(reportable())showCard("This title couldn't be played",message,new String[]{"Try again","Report a problem","Back"},0,i->{
+            if(i==0)retry();else if(i==1){cardForError=true;showReport();}else finish();});
+        else showCard("This title couldn't be played",message,new String[]{"Try again","Back"},0,i->{if(i==0)retry();else finish();});
+    }
+    private void showReport(){
+        if(player==null||dialog!=null||reporting||!reportable())return;
+        // Capture exactly this episode, before autoplay can change any IDs or track information.
+        handler.removeCallbacks(commitSeek);if(pendingSeek>=0){player.seekTo(pendingSeek);pendingSeek=-1;}
+        reportFromError=cardForError;reportWasPlaying=player.getPlayWhenReady()&&!reportFromError;
+        reportPlayer=player;reporting=true;player.pause();handler.removeCallbacks(hideControls);
+        Format vf=player.getVideoFormat(),af=player.getAudioFormat();
+        PlaybackReport snapshot=new PlaybackReport(kind,contentId,episodeId,player.getCurrentPosition(),android.os.Build.VERSION.SDK_INT,
+            android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL,reportFormat(vf),reportFormat(af),lastPlayerError);
+        showReportIssues(snapshot);
+    }
+    private static String reportFormat(Format f){
+        if(f==null)return "";
+        return (f.sampleMimeType==null?"":f.sampleMimeType)+(f.width>0?" "+f.width+"x"+f.height:"")+(f.channelCount>0?" "+f.channelCount+"ch":"");
+    }
+    private void showReportIssues(PlaybackReport snapshot){
+        Dialog picker=Ui.picker(this,"Report a problem",PlaybackReport.LABELS,-1,issue->confirmReport(snapshot,issue));
+        dialog=picker;
+        picker.setOnDismissListener(d->handler.post(()->{if(dialog==picker){dialog=null;finishReporting();}}));
+    }
+    private void confirmReport(PlaybackReport snapshot,int issue){
+        dialog=null;
+        Dialog confirmation=Ui.dialog(this,"Send report?",PlaybackReport.LABELS[issue]+"\nTitle, playback time and basic device details will be included.",
+            new String[]{"Send report","Cancel"},0,i->{dialog=null;if(i==0)sendReport(snapshot,issue);else finishReporting();},null);
+        dialog=confirmation;
+        confirmation.setOnDismissListener(d->handler.post(()->{if(dialog==confirmation){dialog=null;finishReporting();}}));
+    }
+    private void sendReport(PlaybackReport snapshot,int issue){
+        String endpoint=ReportsApi.url(this);String[] account=AccountStore.read(this);
+        final org.json.JSONObject payload;
+        try{payload=snapshot.payload(issue);}catch(Exception e){finishReporting();return;}
+        // No automatic retry and no title-specific report data saved to disk. A manual retry uses the same UUID.
+        Dialog waiting=Ui.message(this,"Sending report…","Please wait.");dialog=waiting;
+        waiting.setOnDismissListener(d->handler.post(()->{if(dialog==waiting){dialog=null;finishReporting();}}));
+        Api.IO.execute(()->{
+            ReportsApi.Reply result=ReportsApi.submit(endpoint,account,payload);
+            runOnUiThread(()->{
+                if(stopping||isFinishing()||isDestroyed()||!reporting||dialog!=waiting)return;
+                dialog=null;waiting.dismiss();
+                Dialog answer=Ui.dialog(this,result.ok?"Thank you":"Report not sent",result.message,
+                    result.ok?new String[]{"Back to video"}:new String[]{"Try again","Back to video"},0,
+                    i->{dialog=null;if(!result.ok&&i==0)sendReport(snapshot,issue);else finishReporting();},null);
+                dialog=answer;
+                answer.setOnDismissListener(d->handler.post(()->{if(dialog==answer){dialog=null;finishReporting();}}));
+            });
+        });
+    }
+    private void finishReporting(){
+        if(!reporting)return;
+        reporting=false;
+        if(stopping||isFinishing()||player==null||player!=reportPlayer)return;
+        if(reportFromError||player.getPlayerError()!=null){showPlaybackError();return;}
+        if(reportWasPlaying)player.play();
+        showControls(reportButton!=null?reportButton:playButton);
+    }
 
     /* ---------------- Keys ---------------- */
 
@@ -447,7 +525,7 @@ public class PlayerActivity extends Activity {
         if(duration>0 && duration!=C.TIME_UNSET){
             long left=duration-current;
             if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && left>0){
-                if(left<=25000 && !promptShown && player.isPlaying()){promptShown=true;showNext();}
+                if(left<=25000 && !promptShown && !reporting && player.isPlaying()){promptShown=true;showNext();}
                 if(cardForNext && card.getVisibility()==View.VISIBLE){
                     cardMessage.setText("Starts in "+Math.max(1,(left+999)/1000)+" seconds"+(nextSubtitle!=null&&!nextSubtitle.isEmpty()?"  ·  "+nextSubtitle:""));
                     cardMessage.setVisibility(View.VISIBLE);}   // the card opens with an empty (hidden) message line
@@ -460,8 +538,8 @@ public class PlayerActivity extends Activity {
     private void qaState(){
         if(!BuildConfig.DEMO || player==null)return;
         View f=getCurrentFocus();
-        String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==progressLine?"progress":"other";
-        String s="controls="+controlsVisible()+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
+        String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==progressLine?"progress":"other";
+        String s="controls="+controlsVisible()+" playing="+player.isPlaying()+" reporting="+reporting+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
             +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
             +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] cardmsg=["+(card.getVisibility()==View.VISIBLE && cardMessage.getVisibility()==View.VISIBLE?cardMessage.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
         if(!s.equals(qaLast)){qaLast=s;android.util.Log.i("FlixTownQA","player "+s);}
@@ -491,7 +569,7 @@ public class PlayerActivity extends Activity {
         if(card.getVisibility()==View.VISIBLE)hideCard();
         // A seek still waiting to be applied belongs to the episode that just ended, not to the next one.
         handler.removeCallbacks(commitSeek);pendingSeek=-1;
-        url=nextUrl;nextUrl="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
+        url=nextUrl;nextUrl="";lastPlayerError="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
         queueFollowingEpisode();
@@ -510,6 +588,8 @@ public class PlayerActivity extends Activity {
     @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onStop(){
+        if(reporting)reportRestartReady=reportWasPlaying&&!reportFromError;
+        stopping=true;reporting=false;
         handler.removeCallbacksAndMessages(null);
         if(dialog!=null){dialog.dismiss();dialog=null;}
         if(player!=null){position=player.getCurrentPosition();if(!ended && resumeAsked)saveProgress(position,player.getDuration());
