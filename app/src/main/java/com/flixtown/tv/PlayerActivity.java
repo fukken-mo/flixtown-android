@@ -59,7 +59,8 @@ public class PlayerActivity extends Activity {
     private long pendingSeek=-1,lastRepeatAt;
     private Dialog dialog;
     private long lastSavedAt;
-    private View reportButton;
+    private View reportButton,previousButton,nextButton;
+    private EpisodeNavigation episodeNavigation;
     private boolean reporting,reportWasPlaying,reportFromError,stopping,reportEnded;
     private String lastPlayerError="";private boolean lastErrorNetwork;
     private ExoPlayer reportPlayer;private Boolean reportRestartReady;
@@ -68,7 +69,7 @@ public class PlayerActivity extends Activity {
     static final int MAX_QUEUE=200;
     private String[] laterIds,laterExts,laterLabels;private int laterIndex;private boolean laterTruncated;
     /** True when an empty "next" really is the end of the show (Details sent the complete list of later episodes). */
-    private boolean endKnown(){return laterIds!=null && !laterTruncated;}
+    private boolean endKnown(){return episodeNavigation!=null?episodeNavigation.completeAfter:laterIds!=null && !laterTruncated;}
     private final Handler handler=new Handler(Looper.getMainLooper());
 
     @Override public void onCreate(Bundle state) {
@@ -81,6 +82,17 @@ public class PlayerActivity extends Activity {
         nextEpisodeId=getIntent().getStringExtra("next_episode_id");nextEpisodeExt=getIntent().getStringExtra("next_episode_ext");
         laterIds=getIntent().getStringArrayExtra("later_episode_ids");laterExts=getIntent().getStringArrayExtra("later_episode_exts");
         laterLabels=getIntent().getStringArrayExtra("later_episode_labels");laterTruncated=getIntent().getBooleanExtra("later_truncated",false);
+        if("series".equals(kind) && episodeId!=null && !episodeId.isEmpty()){
+            if(state!=null && state.containsKey("navigation_ids")){
+                episodeNavigation=new EpisodeNavigation(state.getStringArray("navigation_ids"),state.getStringArray("navigation_exts"),
+                    state.getStringArray("navigation_labels"),state.getInt("navigation_index"),state.getBoolean("navigation_complete"));
+                EpisodeNavigation.Episode current=episodeNavigation.current();episodeId=current.id;episodeExt=current.extension;subtitle=current.label;
+                url=state.getString("current_url",url);nextCanceled=state.getBoolean("next_canceled");
+            }else episodeNavigation=EpisodeNavigation.from(getIntent().getStringArrayExtra("previous_episode_ids"),
+                getIntent().getStringArrayExtra("previous_episode_exts"),getIntent().getStringArrayExtra("previous_episode_labels"),
+                episodeId,episodeExt,subtitle,nextEpisodeId,nextEpisodeExt,nextSubtitle,laterIds,laterExts,laterLabels,laterTruncated);
+            syncEpisodeNeighbors();
+        }
         if(kind!=null && contentId!=null && !contentId.isEmpty() && !getIntent().getBooleanExtra("start_over",false)){
             String key=kind+":"+contentId;
             position=Api.prefs(this).getLong("resume_position_"+key,0);
@@ -103,7 +115,10 @@ public class PlayerActivity extends Activity {
         root.requestFocus();
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
-        out.putBoolean("resume_asked",resumeAsked);out.putLong("position",player!=null?player.getCurrentPosition():position);}
+        out.putBoolean("resume_asked",resumeAsked);out.putLong("position",player!=null?player.getCurrentPosition():position);
+        if(episodeNavigation!=null){out.putStringArray("navigation_ids",episodeNavigation.ids());out.putStringArray("navigation_exts",episodeNavigation.extensions());
+            out.putStringArray("navigation_labels",episodeNavigation.labels());out.putInt("navigation_index",episodeNavigation.index());
+            out.putBoolean("navigation_complete",episodeNavigation.completeAfter);out.putString("current_url",url);out.putBoolean("next_canceled",nextCanceled);}}
 
     /* ---------------- Controls ---------------- */
 
@@ -124,10 +139,21 @@ public class PlayerActivity extends Activity {
         LinearLayout actions=findViewById(R.id.player_actions);
         playButton=controlButton(actions,PlayerIcon.PAUSE,null,this::togglePlay);
         playIcon=(PlayerIcon)playButton.getChildAt(0);
+        if(episodeNavigation!=null){
+            previousButton=controlButton(actions,PlayerIcon.PREVIOUS,null,()->navigateEpisode(-1,true));
+            previousButton.setContentDescription("Previous episode");
+            previousButton.setOnFocusChangeListener((v,focused)->{Ui.focusScale(v,focused);if(focused)flash("Previous episode");else status.setVisibility(View.GONE);});
+            nextButton=controlButton(actions,PlayerIcon.NEXT,null,()->navigateEpisode(1,true));
+            nextButton.setContentDescription("Next episode");
+            nextButton.setOnFocusChangeListener((v,focused)->{Ui.focusScale(v,focused);if(focused)flash("Next episode");else status.setVisibility(View.GONE);});
+            updateEpisodeButtons();
+        }
         LinearLayout audio=controlButton(actions,PlayerIcon.AUDIO,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));audioButton=audio;
         audioLabel=(TextView)audio.getChildAt(1);
+        if(episodeNavigation!=null){audioLabel.setMaxWidth(Ui.dp(this,150));audioLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
         LinearLayout subs=controlButton(actions,PlayerIcon.SUBTITLES,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));subsButton=subs;
         subtitleLabel=(TextView)subs.getChildAt(1);
+        if(episodeNavigation!=null){subtitleLabel.setMaxWidth(Ui.dp(this,180));subtitleLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
         if(reportable()){
             reportButton=controlButton(actions,PlayerIcon.REPORT,"Report",this::showReport);
             reportButton.setContentDescription("Report a problem");
@@ -391,6 +417,9 @@ public class PlayerActivity extends Activity {
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:togglePlay();showControls(null);return true;
             case KeyEvent.KEYCODE_MEDIA_PLAY:player.play();showControls(null);return true;
             case KeyEvent.KEYCODE_MEDIA_PAUSE:player.pause();showControls(null);return true;
+            case KeyEvent.KEYCODE_MEDIA_NEXT:case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                if(episodeNavigation!=null){if(event.getRepeatCount()==0)navigateEpisode(key==KeyEvent.KEYCODE_MEDIA_NEXT?1:-1,true);return true;}
+                return super.dispatchKeyEvent(event);
             case KeyEvent.KEYCODE_MEDIA_REWIND:seekBy(-1,event);return true;
             case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:seekBy(1,event);return true;
         }
@@ -544,9 +573,10 @@ public class PlayerActivity extends Activity {
     private void qaState(){
         if(!BuildConfig.DEMO || player==null)return;
         View f=getCurrentFocus();
-        String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==progressLine?"progress":"other";
+        String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==previousButton?"previous":f==nextButton?"next":f==progressLine?"progress":"other";
         String s="controls="+controlsVisible()+" playing="+player.isPlaying()+" reporting="+reporting+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
             +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
+            +" episode_controls="+(episodeNavigation!=null)+" episode="+(episodeId==null?"":episodeId)+" previous="+(previousButton!=null&&previousButton.isEnabled())+" next="+(nextButton!=null&&nextButton.isEnabled())
             +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] cardmsg=["+(card.getVisibility()==View.VISIBLE && cardMessage.getVisibility()==View.VISIBLE?cardMessage.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
         if(!s.equals(qaLast)){qaLast=s;android.util.Log.i("FlixTownQA","player "+s);}
     }
@@ -571,6 +601,7 @@ public class PlayerActivity extends Activity {
         cardForNext=true;
     }
     private void playNext(){
+        if(episodeNavigation!=null){navigateEpisode(1,false);return;}
         if(nextUrl==null || nextUrl.isEmpty() || player==null)return;
         if(card.getVisibility()==View.VISIBLE)hideCard();
         // A seek still waiting to be applied belongs to the episode that just ended, not to the next one.
@@ -580,6 +611,39 @@ public class PlayerActivity extends Activity {
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
         queueFollowingEpisode();
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
+    }
+    private void syncEpisodeNeighbors(){
+        EpisodeNavigation.Episode next=episodeNavigation.adjacent(1);
+        nextEpisodeId=next==null?"":next.id;nextEpisodeExt=next==null?"mp4":next.extension;nextSubtitle=next==null?"":next.label;
+        try{nextUrl=next==null?"":Api.stream(this,"series",next.id,next.extension);}catch(Exception ignored){nextUrl="";}
+    }
+    private void updateEpisodeButtons(){
+        if(episodeNavigation==null)return;
+        View[] buttons={previousButton,nextButton};int[] directions={-1,1};
+        for(int i=0;i<buttons.length;i++)if(buttons[i]!=null){boolean enabled=episodeNavigation.adjacent(directions[i])!=null;
+            buttons[i].setEnabled(enabled);buttons[i].setFocusable(enabled);buttons[i].setAlpha(enabled?1f:.35f);}
+    }
+    /** Manual skips do not mark an unfinished episode complete; autoplay still does so at EOF. */
+    private void navigateEpisode(int direction,boolean manual){
+        if(player==null || episodeNavigation==null || reporting || dialog!=null)return;
+        EpisodeNavigation.Episode target=episodeNavigation.adjacent(direction);if(target==null)return;
+        String targetUrl;try{targetUrl=Api.stream(this,"series",target.id,target.extension);}catch(Exception ignored){flash("Unable to open episode. Please try again.");return;}
+        boolean keepPlaying=!manual || player.getPlayWhenReady();
+        if(manual && !ended && resumeAsked)saveProgress(player.getCurrentPosition(),player.getDuration());
+        if(card.getVisibility()==View.VISIBLE)hideCard();
+        handler.removeCallbacks(commitSeek);pendingSeek=-1;
+        player.pause();episodeNavigation.move(direction);
+        url=targetUrl;episodeId=target.id;episodeExt=target.extension;subtitle=target.label;
+        position=0;lastSavedAt=0;lastPlayerError="";promptShown=false;nextCanceled=false;ended=false;resumeAsked=true;
+        syncEpisodeNeighbors();showSubtitle();updateEpisodeButtons();status.setVisibility(View.GONE);
+        // Persist the selected episode immediately, even if Back is pressed before the 15-second save threshold.
+        String key=kind+":"+contentId;
+        Api.prefs(this).edit().putString("resume_episode_"+key,episodeId).putString("resume_extension_"+key,episodeExt)
+            .putString("resume_next_"+key,nextEpisodeId).putString("resume_next_ext_"+key,nextEpisodeExt)
+            .putString("resume_label_"+key,subtitle).remove("resume_position_"+key).remove("resume_duration_"+key)
+            .remove("resume_art_"+key).remove(Catalog.DONE+key).apply();
+        player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.setPlayWhenReady(keepPlaying);
+        if(manual){View focus=direction<0?previousButton:nextButton;showControls(focus!=null&&focus.isEnabled()?focus:playButton);}
     }
     /** After moving on to the next episode: the one after it becomes "next" (Up next card, autoplay, Continue Watching). */
     private void queueFollowingEpisode(){

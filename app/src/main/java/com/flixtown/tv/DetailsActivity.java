@@ -594,6 +594,7 @@ public class DetailsActivity extends Activity {
         intent.putExtra("next_episode_id",nextId);intent.putExtra("next_episode_ext",nextExt);
         intent.putExtra("subtitle",label);intent.putExtra("next_subtitle",nextLabel);
         addLaterEpisodes(intent,nextId);
+        addPreviousEpisodes(intent,streamId);
         if(openPlayMode!=null){intent.putExtra(openPlayMode,true);openPlayMode=null;}
         startActivity(intent);
     }
@@ -614,6 +615,16 @@ public class DetailsActivity extends Activity {
             if(watch!=null)watch.setText(watchLabel());
             return;
         }
+    }
+    /** Earlier episodes from the same ordered list; bounded to keep the Intent small. */
+    private void addPreviousEpisodes(Intent intent,String currentId){
+        if(orderedEpisodes==null)return;
+        int current=-1;for(int i=0;i<orderedEpisodes.size();i++)if(currentId.equals(orderedEpisodes.get(i).optString("id"))){current=i;break;}
+        if(current<0)return;
+        int from=Math.max(0,current-PlayerActivity.MAX_QUEUE),count=current-from;
+        String[] ids=new String[count],exts=new String[count],labels=new String[count];
+        for(int i=0;i<count;i++){JSONObject ep=orderedEpisodes.get(from+i);ids[i]=ep.optString("id");exts[i]=extensionOf(ep,"mp4");labels[i]=episodeLabel(ep);}
+        intent.putExtra("previous_episode_ids",ids);intent.putExtra("previous_episode_exts",exts);intent.putExtra("previous_episode_labels",labels);
     }
     /** The episodes after the next one, in order, so autoplay continues E2 → E3 → … (the player has no episode list). */
     private void addLaterEpisodes(Intent intent,String nextId){

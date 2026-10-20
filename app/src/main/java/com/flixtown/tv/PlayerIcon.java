@@ -9,7 +9,7 @@ import android.view.View;
 
 /** Small vector glyphs for the player controls, drawn on a 24-unit grid. */
 final class PlayerIcon extends View {
-    static final int PLAY=0,PAUSE=1,AUDIO=2,SUBTITLES=3,REPORT=4;
+    static final int PLAY=0,PAUSE=1,AUDIO=2,SUBTITLES=3,REPORT=4,PREVIOUS=5,NEXT=6;
     private final Paint pen=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path=new Path();
     private final RectF rect=new RectF();
@@ -27,6 +27,11 @@ final class PlayerIcon extends View {
             case PAUSE:
                 pen.setStyle(Paint.Style.FILL);
                 rect.set(6,5,10,19);canvas.drawRoundRect(rect,1,1,pen);rect.set(14,5,18,19);canvas.drawRoundRect(rect,1,1,pen);break;
+            case PREVIOUS:case NEXT:
+                pen.setStyle(Paint.Style.FILL);
+                if(type==PREVIOUS){rect.set(4,5,7,19);path.moveTo(19,5);path.lineTo(8,12);path.lineTo(19,19);}
+                else {rect.set(17,5,20,19);path.moveTo(5,5);path.lineTo(16,12);path.lineTo(5,19);}
+                canvas.drawRect(rect,pen);path.close();canvas.drawPath(path,pen);break;
             case AUDIO:
                 pen.setStyle(Paint.Style.FILL);
                 path.moveTo(3,9.5f);path.lineTo(7,9.5f);path.lineTo(12,5);path.lineTo(12,19);path.lineTo(7,14.5f);path.lineTo(3,14.5f);path.close();
