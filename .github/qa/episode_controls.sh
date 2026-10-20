@@ -24,6 +24,7 @@ focus_to(){ for n in $(seq 1 12);do focus_text | grep -q "$2" && return 0;key "$
 qa(){ adb logcat -d -s FlixTownQA:I | grep ' player ' | tail -1; }
 state(){ for n in $(seq 1 20);do qa | grep -q "$1" && return 0;sleep .5;done;qa;note "FAIL state $1";return 1; }
 control(){ key DPAD_DOWN;key DPAD_DOWN;key DPAD_UP;for n in $(seq 1 8);do qa | grep -q "focus=$1 " && return 0;key DPAD_RIGHT;done;note "FAIL control $1";return 1; }
+options(){ key DPAD_DOWN DPAD_DOWN DPAD_UP DPAD_UP DPAD_CENTER;wait_text 'Player options'; }
 back_details(){ for n in $(seq 1 8);do activity | grep -q DetailsActivity && return 0;key BACK;sleep 1;done;return 1; }
 resume_check(){
 adb shell "run-as $PKG cat shared_prefs/flix.xml" > "$OUT/progress.xml"
@@ -52,6 +53,12 @@ wait_activity DetailsActivity;sleep 3;key DPAD_CENTER
 wait_activity PlayerActivity;sleep 3;state 'playing=true';key MEDIA_PAUSE;state 'episode_controls=false';shot 01-movie-controls
 ok 'movies have no episode controls'
 control audio;key DPAD_CENTER;wait_text 'Audio';adb logcat -d -s FlixTownQA:I | grep -q 'tracks type=1';key BACK;ok 'movie Audio picker still opens'
+options;key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="watched_movie:.*" value="true"'
+ok 'movie can be marked watched'
+options;wait_text 'Mark as unwatched';key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="watched_movie:.*" value="false"'
+ok 'movie can be marked unwatched without losing My List'
 back_details;key BACK;wait_activity HomeActivity;sleep 1
 key BACK;sleep 1;key DPAD_LEFT;focus_to DPAD_DOWN 'TV Shows';key DPAD_CENTER;sleep 2;key DPAD_RIGHT DPAD_CENTER
 wait_activity DetailsActivity;sleep 3;key DPAD_CENTER;sleep 1;key DPAD_CENTER
@@ -92,12 +99,11 @@ wait_activity PlayerActivity;state 'episode=9103 previous=true next=true';ok 'Co
 key MEDIA_PAUSE;key MEDIA_PREVIOUS;state 'episode=9102 previous=true next=true';ok 'fresh player receives earlier episodes from Details'
 
 # Viewer extras use only the offline stream and demo catalog.
-options(){ key DPAD_DOWN DPAD_DOWN DPAD_UP DPAD_UP DPAD_CENTER;wait_text 'Player options'; }
-options;key DPAD_DOWN DPAD_CENTER;wait_text 'Playback speed';key DPAD_DOWN DPAD_CENTER
+options;shot 06-player-options;key DPAD_DOWN DPAD_CENTER;wait_text 'Playback speed';shot 07-speed;key DPAD_DOWN DPAD_CENTER
 state 'speed=1.25';ok 'playback speed changes through TV Options'
 options;key DPAD_DOWN DPAD_DOWN DPAD_CENTER;wait_text 'Subtitle size';key DPAD_DOWN DPAD_CENTER
 state 'subtitle_size=1.2';ok 'subtitle size is saved without moving its safe area'
-options;key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER;wait_text 'Subtitle appearance';key DPAD_DOWN DPAD_DOWN DPAD_CENTER
+options;key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER;wait_text 'Subtitle appearance';shot 08-subtitle-style;key DPAD_DOWN DPAD_DOWN DPAD_CENTER
 state 'subtitle_style=2';ok 'subtitle appearance is saved'
 options;key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
 adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="watched_series:.*:9102" value="true"'
@@ -105,7 +111,7 @@ ok 'episode can be marked watched without changing playback'
 options;wait_text 'Mark as unwatched';key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
 adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="watched_series:.*:9102" value="false"'
 ok 'episode can be marked unwatched'
-options;key DPAD_CENTER;wait_text 'Select season';key DPAD_DOWN DPAD_CENTER;wait_text 'Season 2';key DPAD_DOWN DPAD_DOWN DPAD_CENTER
+options;key DPAD_CENTER;wait_text 'Select season';key DPAD_DOWN DPAD_CENTER;wait_text 'Season 2';shot 09-episode-list;key DPAD_DOWN DPAD_DOWN DPAD_CENTER
 state 'episode=9203 previous=true next=true';state 'playing=false';state 'elapsed=[0-3] '
 ok 'in-player season and episode list jumps to a real episode'
 resume_check 9203;ok 'episode-list choice updates Continue Watching immediately'

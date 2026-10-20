@@ -485,6 +485,7 @@ public class PlayerActivity extends Activity {
             try{data=Api.get(Api.xtream(this,"get_series_info","&series_id="+Api.enc(contentId))).optJSONObject("episodes");}catch(Exception ignored){}
             final org.json.JSONObject loaded=data;
             runOnUiThread(()->{if(loadToken!=episodeLoadGeneration)return;loadingEpisodes=false;if(stopping||isFinishing()||isDestroyed())return;
+                if(reporting||dialog!=null){episodeCatalog=loaded;return;}
                 if(loaded==null){flash("Unable to load all episodes. Showing the loaded episodes.");showLoadedEpisodes();return;}
                 episodeCatalog=loaded;showEpisodeSeasons();});});
     }
