@@ -139,24 +139,25 @@ public class PlayerActivity extends Activity {
         LinearLayout actions=findViewById(R.id.player_actions);
         playButton=controlButton(actions,PlayerIcon.PAUSE,null,this::togglePlay);
         playIcon=(PlayerIcon)playButton.getChildAt(0);
+        LinearLayout audio=controlButton(actions,PlayerIcon.AUDIO,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));audioButton=audio;
+        audioLabel=(TextView)audio.getChildAt(1);
+        if(episodeNavigation!=null){audioLabel.setMaxWidth(Ui.dp(this,90));audioLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
+        LinearLayout subs=controlButton(actions,PlayerIcon.SUBTITLES,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));subsButton=subs;
+        subtitleLabel=(TextView)subs.getChildAt(1);
+        if(episodeNavigation!=null){subtitleLabel.setMaxWidth(Ui.dp(this,100));subtitleLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
+        if(reportable()){
+            reportButton=controlButton(actions,PlayerIcon.REPORT,"Report",this::showReport);
+            reportButton.setContentDescription("Report a problem");
+        }
         if(episodeNavigation!=null){
-            LinearLayout episodes=findViewById(R.id.player_episode_actions);
-            episodes.setVisibility(View.VISIBLE);
+            View spacer=new View(this);
+            actions.addView(spacer,new LinearLayout.LayoutParams(0,1,1f));
+            LinearLayout episodes=actions;
             previousButton=controlButton(episodes,PlayerIcon.PREVIOUS,"Previous episode",()->navigateEpisode(-1,true));
             previousButton.setContentDescription("Previous episode");
             nextButton=controlButton(episodes,PlayerIcon.NEXT,"Next episode",()->navigateEpisode(1,true));
             nextButton.setContentDescription("Next episode");
             updateEpisodeButtons();
-        }
-        LinearLayout audio=controlButton(actions,PlayerIcon.AUDIO,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));audioButton=audio;
-        audioLabel=(TextView)audio.getChildAt(1);
-        if(episodeNavigation!=null){audioLabel.setMaxWidth(Ui.dp(this,150));audioLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
-        LinearLayout subs=controlButton(actions,PlayerIcon.SUBTITLES,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));subsButton=subs;
-        subtitleLabel=(TextView)subs.getChildAt(1);
-        if(episodeNavigation!=null){subtitleLabel.setMaxWidth(Ui.dp(this,180));subtitleLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
-        if(reportable()){
-            reportButton=controlButton(actions,PlayerIcon.REPORT,"Report",this::showReport);
-            reportButton.setContentDescription("Report a problem");
         }
     }
     private void showSubtitle(){TextView sub=findViewById(R.id.player_subtitle);
@@ -166,11 +167,12 @@ public class PlayerActivity extends Activity {
         LinearLayout b=new LinearLayout(this);b.setOrientation(LinearLayout.HORIZONTAL);b.setGravity(Gravity.CENTER);
         b.setFocusable(true);b.setFocusableInTouchMode(true);b.setClickable(true);
         boolean round=label==null;
+        boolean compact=episodeNavigation!=null;
         PlayerIcon glyph=new PlayerIcon(this,icon);
         b.addView(glyph,new LinearLayout.LayoutParams(Ui.dp(this,round?22:20),Ui.dp(this,round?22:20)));
-        if(!round){TextView t=Ui.text(this,label,15);t.setTextColor(Ui.TEXT);t.setSingleLine(true);
-            LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(this,8);b.addView(t,tp);
-            b.setPadding(Ui.dp(this,18),0,Ui.dp(this,20),0);}
+        if(!round){TextView t=Ui.text(this,label,compact?14:15);t.setTextColor(Ui.TEXT);t.setSingleLine(true);
+            LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(this,compact?6:8);b.addView(t,tp);
+            b.setPadding(Ui.dp(this,compact?12:18),0,Ui.dp(this,compact?12:20),0);}
         Ui.styleButton(b,Ui.SECONDARY);
         LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(round?Ui.dp(this,50):ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,50));
         if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,8);
@@ -434,16 +436,9 @@ public class PlayerActivity extends Activity {
         scheduleHide();
         View focus=getCurrentFocus();
         boolean onRow=focus!=null && focus.getParent()==playButton.getParent();
-        boolean onEpisodes=focus==previousButton || focus==nextButton;
-        if(key==KeyEvent.KEYCODE_DPAD_DOWN && onEpisodes){playButton.requestFocus();return true;}
-        if(key==KeyEvent.KEYCODE_DPAD_UP && onRow && episodeNavigation!=null){
-            View target=nextButton.isEnabled()?nextButton:previousButton;
-            if(target.isEnabled())target.requestFocus();
-            return true;
-        }
         if(key==KeyEvent.KEYCODE_DPAD_DOWN && onRow){progressLine.requestFocus();return true;}
         if(key==KeyEvent.KEYCODE_DPAD_UP && focus==progressLine){playButton.requestFocus();return true;}
-        if((key==KeyEvent.KEYCODE_DPAD_UP && (onRow || onEpisodes)) || (key==KeyEvent.KEYCODE_DPAD_DOWN && focus==progressLine))return true;
+        if((key==KeyEvent.KEYCODE_DPAD_UP && onRow) || (key==KeyEvent.KEYCODE_DPAD_DOWN && focus==progressLine))return true;
         if(focus==root){playButton.requestFocus();return true;}
         return super.dispatchKeyEvent(event);
     }
@@ -583,6 +578,7 @@ public class PlayerActivity extends Activity {
         String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==previousButton?"previous":f==nextButton?"next":f==progressLine?"progress":"other";
         String s="controls="+controlsVisible()+" playing="+player.isPlaying()+" reporting="+reporting+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
             +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
+            +" controls_fit="+(nextButton==null || nextButton.getRight()<=((View)nextButton.getParent()).getWidth())
             +" episode_controls="+(episodeNavigation!=null)+" episode="+(episodeId==null?"":episodeId)+" previous="+(previousButton!=null&&previousButton.isEnabled())+" next="+(nextButton!=null&&nextButton.isEnabled())
             +" card=["+(card.getVisibility()==View.VISIBLE?cardTitle.getText():"")+"] cardmsg=["+(card.getVisibility()==View.VISIBLE && cardMessage.getVisibility()==View.VISIBLE?cardMessage.getText():"")+"] subtitle="+(subtitle==null?"":subtitle);
         if(!s.equals(qaLast)){qaLast=s;android.util.Log.i("FlixTownQA","player "+s);}

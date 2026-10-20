@@ -23,7 +23,7 @@ PY
 focus_to(){ for n in $(seq 1 12);do focus_text | grep -q "$2" && return 0;key "$1";done;note "FAIL focus $2";return 1; }
 qa(){ adb logcat -d -s FlixTownQA:I | grep ' player ' | tail -1; }
 state(){ for n in $(seq 1 20);do qa | grep -q "$1" && return 0;sleep .5;done;qa;note "FAIL state $1";return 1; }
-control(){ key DPAD_DOWN;key DPAD_DOWN;key DPAD_UP;if [ "$1" = next ] || [ "$1" = previous ];then key DPAD_UP;fi;for n in $(seq 1 8);do qa | grep -q "focus=$1 " && return 0;key DPAD_RIGHT;done;note "FAIL control $1";return 1; }
+control(){ key DPAD_DOWN;key DPAD_DOWN;key DPAD_UP;for n in $(seq 1 8);do qa | grep -q "focus=$1 " && return 0;key DPAD_RIGHT;done;note "FAIL control $1";return 1; }
 back_details(){ for n in $(seq 1 8);do activity | grep -q DetailsActivity && return 0;key BACK;sleep 1;done;return 1; }
 resume_check(){
 adb shell "run-as $PKG cat shared_prefs/flix.xml" > "$OUT/progress.xml"
@@ -57,7 +57,7 @@ key BACK;sleep 1;key DPAD_LEFT;focus_to DPAD_DOWN 'TV Shows';key DPAD_CENTER;sle
 wait_activity DetailsActivity;sleep 3;key DPAD_CENTER;sleep 1;key DPAD_CENTER
 wait_activity PlayerActivity;sleep 3;state 'playing=true';key MEDIA_PAUSE
 state 'episode=9101 previous=false next=true';ok 'first episode disables Previous and enables Next'
-control next;shot 02-series-controls;key DPAD_CENTER
+control next;state 'controls_fit=true';ok 'single-row controls fit inside TV margins';shot 02-series-controls;key DPAD_CENTER
 state 'episode=9102 previous=true next=true';state 'playing=false';state 'elapsed=[0-3] ';ok 'D-pad Next starts E2 at zero and stays paused'
 resume_check 9102;ok 'first manual switch creates Continue Watching immediately'
 key DPAD_LEFT;state 'focus=previous ';key DPAD_CENTER
