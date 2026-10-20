@@ -140,12 +140,12 @@ public class PlayerActivity extends Activity {
         playButton=controlButton(actions,PlayerIcon.PAUSE,null,this::togglePlay);
         playIcon=(PlayerIcon)playButton.getChildAt(0);
         if(episodeNavigation!=null){
-            previousButton=controlButton(actions,PlayerIcon.PREVIOUS,null,()->navigateEpisode(-1,true));
+            LinearLayout episodes=findViewById(R.id.player_episode_actions);
+            episodes.setVisibility(View.VISIBLE);
+            previousButton=controlButton(episodes,PlayerIcon.PREVIOUS,"Previous episode",()->navigateEpisode(-1,true));
             previousButton.setContentDescription("Previous episode");
-            previousButton.setOnFocusChangeListener((v,focused)->{Ui.focusScale(v,focused);if(focused)flash("Previous episode");else status.setVisibility(View.GONE);});
-            nextButton=controlButton(actions,PlayerIcon.NEXT,null,()->navigateEpisode(1,true));
+            nextButton=controlButton(episodes,PlayerIcon.NEXT,"Next episode",()->navigateEpisode(1,true));
             nextButton.setContentDescription("Next episode");
-            nextButton.setOnFocusChangeListener((v,focused)->{Ui.focusScale(v,focused);if(focused)flash("Next episode");else status.setVisibility(View.GONE);});
             updateEpisodeButtons();
         }
         LinearLayout audio=controlButton(actions,PlayerIcon.AUDIO,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));audioButton=audio;
@@ -434,9 +434,16 @@ public class PlayerActivity extends Activity {
         scheduleHide();
         View focus=getCurrentFocus();
         boolean onRow=focus!=null && focus.getParent()==playButton.getParent();
+        boolean onEpisodes=focus==previousButton || focus==nextButton;
+        if(key==KeyEvent.KEYCODE_DPAD_DOWN && onEpisodes){playButton.requestFocus();return true;}
+        if(key==KeyEvent.KEYCODE_DPAD_UP && onRow && episodeNavigation!=null){
+            View target=nextButton.isEnabled()?nextButton:previousButton;
+            if(target.isEnabled())target.requestFocus();
+            return true;
+        }
         if(key==KeyEvent.KEYCODE_DPAD_DOWN && onRow){progressLine.requestFocus();return true;}
         if(key==KeyEvent.KEYCODE_DPAD_UP && focus==progressLine){playButton.requestFocus();return true;}
-        if((key==KeyEvent.KEYCODE_DPAD_UP && onRow) || (key==KeyEvent.KEYCODE_DPAD_DOWN && focus==progressLine))return true;
+        if((key==KeyEvent.KEYCODE_DPAD_UP && (onRow || onEpisodes)) || (key==KeyEvent.KEYCODE_DPAD_DOWN && focus==progressLine))return true;
         if(focus==root){playButton.requestFocus();return true;}
         return super.dispatchKeyEvent(event);
     }

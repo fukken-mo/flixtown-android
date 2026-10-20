@@ -23,7 +23,7 @@ PY
 focus_to(){ for n in $(seq 1 12);do focus_text | grep -q "$2" && return 0;key "$1";done;note "FAIL focus $2";return 1; }
 qa(){ adb logcat -d -s FlixTownQA:I | grep ' player ' | tail -1; }
 state(){ for n in $(seq 1 20);do qa | grep -q "$1" && return 0;sleep .5;done;qa;note "FAIL state $1";return 1; }
-control(){ key DPAD_UP;for n in $(seq 1 8);do qa | grep -q "focus=$1 " && return 0;key DPAD_RIGHT;done;note "FAIL control $1";return 1; }
+control(){ key DPAD_DOWN;key DPAD_DOWN;key DPAD_UP;if [ "$1" = next ] || [ "$1" = previous ];then key DPAD_UP;fi;for n in $(seq 1 8);do qa | grep -q "focus=$1 " && return 0;key DPAD_RIGHT;done;note "FAIL control $1";return 1; }
 back_details(){ for n in $(seq 1 8);do activity | grep -q DetailsActivity && return 0;key BACK;sleep 1;done;return 1; }
 resume_check(){
 adb shell "run-as $PKG cat shared_prefs/flix.xml" > "$OUT/progress.xml"
