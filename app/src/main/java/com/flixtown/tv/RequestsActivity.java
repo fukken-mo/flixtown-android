@@ -57,6 +57,7 @@ public class RequestsActivity extends Activity {
     /** Titles on this TV's own catalog, by "movie:tmdb" / "tv:tmdb" (only a hint for Watch). */
     private final Map<String,Catalog.Item> local=new HashMap<>();
     private Details details;
+    private int readyCount;private String readyTitle;
 
     /** One card: a search result or one of my requests. */
     static final class Entry {
@@ -190,7 +191,7 @@ public class RequestsActivity extends Activity {
                     e.year=o.optString("year");e.poster=o.optString("poster");e.state=o.optString("state");
                     if(localMatch(e)!=null && "movie".equals(e.type))e.state="local";
                     entries.add(e);}
-                adapter.notifyItemRangeInserted(before,entries.size()-before);
+                showReadyNotice();adapter.notifyItemRangeInserted(before,entries.size()-before);
                 if(BuildConfig.DEMO)Log.i("FlixTownQA","requests search q="+q+" page="+p+" results="+entries.size());
                 status.setText(entries.isEmpty()?"No movies or TV shows match “"+q+"”.":"");
                 if(focusResults && p==1){focusResults=false;if(!entries.isEmpty())grid.post(this::focusGrid);}
@@ -203,13 +204,25 @@ public class RequestsActivity extends Activity {
             runOnUiThread(()->{loading=false;if(token!=generation||isFinishing())return;
                 if(!r.ok){if(entries.isEmpty())status.setText(r.message);return;}
                 page=p;pages=r.body.optBoolean("has_more")?p+1:p;
-                JSONArray list=r.body.optJSONArray("requests");int before=entries.size();
-                for(int i=0;list!=null&&i<list.length();i++){JSONObject o=list.optJSONObject(i);if(o!=null)entries.add(historyEntry(o));}
+                JSONArray list=r.body.optJSONArray("requests");int before=entries.size();readyCount=0;
+                for(int i=0;list!=null&&i<list.length();i++){JSONObject o=list.optJSONObject(i);if(o!=null){Entry e=historyEntry(o);rememberRequestState(e);entries.add(e);}}
                 if(BuildConfig.DEMO)Log.i("FlixTownQA","requests history loaded page="+p);
-                adapter.notifyItemRangeInserted(before,entries.size()-before);
+                showReadyNotice();adapter.notifyItemRangeInserted(before,entries.size()-before);
                 status.setText(entries.isEmpty()?"You haven't requested anything yet. Use Search to find a movie or show.":"");
                 if(before==0 && !entries.isEmpty())grid.post(this::focusGrid);
             });});
+    }
+    /** Notices are evaluated only on explicit history loads. No startup calls or polling. */
+    private void rememberRequestState(Entry e){
+        String key="request_seen_"+e.type+":"+e.id+":"+java.util.Arrays.toString(e.seasons)+":"+e.requestedAt;
+        String old=Api.prefs(this).getString(key,"");
+        if(ViewerOptions.newlyReady(old,e.state)){readyCount++;readyTitle=e.title;}
+        Api.prefs(this).edit().putString(key,e.state).apply();
+    }
+    private void showReadyNotice(){
+        if(readyCount>0)android.widget.Toast.makeText(this,readyCount==1?"Your request is ready: "+readyTitle:readyCount+" requested titles are ready",android.widget.Toast.LENGTH_LONG).show();
+        if(BuildConfig.DEMO)Log.i("FlixTownQA","requests ready notices="+readyCount);
+        readyCount=0;
     }
     /** One My Requests card. A movie this TV's catalog already has is "In Flix Town", as on search cards and in Details. */
     private Entry historyEntry(JSONObject o){
@@ -229,12 +242,13 @@ public class RequestsActivity extends Activity {
         int token=generation;
         Api.IO.execute(()->{RequestsApi.Reply r=RequestsApi.history(this,1);
             runOnUiThread(()->{if(token!=generation||isFinishing()||!r.ok)return;
-                JSONArray list=r.body.optJSONArray("requests");
+                JSONArray list=r.body.optJSONArray("requests");readyCount=0;
                 for(int i=0;list!=null&&i<list.length();i++){JSONObject o=list.optJSONObject(i);if(o==null)continue;
-                    Entry fresh=historyEntry(o);
+                    Entry fresh=historyEntry(o);rememberRequestState(fresh);
                     for(int k=0;k<entries.size();k++){Entry e=entries.get(k);
                         if(e.type.equals(fresh.type)&&e.id==fresh.id&&java.util.Arrays.equals(e.seasons,fresh.seasons)&&!e.state.equals(fresh.state)){
                             e.state=fresh.state;adapter.notifyItemChanged(k);}}}
+                showReadyNotice();
                 if(BuildConfig.DEMO)Log.i("FlixTownQA","requests history refreshed in place");
             });});
     }

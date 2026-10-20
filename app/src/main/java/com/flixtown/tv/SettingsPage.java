@@ -30,7 +30,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     static final String AUTOPLAY="autoplay_next",AUDIO_LANGUAGE="audio_language",SUBTITLES_ON="subtitles_on",
         SUBTITLE_LANGUAGE="subtitle_language",LAST_REFRESH="last_refresh_at";
     /** Settings survive signing out; everything else about the account does not. */
-    static final String[] PLAYBACK_KEYS={AUTOPLAY,AUDIO_LANGUAGE,SUBTITLES_ON,SUBTITLE_LANGUAGE};
+    static final String[] PLAYBACK_KEYS={AUTOPLAY,AUDIO_LANGUAGE,SUBTITLES_ON,SUBTITLE_LANGUAGE,ViewerOptions.SIZE,ViewerOptions.STYLE,ViewerOptions.SPEED};
 
     // ISO 639-1 codes; Media3 matches them against the stream's own language tags (en = eng, …).
     static final String[] LANGUAGE_CODES={"en","es","fr","de","it","pt","ar","hi","tr","ru","nl","pl","el","ja","ko","zh"};

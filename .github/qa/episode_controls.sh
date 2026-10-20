@@ -91,6 +91,32 @@ key DPAD_UP DPAD_UP;focus_to DPAD_LEFT 'Continue';key DPAD_CENTER
 wait_activity PlayerActivity;state 'episode=9103 previous=true next=true';ok 'Continue resumes the manually selected episode even before fifteen seconds'
 key MEDIA_PAUSE;key MEDIA_PREVIOUS;state 'episode=9102 previous=true next=true';ok 'fresh player receives earlier episodes from Details'
 
+# Viewer extras use only the offline stream and demo catalog.
+options(){ key DPAD_DOWN DPAD_DOWN DPAD_UP DPAD_UP DPAD_CENTER;wait_text 'Player options'; }
+options;key DPAD_DOWN DPAD_CENTER;wait_text 'Playback speed';key DPAD_DOWN DPAD_CENTER
+state 'speed=1.25';ok 'playback speed changes through TV Options'
+options;key DPAD_DOWN DPAD_DOWN DPAD_CENTER;wait_text 'Subtitle size';key DPAD_DOWN DPAD_CENTER
+state 'subtitle_size=1.2';ok 'subtitle size is saved without moving its safe area'
+options;key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER;wait_text 'Subtitle appearance';key DPAD_DOWN DPAD_DOWN DPAD_CENTER
+state 'subtitle_style=2';ok 'subtitle appearance is saved'
+options;key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="watched_series:.*:9102" value="true"'
+ok 'episode can be marked watched without changing playback'
+options;wait_text 'Mark as unwatched';key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_CENTER
+adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="watched_series:.*:9102" value="false"'
+ok 'episode can be marked unwatched'
+options;key DPAD_CENTER;wait_text 'Select season';key DPAD_DOWN DPAD_CENTER;wait_text 'Season 2';key DPAD_DOWN DPAD_DOWN DPAD_CENTER
+state 'episode=9203 previous=true next=true';state 'playing=false';state 'elapsed=[0-3] '
+ok 'in-player season and episode list jumps to a real episode'
+resume_check 9203;ok 'episode-list choice updates Continue Watching immediately'
+control subs;key DPAD_CENTER;wait_text 'Subtitles';key DPAD_DOWN DPAD_CENTER
+adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="subtitles_on" value="true"'
+ok 'subtitle selection remembers enabled state'
+key MEDIA_NEXT;state 'episode=9204 ';state 'speed=1.25';state 'subtitle_size=1.2';state 'subtitle_style=2'
+ok 'episode change retains speed and subtitle preferences'
+key DPAD_DOWN DPAD_DOWN DPAD_UP DPAD_UP;state 'focus=options ';key DPAD_DOWN;state 'focus=play '
+ok 'Options and playback row have no D-pad trap'
+
 if adb logcat -d | grep -A8 'FATAL EXCEPTION' | grep -q 'com.myflixtown.tv.native.qa';then note 'FAIL app crash';exit 1;fi
 ok 'no app crash'
 note "Episode controls: $PASS passed, 0 failed"

@@ -168,6 +168,8 @@ final class Catalog {
         markFinished(c,kind,id,null,null,nextId,nextExt,true);
     }
     static void markFinished(Context c,String kind,String id,String episodeId,String episodeExt,String nextId,String nextExt,boolean endKnown) {
+        if("movie".equals(kind)||("series".equals(kind)&&episodeId!=null&&!episodeId.isEmpty()))
+            Api.prefs(c).edit().putBoolean(ViewerOptions.watchedKey(kind,id,episodeId),true).apply();
         String key=kind+":"+id;
         boolean noNext=nextId==null || nextId.isEmpty();
         if("series".equals(kind) && noNext && !endKnown && episodeId!=null && !episodeId.isEmpty()){

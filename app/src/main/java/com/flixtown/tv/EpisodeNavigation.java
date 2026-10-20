@@ -44,6 +44,7 @@ final class EpisodeNavigation {
     Episode current(){return episodes.get(index);}
     Episode adjacent(int direction){int target=index+direction;return (direction==-1||direction==1)&&target>=0&&target<episodes.size()?episodes.get(target):null;}
     boolean move(int direction){if(adjacent(direction)==null)return false;index+=direction;return true;}
+    boolean select(int target){if(target<0||target>=episodes.size())return false;index=target;return true;}
     int index(){return index;}
     String[] ids(){String[] out=new String[episodes.size()];for(int i=0;i<out.length;i++)out[i]=episodes.get(i).id;return out;}
     String[] extensions(){String[] out=new String[episodes.size()];for(int i=0;i<out.length;i++)out[i]=episodes.get(i).extension;return out;}

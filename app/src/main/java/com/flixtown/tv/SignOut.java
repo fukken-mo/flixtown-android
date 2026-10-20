@@ -63,7 +63,7 @@ final class SignOut {
     }
     /** My List, watch progress and Continue Watching: what one customer must not see of another. */
     static boolean isPersonalKey(String key){
-        return key.startsWith("resume_") || key.equals("continue_ids") || key.equals("favorites");
+        return key.startsWith("watched_") || key.startsWith("request_seen_") || key.startsWith("resume_") || key.equals("continue_ids") || key.equals("favorites");
     }
     static String ownerId(String username){
         try{return UpdateInfo.hex(MessageDigest.getInstance("SHA-256").digest(("flixtown-owner:"+username).getBytes(StandardCharsets.UTF_8)));}

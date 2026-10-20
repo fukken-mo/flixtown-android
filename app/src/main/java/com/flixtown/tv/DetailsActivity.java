@@ -88,7 +88,7 @@ public class DetailsActivity extends Activity {
         return new Catalog.Item(j,kind);
     }
     private static String join(String a,String b){return a.isEmpty()?b:b.isEmpty()?a:a+"   ·   "+b;}
-    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
+    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);if(seasonContent!=null)updateWatchedBadges(seasonContent);}
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onRestart(){super.onRestart();
         if(orderedEpisodes!=null)resolveFinished(orderedEpisodes);   // back from the player: move past a finished episode
@@ -164,6 +164,8 @@ public class DetailsActivity extends Activity {
             else if(!Api.prefs(this).getString("resume_episode_series:"+id,"").isEmpty()) resumeSeries();
             else focusFirstEpisode();
         });
+        watch.setOnLongClickListener(v->{if(movie){showWatchedMenu(null);return true;}return false;});
+        if(movie)watch.setContentDescription("Watch. Hold OK for watched status");
         trailerButton=Ui.button(this,"Trailer");actions.addView(trailerButton,actionParams(true));
         trailerButton.setEnabled(false);trailerButton.setAlpha(.4f);
         trailerButton.setOnClickListener(v->{String url=trailerButton.getTag() instanceof String?(String)trailerButton.getTag():"";
@@ -354,6 +356,23 @@ public class DetailsActivity extends Activity {
             if(row instanceof LinearLayout && ((LinearLayout)row).getChildCount()>0)((LinearLayout)row).getChildAt(0).requestFocus();
         }
     }
+    private void showWatchedMenu(String episode){
+        String key=ViewerOptions.watchedKey(kind,id,episode);boolean watched=Api.prefs(this).getBoolean(key,false);
+        Ui.dialog(this,movie?title:"Episode status",watched?"Watched":"Not watched",new String[]{watched?"Mark as unwatched":"Mark as watched","Cancel"},0,i->{
+            if(i!=0)return;Api.prefs(this).edit().putBoolean(key,!watched).apply();
+            android.widget.Toast.makeText(this,watched?"Marked as unwatched":"Marked as watched",android.widget.Toast.LENGTH_SHORT).show();
+            // Refresh visible badges in place without rebuilding the row or moving focus.
+            if(seasonContent!=null)updateWatchedBadges(seasonContent);
+        },null);
+    }
+    private void updateWatchedBadges(View view){
+        if(view instanceof FrameLayout && view.getTag() instanceof JSONObject){JSONObject ep=(JSONObject)view.getTag();
+            FrameLayout card=(FrameLayout)view;for(int i=0;i<card.getChildCount();i++){View child=card.getChildAt(i);
+                if(child instanceof TextView){TextView text=(TextView)child;String value=text.getText().toString();
+                    if(value.matches("(?:✓ )?[0-9]+"))text.setText((Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",id,ep.optString("id")),false)?"✓ ":"")+value.replace("✓ ",""));}}
+        }
+        if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)updateWatchedBadges(((ViewGroup)view).getChildAt(i));
+    }
     private static int parseSeason(String value){try{return Integer.parseInt(value);}catch(Exception e){return Integer.MAX_VALUE;}}
     private void showSeason(JSONObject seasons,String season,List<JSONObject> ordered){
         restoreSeriesPreview();
@@ -372,6 +391,7 @@ public class DetailsActivity extends Activity {
             LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,206),Ui.dp(this,116));bp.setMargins(i==0?0:Ui.dp(this,8),0,Ui.dp(this,12),0);row.addView(card,bp);
             String label=episodeLabel(ep),nextLabel=next==null?"":episodeLabel(next);
             card.setNextFocusUpId(seasonSelector.getId());
+            card.setOnLongClickListener(v->{showWatchedMenu(episodeId);return true;});
             card.setOnClickListener(v->{rememberArt(ep);playEpisode(episodeId,ext,nextId,nextExt,label,nextLabel);});
             if(episodeId.equals(saved))resume=card;
         }
@@ -466,7 +486,7 @@ public class DetailsActivity extends Activity {
         JSONObject info=ep.optJSONObject("info");String art=info==null?"":info.optString("movie_image","");
         Images.load(image,art,420);
         View shade=new View(this);shade.setBackgroundResource(R.drawable.card_shade);frame.addView(shade,new FrameLayout.LayoutParams(-1,-1));
-        TextView index=Ui.heading(this,String.format(Locale.US,"%02d",number),30);
+        TextView index=Ui.heading(this,(Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",id,ep.optString("id")),false)?"✓ ":"")+String.format(Locale.US,"%02d",number),30);
         Ui.pad(index,this,12,6,0,0);frame.addView(index);
         if(current){TextView badge=Ui.text(this,"Continue",12);badge.setBackground(Ui.rounded(Ui.ACCENT,4,this));Ui.pad(badge,this,8,2,8,2);
             FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(-2,-2,Gravity.END|Gravity.TOP);bp.setMargins(0,Ui.dp(this,10),Ui.dp(this,10),0);frame.addView(badge,bp);}

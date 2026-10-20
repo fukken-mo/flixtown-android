@@ -59,8 +59,9 @@ public class PlayerActivity extends Activity {
     private long pendingSeek=-1,lastRepeatAt;
     private Dialog dialog;
     private long lastSavedAt;
-    private View reportButton,previousButton,nextButton;
+    private View reportButton,previousButton,nextButton,optionsButton;
     private EpisodeNavigation episodeNavigation;
+    private org.json.JSONObject episodeCatalog;private boolean loadingEpisodes;private int episodeLoadGeneration;
     private boolean reporting,reportWasPlaying,reportFromError,stopping,reportEnded;
     private String lastPlayerError="";private boolean lastErrorNetwork;
     private ExoPlayer reportPlayer;private Boolean reportRestartReady;
@@ -110,7 +111,7 @@ public class PlayerActivity extends Activity {
         video.setUseController(false);
         video.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);
         video.setShutterBackgroundColor(0xFF000000);
-        keepSubtitlesInSafeArea();
+        keepSubtitlesInSafeArea();applySubtitleAppearance();
         buildControls();
         root.requestFocus();
     }
@@ -127,6 +128,7 @@ public class PlayerActivity extends Activity {
         cardTitle=findViewById(R.id.player_card_title);cardMessage=findViewById(R.id.player_card_message);cardActions=findViewById(R.id.player_card_actions);
         ((TextView)findViewById(R.id.player_title)).setText(title==null?"Flix Town":title);
         showSubtitle();
+        ((TextView)findViewById(R.id.player_title)).setPadding(0,0,Ui.dp(this,160),0);
         elapsed=findViewById(R.id.player_elapsed);remaining=findViewById(R.id.player_remaining);status=findViewById(R.id.player_status);
         progressLine=new ProgressLine(this);
         ((FrameLayout)findViewById(R.id.player_progress_slot)).addView(progressLine,new FrameLayout.LayoutParams(-1,-1));
@@ -136,6 +138,10 @@ public class PlayerActivity extends Activity {
             if(event.getAction()==KeyEvent.ACTION_DOWN && Ui.isSelect(key)){togglePlay();return true;}
             return false;
         });
+        Button options=Ui.button(this,"Options");optionsButton=options;
+        FrameLayout.LayoutParams op=new FrameLayout.LayoutParams(-2,Ui.dp(this,46),Gravity.TOP|Gravity.END);
+        op.topMargin=Ui.dp(this,30);op.rightMargin=Ui.safeX(this);((FrameLayout)controls).addView(options,op);
+        options.setOnClickListener(v->showOptions());
         LinearLayout actions=findViewById(R.id.player_actions);
         playButton=controlButton(actions,PlayerIcon.PAUSE,null,this::togglePlay);
         playIcon=(PlayerIcon)playButton.getChildAt(0);
@@ -268,6 +274,7 @@ public class PlayerActivity extends Activity {
             .setMediaSourceFactory(new DefaultMediaSourceFactory(new DefaultDataSource.Factory(this,http))).build();
         video.setPlayer(player);
         applyPreferences(this,player);
+        player.setPlaybackSpeed(ViewerOptions.speed(Api.prefs(this).getFloat(ViewerOptions.SPEED,1f)));
         player.addListener(new Player.Listener(){
             @Override public void onPlaybackStateChanged(int state){
                 if(state==Player.STATE_ENDED){if(reporting){reportEnded=true;return;}ended=true;finishProgress();
@@ -405,6 +412,7 @@ public class PlayerActivity extends Activity {
         if(player==null || dialog!=null)return super.dispatchKeyEvent(event);
         if(key==KeyEvent.KEYCODE_BACK){
             if(event.getAction()!=KeyEvent.ACTION_DOWN || event.getRepeatCount()>0)return true;
+            if(loadingEpisodes){episodeLoadGeneration++;loadingEpisodes=false;}
             if(card.getVisibility()==View.VISIBLE){
                 if(cardForNext){nextCanceled=true;hideCard();return true;}
                 finish();return true;           // Back on Continue/Start over or an error leaves playback
@@ -436,11 +444,93 @@ public class PlayerActivity extends Activity {
         scheduleHide();
         View focus=getCurrentFocus();
         boolean onRow=focus!=null && focus.getParent()==playButton.getParent();
+        if(key==KeyEvent.KEYCODE_DPAD_UP && onRow){optionsButton.requestFocus();return true;}
+        if(key==KeyEvent.KEYCODE_DPAD_DOWN && focus==optionsButton){playButton.requestFocus();return true;}
+        if(focus==optionsButton && (key==KeyEvent.KEYCODE_DPAD_LEFT || key==KeyEvent.KEYCODE_DPAD_RIGHT || key==KeyEvent.KEYCODE_DPAD_UP))return true;
         if(key==KeyEvent.KEYCODE_DPAD_DOWN && onRow){progressLine.requestFocus();return true;}
         if(key==KeyEvent.KEYCODE_DPAD_UP && focus==progressLine){playButton.requestFocus();return true;}
         if((key==KeyEvent.KEYCODE_DPAD_UP && onRow) || (key==KeyEvent.KEYCODE_DPAD_DOWN && focus==progressLine))return true;
         if(focus==root){playButton.requestFocus();return true;}
         return super.dispatchKeyEvent(event);
+    }
+
+    /** Secondary features live off the main row, with one predictable D-pad route. */
+    private void choose(String title,String[] labels,int selected,Ui.Choice action){
+        handler.removeCallbacks(hideControls);
+        Dialog opened=Ui.picker(this,title,labels,selected,i->{dialog=null;action.select(i);if(dialog==null)showControls(optionsButton);});dialog=opened;
+        opened.setOnDismissListener(d->{if(dialog==opened){dialog=null;showControls(optionsButton);}});
+    }
+    private String watchedKey(){return ViewerOptions.watchedKey(kind,contentId,episodeId);}
+    private void showOptions(){
+        if(player==null||reporting||dialog!=null)return;
+        List<String> names=new ArrayList<>();
+        if(episodeNavigation!=null)names.add("Episodes");
+        names.add("Playback speed");names.add("Subtitle size");names.add("Subtitle appearance");
+        boolean canMark=("movie".equals(kind)||episodeNavigation!=null)&&contentId!=null&&!contentId.isEmpty();
+        if(canMark)names.add(Api.prefs(this).getBoolean(watchedKey(),false)?"Mark as unwatched":"Mark as watched");
+        choose("Player options",names.toArray(new String[0]),0,i->{String name=names.get(i);
+            if(name.equals("Episodes"))showEpisodes();
+            else if(name.equals("Playback speed"))choose("Playback speed",new String[]{"0.75×","1× (Normal)","1.25×","1.5×"},ViewerOptions.index(player.getPlaybackParameters().speed,ViewerOptions.SPEEDS),n->{
+                if(player==null)return;float speed=ViewerOptions.SPEEDS[n];player.setPlaybackSpeed(speed);Api.prefs(this).edit().putFloat(ViewerOptions.SPEED,speed).apply();});
+            else if(name.equals("Subtitle size"))choose("Subtitle size",new String[]{"Small","Normal","Large","Extra large"},ViewerOptions.index(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f),ViewerOptions.SIZES),n->{Api.prefs(this).edit().putFloat(ViewerOptions.SIZE,ViewerOptions.SIZES[n]).apply();applySubtitleAppearance();});
+            else if(name.equals("Subtitle appearance"))choose("Subtitle appearance",new String[]{"Original track style","White with outline","White on black","Yellow with outline"},Math.max(0,Math.min(3,Api.prefs(this).getInt(ViewerOptions.STYLE,0))),n->{Api.prefs(this).edit().putInt(ViewerOptions.STYLE,n).apply();applySubtitleAppearance();});
+            else {boolean watched=!Api.prefs(this).getBoolean(watchedKey(),false);Api.prefs(this).edit().putBoolean(watchedKey(),watched).apply();flash(watched?"Marked as watched":"Marked as unwatched");}
+        });
+    }
+    private void showEpisodes(){
+        if(episodeNavigation==null||loadingEpisodes)return;
+        if(episodeCatalog!=null){showEpisodeSeasons();return;}
+        loadingEpisodes=true;final int loadToken=++episodeLoadGeneration;flash("Loading episodes…");
+        Api.IO.execute(()->{org.json.JSONObject data=null;
+            try{data=Api.get(Api.xtream(this,"get_series_info","&series_id="+Api.enc(contentId))).optJSONObject("episodes");}catch(Exception ignored){}
+            final org.json.JSONObject loaded=data;
+            runOnUiThread(()->{if(loadToken!=episodeLoadGeneration)return;loadingEpisodes=false;if(stopping||isFinishing()||isDestroyed())return;
+                if(loaded==null){flash("Unable to load all episodes. Showing the loaded episodes.");showLoadedEpisodes();return;}
+                episodeCatalog=loaded;showEpisodeSeasons();});});
+    }
+    private void showLoadedEpisodes(){
+        String[] ids=episodeNavigation.ids(),labels=episodeNavigation.labels();
+        for(int i=0;i<labels.length;i++){if(labels[i].isEmpty())labels[i]="Episode "+(i+1);
+            if(Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",contentId,ids[i]),false))labels[i]+=" · Watched";}
+        choose("Loaded episodes",labels,episodeNavigation.index(),n->navigateToEpisode(n,true,n<episodeNavigation.index()?-1:1));
+    }
+    private void showEpisodeSeasons(){
+        List<Integer> seasons=new ArrayList<>();
+        for(java.util.Iterator<String> it=episodeCatalog.keys();it.hasNext();){String key=it.next();try{int n=Integer.parseInt(key);
+            org.json.JSONArray a=episodeCatalog.optJSONArray(key);if(n>0&&a!=null&&a.length()>0)seasons.add(n);}catch(NumberFormatException ignored){}}
+        java.util.Collections.sort(seasons);if(seasons.isEmpty()){showLoadedEpisodes();return;}
+        String[] names=new String[seasons.size()];int selected=0;
+        for(int i=0;i<names.length;i++){names[i]="Season "+seasons.get(i);org.json.JSONArray a=episodeCatalog.optJSONArray(""+seasons.get(i));
+            for(int j=0;j<a.length();j++){org.json.JSONObject ep=a.optJSONObject(j);if(ep!=null&&episodeId.equals(ep.optString("id")))selected=i;}}
+        choose("Select season",names,selected,n->showCatalogSeason(seasons,seasons.get(n)));
+    }
+    private void showCatalogSeason(List<Integer> seasons,int season){
+        List<EpisodeNavigation.Episode> all=new ArrayList<>();List<Integer> targets=new ArrayList<>();List<String> names=new ArrayList<>();int selected=0;
+        for(int sn:seasons){org.json.JSONArray a=episodeCatalog.optJSONArray(""+sn);for(int j=0;j<a.length();j++){
+            org.json.JSONObject ep=a.optJSONObject(j);if(ep==null||ep.optString("id").isEmpty())continue;
+            String id=ep.optString("id"),ext=ep.optString("container_extension","");org.json.JSONObject info=ep.optJSONObject("info");if(ext.isEmpty())ext=info==null?"mp4":info.optString("container_extension","mp4");String label="S"+sn+" · E"+ep.optInt("episode_num",j+1)+"  "+ep.optString("title","");
+            if(sn==season){if(id.equals(episodeId))selected=names.size();targets.add(all.size());
+                names.add(label+(Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",contentId,id),false)?" · Watched":""));}
+            all.add(new EpisodeNavigation.Episode(id,ext,label));}}
+        if(names.isEmpty()){flash("No playable episodes in this season");return;}
+        choose("Season "+season,names.toArray(new String[0]),selected,n->{int target=targets.get(n);EpisodeNavigation.Episode ep=all.get(target);
+            if(ep.id.equals(episodeId))return;
+            int first=Math.max(0,target-MAX_QUEUE),last=Math.min(all.size(),target+MAX_QUEUE+1),count=last-first;
+            String[] ids=new String[count],exts=new String[count],labels=new String[count];
+            for(int i=0;i<count;i++){EpisodeNavigation.Episode e=all.get(first+i);ids[i]=e.id;exts[i]=e.extension;labels[i]=e.label;}
+            EpisodeNavigation fresh=new EpisodeNavigation(ids,exts,labels,target-first,last==all.size());
+            switchEpisode(ep,true,1,()->episodeNavigation=fresh);
+        });
+    }
+    private void applySubtitleAppearance(){
+        androidx.media3.ui.SubtitleView subs=video.getSubtitleView();if(subs==null)return;
+        float size=ViewerOptions.size(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f));
+        subs.setFractionalTextSize(androidx.media3.ui.SubtitleView.DEFAULT_TEXT_SIZE_FRACTION*size);
+        subs.setApplyEmbeddedFontSizes(size==1f);
+        int style=Api.prefs(this).getInt(ViewerOptions.STYLE,0);subs.setApplyEmbeddedStyles(style==0);
+        if(style==0){subs.setStyle(androidx.media3.ui.CaptionStyleCompat.DEFAULT);return;}
+        subs.setStyle(new androidx.media3.ui.CaptionStyleCompat(style==3?0xFFFFFF00:0xFFFFFFFF,style==2?0xCC000000:0x00000000,0x00000000,
+            style==2?androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_NONE:androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_OUTLINE,0xFF000000,null));
     }
 
     /* ---------------- Audio and subtitles ---------------- */
@@ -501,6 +591,12 @@ public class PlayerActivity extends Activity {
             else {
                 builder.setTrackTypeDisabled(type,false);
                 builder.addOverride(new TrackSelectionOverride(group.getMediaTrackGroup(),indexes.get(index)));
+            }
+            if(type==C.TRACK_TYPE_TEXT){
+                android.content.SharedPreferences.Editor pref=Api.prefs(this).edit().putBoolean(SettingsPage.SUBTITLES_ON,group!=null);
+                if(group!=null){String language=group.getTrackFormat(indexes.get(index)).language;
+                    if(language!=null&&!language.isEmpty()&&!"und".equals(language)){pref.putString(SettingsPage.SUBTITLE_LANGUAGE,language);builder.setPreferredTextLanguage(language);}}
+                pref.apply();
             }
             player.setTrackSelectionParameters(builder.build());
         });
@@ -575,8 +671,9 @@ public class PlayerActivity extends Activity {
     private void qaState(){
         if(!BuildConfig.DEMO || player==null)return;
         View f=getCurrentFocus();
-        String focus=f==null?"none":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==previousButton?"previous":f==nextButton?"next":f==progressLine?"progress":"other";
+        String focus=f==null?"none":f==optionsButton?"options":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==previousButton?"previous":f==nextButton?"next":f==progressLine?"progress":"other";
         String s="controls="+controlsVisible()+" playing="+player.isPlaying()+" reporting="+reporting+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
+            +" speed="+player.getPlaybackParameters().speed+" subtitle_size="+Api.prefs(this).getFloat(ViewerOptions.SIZE,1f)+" subtitle_style="+Api.prefs(this).getInt(ViewerOptions.STYLE,0)
             +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
             +" controls_fit="+(nextButton==null || nextButton.getRight()<=((View)nextButton.getParent()).getWidth())
             +" episode_controls="+(episodeNavigation!=null)+" episode="+(episodeId==null?"":episodeId)+" previous="+(previousButton!=null&&previousButton.isEnabled())+" next="+(nextButton!=null&&nextButton.isEnabled())
@@ -627,15 +724,21 @@ public class PlayerActivity extends Activity {
             buttons[i].setEnabled(enabled);buttons[i].setFocusable(enabled);buttons[i].setAlpha(enabled?1f:.35f);}
     }
     /** Manual skips do not mark an unfinished episode complete; autoplay still does so at EOF. */
-    private void navigateEpisode(int direction,boolean manual){
+    private void navigateEpisode(int direction,boolean manual){navigateToEpisode(episodeNavigation==null?-1:episodeNavigation.index()+direction,manual,direction);}
+    private void navigateToEpisode(int targetIndex,boolean manual,int direction){
         if(player==null || episodeNavigation==null || reporting || dialog!=null)return;
-        EpisodeNavigation.Episode target=episodeNavigation.adjacent(direction);if(target==null)return;
+        if(targetIndex<0||targetIndex>=episodeNavigation.ids().length||targetIndex==episodeNavigation.index())return;
+        EpisodeNavigation.Episode target=new EpisodeNavigation.Episode(episodeNavigation.ids()[targetIndex],episodeNavigation.extensions()[targetIndex],episodeNavigation.labels()[targetIndex]);
+        switchEpisode(target,manual,direction,()->episodeNavigation.select(targetIndex));
+    }
+    private void switchEpisode(EpisodeNavigation.Episode target,boolean manual,int direction,Runnable select){
+        if(player==null||reporting||dialog!=null)return;
         String targetUrl;try{targetUrl=Api.stream(this,"series",target.id,target.extension);}catch(Exception ignored){flash("Unable to open episode. Please try again.");return;}
         boolean keepPlaying=!manual || player.getPlayWhenReady();
         if(manual && !ended && resumeAsked)saveProgress(player.getCurrentPosition(),player.getDuration());
         if(card.getVisibility()==View.VISIBLE)hideCard();
         handler.removeCallbacks(commitSeek);pendingSeek=-1;
-        player.pause();episodeNavigation.move(direction);
+        player.pause();select.run();
         url=targetUrl;episodeId=target.id;episodeExt=target.extension;subtitle=target.label;
         position=0;lastSavedAt=0;lastPlayerError="";promptShown=false;nextCanceled=false;ended=false;resumeAsked=true;
         syncEpisodeNeighbors();showSubtitle();updateEpisodeButtons();status.setVisibility(View.GONE);
@@ -658,7 +761,7 @@ public class PlayerActivity extends Activity {
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onStop(){
         if(reporting)reportRestartReady=reportWasPlaying&&!reportFromError;
-        stopping=true;reporting=false;
+        stopping=true;reporting=false;episodeLoadGeneration++;loadingEpisodes=false;
         handler.removeCallbacksAndMessages(null);
         if(dialog!=null){dialog.dismiss();dialog=null;}
         if(player!=null){position=player.getCurrentPosition();if(!ended && resumeAsked)saveProgress(position,player.getDuration());

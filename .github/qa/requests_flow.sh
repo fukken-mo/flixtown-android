@@ -267,6 +267,11 @@ for pair in "pending|Pending approval" "approved|Approved · processing" "availa
   check "movie $st: details say $lab too" "badge \"$lab\""
   key BACK; sleep 1.5
   check "movie $st: back on the same card, still $lab" "focused | grep -q \"Alpha Movie. Movie, 1990. $lab\""
+  if [ "$st" = available ];then
+    check "ready notice appears on availability transition" 'qa | grep "requests ready notices=" | tail -1 | grep -q "notices=1"'
+    reenter_mine
+    check "ready notice is not repeated on the next visit" 'qa | grep "requests ready notices=" | tail -1 | grep -q "notices=0"'
+  fi
 done
 for pair in "pending|Pending approval" "approved|Approved · processing" "partial|Partly available" "available|Available"; do
   st="${pair%%|*}"; lab="${pair#*|}"
