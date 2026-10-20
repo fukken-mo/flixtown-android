@@ -52,8 +52,8 @@ jobs:
           command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y ffmpeg; }
           bash .github/qa/make_subtitle_video.sh media/source.mkv 1280x720
           ffmpeg -hide_banner -loglevel error -y -i media/source.mkv -map 0 -t 75 -c copy media/episode-test.mkv
-          python3 -m http.server 8766 --bind 0.0.0.0 --directory media > /tmp/episode-video-server.log 2>&1 &
-          curl --fail --retry 5 --retry-delay 1 http://127.0.0.1:8766/episode-test.mkv -o /dev/null
+          nohup python3 -m http.server 8766 --bind 0.0.0.0 --directory media > /tmp/episode-video-server.log 2>&1 &
+          curl --fail --retry 10 --retry-connrefused --retry-delay 1 --retry-max-time 20 http://127.0.0.1:8766/episode-test.mkv -o /dev/null
       - uses: reactivecircus/android-emulator-runner@v2
         env:
           QA_OUT: qa/episode-controls-api${{ matrix.api }}
