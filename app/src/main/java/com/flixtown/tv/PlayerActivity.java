@@ -60,7 +60,7 @@ public class PlayerActivity extends Activity {
     private Dialog dialog;
     private long lastSavedAt;
     private View reportButton,previousButton,nextButton,optionsButton;
-    private EpisodeNavigation episodeNavigation;
+    private EpisodeNavigation episodeNavigation;private boolean nextAfterMenu;
     private org.json.JSONObject episodeCatalog;private boolean loadingEpisodes;private int episodeLoadGeneration;
     private boolean reporting,reportWasPlaying,reportFromError,stopping,reportEnded;
     private String lastPlayerError="";private boolean lastErrorNetwork;
@@ -457,8 +457,8 @@ public class PlayerActivity extends Activity {
     /** Secondary features live off the main row, with one predictable D-pad route. */
     private void choose(String title,String[] labels,int selected,Ui.Choice action){
         handler.removeCallbacks(hideControls);
-        Dialog opened=Ui.picker(this,title,labels,selected,i->{dialog=null;action.select(i);if(dialog==null)showControls(optionsButton);});dialog=opened;
-        opened.setOnDismissListener(d->{if(dialog==opened){dialog=null;showControls(optionsButton);}});
+        Dialog opened=Ui.picker(this,title,labels,selected,i->{dialog=null;action.select(i);if(dialog==null){continueAfterMenu();showControls(optionsButton);}});dialog=opened;
+        opened.setOnDismissListener(d->{if(dialog==opened){dialog=null;continueAfterMenu();showControls(optionsButton);}});
     }
     private String watchedKey(){return ViewerOptions.watchedKey(kind,contentId,episodeId);}
     private void showOptions(){
@@ -600,7 +600,7 @@ public class PlayerActivity extends Activity {
             }
             player.setTrackSelectionParameters(builder.build());
         });
-        dialog.setOnDismissListener(d->{dialog=null;scheduleHide();});
+        dialog.setOnDismissListener(d->{dialog=null;continueAfterMenu();scheduleHide();});
     }
     /** Shows the current choice next to the Audio and Subtitles buttons. */
     private void updateTrackLabels(){
@@ -658,7 +658,7 @@ public class PlayerActivity extends Activity {
         if(duration>0 && duration!=C.TIME_UNSET){
             long left=duration-current;
             if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && left>0){
-                if(left<=25000 && !promptShown && !reporting && player.isPlaying()){promptShown=true;showNext();}
+                if(left<=25000 && !promptShown && !reporting && dialog==null && player.isPlaying()){promptShown=true;showNext();}
                 if(cardForNext && card.getVisibility()==View.VISIBLE){
                     cardMessage.setText("Starts in "+Math.max(1,(left+999)/1000)+" seconds"+(nextSubtitle!=null&&!nextSubtitle.isEmpty()?"  ·  "+nextSubtitle:""));
                     cardMessage.setVisibility(View.VISIBLE);}   // the card opens with an empty (hidden) message line
@@ -700,7 +700,11 @@ public class PlayerActivity extends Activity {
             if(i==0)playNext();else nextCanceled=true;});
         cardForNext=true;
     }
+    private void continueAfterMenu(){
+        if(nextAfterMenu&&dialog==null&&player!=null&&!stopping){nextAfterMenu=false;playNext();}
+    }
     private void playNext(){
+        if(dialog!=null){nextAfterMenu=true;return;}
         if(episodeNavigation!=null){navigateEpisode(1,false);return;}
         if(nextUrl==null || nextUrl.isEmpty() || player==null)return;
         if(card.getVisibility()==View.VISIBLE)hideCard();
@@ -738,7 +742,7 @@ public class PlayerActivity extends Activity {
         if(manual && !ended && resumeAsked)saveProgress(player.getCurrentPosition(),player.getDuration());
         if(card.getVisibility()==View.VISIBLE)hideCard();
         handler.removeCallbacks(commitSeek);pendingSeek=-1;
-        player.pause();select.run();
+        player.pause();nextAfterMenu=false;select.run();
         url=targetUrl;episodeId=target.id;episodeExt=target.extension;subtitle=target.label;
         position=0;lastSavedAt=0;lastPlayerError="";promptShown=false;nextCanceled=false;ended=false;resumeAsked=true;
         syncEpisodeNeighbors();showSubtitle();updateEpisodeButtons();status.setVisibility(View.GONE);

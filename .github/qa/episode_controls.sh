@@ -116,6 +116,10 @@ key MEDIA_NEXT;state 'episode=9204 ';state 'speed=1.25';state 'subtitle_size=1.2
 ok 'episode change retains speed and subtitle preferences'
 key DPAD_DOWN DPAD_DOWN DPAD_UP DPAD_UP;state 'focus=options ';key DPAD_DOWN;state 'focus=play '
 ok 'Options and playback row have no D-pad trap'
+key MEDIA_FAST_FORWARD MEDIA_FAST_FORWARD MEDIA_FAST_FORWARD MEDIA_FAST_FORWARD
+key MEDIA_PLAY;options
+sleep 32;state 'episode=9204 ';key BACK
+state 'episode=9205 ';ok 'autoplay resumes after an Options menu spans episode EOF'
 
 if adb logcat -d | grep -A8 'FATAL EXCEPTION' | grep -q 'com.myflixtown.tv.native.qa';then note 'FAIL app crash';exit 1;fi
 ok 'no app crash'
