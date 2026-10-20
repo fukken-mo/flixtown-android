@@ -32,16 +32,18 @@ adb install -r app/build/outputs/apk/qa/app-qa.apk >/dev/null
 adb logcat -c
 adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -f 0x10200000 -n "$PKG/com.flixtown.tv.LoginActivity" --ez demo_reset true >/dev/null
 wait_activity HomeActivity;sleep 5;ok 'login and Home startup'
+printf '%s' '{"stream":"http://10.0.2.2:8766/episode-test.mkv"}' | adb shell "run-as $PKG sh -c 'cat > files/demo_account.json'"
+adb shell "run-as $PKG cat files/demo_account.json" | grep -q '8766/episode-test.mkv' 
 # Movie controls remain unchanged.
 key DPAD_LEFT DPAD_DOWN DPAD_CENTER;sleep 2;key DPAD_RIGHT DPAD_CENTER
 wait_activity DetailsActivity;sleep 3;key DPAD_CENTER
-wait_activity PlayerActivity;sleep 3;key MEDIA_PAUSE;state 'episode_controls=false';shot 01-movie-controls
+wait_activity PlayerActivity;sleep 3;state 'playing=true';key MEDIA_PAUSE;state 'episode_controls=false';shot 01-movie-controls
 ok 'movies have no episode controls'
-control audio;key DPAD_CENTER;wait_text 'Audio';key BACK;ok 'movie Audio picker still opens'
+control audio;key DPAD_CENTER;wait_text 'Audio';adb logcat -d -s FlixTownQA:I | grep -q 'tracks type=1';key BACK;ok 'movie Audio picker still opens'
 back_details;key BACK;wait_activity HomeActivity;sleep 1
 key BACK;sleep 1;key DPAD_LEFT;focus_to DPAD_DOWN 'TV Shows';key DPAD_CENTER;sleep 2;key DPAD_RIGHT DPAD_CENTER
 wait_activity DetailsActivity;sleep 3;key DPAD_CENTER;sleep 1;key DPAD_CENTER
-wait_activity PlayerActivity;sleep 3;key MEDIA_PAUSE
+wait_activity PlayerActivity;sleep 3;state 'playing=true';key MEDIA_PAUSE
 state 'episode=9101 previous=false next=true';ok 'first episode disables Previous and enables Next'
 control next;shot 02-series-controls;key DPAD_CENTER
 state 'episode=9102 previous=true next=true';state 'playing=false';state 'elapsed=[0-3] ';ok 'D-pad Next starts E2 at zero and stays paused'
@@ -64,12 +66,16 @@ key MEDIA_PLAY;state 'playing=true';ok 'play after manual navigation'
 # Real EOF/autoplay, not a synthetic navigation hook.
 for n in $(seq 1 100);do qa | grep -q 'episode=9102 ' && break;sleep 1;done
 state 'episode=9102 previous=true next=true';state 'playing=true';ok 'normal EOF autoplay still advances and keeps Previous available'
-key MEDIA_PAUSE;control subs;key DPAD_CENTER;wait_text 'Subtitles';key BACK;ok 'Subtitles picker works after autoplay and navigation'
+key MEDIA_PAUSE;control subs;key DPAD_CENTER;wait_text 'Subtitles';adb logcat -d -s FlixTownQA:I | grep -q 'tracks type=3';key BACK;ok 'Subtitles picker works after autoplay and navigation'
 key MEDIA_FAST_FORWARD;state 'elapsed=1[0-4] ';ok 'existing ten-second seeking is unchanged'
 adb shell input keyevent KEYCODE_MEDIA_FAST_FORWARD KEYCODE_MEDIA_NEXT
 state 'episode=9103 ';state 'elapsed=[0-3] ';state 'playing=false';ok 'pending seek from old episode never lands on new episode'
 shot 05-new-episode-paused
 back_details;wait_activity DetailsActivity;ok 'Back returns to Details'
+key DPAD_UP DPAD_UP;focus_to DPAD_LEFT 'Continue';key DPAD_CENTER
+wait_activity PlayerActivity;state 'episode=9103 previous=true next=true';ok 'Continue resumes the manually selected episode even before fifteen seconds'
+key MEDIA_PAUSE;key MEDIA_PREVIOUS;state 'episode=9102 previous=true next=true';ok 'fresh player receives earlier episodes from Details'
+
 if adb logcat -d | grep -A8 'FATAL EXCEPTION' | grep -q 'com.myflixtown.tv.native.qa';then note 'FAIL app crash';exit 1;fi
 ok 'no app crash'
 note "Episode controls: $PASS passed, 0 failed"
