@@ -25,7 +25,19 @@ qa(){ adb logcat -d -s FlixTownQA:I | grep ' player ' | tail -1; }
 state(){ for n in $(seq 1 20);do qa | grep -q "$1" && return 0;sleep .5;done;qa;note "FAIL state $1";return 1; }
 control(){ key DPAD_UP;for n in $(seq 1 8);do qa | grep -q "focus=$1 " && return 0;key DPAD_RIGHT;done;note "FAIL control $1";return 1; }
 back_details(){ for n in $(seq 1 8);do activity | grep -q DetailsActivity && return 0;key BACK;sleep 1;done;return 1; }
-prefs_episode(){ adb shell "run-as $PKG cat shared_prefs/flix.xml" | python3 -c 'import sys,xml.etree.ElementTree as E; r=E.fromstring(sys.stdin.read());print(next((n.text for n in r if n.get("name")=="resume_episode_series:5000"),""))'; }
+resume_check(){
+adb shell "run-as $PKG cat shared_prefs/flix.xml" > "$OUT/progress.xml"
+python3 - "$OUT/progress.xml" "$1" <<'PY_ASSERT'
+import sys,xml.etree.ElementTree as E
+values={n.get('name'):n.get('value',n.text or '') for n in E.parse(sys.argv[1]).getroot()}
+keys=[k for k,v in values.items() if k.startswith('resume_episode_series:') and v==sys.argv[2]]
+assert len(keys)==1,keys
+key=keys[0].removeprefix('resume_episode_')
+assert key in values.get('continue_ids','').split(','),values.get('continue_ids')
+assert int(values.get('resume_position_'+key,'0'))<4000
+assert 'resume_done_'+key not in values or values['resume_done_'+key]!='true'
+PY_ASSERT
+}
 : > "$OUT/report.txt"
 trap 'adb logcat -d -s FlixTownQA:I > "$OUT/qa-log.txt";adb shell screencap -p /sdcard/final-episode.png;adb pull /sdcard/final-episode.png "$OUT/screens/final.png" >/dev/null 2>&1 || true' EXIT
 adb install -r app/build/outputs/apk/qa/app-qa.apk >/dev/null
@@ -47,6 +59,7 @@ wait_activity PlayerActivity;sleep 3;state 'playing=true';key MEDIA_PAUSE
 state 'episode=9101 previous=false next=true';ok 'first episode disables Previous and enables Next'
 control next;shot 02-series-controls;key DPAD_CENTER
 state 'episode=9102 previous=true next=true';state 'playing=false';state 'elapsed=[0-3] ';ok 'D-pad Next starts E2 at zero and stays paused'
+resume_check 9102;ok 'first manual switch creates Continue Watching immediately'
 key DPAD_LEFT;state 'focus=previous ';key DPAD_CENTER
 state 'episode=9101 previous=false next=true';state 'focus=play ';ok 'Previous returns to E1 and restores reachable focus at boundary'
 key MEDIA_PREVIOUS;state 'episode=9101 ';ok 'Previous at first episode never wraps'
@@ -71,6 +84,8 @@ key MEDIA_FAST_FORWARD;state 'elapsed=1[0-4] ';ok 'existing ten-second seeking i
 adb shell input keyevent KEYCODE_MEDIA_FAST_FORWARD KEYCODE_MEDIA_NEXT
 state 'episode=9103 ';state 'elapsed=[0-3] ';state 'playing=false';ok 'pending seek from old episode never lands on new episode'
 shot 05-new-episode-paused
+resume_check 9103
+ok 'selected episode is in Continue Watching immediately at zero'
 back_details;wait_activity DetailsActivity;ok 'Back returns to Details'
 key DPAD_UP DPAD_UP;focus_to DPAD_LEFT 'Continue';key DPAD_CENTER
 wait_activity PlayerActivity;state 'episode=9103 previous=true next=true';ok 'Continue resumes the manually selected episode even before fifteen seconds'

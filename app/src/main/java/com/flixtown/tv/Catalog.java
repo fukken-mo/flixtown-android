@@ -183,6 +183,16 @@ final class Catalog {
             .putString("resume_next_"+key,"").putString("resume_next_ext_"+key,"mp4").apply();
         remember(c,key);
     }
+    /** A deliberate episode switch is a new resume target, even before fifteen seconds play. */
+    static void selectEpisode(Context c,String id,String episodeId,String episodeExt,String nextId,String nextExt,String label){
+        if(id==null||id.isEmpty()||episodeId==null||episodeId.isEmpty())return;
+        String key="series:"+id;
+        Api.prefs(c).edit().putString("resume_episode_"+key,episodeId).putString("resume_extension_"+key,episodeExt)
+            .putString("resume_next_"+key,nextId).putString("resume_next_ext_"+key,nextExt)
+            .putString("resume_label_"+key,label).remove("resume_position_"+key).remove("resume_duration_"+key)
+            .remove("resume_art_"+key).remove(DONE+key).apply();
+        remember(c,key);
+    }
     private static void remember(Context c,String key) {
         String existing=Api.prefs(c).getString("continue_ids","");
         StringBuilder s=new StringBuilder(key);

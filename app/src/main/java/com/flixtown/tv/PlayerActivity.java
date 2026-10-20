@@ -637,11 +637,7 @@ public class PlayerActivity extends Activity {
         position=0;lastSavedAt=0;lastPlayerError="";promptShown=false;nextCanceled=false;ended=false;resumeAsked=true;
         syncEpisodeNeighbors();showSubtitle();updateEpisodeButtons();status.setVisibility(View.GONE);
         // Persist the selected episode immediately, even if Back is pressed before the 15-second save threshold.
-        String key=kind+":"+contentId;
-        Api.prefs(this).edit().putString("resume_episode_"+key,episodeId).putString("resume_extension_"+key,episodeExt)
-            .putString("resume_next_"+key,nextEpisodeId).putString("resume_next_ext_"+key,nextEpisodeExt)
-            .putString("resume_label_"+key,subtitle).remove("resume_position_"+key).remove("resume_duration_"+key)
-            .remove("resume_art_"+key).remove(Catalog.DONE+key).apply();
+        Catalog.selectEpisode(this,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,subtitle);
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.setPlayWhenReady(keepPlaying);
         if(manual){View focus=direction<0?previousButton:nextButton;showControls(focus!=null&&focus.isEnabled()?focus:playButton);}
     }
