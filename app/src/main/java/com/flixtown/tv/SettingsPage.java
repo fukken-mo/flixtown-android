@@ -35,8 +35,8 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     // ISO 639-1 codes; Media3 matches them against the stream's own language tags (en = eng, …).
     static final String[] LANGUAGE_CODES={"en","es","fr","de","it","pt","ar","hi","tr","ru","nl","pl","el","ja","ko","zh"};
 
-    private static final int ACCOUNT=0,REFRESH=1,IMAGES=2,AUTOPLAY_ROW=3,AUDIO=4,SUBTITLES=5,SUBTITLE_LANG=6,UPDATES=7,VERSION=8,SIGN_OUT=9,RENEW=10;
-    private static final int[] ALL_ROWS={ACCOUNT,RENEW,REFRESH,IMAGES,AUTOPLAY_ROW,AUDIO,SUBTITLES,SUBTITLE_LANG,UPDATES,VERSION,SIGN_OUT};
+    private static final int ACCOUNT=0,REFRESH=1,IMAGES=2,AUTOPLAY_ROW=3,AUDIO=4,SUBTITLES=5,SUBTITLE_LANG=6,UPDATES=7,VERSION=8,SIGN_OUT=9,RENEW=10,REMOTE_GUIDE=11;
+    private static final int[] ALL_ROWS={ACCOUNT,RENEW,REFRESH,IMAGES,AUTOPLAY_ROW,AUDIO,SUBTITLES,SUBTITLE_LANG,REMOTE_GUIDE,UPDATES,VERSION,SIGN_OUT};
     /** "Renew subscription" is listed only when the panel offers in-app renewal. */
     private int[] ROWS=ALL_ROWS;
     static final int ROW_WIDTH_DP=760;
@@ -121,7 +121,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     }
 
     private static String groupFor(int row){
-        switch(row){case ACCOUNT:return "Account";case REFRESH:return "Content";case AUTOPLAY_ROW:return "Playback";case UPDATES:return "App";default:return null;}
+        switch(row){case ACCOUNT:return "Account";case REFRESH:return "Content";case AUTOPLAY_ROW:return "Playback";case REMOTE_GUIDE:return "Help";case UPDATES:return "App";default:return null;}
     }
     private static String title(int row){
         switch(row){
@@ -133,6 +133,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case AUDIO:return "Preferred audio language";
             case SUBTITLES:return "Subtitles";
             case SUBTITLE_LANG:return "Subtitle language";
+            case REMOTE_GUIDE:return "Remote Guide";
             case UPDATES:return "Check for app updates";
             case VERSION:return "App version";
             default:return "Sign out";
@@ -154,6 +155,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case AUDIO:return "Used when a title has more than one audio track";
             case SUBTITLES:return "Turn on to show subtitles automatically when a title has them";
             case SUBTITLE_LANG:return prefs.getBoolean(SUBTITLES_ON,false)?"Chosen when subtitles start automatically":"Used when subtitles are on";
+            case REMOTE_GUIDE:return "Simple remote controls for browsing and watching";
             case UPDATES:return host.updateDetail();
             case VERSION:return "";
             default:return "Removes this account from the TV";
@@ -168,6 +170,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case AUDIO:{String code=prefs.getString(AUDIO_LANGUAGE,"");return code.isEmpty()?"Stream default  ›":languageName(code)+"  ›";}
             case SUBTITLE_LANG:{String code=prefs.getString(SUBTITLE_LANGUAGE,"");return code.isEmpty()?"Device language  ›":languageName(code)+"  ›";}
             case VERSION:return BuildConfig.VERSION_NAME;
+            case REMOTE_GUIDE:return "Open  ›";
             case UPDATES:return host.updateValue();
             case IMAGES:return imageBytes<=0?"":megabytes(imageBytes);
             default:return "";
@@ -248,6 +251,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
                 notifyItemChanged(indexOf(SUBTITLES));notifyItemChanged(indexOf(SUBTITLE_LANG));break;
             case AUDIO:pickLanguage("Preferred audio language","Stream default",AUDIO_LANGUAGE,AUDIO);break;
             case SUBTITLE_LANG:pickLanguage("Subtitle language","Device language ("+Locale.getDefault().getDisplayLanguage()+")",SUBTITLE_LANGUAGE,SUBTITLE_LANG);break;
+            case REMOTE_GUIDE:a.startActivity(new android.content.Intent(a,RemoteGuideActivity.class));break;
             case UPDATES:host.checkForUpdates();break;
             case SIGN_OUT:host.signOut();break;
             default:break;   // app version is information only

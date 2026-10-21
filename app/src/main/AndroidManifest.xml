@@ -11,6 +11,7 @@
         <activity android:name=".RenewalActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".IntroActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".DetailsActivity" android:exported="false" android:screenOrientation="landscape"/>
+        <activity android:name=".RemoteGuideActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".ActorActivity" android:exported="false" android:screenOrientation="landscape"/>
         <activity android:name=".RequestsActivity" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="adjustNothing|stateHidden"/>
         <activity android:name=".HomeActivity" android:exported="false" android:screenOrientation="landscape"/>
