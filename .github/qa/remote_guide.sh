@@ -45,6 +45,6 @@ key DPAD_RIGHT DPAD_CENTER DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN
 focused | grep -q 'Back\.';text 'Hide the controls first';ok 'larger text can scroll to the last instruction'
 shot 03-larger-text
 key BACK;wait_activity HomeActivity;ok 'larger text does not trap Back navigation'
-if adb logcat -d -b crash | grep -q 'FATAL EXCEPTION';then echo 'FAIL app crash';exit 1;fi
+if adb logcat -d -b crash | grep -Fq "Process: $PKG,";then echo 'FAIL app crash';exit 1;fi
 ok 'no app crash'
 echo "Remote Guide: $PASS passed, 0 failed" | tee -a "$OUT/report.txt"
