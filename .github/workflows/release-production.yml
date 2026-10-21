@@ -22,15 +22,15 @@ on:
       version_code:
         description: "versionCode (must be higher than the version customers have)"
         required: true
-        default: "10035"
+        default: "10036"
       version_name:
         description: "versionName shown in Settings"
         required: true
-        default: "3.8.15"
+        default: "3.8.16"
   # Also runs once when this file changes on a working branch (with the defaults above), so the
   # first production build does not depend on the workflow being on the default branch yet.
   push:
-    branches: ["claude/**", "codex/branding-2027"]
+    branches: ["claude/**", "codex/branding-2027", "codex/episode-controls"]
     paths: [".github/workflows/release-production.yml", ".github/release/**"]
 
 permissions:
@@ -49,8 +49,8 @@ jobs:
       PREVIEW_CERT: 426f5dda091757c0e4f6adc8d4a5adeff1f0c6d448cab643a92833b5b9ff11b7
       PACKAGE: com.myflixtown.tv.native
       PANEL_UPDATE_URL: https://panelsandapps.com/panels/flixtown2027/api/app-update.php
-      VERSION_CODE: ${{ inputs.version_code || '10035' }}
-      VERSION_NAME: ${{ inputs.version_name || '3.8.15' }}
+      VERSION_CODE: ${{ inputs.version_code || '10036' }}
+      VERSION_NAME: ${{ inputs.version_name || '3.8.16' }}
     steps:
       - name: Release signing secrets present
         run: |
@@ -126,7 +126,7 @@ jobs:
           printf '%s\\n' 'Replace api/ratings.php in the existing Flix Town app panel. Keep bootstrap.php, tmdb-match.php, configuration and credentials unchanged.' > dist/panel-api/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.15' }}-${{ inputs.version_code || '10035' }}
+          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.16' }}-${{ inputs.version_code || '10036' }}
           path: |
             dist/*.apk
             dist/RELEASE-INFO.txt
@@ -174,9 +174,13 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.15' }}-${{ inputs.version_code || '10035' }}", path: new }
+        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.16' }}-${{ inputs.version_code || '10036' }}", path: new }
+      - name: Download current production 3.8.15 (required upgrade baseline)
+        uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.15-10035, path: old-10035, run-id: 39171688372, github-token: "${{ github.token }}" }
       - uses: actions/download-artifact@v4
         with: { name: FlixTown-PRODUCTION-signed-3.8.14-10034, path: old-10034, run-id: 38739642992, github-token: "${{ github.token }}" }
+        continue-on-error: true
       - uses: actions/download-artifact@v4
         with: { name: FlixTown-PRODUCTION-signed-3.8.13-10033, path: old-10033, run-id: 38702419585, github-token: "${{ github.token }}" }
         continue-on-error: true
@@ -232,9 +236,9 @@ jobs:
           cat > upgrade.sh <<'SH'
           set -u; P=com.myflixtown.tv.native; NEW="$(ls new/*.apk)"; fail=0; tested=0; mkdir -p shots
           adb shell svc wifi disable; adb shell svc data disable; sleep 2
-          for OLD in old-10034/*.apk old-10033/*.apk old-10032/*.apk old-10031/*.apk old-10030/*.apk old-10029/*.apk old-10028/*.apk old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
+          for OLD in old-10035/*.apk old-10034/*.apk old-10033/*.apk old-10032/*.apk old-10031/*.apk old-10030/*.apk old-10029/*.apk old-10028/*.apk old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
             [ -f "$OLD" ] || continue; tag="$(basename "$OLD" .apk)"
-            adb uninstall $P >/dev/null 2>&1; adb logcat -c
+            adb uninstall $P >/dev/null 2>&1; adb logcat -c; adb logcat -b crash -c 2>/dev/null || true
             adb install "$OLD" >/dev/null || { echo "FAIL  install $tag"; fail=1; continue; }
             adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
             adb shell screencap -p /sdcard/a.png; adb pull /sdcard/a.png "shots/$tag-before.png" >/dev/null
@@ -250,7 +254,7 @@ jobs:
             adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
             adb shell screencap -p /sdcard/b.png; adb pull /sdcard/b.png "shots/$tag-after.png" >/dev/null
             adb shell dumpsys activity activities | grep -q "com.myflixtown.tv.native/com.flixtown.tv" && echo "PASS  new version opens after the upgrade" || { echo "FAIL  new version not in front"; fail=1; }
-            adb logcat -d | grep -q "FATAL EXCEPTION" && { echo "FAIL  crash"; adb logcat -d | grep -A12 "FATAL EXCEPTION" | head -30; fail=1; } || echo "PASS  no crash"
+            adb logcat -d -b crash | grep -Fq "Process: $P," && { echo "FAIL  app crash"; adb logcat -d -b crash | tail -40; fail=1; } || echo "PASS  no app crash"
           done
           [ "$tested" -gt 0 ] || { echo "FAIL  no production upgrade tested"; fail=1; }
           adb shell svc wifi enable; exit $fail
