@@ -68,7 +68,7 @@ public class RequestsActivity extends Activity {
         Images.init(this);
         for(Catalog.Item item:Catalog.Store.movies)if(!item.tmdbId.isEmpty())local.put("movie:"+item.tmdbId,item);
         for(Catalog.Item item:Catalog.Store.series)if(!item.tmdbId.isEmpty())local.put("tv:"+item.tmdbId,item);
-        draw();showSearch();
+        draw();if(getIntent().getBooleanExtra("show_my_requests",false))showMine();else showSearch();
     }
 
     /* ---------------- layout ---------------- */

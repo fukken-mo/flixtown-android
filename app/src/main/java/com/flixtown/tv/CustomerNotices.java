@@ -92,6 +92,9 @@ final class CustomerNotices {
     }
     private void show(){
         if(closed||snoozed||dialog!=null||pending.isEmpty()||!sameAccount()||!host.ready())return;
+        // My Requests may have acknowledged a queued ready notice while Home was behind it.
+        while(!pending.isEmpty()&&Api.prefs(home).getBoolean("notice_seen_"+pending.get(0).key,false))pending.remove(0);
+        if(pending.isEmpty())return;
         Notice n=pending.get(0);Catalog.Item item=match(n);
         String action=item!=null?"Watch":"View requests";
         boolean isReport=n.key.startsWith("report:");
@@ -102,7 +105,7 @@ final class CustomerNotices {
             if(index==labels.length-1){snoozed=true;return;} // Later and Back leave it unread for the next foreground visit.
             mark(n);pending.remove(0);
             if(index==dismiss){home.getWindow().getDecorView().post(this::show);return;}
-            if(item!=null)host.watch(item);else home.startActivity(new Intent(home,RequestsActivity.class));
+            if(item!=null)host.watch(item);else home.startActivity(new Intent(home,RequestsActivity.class).putExtra("show_my_requests",true));
         },()->{dialog=null;snoozed=true;});
     }
     private void mark(Notice n){
