@@ -259,7 +259,7 @@ check "back from the title: My Requests refreshed in place (Alpha Movie now Appr
 # Every status, movie and TV request: the card on entering My Requests, the same state in details,
 # and back on the same card. Approval alone is never "Available"; a TV request counts its own seasons.
 open_wait(){ key DPAD_CENTER; sleep 1.5; for i in $(seq 1 8); do dump; grep -q "A demo synopsis for $1" "$OUT/ui.xml" && break; sleep 1; done; }
-for pair in "pending|Pending approval" "approved|Approved · processing" "available|Available" "declined|Declined"; do
+for pair in "pending|Pending approval" "approved|Approved · processing" "available|Available" "local|In Flix Town" "declined|Declined"; do
   st="${pair%%|*}"; lab="${pair#*|}"
   server "{\"request_states\":{\"movie:8100\":\"$st\"}}"; reenter_mine
   check "movie $st: card on entering My Requests says $lab" "desc \"Alpha Movie. Movie, 1990. $lab\""
@@ -268,7 +268,10 @@ for pair in "pending|Pending approval" "approved|Approved · processing" "availa
   key BACK; sleep 1.5
   check "movie $st: back on the same card, still $lab" "focused | grep -q \"Alpha Movie. Movie, 1990. $lab\""
   if [ "$st" = available ];then
-    check "ready notice appears on availability transition" 'qa | grep "requests ready notices=" | tail -1 | grep -q "notices=1"'
+    check "Seerr availability alone does not send a ready notice" 'qa | grep "requests ready notices=" | tail -1 | grep -q "notices=0"'
+  fi
+  if [ "$st" = local ];then
+    check "ready notice appears after Flix catalog confirms availability" 'qa | grep "requests ready notices=" | tail -1 | grep -q "notices=1"'
     reenter_mine
     check "ready notice is not repeated on the next visit" 'qa | grep "requests ready notices=" | tail -1 | grep -q "notices=0"'
   fi
