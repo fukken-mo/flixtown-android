@@ -143,12 +143,16 @@ final class DemoData {
     static final String REQUESTS_URL="https://demo.flixtown.invalid/onepanel/api/tv-requests.php";
     static final String REPORTS_URL="https://demo.flixtown.invalid/onepanel/api/tv-playback-reports.php";
     private static final java.util.Set<String> reported=new java.util.HashSet<>();
+    static boolean customerNoticesEnabled(){JSONObject v=live();return v!=null&&v.optBoolean("customer_notices");}
     private static String reports(JSONObject in)throws Exception{
         JSONObject live=live();
         if(live!=null&&live.optBoolean("reports_down"))throw new java.io.IOException("Demo report unavailable");
         if("session".equals(in.optString("action")))return new JSONObject().put("ok",true).put("session","demo-report-session").toString();
         if(!"demo-report-session".equals(in.optString("session")))return new JSONObject().put("ok",false).put("error","session").toString();
         if(live!=null&&live.optBoolean("reports_fail"))return new JSONObject().put("ok",false).put("error","unavailable").toString();
+        if("resolved".equals(in.optString("action")))return new JSONObject().put("ok",true)
+            .put("reports",live==null?new JSONArray():live.optJSONArray("resolved_reports"))
+            .put("has_more",false).toString();
         String key=in.optString("type")+":"+in.optInt("media_id")+":"+in.optInt("episode_id")+":"+in.optString("issue");
         boolean duplicate=!reported.add(key);
         android.util.Log.i("FlixTownQA","report type="+in.optString("type")+" media="+in.optInt("media_id")+" episode="+in.optInt("episode_id")+" issue="+in.optString("issue")+" duplicate="+duplicate);
@@ -207,7 +211,8 @@ final class DemoData {
                 .put("poster",t.optString("poster")).put("seasons",seasons==null?new JSONArray():seasons).put("requested_at",System.currentTimeMillis()/1000).put("state","pending");
             demoRequests.add(0,row);
             return new JSONObject().put("ok",true).put("request",new JSONObject().put("type",type).put("id",id).put("title",t.optString("title")).put("state","pending")).toString();}
-        if(action.equals("history")){JSONArray list=new JSONArray();   // newest first, as OnePanel answers
+        if(action.equals("history")){
+            if(live!=null&&live.has("notice_requests"))return new JSONObject().put("ok",true).put("requests",live.getJSONArray("notice_requests")).put("has_more",false).toString();JSONArray list=new JSONArray();   // newest first, as OnePanel answers
             for(JSONObject r:demoRequests){JSONObject c=new JSONObject(r.toString());
                 c.put("state",stateFor(live,c.optString("type")+":"+c.optInt("id"),c.optString("state")));list.put(c);}
             // An older request the server still has as pending, for a movie this TV's catalog already has.

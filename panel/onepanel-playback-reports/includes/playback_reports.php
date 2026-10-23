@@ -112,3 +112,19 @@ function tvr_submit(PDO $db,string $username,array $in): array {
     return ['ok'=>true,'duplicate'=>false,'message'=>'Report sent. Thank you for letting us know.'];
   } finally {try{$q=$db->prepare('SELECT RELEASE_LOCK(?)');$q->execute([$lock]);$q->closeCursor();}catch(Throwable $e){}}
 }
+
+/* Customer-owned resolution feed. No admin notes, device details, or other accounts. */
+function tvr_resolved(PDO $db,string $username,array $in): array {
+  $before=$in['before_id']??0;
+  if(!is_int($before)||$before<0||$before>PHP_INT_MAX)tvr_fail(400,'invalid','Invalid page.');
+  tvr_require_active($username);
+  if(!tvr_rate($db,'history:'.$username,120,900))tvr_fail(429,'busy','Please try again later.');
+  $sql="SELECT id,media_type,media_id,episode_id,title,season_number,episode_number FROM tv_playback_reports WHERE username=? AND status='resolved'";
+  $args=[$username];if($before>0){$sql.=' AND id<?';$args[]=$before;}
+  $q=$db->prepare($sql.' ORDER BY id DESC LIMIT 51');$q->execute($args);$rows=$q->fetchAll();
+  $more=count($rows)>50;$rows=array_slice($rows,0,50);$out=[];
+  foreach($rows as $r)$out[]=['id'=>(string)$r['id'],'type'=>$r['media_type'],'media_id'=>(int)$r['media_id'],
+    'episode_id'=>(int)$r['episode_id'],'title'=>tvr_text($r['title'],255),
+    'season'=>(int)$r['season_number'],'episode'=>(int)$r['episode_number']];
+  return ['ok'=>true,'reports'=>$out,'has_more'=>$more,'before_id'=>$out?end($out)['id']:'0'];
+}

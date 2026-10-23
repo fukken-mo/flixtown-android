@@ -71,6 +71,17 @@ if(parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH)==='/fixture-login') {
   check(code==419,'status updates require CSRF')
   req=urllib.request.Request(base+'/playback-reports.php?status=all',data=f'id={report_id}&status=investigating&_csrf=fixture-csrf'.encode(),headers={'Content-Type':'application/x-www-form-urlencoded'})
   with opener.open(req) as r:html=r.read().decode();check(r.status==200 and f'data-report-id="{report_id}" data-status="investigating"' in html,'authorized status update succeeds')
+  check(call(endpoint,{'action':'resolved'})[0]==401,'unauthenticated resolution read rejected')
+  check(json.loads(call(endpoint,{'action':'resolved','session':token})[1])['reports']==[],'investigating does not notify resolved')
+  req=urllib.request.Request(base+'/playback-reports.php?status=all',data=f'id={report_id}&status=resolved&_csrf=fixture-csrf'.encode(),headers={'Content-Type':'application/x-www-form-urlencoded'})
+  with opener.open(req) as r:check(r.status==200,'admin can resolve report')
+  status,body=call(endpoint,{'action':'resolved','session':token,'username':'victim'})
+  feed=json.loads(body)
+  check(status==200 and len(feed['reports'])==1 and feed['reports'][0]['id']==report_id,'owner receives resolved report through HTTP')
+  check(not any(x in body for x in ['device','position_ms','username','password','session','fixture-password']),'resolution response contains no private diagnostics or credentials')
+  other=json.loads(call(endpoint,{'action':'session','username':'other-user','password':'fixture-password'})[1])['session']
+  check(json.loads(call(endpoint,{'action':'resolved','session':other,'username':'http-user'})[1])['reports']==[],'forged owner cannot read another customer resolution')
+  check(call(endpoint,{'action':'resolved','session':token,'before_id':-1})[0]==400,'negative resolution cursor rejected')
   req=urllib.request.Request(base+'/playback-reports.php',data=f'id={report_id}&status=delete&_csrf=fixture-csrf'.encode(),headers={'Content-Type':'application/x-www-form-urlencoded'})
   try:opener.open(req);code=200
   except urllib.error.HTTPError as e:code=e.code

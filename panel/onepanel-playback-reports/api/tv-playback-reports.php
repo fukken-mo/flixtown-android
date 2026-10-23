@@ -28,6 +28,7 @@ try {
   }
   $u=tvr_user($in['session']??null);
   if($u===null)tvr_fail(401,'session','Please sign in again.');
+  if($action==='resolved')tvr_out(tvr_resolved($pdo,$u,$in));
   if($action!=='submit')tvr_fail(400,'invalid','Unknown action.');
   tvr_out(tvr_submit($pdo,$u,$in));
 } catch(TvrError $e) {tvr_out(['ok'=>false,'error'=>$e->reason,'message'=>$e->getMessage()],$e->http);

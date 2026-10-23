@@ -86,6 +86,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private ValueAnimator sweep;
     private Dialog exitDialog;
     private AppUpdates updates;
+    private CustomerNotices notices;
     private Catalog.Item pendingFocusItem;
     private SettingsPage settingsPage;
     private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Requests","Settings"};
@@ -116,6 +117,10 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             @Override public void onChildViewHolderSelected(RecyclerView parent,RecyclerView.ViewHolder child,int position,int sub){onRowSelected(position);}
         });
         browseGrid.setItemAnimator(null);
+        notices=new CustomerNotices(this,new CustomerNotices.Host(){
+            public boolean ready(){return readyForUpdatePrompt() && tab.equals("Home") && !nav.isOpen();}
+            public void watch(Catalog.Item item){openDetails(item,false);}
+        });
         render();
         boolean fresh=state==null && getIntent().getBooleanExtra(EXTRA_FRESH,false);
         if(fresh)showOverlay();
@@ -157,13 +162,15 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         browseGrid.setPadding(browseGrid.getPaddingLeft(),Ui.dp(this,4),browseGrid.getPaddingRight(),safeY);
     }
 
-    @Override protected void onResume(){super.onResume();resumed=true;ScreenAwake.on(this);scheduleRotation();
-        if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}}
+    @Override protected void onResume(){super.onResume();resumed=true;if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
+        if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
+        handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
     @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
     /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
     @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);
-        if(hasFocus && updates!=null)handler.post(updates::showPendingIfReady);}
+        if(hasFocus && updates!=null)handler.post(updates::showPendingIfReady);
+        if(hasFocus)handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     /** An update prompt only appears over Home itself: in front, focused, past the loading screen. */
     boolean readyForUpdatePrompt(){
         return resumed && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
@@ -198,7 +205,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(sweep!=null)sweep.cancel();
         content.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         startupOverlay.animate().alpha(0f).setDuration(260).withEndAction(()->{startupOverlay.setVisibility(View.GONE);
-            if(updates!=null)updates.showPendingIfReady();}).start();
+            if(updates!=null)updates.showPendingIfReady();
+            handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}).start();
         if(tab.equals("Home") && hero!=null)bindHero(false);
         View focus=getCurrentFocus();
         if(focus==null || !isDescendant(content,focus))focusDefault();
@@ -942,5 +950,5 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private static boolean isDescendant(ViewGroup parent,View view){
         for(Object p=view.getParent();p instanceof View;p=((View)p).getParent())if(p==parent)return true;return false;}
     @Override protected void onDestroy(){destroyed=true;StartupRefresh.unlisten(this);Ratings.unlisten(ratingsChanged);handler.removeCallbacksAndMessages(null);
-        if(sweep!=null)sweep.cancel();if(exitDialog!=null)exitDialog.dismiss();if(updates!=null)updates.destroy();super.onDestroy();}
+        if(sweep!=null)sweep.cancel();if(exitDialog!=null)exitDialog.dismiss();if(updates!=null)updates.destroy();if(notices!=null)notices.close();super.onDestroy();}
 }

@@ -1,0 +1,107 @@
+name: Customer notices Preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/customer-notices]
+    paths: ['app/src/**', 'panel/onepanel-playback-reports/**', '.github/qa/customer_notices.sh', '.github/workflows/customer-notices.yml']
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: ['mysql:8.0', 'mariadb:10.11']
+    services:
+      db:
+        image: ${{ matrix.database }}
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_DATABASE: playback_reports_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -pfixture-only" --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      REPORTS_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=playback_reports_test;charset=utf8mb4
+      REPORTS_TEST_USER: root
+      REPORTS_TEST_PASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, curl, mbstring
+          coverage: none
+      - name: Syntax and backend tests with fake Flix catalog only
+        run: |
+          find panel/onepanel-playback-reports -name '*.php' -exec php -l {} \;
+          php panel/onepanel-playback-reports/tests/test.php
+          python3 panel/onepanel-playback-reports/tests/http_test.py
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests, separate Preview and offline QA only
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa -PflixPreview=true -PflixVersionName=3.8.16-notices-preview --console=plain 2>&1 | tee playback-reports-build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playback-reports-build-diagnostics
+          path: |
+            playback-reports-build.log
+            app/build/test-results/
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-Customer-Notices-PREVIEW-test-only
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playback-reports-qa-apk
+          path: app/build/outputs/apk/qa/app-qa.apk
+          retention-days: 2
+  tv:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 28, profile: tv_720p }
+          - { api: 31, profile: tv_1080p }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/download-artifact@v4
+        with:
+          name: playback-reports-qa-apk
+          path: app/build/outputs/apk/qa
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        env:
+          QA_OUT: qa/customer-notices-api${{ matrix.api }}
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .github/qa/customer_notices.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: customer-notices-results-api${{ matrix.api }}
+          path: qa/playback-reports-api${{ matrix.api }}/
+          retention-days: 7

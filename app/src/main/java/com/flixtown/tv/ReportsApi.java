@@ -37,6 +37,16 @@ final class ReportsApi {
             return new Reply(true,result.optBoolean("duplicate")?"You already reported this problem. Thank you.":"Report sent. Thank you for letting us know.");
         }catch(Exception ignored){return new Reply(false,UNAVAILABLE);}
     }
+    /** Optional Home check, using the same short-lived authenticated report session. */
+    static JSONObject resolved(String endpoint,String[] account,long before){
+        try{
+            if(!safeUrl(endpoint)||account==null)return null;
+            JSONObject auth=post(endpoint,new JSONObject().put("action","session").put("username",account[0]).put("password",account[1]));
+            if(!auth.optBoolean("ok"))return null;
+            JSONObject r=post(endpoint,new JSONObject().put("action","resolved").put("session",auth.optString("session")).put("before_id",before));
+            return r.optBoolean("ok")?r:null;
+        }catch(Exception ignored){return null;}
+    }
     private static Reply failure(JSONObject r){
         String code=r.optString("error","");String message=UNAVAILABLE;
         if("busy".equals(code))message="You have sent several reports. Please try again later.";

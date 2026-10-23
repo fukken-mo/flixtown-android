@@ -44,4 +44,15 @@ $created=0;$duplicate=0;
 foreach($procs as [$proc,$pipes]){$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);$exit=proc_close($proc);check($exit===0,'concurrent worker completed '.$err);$d=json_decode($out,true);if(!empty($d['duplicate']))$duplicate++;elseif(!empty($d['ok']))$created++;}
 check($created===1&&$duplicate===3,'concurrent same-customer submissions create exactly one row');
 check((int)$pdo->query("SELECT COUNT(*) FROM tv_playback_reports WHERE username='race-user'")->fetchColumn()===1,'database confirms one race report');
+// Resolution feed must stay private and never reveal diagnostic/admin fields.
+check(count(tvr_resolved($pdo,'alice',[])['reports'])===0,'unresolved reports excluded');
+$pdo->exec("UPDATE tv_playback_reports SET status='resolved' WHERE username IN ('alice','bob')");
+$feed=tvr_resolved($pdo,'alice',[]);
+check(count($feed['reports'])===2,'only own resolved reports returned');
+check(array_keys($feed['reports'][0])===['id','type','media_id','episode_id','title','season','episode'],'resolution response is explicitly sanitized');
+check(count(tvr_resolved($pdo,'alice',['before_id'=>(int)$feed['reports'][0]['id']])['reports'])===1,'resolution cursor paginates correctly');
+rejects(function()use($pdo){tvr_resolved($pdo,'alice',['before_id'=>'1']);},400,'cursor type validated');
+rejects(function()use($pdo){tvr_resolved($pdo,'disabled',[]);},403,'disabled user cannot read resolutions');
+rejects(function()use($pdo){tvr_resolved($pdo,'outage',[]);},503,'account outage fails closed for resolutions');
+check(count(tvr_resolved($pdo,'nobody',[])['reports'])===0,'another account cannot see any resolutions');
 echo "Backend reports: $pass passed, 0 failed\n";
