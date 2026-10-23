@@ -113,7 +113,7 @@ final class CustomerNotices {
         if(n.key.startsWith("request:")&&n.key.endsWith(":ready")){
             String base=n.key.substring(0,n.key.length()-6);
             Api.prefs(home).edit().putBoolean("notice_seen_"+base+":approved",true)
-                .putString("request_seen_"+base.substring("request:".length()),"available").apply();
+                .putString("request_seen_"+base.substring("request:".length()),"local").apply();
         }
     }
     void resumed(){snoozed=false;}

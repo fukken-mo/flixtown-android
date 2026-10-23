@@ -216,8 +216,8 @@ public class RequestsActivity extends Activity {
     private void rememberRequestState(Entry e){
         String key="request_seen_"+e.type+":"+e.id+":"+java.util.Arrays.toString(e.seasons)+":"+e.requestedAt;
         String old=Api.prefs(this).getString(key,"");
-        if(ViewerOptions.newlyReady(old,e.state)){readyCount++;readyTitle=e.title;}
-        if(ViewerOptions.ready(e.state))Api.prefs(this).edit()
+        if("ready".equals(CustomerNotices.event(e.state))&&!"local".equals(old)){readyCount++;readyTitle=e.title;}
+        if("ready".equals(CustomerNotices.event(e.state)))Api.prefs(this).edit()
             .putBoolean("notice_seen_request:"+key.substring("request_seen_".length())+":ready",true)
             .putBoolean("notice_seen_request:"+key.substring("request_seen_".length())+":approved",true).apply();
         Api.prefs(this).edit().putString(key,e.state).apply();
