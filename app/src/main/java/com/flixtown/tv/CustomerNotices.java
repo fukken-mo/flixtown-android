@@ -27,7 +27,8 @@ final class CustomerNotices {
         return r.optString("type")+":"+r.optInt("id")+":"+Arrays.toString(seasons)+":"+r.optLong("requested_at");
     }
     static String event(String state){
-        if("local".equals(state)||"available".equals(state))return "ready";
+        // Only the backend's customer-catalog confirmation means added to Flix Town.
+        if("local".equals(state))return "ready";
         return "approved".equals(state)?"approved":"";
     }
     void check(){

@@ -34,7 +34,9 @@ key BACK;wait_home;sleep 3;absent 'marked resolved';ok 'Watch acknowledges repor
 live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Approved fixture","year":"2020","state":"approved","requested_at":123,"seasons":[]}]}'
 reopen;wait_text 'has been approved';wait_text 'View requests';absent 'text="Watch"';shot 02-approved;ok 'approval is distinct from ready and offers no Watch'
 key DPAD_RIGHT DPAD_CENTER
-live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Ready fixture","year":"2020","state":"available","requested_at":123,"seasons":[]}]}'
+live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Seerr-only fixture","year":"2020","state":"available","requested_at":123,"seasons":[]}]}'
+reopen;absent 'ready to watch';ok 'Seerr availability alone does not claim title was added to Flix Town'
+live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Ready fixture","year":"2020","state":"local","requested_at":123,"seasons":[]}]}'
 reopen;wait_text 'ready to watch';shot 03-ready;ok 'same request transitions from approved to ready'
 key DPAD_RIGHT DPAD_CENTER;reopen;absent 'ready to watch';ok 'ready notice does not repeat after dismissal'
 live '{"customer_notices":true,"requests":"down","reports_down":true}'

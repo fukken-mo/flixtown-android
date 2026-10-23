@@ -5,7 +5,7 @@ Based on production source 8b94cce (3.8.16 / 10036). Production version, package
 Home checks authenticated customer request history and resolved playback reports asynchronously after Home is ready. Each service fails independently and silently. Playback, intro, loading, other screens, dialogs and the updater take priority. No timers poll the services. Foreground/focus checks have a five-minute cooldown; a fresh process can check immediately.
 
 - Approved: explains availability is still pending. Opens Requests.
-- Ready: only available or local, never approval or partial availability. Uses the backend's existing requested-season status.
+- Ready: only local, meaning the backend confirmed availability in the customer's Flix Town catalog. Seerr availability alone, approval and partial availability do not trigger this notice. Uses the backend's existing requested-season status.
 - Resolved: only reports belonging to the authenticated account whose current status is resolved.
 - Watch opens existing catalog Details when matched safely. It never guesses catalog IDs from TMDB IDs or starts playback automatically. Without a match, requests offer View requests; reports offer Dismiss.
 - Dismiss / Watch / View requests acknowledge on this device. Later or Back defers until a later foreground visit. Same account keeps acknowledgements; switching accounts clears them. Acknowledgements are local to the TV.
