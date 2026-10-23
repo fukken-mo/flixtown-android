@@ -8,7 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-/** Reporting is on-demand only; no startup traffic, stored sessions, admin secrets or raw URL logs. */
+/** Reporting and optional Home resolution notices. No persisted sessions, admin secrets or raw URL logs. */
 final class ReportsApi {
     static final String URL_KEY="reports_api_url";
     static final String UNAVAILABLE="Reports are temporarily unavailable. Please try again later.";
@@ -66,7 +66,7 @@ final class ReportsApi {
             try(InputStream in=status>=400?c.getErrorStream():c.getInputStream()){
                 if(in==null)throw new IllegalStateException();
                 ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[4096];int n;
-                while((n=in.read(buffer))!=-1){out.write(buffer,0,n);if(out.size()>16384)throw new IllegalStateException();}
+                while((n=in.read(buffer))!=-1){out.write(buffer,0,n);if(out.size()>65536)throw new IllegalStateException();}
                 JSONObject r=new JSONObject(out.toString("UTF-8"));
                 if(status<200||status>=300)r.put("ok",false);
                 return r;

@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
  * Media requests through the operator's OnePanel (which talks to Seerr; no Seerr, OnePanel or
  * provider secret is in the app). The address comes from the panel config ("requests_api_url"),
  * read from the config answer the app already downloaded or the copy saved here; nothing in this
- * class runs during sign-in, startup or Home loading — only while the Requests screen is open.
+ * class runs during sign-in or Home loading. Requests screens and optional Home notices call it on workers.
  *
  * Identity: the customer's own saved Flix Town account is sent once (POST body) to get a short
  * session; later calls send only that session.

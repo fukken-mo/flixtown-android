@@ -382,6 +382,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         tab=target;category="";sortMode=0;lastContentFocus=null;restoreGridPosition=-1;render();
         // An empty page (for example My List with no favorites) keeps the menu open so focus is never lost.
         if(hasFocusableContent())closeMenu();else nav.setSelected(tab);
+        if(tab.equals("Home"))handler.postDelayed(()->{if(notices!=null)notices.check();},1500);
     }
     /** Pages drawn as a header over the full-page grid: the poster tabs, and Settings as a single column. */
     private boolean isBrowse(){return tab.equals("Movies")||tab.equals("Series")||tab.equals("Favorites")||tab.equals("Settings");}
