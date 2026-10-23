@@ -103,5 +103,5 @@ jobs:
         if: always()
         with:
           name: customer-notices-results-api${{ matrix.api }}
-          path: qa/playback-reports-api${{ matrix.api }}/
+          path: qa/customer-notices-api${{ matrix.api }}/
           retention-days: 7
