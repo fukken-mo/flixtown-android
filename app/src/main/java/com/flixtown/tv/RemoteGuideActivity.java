@@ -64,10 +64,11 @@ public class RemoteGuideActivity extends Activity {
             item("Back","Close a menu or return to the previous screen.");
         }else{
             item("Up","Show the player controls. From the button row, press Up again for Options.");
-            item("Left / Right","Seek 10 seconds when controls are hidden or the progress bar is selected. On buttons, move between them.");
+            item("Left / Right","Press: back or forward 10 seconds. Hold: speeds up to 30 seconds, 1 minute, then 3 minutes per step. The target time shows first and plays when you let go. Works when controls are hidden or the progress bar is selected; on buttons, move between them.");
+            item("Rewind / Fast forward","Same as Left / Right. Previous and Next episode stay on their own buttons.");
             item("OK","Play or pause when controls are hidden. Otherwise, choose the highlighted button.");
-            item("Options","Choose episodes, subtitle size and appearance, playback speed, or watched status.");
-            item("Back","Hide the controls first. Press Back again to leave playback.");
+            item("Options","Go to time (type hours, minutes and seconds), episodes, subtitle size and appearance, playback speed, or watched status.");
+            item("Back","Cancel a seek that hasn't started yet, then hide the controls. Press Back again to leave playback.");
         }
     }
     private void item(String key,String description){

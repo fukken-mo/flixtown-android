@@ -59,7 +59,7 @@ public class PlayerActivity extends Activity {
     private long pendingSeek=-1,lastRepeatAt;
     private Dialog dialog;
     private SubtitlePlacement subtitles;
-    private long lastSavedAt;
+    private long lastSavedAt,holdStartedAt;
     private View reportButton,previousButton,nextButton,optionsButton;
     private EpisodeNavigation episodeNavigation;private boolean nextAfterMenu;
     private org.json.JSONObject episodeCatalog;private boolean loadingEpisodes;private int episodeLoadGeneration;
@@ -212,25 +212,54 @@ public class PlayerActivity extends Activity {
         if(player.isPlaying())player.pause();else player.play();
     }
     private void retry(){if(player==null)return;hideCard();player.prepare();player.play();}
-    /** Left/Right: 10 seconds per press. Presses are combined and applied once the remote goes quiet. */
+    /**
+     * Left/Right (and rewind/fast-forward): 10 seconds per press; holding speeds up (see {@link SeekStep}).
+     * Presses are combined into one pending target, shown as a time and a white marker on the progress
+     * line, and applied once the remote goes quiet. Play/pause is kept; Back cancels a pending target.
+     */
     private void seekBy(int direction,KeyEvent event){
         if(player==null)return;
+        if(!player.isCurrentMediaItemSeekable()){
+            flash("This video can't be skipped forward or back.");if(!controlsVisible())showControls(progressLine);else scheduleHide();return;}
         long now=SystemClock.uptimeMillis();
-        if(event.getRepeatCount()>0 && now-lastRepeatAt<REPEAT_GAP_MS)return;
+        if(event.getRepeatCount()==0)holdStartedAt=now;
+        else if(now-lastRepeatAt<REPEAT_GAP_MS)return;
         lastRepeatAt=now;
         long base=pendingSeek>=0?pendingSeek:player.getCurrentPosition();
-        long duration=player.getDuration();
-        long target=Math.max(0,base+direction*SEEK_STEP_MS);
-        if(duration>0 && duration!=C.TIME_UNSET)target=Math.min(target,Math.max(0,duration-1000));
-        pendingSeek=target;
+        long duration=player.getDuration();if(duration==C.TIME_UNSET)duration=0;
+        long step=SeekStep.step(event.getRepeatCount()==0?0:now-holdStartedAt);
+        pendingSeek=SeekStep.clamp(base+direction*step,duration);
         handler.removeCallbacks(commitSeek);handler.postDelayed(commitSeek,SEEK_COMMIT_MS);
         if(!controlsVisible())showControls(progressLine);else scheduleHide();
-        updateProgressUi();
+        showSeekPreview();updateProgressUi();
+    }
+    /** The pending target in the status line ("→ 1:02:30  (+12:00)") and as a marker; playback time stays as is. */
+    private void showSeekPreview(){
+        if(player==null||pendingSeek<0)return;
+        flash("→ "+SeekStep.time(pendingSeek)+"   ("+SeekStep.offset(player.getCurrentPosition(),pendingSeek)+")");
+        progressLine.setPending(pendingSeek);
+    }
+    private void clearPendingSeek(){
+        handler.removeCallbacks(commitSeek);pendingSeek=-1;
+        if(progressLine!=null)progressLine.setPending(-1);
+        if(status!=null)status.setVisibility(View.GONE);
     }
     private final Runnable commitSeek=()->{
         if(pendingSeek<0 || player==null)return;
-        player.seekTo(pendingSeek);pendingSeek=-1;updateProgressUi();scheduleHide();
+        long target=pendingSeek;clearPendingSeek();
+        player.seekTo(target);updateProgressUi();scheduleHide();
     };
+    /** Player options › Go to time. */
+    private void goToTime(){
+        if(player==null)return;
+        long duration=player.getDuration();
+        if(!player.isCurrentMediaItemSeekable()||duration<=0||duration==C.TIME_UNSET){flash("Go to time isn't available for this video.");showControls(optionsButton);return;}
+        clearPendingSeek();handler.removeCallbacks(hideControls);
+        Dialog opened=GoToTime.show(this,player.getCurrentPosition(),duration,ms->{
+            dialog=null;if(player==null)return;player.seekTo(ms);updateProgressUi();showControls(progressLine);});
+        dialog=opened;
+        opened.setOnDismissListener(d->{if(dialog==opened){dialog=null;continueAfterMenu();showControls(optionsButton);}});
+    }
     private void updatePlayIcon(){if(playIcon!=null && player!=null)playIcon.setType(player.isPlaying()||(player.getPlayWhenReady()&&player.getPlaybackState()==Player.STATE_BUFFERING)?PlayerIcon.PAUSE:PlayerIcon.PLAY);}
     private static String time(long ms){
         if(ms<0 || ms==C.TIME_UNSET)return "--:--";
@@ -337,7 +366,7 @@ public class PlayerActivity extends Activity {
     private void showReport(){
         if(player==null||dialog!=null||reporting||!reportable())return;
         // Capture exactly this episode, before autoplay can change any IDs or track information.
-        handler.removeCallbacks(commitSeek);if(pendingSeek>=0){player.seekTo(pendingSeek);pendingSeek=-1;}
+        if(pendingSeek>=0){long target=pendingSeek;clearPendingSeek();player.seekTo(target);}
         reportFromError=cardForError;reportWasPlaying=player.getPlayWhenReady()&&!reportFromError;
         reportPlayer=player;reportEnded=false;reporting=true;player.pause();handler.removeCallbacks(hideControls);
         Format vf=player.getVideoFormat(),af=player.getAudioFormat();
@@ -407,7 +436,7 @@ public class PlayerActivity extends Activity {
                 if(cardForNext){nextCanceled=true;hideCard();return true;}
                 finish();return true;           // Back on Continue/Start over or an error leaves playback
             }
-            if(pendingSeek>=0){handler.removeCallbacks(commitSeek);pendingSeek=-1;updateProgressUi();}
+            if(pendingSeek>=0){clearPendingSeek();updateProgressUi();return true;}   // Back first cancels a pending seek
             if(controlsVisible()){hideNow();return true;}
             finish();return true;
         }
@@ -455,11 +484,12 @@ public class PlayerActivity extends Activity {
         if(player==null||reporting||dialog!=null)return;
         List<String> names=new ArrayList<>();
         if(episodeNavigation!=null)names.add("Episodes");
-        names.add("Playback speed");names.add("Subtitle size");names.add("Subtitle appearance");
+        names.add("Go to time");names.add("Playback speed");names.add("Subtitle size");names.add("Subtitle appearance");
         boolean canMark=("movie".equals(kind)||episodeNavigation!=null)&&contentId!=null&&!contentId.isEmpty();
         if(canMark)names.add(Api.prefs(this).getBoolean(watchedKey(),false)?"Mark as unwatched":"Mark as watched");
         choose("Player options",names.toArray(new String[0]),0,i->{String name=names.get(i);
             if(name.equals("Episodes"))showEpisodes();
+            else if(name.equals("Go to time"))handler.post(this::goToTime);
             else if(name.equals("Playback speed"))choose("Playback speed",new String[]{"0.75×","1× (Normal)","1.25×","1.5×"},ViewerOptions.index(player.getPlaybackParameters().speed,ViewerOptions.SPEEDS),n->{
                 if(player==null)return;float speed=ViewerOptions.SPEEDS[n];player.setPlaybackSpeed(speed);Api.prefs(this).edit().putFloat(ViewerOptions.SPEED,speed).apply();});
             else if(name.equals("Subtitle size"))choose("Subtitle size",new String[]{"Small","Normal","Large","Extra large"},ViewerOptions.index(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f),ViewerOptions.SIZES),n->{Api.prefs(this).edit().putFloat(ViewerOptions.SIZE,ViewerOptions.SIZES[n]).apply();applySubtitleAppearance();});
@@ -702,7 +732,7 @@ public class PlayerActivity extends Activity {
         if(nextUrl==null || nextUrl.isEmpty() || player==null)return;
         if(card.getVisibility()==View.VISIBLE)hideCard();
         // A seek still waiting to be applied belongs to the episode that just ended, not to the next one.
-        handler.removeCallbacks(commitSeek);pendingSeek=-1;
+        clearPendingSeek();
         url=nextUrl;nextUrl="";lastPlayerError="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
@@ -734,7 +764,7 @@ public class PlayerActivity extends Activity {
         boolean keepPlaying=!manual || player.getPlayWhenReady();
         if(manual && !ended && resumeAsked)saveProgress(player.getCurrentPosition(),player.getDuration());
         if(card.getVisibility()==View.VISIBLE)hideCard();
-        handler.removeCallbacks(commitSeek);pendingSeek=-1;
+        clearPendingSeek();
         player.pause();nextAfterMenu=false;select.run();
         url=targetUrl;episodeId=target.id;episodeExt=target.extension;subtitle=target.label;
         position=0;lastSavedAt=0;lastPlayerError="";promptShown=false;nextCanceled=false;ended=false;resumeAsked=true;

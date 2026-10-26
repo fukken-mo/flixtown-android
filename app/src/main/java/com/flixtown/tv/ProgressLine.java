@@ -14,7 +14,7 @@ final class ProgressLine extends View {
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect=new RectF();
     private final float thin,thick,knob;
-    private long duration,position,buffered;
+    private long duration,position,buffered,pending=-1;
     ProgressLine(Context c){
         super(c);float d=c.getResources().getDisplayMetrics().density;
         thin=3*d;thick=5*d;knob=7*d;setFocusable(true);setFocusableInTouchMode(true);
@@ -24,6 +24,8 @@ final class ProgressLine extends View {
         if(this.duration==duration && this.position==position && this.buffered==buffered)return;
         this.duration=duration;this.position=position;this.buffered=buffered;invalidate();
     }
+    /** A seek target that is not applied yet (−1 for none): drawn as a white marker, apart from the playback position. */
+    void setPending(long target){if(pending!=target){pending=target;invalidate();}}
     @Override protected void onDraw(Canvas canvas){
         float h=isFocused()?thick:thin,cy=getHeight()/2f,left=knob,right=getWidth()-knob,w=right-left;
         float played=duration>0?Math.max(0,Math.min(1,position/(float)duration)):0;
@@ -31,6 +33,11 @@ final class ProgressLine extends View {
         rect.set(left,cy-h/2,right,cy+h/2);paint.setColor(0x3DFFFFFF);canvas.drawRoundRect(rect,h,h,paint);
         rect.set(left,cy-h/2,left+w*loaded,cy+h/2);paint.setColor(0x52FFFFFF);canvas.drawRoundRect(rect,h,h,paint);
         rect.set(left,cy-h/2,left+w*played,cy+h/2);paint.setColor(Ui.GLOW);canvas.drawRoundRect(rect,h,h,paint);
+        if(pending>=0 && duration>0){
+            float x=left+w*Math.max(0,Math.min(1,pending/(float)duration));
+            paint.setColor(0xFFFFFFFF);rect.set(x-thin/2-1,cy-knob*1.4f,x+thin/2+1,cy+knob*1.4f);canvas.drawRoundRect(rect,thin,thin,paint);
+            return;
+        }
         if(isFocused()){paint.setColor(0xFFFFFFFF);canvas.drawCircle(left+w*played,cy,knob,paint);}
     }
 }

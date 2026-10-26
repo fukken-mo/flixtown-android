@@ -136,12 +136,12 @@ final class Ui {
 
     /* ---------------- Dialogs ---------------- */
 
-    private static Dialog newDialog(Activity activity){
+    static Dialog newDialog(Activity activity){
         Dialog dialog=new Dialog(activity);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         return dialog;
     }
-    private static void showWindow(Activity activity,Dialog dialog,int widthDp,boolean fixedHeight,int maxHeightDp){
+    static void showWindow(Activity activity,Dialog dialog,int widthDp,boolean fixedHeight,int maxHeightDp){
         dialog.show();
         Window window=dialog.getWindow();if(window==null)return;
         window.setBackgroundDrawableResource(android.R.color.transparent);
@@ -151,7 +151,7 @@ final class Ui {
         int height=fixedHeight?Math.min(dp(activity,maxHeightDp),screenH-2*safeY(activity)):WindowManager.LayoutParams.WRAP_CONTENT;
         window.setLayout(width,height);
     }
-    private static LinearLayout sheet(Activity activity,String title,String message){
+    static LinearLayout sheet(Activity activity,String title,String message){
         LinearLayout body=column(activity);pad(body,activity,32,26,32,26);body.setBackground(glass(activity,18));
         View accent=new View(activity);accent.setBackground(rounded(ACCENT,2,activity));
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(activity,32),dp(activity,3));ap.bottomMargin=dp(activity,14);body.addView(accent,ap);
