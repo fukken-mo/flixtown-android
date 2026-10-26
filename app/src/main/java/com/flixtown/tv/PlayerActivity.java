@@ -112,7 +112,7 @@ public class PlayerActivity extends Activity {
         video.setUseController(false);
         video.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);
         video.setShutterBackgroundColor(0xFF000000);
-        subtitles=new SubtitlePlacement(this,root,video);applySubtitleAppearance();
+        subtitles=new SubtitlePlacement(this,root,video,findViewById(R.id.player_overlay));applySubtitleAppearance();
         buildControls();
         root.requestFocus();
     }

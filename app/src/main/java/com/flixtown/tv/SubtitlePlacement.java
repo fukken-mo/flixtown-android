@@ -22,17 +22,22 @@ import java.util.List;
  * Both layers use the same insets (see {@link #insets}); neither moves when the controls show or
  * hide (no translation or animation: that once clipped subtitles on TVs). PlayerView's own
  * subtitle layer is hidden so nothing is drawn twice.
+ *
+ * The screen layer sits above the controls overlay (below the cards), so the controls never hide
+ * or dim ordinary subtitles; while the controls are up, a line of text may overlap the progress
+ * line for those few seconds instead.
  */
 final class SubtitlePlacement {
     /** Inset of the subtitle box: 5 % at the sides and top (title-safe), 3.5 % at the bottom (HD action-safe, SMPTE ST 2046-1). */
     static final float SIDE=0.05f,TOP=0.05f,BOTTOM=0.035f;
     final SubtitleView screen,frame;
 
-    SubtitlePlacement(Context c,ViewGroup playerRoot,PlayerView video){
+    SubtitlePlacement(Context c,ViewGroup playerRoot,PlayerView video,View controlsOverlay){
         SubtitleView builtIn=video.getSubtitleView();if(builtIn!=null)builtIn.setVisibility(View.GONE);
         screen=create(c);frame=create(c);
-        // Above the video, below the controls overlay and cards (index 1 = right after the PlayerView).
-        playerRoot.addView(screen,Math.min(1,playerRoot.getChildCount()),new FrameLayout.LayoutParams(-1,-1));
+        // Above the video and the controls overlay, below the cards (Continue watching?, Up next, errors).
+        int above=controlsOverlay==null?-1:playerRoot.indexOfChild(controlsOverlay);
+        playerRoot.addView(screen,above<0?Math.min(1,playerRoot.getChildCount()):above+1,new FrameLayout.LayoutParams(-1,-1));
         ViewGroup content=video.findViewById(androidx.media3.ui.R.id.exo_content_frame);
         // QA evidence for the reason above: where Media3 put its own subtitle layer.
         if(BuildConfig.DEMO && builtIn!=null)android.util.Log.i("FlixTownQA","subtitle_builtin_parent="+(builtIn.getParent()==content?"video_frame":"player_view"));
