@@ -14,6 +14,7 @@ PKG=com.myflixtown.tv.native.qa
 APK=${APK:-app/build/outputs/apk/qa/app-qa.apk}
 OUT=${QA_OUT:-qa/player-seasonal}; SHOTS=$OUT/screens
 M=http://10.0.2.2:8000
+QA=$(cd "$(dirname "$0")" && pwd)
 rm -rf "$OUT" && mkdir -p "$SHOTS"
 REPORT="$OUT/report.txt"; : > "$REPORT"
 note(){ echo "$*" | tee -a "$REPORT"; }
@@ -279,10 +280,15 @@ adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.5; st="$(qaf status)"
 check "B5 an unseekable stream says so instead of seeking ('$st')" 'echo "$st" | grep -q "can.t be skipped"'
 leave_player
 # ====================== C. Subtitles ======================
+# Paused, so one cue stays on screen for all three pictures: controls hidden, shown, hidden again.
 measure(){ # file colour label
-  stream "$M/$1"; open_movie; sleep 5; wait_qa controls false 6; sleep 1
+  stream "$M/$1"; player_open open_movie; sleep 5; wait_qa controls false 6; key DPAD_CENTER; sleep 1; wait_qa controls false 8; sleep 0.8
+  note "INFO  $3 playing while measured: $(qaf playing)"
   local b; b="$(sub_box "C-$3-hidden" "$2")"; note "INFO  $3 controls hidden: $b"; echo "$b" > "$OUT/box-$3"
-  key DPAD_UP; sleep 0.6; local s; s="$(sub_box "C-$3-shown" "$2")"; note "INFO  $3 controls shown: $s"; echo "$s" > "$OUT/box-$3-shown"
+  adb logcat -c; key DPAD_UP; sleep 0.4; local s; s="$(sub_box "C-$3-shown" "$2")"; note "INFO  $3 controls shown: $s"; echo "$s" > "$OUT/box-$3-shown"
+  local lift; lift="$(qa 'subtitle_lift controls=true' | tail -1)"; note "INFO  $3 ${lift#*FlixTownQA: }"
+  echo "${lift##*bar_top=}" | tr -dc 0-9 > "$OUT/bar-$3"; qaf controls > "$OUT/ctl-$3"
+  wait_qa controls false 8; sleep 0.8; local r; r="$(sub_box "C-$3-back" "$2")"; note "INFO  $3 controls hidden again: $r"; echo "$r" > "$OUT/box-$3-back"
   leave_player; }
 set_prefs subtitles_on:b:true subtitle_language:s:en subtitle_size:f:1.0
 adb shell am start $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null; wait_activity HomeActivity 30; sleep 5
@@ -300,7 +306,10 @@ measure subs.mkv green xl169
 geom(){ cat "$OUT/box-$1"; }
 low(){ set -- $(geom "$1"); [ "$7" -gt 20 ] && python3 -c "import sys;y1,h=int(sys.argv[1]),int(sys.argv[2]);sys.exit(0 if .93*h<=y1<=.972*h else 1)" "$4" "$6"; }
 inside(){ set -- $(geom "$1"); [ "$7" -gt 20 ] && [ "$1" -ge $(($5*5/100)) ] && [ "$3" -le $(($5*95/100)) ] && [ "$2" -ge $(($6*5/100)) ] && [ "$4" -le $(($6*972/1000)) ]; }
-same(){ local n="$1" a; set -- $(geom "$n"); a=$4; set -- $(geom "$n-shown"); [ "${7:-0}" -gt 20 ] && [ $((a-$4)) -le 8 ] && [ $(($4-a)) -le 8 ]; }
+# controls shown: whole text above the control bar (2 px or more), on screen, same size and pixel count as hidden (not clipped or shrunk)
+lifted(){ python3 "$QA/subtitle_lift.py" lifted "$(geom "$1")" "$(geom "$1-shown")" "$(cat "$OUT/bar-$1" 2>/dev/null)" "$(cat "$OUT/ctl-$1" 2>/dev/null)"; }
+# controls hidden again: back exactly where it was
+restored(){ python3 "$QA/subtitle_lift.py" restored "$(geom "$1")" "$(geom "$1-back")"; }
 for c in plain169 plainLB plain43; do set -- $(geom $c); note "INFO  $c text bottom at $(frac $4 $6) of the screen height"; done
 check "C1 16:9: ordinary subtitles bottom-centre near the bottom (93–97 % of height)" 'low plain169 && inside plain169'
 check "C1 letterboxed movie: ordinary subtitles near the screen bottom, not inside the picture" 'low plainLB && inside plainLB'
@@ -308,7 +317,11 @@ check "C1 4:3: ordinary subtitles near the bottom" 'low plain43 && inside plain4
 set -- $(geom assLB); note "INFO  assLB bottom at $(frac $4 $6) (the picture ends at about 0.872)"
 check "C2 letterboxed: a positioned ASS caption stays inside the picture (above the black bar)" 'set -- $(geom assLB); [ "$7" -gt 20 ] && [ "$4" -le $(($6*875/1000)) ]'
 check "C2 16:9: positioned ASS caption visible near the bottom" 'inside ass169'
-check "C3 ordinary subtitles stay put and readable when the controls show (same bottom line ±8 px; one- and two-line cues share it)" 'same plain169 && same plainLB && same plain43'
+for c in plain169 plainLB plain43 xl169 assLB ass169; do note "INFO  $c lift: $(lifted $c 2>&1 >/dev/null)"; done
+check "C3 controls shown: ordinary subtitles move above the control bar, fully visible, same size (16:9, letterbox, 4:3)" 'lifted plain169 && lifted plainLB && lifted plain43'
+check "C3 controls shown: Extra large subtitles above the bar, fully visible" 'lifted xl169'
+check "C3 controls shown: positioned ASS captions above the bar, fully visible (letterbox, 16:9)" 'lifted assLB && lifted ass169'
+check "C3 controls hidden again: every case returns to its normal position" 'restored plain169 && restored plainLB && restored plain43 && restored xl169 && restored assLB && restored ass169'
 check "C4 Extra large stays fully on screen" 'inside xl169'
 crashB="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashB" = 0 ]'
