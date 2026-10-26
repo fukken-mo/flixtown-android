@@ -112,7 +112,7 @@ public class PlayerActivity extends Activity {
         video.setUseController(false);
         video.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);
         video.setShutterBackgroundColor(0xFF000000);
-        subtitles=new SubtitlePlacement(this,root,video,findViewById(R.id.player_overlay));applySubtitleAppearance();
+        subtitles=new SubtitlePlacement(this,root,video,findViewById(R.id.player_overlay),findViewById(R.id.player_bottom));applySubtitleAppearance();
         buildControls();
         root.requestFocus();
     }
@@ -191,7 +191,7 @@ public class PlayerActivity extends Activity {
     /** Shows the overlay and focuses {@code target} (or keeps the current control focused). */
     private void showControls(View target){
         if(card.getVisibility()==View.VISIBLE)return;
-        controls.setVisibility(View.VISIBLE);
+        controls.setVisibility(View.VISIBLE);if(subtitles!=null)subtitles.controlsChanged();
         if(target!=null)target.requestFocus();
         else if(!controls.hasFocus())playButton.requestFocus();
         updateProgressUi();scheduleHide();
@@ -199,7 +199,7 @@ public class PlayerActivity extends Activity {
     private void scheduleHide(){handler.removeCallbacks(hideControls);if(dialog==null)handler.postDelayed(hideControls,HIDE_MS);}
     private final Runnable hideControls=()->{
         if(dialog!=null || pendingSeek>=0){scheduleHide();return;}
-        controls.setVisibility(View.GONE);status.setVisibility(View.GONE);root.requestFocus();
+        controls.setVisibility(View.GONE);status.setVisibility(View.GONE);if(subtitles!=null)subtitles.controlsChanged();root.requestFocus();
     };
     private void hideNow(){handler.removeCallbacks(hideControls);hideControls.run();}
     private void flash(String text){status.setText(text);status.setVisibility(View.VISIBLE);}
@@ -336,7 +336,7 @@ public class PlayerActivity extends Activity {
         // One card at a time: whatever card was up (for example Up next with its countdown) is replaced
         // completely, so its countdown, Back behaviour and buttons can never mix with the new card.
         cardForNext=false;cardForError=false;
-        handler.removeCallbacks(hideControls);controls.setVisibility(View.GONE);
+        handler.removeCallbacks(hideControls);controls.setVisibility(View.GONE);if(subtitles!=null)subtitles.controlsChanged();
         cardTitle.setText(heading);cardMessage.setText(message==null?"":message);cardMessage.setVisibility(message==null||message.isEmpty()?View.GONE:View.VISIBLE);
         cardActions.removeAllViews();
         for(int i=0;i<labels.length;i++){final int index=i;
@@ -546,7 +546,9 @@ public class PlayerActivity extends Activity {
     private void applySubtitleAppearance(){if(subtitles!=null)subtitles.style(this::applySubtitleAppearance);}
     private void applySubtitleAppearance(androidx.media3.ui.SubtitleView subs){
         float size=ViewerOptions.size(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f));
-        subs.setFractionalTextSize(androidx.media3.ui.SubtitleView.DEFAULT_TEXT_SIZE_FRACTION*size);
+        // Sized from the whole layer height, so raising the bottom inset above the controls never shrinks the text;
+        // the factor keeps the size it had when it was measured inside the normal insets.
+        subs.setFractionalTextSize(androidx.media3.ui.SubtitleView.DEFAULT_TEXT_SIZE_FRACTION*size*SubtitlePlacement.TEXT_HEIGHT,true);
         subs.setApplyEmbeddedFontSizes(size==1f);
         int style=Api.prefs(this).getInt(ViewerOptions.STYLE,0);subs.setApplyEmbeddedStyles(style==0);
         if(style==0){subs.setStyle(androidx.media3.ui.CaptionStyleCompat.DEFAULT);return;}
