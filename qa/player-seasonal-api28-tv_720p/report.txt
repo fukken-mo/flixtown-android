@@ -1,13 +1,13 @@
 PASS  A0 signed in (QR) and Home opened
-INFO  first launch: 10-26 04:19:14.147  2756  2756 I FlixTownQA: splash event=halloween image=false file= display_ms=1500
+INFO  first launch: 10-26 04:45:39.849  2813  2813 I FlixTownQA: splash event=halloween image=false file= display_ms=1500
 PASS  A1 first launch, no panel schedule (404): built-in schedule, normal background
-FAIL  A2 10-26 04:19:30.456  3709  3709 I FlixTownQA: splash event=halloween image=false file= display_ms=3000
-INFO  centre pixel: 19 21 23
-FAIL  A2 the picture fills the screen (green test picture at the centre)
-FAIL  A2 nothing drawn over the picture (the logo is hidden once it shows)
-INFO  splash to Home: 3069 ms (display 3000 ms)
+PASS  A2 Halloween picture downloaded in the background and shown on the next launch
+INFO  centre pixel: 15 192 16
+PASS  A2 the picture fills the screen (green test picture at the centre)
+PASS  A2 nothing drawn over the picture (the logo is hidden once it shows)
+INFO  splash to Home: 3197 ms (display 3000 ms)
 PASS  A3 splash stays for the display time, then Home (2.6–6 s)
-INFO  with OK pressed: 536 ms
+INFO  with OK pressed: 685 ms
 PASS  A3 OK skips the splash (Home in under 2.5 s)
 PASS  A4 2026-12-26 → christmas (picture shown: false)
 PASS  A4 2026-12-27 → new_year (picture shown: true)
@@ -25,33 +25,33 @@ PASS  A4 2026-06-15 → default (picture shown: false)
 INFO  christmas = corrupt file, valentines = 800×450, July 4 = 404, St. Patrick = no picture (Halloween's cached picture is not reused)
 PASS  A5 malformed schedule ignored: the last good schedule and picture stay
 PASS  A6 seasonal splash turned off in the panel: normal splash
-INFO  everyday (seasonal off): 10-26 04:23:41.139  6786  6786 I FlixTownQA: splash event=default image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
+INFO  everyday (seasonal off): 10-26 04:48:40.841  6881  6881 I FlixTownQA: splash event=default image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
 PASS  A6 seasonal off with an everyday design uploaded: the everyday picture shows (red test picture)
-INFO  christmas with a corrupt picture: 10-26 04:23:54.932  6952  6952 I FlixTownQA: splash event=christmas image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
+INFO  christmas with a corrupt picture: 10-26 04:48:49.027  7040  7040 I FlixTownQA: splash event=christmas image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
 PASS  A6 a holiday whose picture failed validation falls back to the everyday design
 PASS  A7 returning from the background goes back to Home without the splash
 PASS  A8 opening twice quickly leaves one Home (1)
 PASS  A9 intro video enabled: the intro follows the splash (Skip intro shown)
 PASS  A no Flix Town crash during the splash checks
-INFO  after Go to time: elapsed=278
-INFO  Up next shown before the failure: 0 line(s); card now: This title couldn't be played / The server didn't send the video. Check the connection and try again.
-INFO  cut offsets (bytes): 704240 for 4:50, 365341 for 2:30, file 733997
-INFO  server: 26/Oct/2026 04:25:01 "GET /cut/subs.mkv HTTP/1.1" 206 -
-INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
-INFO  server: 26/Oct/2026 04:25:02 "GET /cut/subs.mkv HTTP/1.1" 206 -
-INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
-INFO  server: 26/Oct/2026 04:25:04 "GET /cut/subs.mkv HTTP/1.1" 206 -
-INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
-INFO  server: 26/Oct/2026 04:25:07 "GET /cut/subs.mkv HTTP/1.1" 206 -
-INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
-INFO  server: 26/Oct/2026 04:25:11 "GET /cut/subs.mkv HTTP/1.1" 206 -
-INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
-INFO  server: 26/Oct/2026 04:25:16 "GET /cut/subs.mkv HTTP/1.1" 206 -
-INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
-INFO  player near the end: playing=false elapsed=278 card=[] playing=false elapsed=278 card=[This title couldn't be played]
-INFO  played in the Up next window before the failure: 0 state line(s)
+INFO  after Go to time: elapsed=280
+INFO  Up next shown before the failure: 23 line(s); card now: This title couldn't be played / The server didn't send the video. Check the connection and try again.
+INFO  cut offsets (bytes): 72796858 for 4:50, 37710728 for 2:30, file 75314982
+INFO  server: 26/Oct/2026 04:50:21 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=69777357- at byte 72796858 (cut 72796858, size 75314982)
+INFO  server: 26/Oct/2026 04:50:22 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796858- at byte 72796858 (cut 72796858, size 75314982)
+INFO  server: 26/Oct/2026 04:50:23 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796858- at byte 72796858 (cut 72796858, size 75314982)
+INFO  server: 26/Oct/2026 04:50:25 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796858- at byte 72796858 (cut 72796858, size 75314982)
+INFO  server: 26/Oct/2026 04:50:28 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796858- at byte 72796858 (cut 72796858, size 75314982)
+INFO  server: 26/Oct/2026 04:50:32 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796858- at byte 72796858 (cut 72796858, size 75314982)
+INFO  player near the end: playing=true elapsed=286 card=[Up next] playing=true elapsed=287 card=[Up next] playing=true elapsed=287 card=[Up next] playing=true elapsed=288 card=[Up next] playing=true elapsed=288 card=[Up next] playing=true elapsed=289 card=[Up next] playing=true elapsed=289 card=[Up next] playing=false elapsed=289 card=[This title couldn't be played]
+INFO  played in the Up next window before the failure: 24 state line(s)
 PASS  B1 the stream failure near the end shows the error card
-FAIL  B1 the Up next card was showing before (the case from the screenshot)
+PASS  B1 the Up next card was showing before (the case from the screenshot)
 PASS  B1 the error card has no 'Starts in' countdown (2.5 s later)
 PASS  B1 Try again, Report a problem and Back
 PASS  B1 Report a problem opens the report menu
@@ -60,21 +60,21 @@ PASS  B1 Try again retries; the failure shows the error card again, still withou
 PASS  B1 Back on the error card leaves playback (not just the countdown)
 INFO  Continue Watching after a failure in the last 30 s: name="resume_episode_series:5002">9102
 PASS  B2 a mid-way failure shows the error card
-INFO  episode 9102, saved position 140000 ms
+INFO  episode 9102, saved position 149808 ms
 PASS  B2 the interrupted episode is not marked watched: it stays the resume episode with its position
 INFO  tap: elapsed 6s, pending 16s, status '→'
 PASS  B3 a tap shows the pending target (+10 s) before it is applied
 PASS  B3 then it is applied once (6 → 17 s) and the marker goes
-INFO  Right then Back in one input call: pending seen 29s, elapsed 17 → 21 s
+INFO  Right then Back in one input call: pending seen 30s, elapsed 17 → 21 s
 PASS  B3 Back cancels a pending seek (pending shown, then cleared with no jump: 17 → 21 s)
-INFO  after holding Right 4 s: pending 295, elapsed 295
+INFO  after holding Right 4 s: pending -1, elapsed 295
 PASS  B3 holding Right accelerates to the end guard in 4 s (duration − 5 s = 295 s), never past it
 PASS  B3 the movie then ends normally and playback closes (no error card)
 PASS  B4 seeking while paused stays paused (5 → 15 s)
 PASS  B4 Go to time 2:30 jumps there (152 s)
-PASS  B4 cancelling Go to time leaves playback where it was (152 → 162 s; playback runs meanwhile)
+PASS  B4 cancelling Go to time leaves playback where it was (152 → 164 s; playback runs meanwhile)
 PASS  B5 an unseekable stream says so instead of seeking ('This video can't be skipped forward or back.')
-INFO  10-26 04:28:59.179 12654 12654 I FlixTownQA: subtitle_builtin_parent=video_frame
+INFO  10-26 04:54:25.404 13206 13206 I FlixTownQA: subtitle_builtin_parent=video_frame
 INFO  plain169 playing while measured: false
 INFO  plain169 controls hidden: 538 660 742 684 1280 720 763
 INFO  plain169 controls shown: 538 508 742 532 1280 720 763
@@ -127,4 +127,4 @@ PASS  C3 controls hidden again: every case returns to its normal position
 PASS  C4 Extra large stays fully on screen
 PASS  no Flix Town crash
 
-player & seasonal: 54 passed, 4 failed
+player & seasonal: 58 passed, 0 failed
