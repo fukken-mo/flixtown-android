@@ -2,9 +2,10 @@
 """Local test media server for the player/splash QA (emulator reaches it at 10.0.2.2).
 
   /<file>          normal file with HTTP Range support (seeking)
-  /cut/<file>      announces the full length but closes the connection after 95 % of the bytes:
-                   a real network failure near the end of a title (never a clean end)
-  /cut50/<file>    the same after 50 % (an interrupted title, mid-way)
+  /cut/<file>      announces the full length but drops the connection inside bytes 95–99 %:
+                   a real network failure near the end of a title (never a clean end). The last
+                   1 % (where the Matroska index lives) stays readable, so the title opens normally.
+  /cut50/<file>    the same for bytes 50–99 % (an interrupted title, mid-way)
   /live/<file>     no length and no Range: an unseekable stream
   /missing/...     404
 Usage: media_server.py PORT DIR
@@ -46,10 +47,12 @@ class H(BaseHTTPRequestHandler):
             self.send_header("Accept-Ranges", "bytes"); self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(end - start + 1)); self.end_headers()
             cut = int(size * 0.95) if mode == "cut" else int(size * 0.5) if mode == "cut50" else size
+            tail = int(size * 0.99)
+            if start >= tail: cut = size                       # index reads at the very end are served
             src.seek(start); pos = start
             while pos <= end:
-                if pos >= cut: self.close_connection = True; return      # drop the connection: the client sees a broken transfer
-                n = min(65536, end - pos + 1, max(1, cut - pos))
+                if cut <= pos < tail: self.close_connection = True; return   # drop the connection: the client sees a broken transfer
+                n = min(65536, end - pos + 1, max(1, cut - pos) if pos < cut else 65536)
                 b = src.read(n)
                 if not b: return
                 try: self.wfile.write(b)

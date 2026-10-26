@@ -20,7 +20,7 @@ note(){ echo "$*" | tee -a "$REPORT"; }
 PASS=0; FAIL=0
 ok(){ note "PASS  $1"; PASS=$((PASS+1)); }
 bad(){ note "FAIL  $1"; FAIL=$((FAIL+1)); }
-check(){ if eval "$2"; then ok "$1"; else bad "$1"; fi; }
+check(){ local name="$1"; if eval "$2"; then ok "$name"; else bad "$name"; fi; }
 shot(){ sleep "${2:-0.5}"; adb shell screencap -p "/sdcard/$1.png"; adb pull "/sdcard/$1.png" "$SHOTS/$1.png" > /dev/null; }
 key(){ for k in "$@"; do adb shell input keyevent "KEYCODE_$k"; sleep 0.6; done; }
 LAUNCHER="-a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER -f 0x10200000"
@@ -196,8 +196,9 @@ live 2026-06-15 '{}'
 
 # ====================== B. Player ======================
 stream(){ demo_live "{\"today\":\"2026-06-15\",\"stream\":\"$1\"}"; }
+fresh(){ launch; wait_activity HomeActivity 30; sleep 4; }   # every player section starts from a fresh launch
 # B1. Error replacing Up next near the end of an episode (connection dropped at 95 %)
-stream "$M/cut/subs.mkv"; adb logcat -b main -c
+stream "$M/cut/subs.mkv"; fresh
 open_episode
 go_to 4 32
 note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"
@@ -220,7 +221,7 @@ key BACK; sleep 2
 check "B1 Back on the error card leaves playback (not just the countdown)" '! in_activity PlayerActivity'
 note "INFO  Continue Watching after a failure in the last 30 s: $(adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -o 'name="resume_episode_series:[0-9]*">[^<]*' | head -1)"
 # B2. Interrupted mid-way (50 %): not marked watched, position kept
-stream "$M/cut50/subs.mkv"; adb logcat -b main -c
+stream "$M/cut50/subs.mkv"; fresh
 open_episode; ep="$(qaf episode)"
 go_to 2 20
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
@@ -231,7 +232,7 @@ pos=$(echo "$prefs" | grep -o 'name="resume_position_series:[0-9]*" value="[0-9]
 note "INFO  episode $ep, saved position ${pos:-none} ms"
 check "B2 the interrupted episode is not marked watched: it stays the resume episode with its position" 'echo "$prefs" | grep -q "name=\"resume_episode_series:[0-9]*\">$ep<" && [ "${pos:-0}" -ge 100000 ]'
 # B3. Seeking on a movie
-stream "$M/subs.mkv"; adb logcat -b main -c
+stream "$M/subs.mkv"; fresh
 open_movie; sleep 3; e0=$(elapsed)
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.25; p1=$(qaf pending); st="$(qaf status)"
 note "INFO  tap: elapsed ${e0}s, pending ${p1}s, status '$st'"
@@ -249,7 +250,7 @@ if hold 106 4; then sleep 0.3; ph=$(qaf pending); sleep 1.2; eh=$(elapsed)
   check "B3 the movie then ends normally and playback closes (no error card)" '! in_activity PlayerActivity && ! adb logcat -d -s FlixTownQA:I | grep -q "card=\[This title"'
 else note "INFO  hold: no input device for sendevent on this emulator (acceleration covered by SeekStepTest)"; fi
 # paused seek and Go to time on the movie
-stream "$M/subs.mkv"; open_movie; sleep 2
+stream "$M/subs.mkv"; fresh; open_movie; sleep 2
 key DPAD_CENTER; sleep 1; wait_qa controls false 6; e3=$(elapsed)
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 2; e4=$(elapsed)
 check "B4 seeking while paused stays paused (${e3} → ${e4} s)" '[ "$(qaf playing)" = "false" ] && [ "$e4" -ge $((e3+9)) ]'
@@ -259,10 +260,10 @@ check "B4 Go to time 2:30 jumps there (${e5} s)" '[ "$e5" -ge 148 ] && [ "$e5" -
 shot B4-after-go-to 0.1
 key DPAD_UP; sleep 0.4; key DPAD_UP; sleep 0.4; key DPAD_CENTER; sleep 1.2; focus_to DPAD_DOWN "Go to time" 3 > /dev/null; key DPAD_CENTER; sleep 1.2
 shot B4-go-to-dialog 0.1; key BACK; sleep 1.5; e6=$(elapsed)
-check "B4 cancelling Go to time leaves playback where it was (${e5} → ${e6} s)" '[ "$e6" -ge "$e5" ] && [ "$e6" -le $((e5+8)) ] && [ "$(qaf dialog)" = "false" ]'
+check "B4 cancelling Go to time leaves playback where it was (${e5} → ${e6} s; playback runs meanwhile)" '[ "$e6" -ge "$e5" ] && [ "$e6" -le $((e5+18)) ] && [ "$(qaf dialog)" = "false" ]'
 leave_player
 # unseekable stream
-stream "$M/live/live.ts"; open_movie; sleep 4
+stream "$M/live/live.ts"; fresh; open_movie; sleep 4
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.5; st="$(qaf status)"
 check "B5 an unseekable stream says so instead of seeking ('$st')" 'echo "$st" | grep -q "can.t be skipped"'
 leave_player
@@ -288,7 +289,7 @@ measure subs.mkv green xl169
 geom(){ cat "$OUT/box-$1"; }
 low(){ set -- $(geom "$1"); [ "$7" -gt 20 ] && python3 -c "import sys;y1,h=int(sys.argv[1]),int(sys.argv[2]);sys.exit(0 if .93*h<=y1<=.972*h else 1)" "$4" "$6"; }
 inside(){ set -- $(geom "$1"); [ "$7" -gt 20 ] && [ "$1" -ge $(($5*5/100)) ] && [ "$3" -le $(($5*95/100)) ] && [ "$2" -ge $(($6*5/100)) ] && [ "$4" -le $(($6*972/1000)) ]; }
-same(){ set -- $(geom "$1") ; local a=$2; set -- $(geom "$1-shown"); [ "$7" -gt 20 ] && [ $((a-$2)) -le 8 ] && [ $(($2-a)) -le 8 ]; }
+same(){ local n="$1" a; set -- $(geom "$n"); a=$2; set -- $(geom "$n-shown"); [ "${7:-0}" -gt 20 ] && [ $((a-$2)) -le 8 ] && [ $(($2-a)) -le 8 ]; }
 for c in plain169 plainLB plain43; do set -- $(geom $c); note "INFO  $c text bottom at $(frac $4 $6) of the screen height"; done
 check "C1 16:9: ordinary subtitles bottom-centre near the bottom (93–97 % of height)" 'low plain169 && inside plain169'
 check "C1 letterboxed movie: ordinary subtitles near the screen bottom, not inside the picture" 'low plainLB && inside plainLB'
@@ -296,7 +297,7 @@ check "C1 4:3: ordinary subtitles near the bottom" 'low plain43 && inside plain4
 set -- $(geom assLB); note "INFO  assLB bottom at $(frac $4 $6) (the picture ends at about 0.872)"
 check "C2 letterboxed: a positioned ASS caption stays inside the picture (above the black bar)" 'set -- $(geom assLB); [ "$7" -gt 20 ] && [ "$4" -le $(($6*875/1000)) ]'
 check "C2 16:9: positioned ASS caption visible near the bottom" 'inside ass169'
-check "C3 subtitles stay put when the controls show (same top line ±8 px)" 'same plain169 && same plainLB'
+check "C3 ordinary subtitles stay put and readable when the controls show (same top line ±8 px)" 'same plain169 && same plainLB && same plain43'
 check "C4 Extra large stays fully on screen" 'inside xl169'
 crashB="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashB" = 0 ]'
