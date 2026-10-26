@@ -42,6 +42,7 @@ public class LoginActivity extends Activity {
     @Override public void onCreate(Bundle b){super.onCreate(b);
         if(BuildConfig.DEMO)applyDemoExtras();
         String[] saved=AccountStore.read(this);
+        SeasonalSplash.refreshAsync(this);   // background only; used from the next launch
         if(saved!=null){SignOut.rememberOwner(this,saved[0]);continueSignedIn();return;}
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
         setContentView(R.layout.activity_login);
@@ -70,7 +71,8 @@ public class LoginActivity extends Activity {
         DemoData.expired=getIntent().getBooleanExtra("demo_expired",false);
         DemoData.offline=getIntent().getBooleanExtra("demo_offline",false);
         DemoData.accountFile=new java.io.File(getFilesDir(),"demo_account.json");
-        if(getIntent().getBooleanExtra("demo_reset",false))DemoData.accountFile.delete();
+        if(getIntent().getBooleanExtra("demo_reset",false)){DemoData.accountFile.delete();SeasonalSplash.reset(this);}
+        if(getIntent().getBooleanExtra("demo_seasonal_refresh",false))SeasonalSplash.allowRefreshNow(this);
         DemoData.connections=getIntent().getIntExtra("demo_connections",1);
         String exp=getIntent().getStringExtra("demo_exp");DemoData.expDate=exp==null?"1830254400":"never".equals(exp)?"":exp;
         DemoData.slow=getIntent().getBooleanExtra("demo_slow",false);

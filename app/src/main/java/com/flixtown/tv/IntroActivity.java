@@ -28,7 +28,15 @@ import androidx.media3.ui.PlayerView;
 import org.json.JSONObject;
 
 /**
- * Optional panel intro, shown once per fresh launch.
+ * Startup presentation, once per fresh launch of a signed-in TV: the seasonal splash, then the
+ * optional panel intro video.
+ *
+ * Seasonal splash ({@link SeasonalSplash}): the picture for today's event if it is on the TV (each
+ * approved picture already contains the Flix Town logo, so nothing is drawn over it), otherwise the
+ * normal Flix Town background with the logo. It shows for the panel's display time (default 1.5 s,
+ * 0.8–3 s) while the catalog refresh already runs in the background; OK, Enter or Back skip it.
+ * When the panel intro video is enabled the splash is only its short loading frame (it is not
+ * stretched), so there are never two intros in a row.
  *
  * It waits briefly for the panel config (fetched by {@link StartupRefresh}, which keeps running
  * independently) and otherwise uses the last known setting. The intro plays only when the panel
@@ -38,7 +46,8 @@ import org.json.JSONObject;
 public class IntroActivity extends Activity implements StartupRefresh.Listener {
     private static final long CONFIG_WAIT_MS=1500,LOAD_TIMEOUT_MS=8000;
     private final Handler handler=new Handler(Looper.getMainLooper());
-    private boolean decided,finished;
+    private boolean decided,finished,skipped;
+    private long shownAt;private int displayMs;private ImageView seasonal;
     private ExoPlayer player;
     private FrameLayout root;
     private ValueAnimator sweep;
@@ -46,24 +55,44 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
     @Override public void onCreate(Bundle state){
         super.onCreate(state);Logs.quietMedia();
         root=new FrameLayout(this);root.setBackgroundColor(Ui.BG);setContentView(root);
-        showBrand();
+        shownAt=android.os.SystemClock.uptimeMillis();
+        showSplash();
         StartupRefresh.listen(this);
         handler.postDelayed(()->decide(null),CONFIG_WAIT_MS);
     }
-    /** Same branded look as Home's loading screen, so the hand-off is seamless. */
-    private void showBrand(){
+    /**
+     * The normal Flix Town background and logo appear at once; when today's seasonal picture is on
+     * the TV it is decoded off the main thread and fades in over them (a full-screen picture that
+     * already carries the logo). A picture that cannot be decoded leaves the normal background.
+     */
+    private void showSplash(){
+        SeasonalSplash.Choice choice;
+        try{choice=SeasonalSplash.choose(this);}catch(Throwable t){choice=new SeasonalSplash.Choice("","",null,SeasonalSchedule.DEFAULT_DISPLAY_MS);}
+        displayMs=choice.displayMs;
         View glow=new View(this);glow.setBackgroundResource(R.drawable.startup_glow);root.addView(glow,new FrameLayout.LayoutParams(-1,-1));
-        LinearLayout box=Ui.column(this);box.setGravity(Gravity.CENTER_HORIZONTAL);
-        root.addView(box,new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER));
         ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.flix_logo);logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        box.addView(logo,new LinearLayout.LayoutParams(Ui.dp(this,300),Ui.dp(this,207)));
-        FrameLayout track=new FrameLayout(this);track.setBackgroundColor(0x1FFFFFFF);
-        LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(Ui.dp(this,220),Ui.dp(this,3));tp.topMargin=Ui.dp(this,26);box.addView(track,tp);
-        View bar=new View(this);bar.setBackgroundColor(Ui.GLOW);track.addView(bar,new FrameLayout.LayoutParams(Ui.dp(this,72),-1));
-        sweep=ObjectAnimator.ofFloat(bar,View.TRANSLATION_X,-Ui.dp(this,72),Ui.dp(this,220));
-        sweep.setDuration(1100);sweep.setRepeatCount(ValueAnimator.INFINITE);sweep.start();
-        TextView status=Ui.text(this,"Checking for new movies and shows…",17);status.setTextColor(Ui.TEXT_2);
-        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-2,-2);sp.topMargin=Ui.dp(this,18);box.addView(status,sp);
+        root.addView(logo,new FrameLayout.LayoutParams(Ui.dp(this,360),Ui.dp(this,248),Gravity.CENTER));
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash event="+(choice.eventId.isEmpty()?"default":choice.eventId)+" image="+(choice.image!=null)+" display_ms="+displayMs);
+        if(choice.image==null)return;
+        seasonal=new ImageView(this);seasonal.setScaleType(ImageView.ScaleType.CENTER_CROP);seasonal.setAlpha(0f);
+        root.addView(seasonal,new FrameLayout.LayoutParams(-1,-1));
+        java.io.File file=choice.image;String event=choice.eventId;
+        int w=getResources().getDisplayMetrics().widthPixels,h=getResources().getDisplayMetrics().heightPixels;
+        Api.IO.execute(()->{android.graphics.Bitmap bmp=SeasonalSplash.decode(this,file,w,h);
+            runOnUiThread(()->{
+                if(finished||isDestroyed()||bmp==null){if(BuildConfig.DEMO && bmp==null)android.util.Log.i("FlixTownQA","splash image_failed event="+event);return;}
+                seasonal.setImageBitmap(bmp);
+                boolean animate=animationsOn();
+                seasonal.animate().alpha(1f).setDuration(animate?250:0).withEndAction(()->logo.setVisibility(View.GONE)).start();
+                if(animate){seasonal.setScaleX(1f);seasonal.setScaleY(1f);
+                    seasonal.animate().scaleX(1.03f).scaleY(1.03f).setDuration(Math.max(800,displayMs)).start();}
+                if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash image_shown event="+event);
+            });});
+    }
+    /** Android's "Remove animations" / animator scale 0: no fade or zoom. */
+    private boolean animationsOn(){
+        try{return android.provider.Settings.Global.getFloat(getContentResolver(),android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,1f)>0f;}
+        catch(Exception e){return true;}
     }
     @Override public void onConfig(JSONObject config){decide(config);}
     @Override public void onResult(StartupRefresh.Result result){}
@@ -72,8 +101,18 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
         if(decided||finished)return;decided=true;handler.removeCallbacksAndMessages(null);
         String url=config!=null?(config.optBoolean("intro_enabled")?config.optString("intro_url",""):"")
             :Api.prefs(this).getString("intro_url","");
-        if(url==null || !url.startsWith("https://") || android.net.Uri.parse(url).getHost()==null){openHome();return;}
+        if(url==null || !url.startsWith("https://") || android.net.Uri.parse(url).getHost()==null){
+            // No intro video: the splash stays for its display time (counted from launch), then Home.
+            long left=skipped?0:displayMs-(android.os.SystemClock.uptimeMillis()-shownAt);
+            if(left<=0)openHome();else handler.postDelayed(this::openHome,left);
+            return;
+        }
         play(url);
+    }
+    /** OK / Enter / Back during the splash: continue now (the intro video, if any, keeps its Skip button). */
+    private void skipSplash(){
+        if(finished)return;skipped=true;
+        if(!decided)decide(null);else if(player==null)openHome();
     }
     private void play(String url){
         if(sweep!=null)sweep.cancel();
@@ -103,6 +142,7 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
 
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         if(event.getAction()==KeyEvent.ACTION_DOWN && event.getKeyCode()==KeyEvent.KEYCODE_BACK){openHome();return true;}
+        if(player==null && event.getAction()==KeyEvent.ACTION_DOWN && (Ui.isSelect(event.getKeyCode())||event.getKeyCode()==KeyEvent.KEYCODE_ENTER)){skipSplash();return true;}
         if(event.getKeyCode()==KeyEvent.KEYCODE_BACK)return true;
         return super.dispatchKeyEvent(event);
     }

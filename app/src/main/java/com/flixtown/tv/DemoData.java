@@ -42,6 +42,9 @@ final class DemoData {
     static int movieYear(int i){return i==0?java.util.Calendar.getInstance().get(java.util.Calendar.YEAR):1998+(i*5)%27;}
     static int seriesYear(int i){return i==1?java.util.Calendar.getInstance().get(java.util.Calendar.YEAR):2005+i%19;}
     static String respond(String url,String body)throws Exception{
+        // QA: the panel's seasonal schedule from demo_account.json "seasonal" (absent: 404, as before the panel patch).
+        if(url.contains("seasonal.php")){JSONObject l=live();JSONObject s=l==null?null:l.optJSONObject("seasonal");
+            if(s==null)throw new Api.HttpError(404,"Not found");if(s.optBoolean("_malformed"))return "{not json";return s.toString();}
         if(offline){Thread.sleep(400);throw new java.io.IOException("Demo: network unreachable");}
         Thread.sleep(url.contains("get_vod_streams")?(slow?21000:900):250);
         if(url.contains("config.php"))return new JSONObject().put("xtream_url","https://demo.flixtown.invalid").put("intro_enabled",intro)
@@ -239,6 +242,8 @@ final class DemoData {
 
     /** QA: a smaller autoplay queue (demo_account.json "queue_limit") so the cut-off case can be tested. */
     static int queueLimit(int normal){JSONObject l=live();int n=l==null?0:l.optInt("queue_limit",0);return n>0?n:normal;}
+    /** QA: "today" (YYYY-MM-DD) for the seasonal splash, from demo_account.json; empty = the TV's date. */
+    static String seasonalToday(){JSONObject l=live();return l==null?"":l.optString("today","");}
     private static JSONObject live(){
         try{if(accountFile!=null && accountFile.exists()){
             java.io.FileInputStream in=new java.io.FileInputStream(accountFile);byte[] data=new byte[(int)accountFile.length()];
