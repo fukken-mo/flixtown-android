@@ -58,6 +58,13 @@ open(p,'w').write(s)
 EOF
   adb shell "run-as $PKG sh -c 'cat > shared_prefs/flix.xml'" < "$OUT/flix.xml"; }
 qa(){ adb logcat -d -s FlixTownQA:I | grep "$1" | tail -1; }
+# Continue Watching / watched state for the test show (series 5002)
+prefs_now(){ adb shell "run-as $PKG cat shared_prefs/flix.xml"; }
+resume_ep(){ prefs_now | grep -o 'name="resume_episode_series:5002">[^<]*' | sed 's/.*>//'; }
+resume_pos(){ prefs_now | grep -o 'name="resume_position_series:5002" value="[0-9]*"' | grep -o '[0-9]*"$' | tr -d '"'; }
+watched_ep(){ prefs_now | grep -q "name=\"watched_series:5002:$1\" value=\"true\""; }
+clear_watched(){ adb shell am force-stop $PKG; sleep 0.5; prefs_now | grep -v 'name="watched_series:' > "$OUT/flix.xml"
+  adb shell "run-as $PKG sh -c 'cat > shared_prefs/flix.xml'" < "$OUT/flix.xml"; }
 qaf(){ qa " player " | python3 -c 'import re,sys
 l=sys.stdin.read();k=sys.argv[1]
 m=re.search(k+r"=\[([^\]]*)\]",l) or re.search(k+r"=(\S+)",l)
@@ -212,8 +219,8 @@ live 2026-06-15 '{}'
 stream(){ demo_live "{\"today\":\"2026-06-15\",\"stream\":\"$1\"}"; }
 fresh(){ launch; wait_activity HomeActivity 30; sleep 4; }   # every player section starts from a fresh launch
 # B1. Error replacing Up next near the end of an episode (connection dropped at 95 %)
-stream "$M/cut/cut.mkv"; fresh
-player_open open_episode
+stream "$M/cut/cut.mkv"; clear_watched; fresh
+player_open open_episode; ep1="$(qaf episode)"
 go_to 4 38
 note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"; shot B1-after-go-to 0.1
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
@@ -237,7 +244,9 @@ t=0; while [ $t -lt 40 ] && [ "$(qaf card)" != "This title couldn't be played" ]
 check "B1 Try again retries; the failure shows the error card again, still without a countdown" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ] && ! qaf cardmsg | grep -q "Starts in"'
 key BACK; sleep 2
 check "B1 Back on the error card leaves playback (not just the countdown)" '! in_activity PlayerActivity'
-note "INFO  Continue Watching after a failure in the last 30 s: $(adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -o 'name="resume_episode_series:[0-9]*">[^<]*' | head -1)"
+sleep 1; r1="$(resume_ep)"; p1=$(resume_pos); note "INFO  Continue Watching after the late failure: episode $r1 at ${p1:-none} ms (played episode $ep1)"
+check "B1 a failure in the last 30 s keeps the interrupted episode and its position (not moved on)" '[ -n "$ep1" ] && [ "$r1" = "$ep1" ] && [ "${p1:-0}" -ge 280000 ] && [ "${p1:-0}" -le 300000 ]'
+check "B1 the interrupted episode is not marked watched" '! watched_ep "$ep1"'
 # B2. Interrupted mid-way (50 %): not marked watched, position kept
 stream "$M/cut50/cut.mkv"; fresh
 player_open open_episode; ep="$(qaf episode)"
@@ -280,6 +289,28 @@ shot B4-after-go-to 0.1
 key DPAD_UP; sleep 0.4; key DPAD_UP; sleep 0.4; key DPAD_CENTER; sleep 1.2; focus_to DPAD_DOWN "Go to time" 3 > /dev/null; key DPAD_CENTER; sleep 1.2
 shot B4-go-to-dialog 0.1; key BACK; sleep 1.5; e6=$(elapsed)
 check "B4 cancelling Go to time leaves playback where it was (${e5} → ${e6} s; playback runs meanwhile)" '[ "$e6" -ge "$e5" ] && [ "$e6" -le $((e5+18)) ] && [ "$(qaf dialog)" = "false" ]'
+leave_player
+# B6. Back in the closing credits (no error): episode and position kept, not watched
+stream "$M/subs.mkv"; clear_watched; fresh
+player_open open_episode; ep6="$(qaf episode)"; go_to 4 40
+t=0; while [ $t -lt 10 ] && [ "$(qaf card)" != "Up next" ]; do sleep 1; t=$((t+1)); done
+key BACK; sleep 1; leave_player; sleep 1; r6="$(resume_ep)"; p6=$(resume_pos)
+note "INFO  Back at about 4:4x: episode $r6 at ${p6:-none} ms (played episode $ep6)"
+check "B6 Back near the end keeps the episode and its position, not watched" '[ -n "$ep6" ] && [ "$r6" = "$ep6" ] && [ "${p6:-0}" -ge 275000 ] && ! watched_ep "$ep6"'
+# B7. Up next's Play now: the episode counts as finished and Continue Watching moves on
+stream "$M/subs.mkv"; clear_watched; fresh
+player_open open_episode; ep7="$(qaf episode)"; go_to 4 38
+t=0; while [ $t -lt 10 ] && [ "$(qaf card)" != "Up next" ]; do sleep 1; t=$((t+1)); done
+focus_to DPAD_LEFT "Play now" 3 > /dev/null; key DPAD_CENTER; sleep 3; now7="$(qaf episode)"; r7="$(resume_ep)"
+note "INFO  Play now: playing $now7, Continue Watching $r7 (was $ep7)"
+check "B7 Play now on Up next plays the next episode, marks this one watched and moves Continue Watching on" '[ -n "$ep7" ] && [ "$now7" != "$ep7" ] && [ "$r7" = "$now7" ] && watched_ep "$ep7"'
+leave_player
+# B8. Normal end with autoplay: watched, next episode queued and playing
+stream "$M/subs.mkv"; clear_watched; fresh
+player_open open_episode; ep8="$(qaf episode)"; go_to 4 45
+t=0; while [ $t -lt 40 ] && [ "$(qaf episode)" = "$ep8" ]; do sleep 1; t=$((t+1)); done; sleep 1; now8="$(qaf episode)"; r8="$(resume_ep)"
+note "INFO  normal end: playing $now8, Continue Watching $r8 (was $ep8)"
+check "B8 a normal end marks the episode watched and autoplay moves Continue Watching to the next" '[ -n "$ep8" ] && [ "$now8" != "$ep8" ] && [ "$r8" = "$now8" ] && watched_ep "$ep8"'
 leave_player
 # unseekable stream
 stream "$M/live/live.ts"; fresh; player_open open_movie; sleep 4
