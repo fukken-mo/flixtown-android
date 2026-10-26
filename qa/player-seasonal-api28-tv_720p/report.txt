@@ -1,0 +1,57 @@
+PASS  A0 signed in (QR) and Home opened
+INFO  first launch: 10-26 02:32:25.013  2918  2918 I FlixTownQA: splash event=halloween image=false display_ms=1500
+PASS  A1 first launch, no panel schedule (404): built-in schedule, normal background
+PASS  A2 Halloween picture downloaded in the background and shown on the next launch
+INFO  centre pixel: 15 192 16
+PASS  15
+PASS  A2 nothing drawn over the picture (the logo is hidden once it shows)
+INFO  splash to Home: 3424 ms (display 3000 ms)
+PASS  A3 splash stays for the display time, then Home (2.6–6 s)
+INFO  with OK pressed: 762 ms
+PASS  A3 OK skips the splash (Home in under 2.5 s)
+PASS  A4 2026-12-26 → christmas (picture shown: false)
+PASS  A4 2026-12-27 → new_year (picture shown: true)
+PASS  A4 2026-12-31 → new_year (picture shown: true)
+PASS  A4 2027-01-03 → new_year (picture shown: true)
+PASS  A4 2027-01-04 → default (picture shown: false)
+PASS  A4 2026-03-15 → st_patricks (picture shown: false)
+PASS  A4 2027-02-12 → valentines (picture shown: false)
+PASS  A4 2027-07-03 → independence_day (picture shown: false)
+PASS  A4 2027-08-11 → tie_a (picture shown: false)
+PASS  A4 2027-03-28 → easter (picture shown: false)
+PASS  A4 2027-03-30 → default (picture shown: false)
+PASS  A4 2027-11-25 → thanksgiving (picture shown: false)
+PASS  A4 2026-06-15 → default (picture shown: false)
+INFO  christmas = corrupt file, valentines = 800×450, July 4 = 404, St. Patrick = no picture (Halloween's cached picture is not reused)
+PASS  A5 malformed schedule ignored: the last good schedule and picture stay
+PASS  A6 seasonal splash turned off in the panel: normal splash
+PASS  A7 returning from the background goes back to Home without the splash
+PASS  A8 opening twice quickly leaves one Home (1)
+PASS  A9 intro video enabled: the intro follows the splash (Skip intro shown)
+PASS  A no Flix Town crash during the splash checks
+INFO  after Go to time: elapsed=0
+INFO  Up next shown before the failure: 0 line(s); card now:  / 
+FAIL  B1 the stream failure near the end shows the error card
+FAIL  B1 the Up next card was showing before (the case from the screenshot)
+PASS  B1 the error card has no 'Starts in' countdown (2.5 s later)
+FAIL  B1 Try again, Report a problem and Back
+FAIL  B1 Report a problem opens the report menu
+FAIL  B1 cancelling the report returns to the same error card
+PASS  B1 Try again retries; the failure shows the error card again, still without a countdown
+PASS  B1 Back on the error card leaves playback (not just the countdown)
+INFO  Continue Watching after a failure in the last 30 s: 
+FAIL  B2 a mid-way failure shows the error card
+INFO  episode 9101, saved position none ms
+FAIL  B2 the interrupted episode is not marked watched: it stays the resume episode with its position
+INFO  tap: elapsed s, pending s, status ''
+FAIL  B3 a tap shows the pending target (+10 s) before it is applied
+FAIL  B3 then it is applied once ( →  s) and the marker goes
+FAIL  B3 Back cancels a pending seek (no jump:  →  s)
+INFO  after holding Right 4 s: pending , elapsed 
+FAIL  B3 holding Right accelerates to the end guard in 4 s (duration − 5 s = 295 s), never past it
+PASS  B3 the movie then ends normally and playback closes (no error card)
+FAIL  B4 seeking while paused stays paused ( →  s)
+FAIL  B4 Go to time 2:30 jumps there ( s)
+FAIL  B4 cancelling Go to time leaves playback where it was ( →  s)
+FAIL  B5 an unseekable stream says so instead of seeking ('')
+INFO  
