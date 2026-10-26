@@ -167,7 +167,8 @@ final class DemoData {
             .put("has_more",false).toString();
         String key=in.optString("type")+":"+in.optInt("media_id")+":"+in.optInt("episode_id")+":"+in.optString("issue");
         boolean duplicate=!reported.add(key);
-        android.util.Log.i("FlixTownQA","report type="+in.optString("type")+" media="+in.optInt("media_id")+" episode="+in.optInt("episode_id")+" issue="+in.optString("issue")+" duplicate="+duplicate);
+        android.util.Log.i("FlixTownQA","report type="+in.optString("type")+" media="+in.optInt("media_id")+" episode="+in.optInt("episode_id")+" issue="+in.optString("issue")+" duplicate="+duplicate
+            +" audio_format=["+in.optString("audio_format")+"] error_code=["+in.optString("error_code")+"] audio_diagnostics=["+in.optString("audio_diagnostics")+"] keys="+in.length());
         return new JSONObject().put("ok",true).put("duplicate",duplicate).toString();
     }
     /** Demo requests made in this process (the demo server's own "database"). */

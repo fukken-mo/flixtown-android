@@ -11,7 +11,7 @@ public class PlaybackReportTest {
     @Test public void payloadContainsNoCredentialsOrUrl()throws Exception{
         JSONObject o=movie().payload(0);assertEquals(123,o.getInt("media_id"));assertEquals("stutter",o.getString("issue"));
         assertEquals(12500,o.getLong("position_ms"));assertFalse(o.has("url"));assertFalse(o.has("username"));assertFalse(o.has("password"));
-        assertFalse(o.has("title"));assertFalse(o.has("session"));assertEquals(13,o.length());
+        assertFalse(o.has("title"));assertFalse(o.has("session"));assertEquals(14,o.length());assertEquals("",o.getString("audio_diagnostics"));
     }
     @Test public void requestIdIsStableForRetriesAndDifferentForNewReports()throws Exception{
         PlaybackReport r=movie();assertEquals(r.payload(0).getString("request_id"),r.payload(0).getString("request_id"));

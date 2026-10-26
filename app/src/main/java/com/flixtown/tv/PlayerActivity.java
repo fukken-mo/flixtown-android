@@ -65,6 +65,10 @@ public class PlayerActivity extends Activity {
     private org.json.JSONObject episodeCatalog;private boolean loadingEpisodes;private int episodeLoadGeneration;
     private boolean reporting,reportWasPlaying,reportFromError,stopping,reportEnded;
     private String lastPlayerError="";private boolean lastErrorNetwork;
+    /** Audio facts for reports and Playback info (see AudioDiagnostics): reset for every new title. */
+    private List<AudioDiagnostics.Track> audioTracks=new ArrayList<>();
+    private String audioDecoder="",audioOutput="",audioDevice,pendingAudioNotice;private List<String> audioErrors=new ArrayList<>();
+    private boolean audioNoticeShown;
     private ExoPlayer reportPlayer;private Boolean reportRestartReady;
 
     /** Episodes after the next one (from Details), so autoplay keeps going through the series. */
@@ -287,7 +291,7 @@ public class PlayerActivity extends Activity {
             .setAllowCrossProtocolRedirects(true).setConnectTimeoutMs(15000).setReadTimeoutMs(20000);
         player=new ExoPlayer.Builder(this,new DefaultRenderersFactory(this).setEnableDecoderFallback(true))
             .setMediaSourceFactory(new DefaultMediaSourceFactory(new DefaultDataSource.Factory(this,http))).build();
-        video.setPlayer(player);
+        video.setPlayer(player);listenToAudio(player);
         applyPreferences(this,player);
         player.setPlaybackSpeed(ViewerOptions.speed(Api.prefs(this).getFloat(ViewerOptions.SPEED,1f)));
         player.addListener(new Player.Listener(){
@@ -303,7 +307,7 @@ public class PlayerActivity extends Activity {
             }
             @Override public void onPlayWhenReadyChanged(boolean playWhenReady,int reason){
                 if(reporting&&playWhenReady&&player!=null){player.pause();return;}updatePlayIcon();}
-            @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();}
+            @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();collectAudio(tracks);}
             @Override public void onCues(androidx.media3.common.text.CueGroup cueGroup){if(subtitles!=null)subtitles.show(cueGroup.cues);}
             @Override public void onPlayerError(PlaybackException error){
                 android.util.Log.w("FlixTownPlayer","Playback failed: "+error.getErrorCodeName()+" "+Logs.safe(error));
@@ -348,7 +352,8 @@ public class PlayerActivity extends Activity {
         card.setVisibility(View.VISIBLE);
         cardActions.getChildAt(Math.max(0,Math.min(focusIndex,labels.length-1))).requestFocus();
     }
-    private void hideCard(){card.setVisibility(View.GONE);cardForNext=false;cardForError=false;root.requestFocus();}
+    private void hideCard(){card.setVisibility(View.GONE);cardForNext=false;cardForError=false;root.requestFocus();
+        if(pendingAudioNotice!=null){String n=pendingAudioNotice;pendingAudioNotice=null;handler.post(()->audioNotice(n));}}
 
     /* ---------------- Customer playback reports ---------------- */
 
@@ -370,8 +375,12 @@ public class PlayerActivity extends Activity {
         reportFromError=cardForError;reportWasPlaying=player.getPlayWhenReady()&&!reportFromError;
         reportPlayer=player;reportEnded=false;reporting=true;player.pause();handler.removeCallbacks(hideControls);
         Format vf=player.getVideoFormat(),af=player.getAudioFormat();
+        // Audio: the selected track, or why none is ("none selected: ..."), plus the full detail (tracks, support,
+        // decoder, output, this TV's audio capabilities, audio errors). No address, account or file label.
+        String audio=audioTracks.isEmpty()?reportFormat(af):AudioDiagnostics.reportField(audioTracks);
+        String error=!lastPlayerError.isEmpty()?lastPlayerError:AudioDiagnostics.errorField(audioTracks,audioErrors);
         PlaybackReport snapshot=new PlaybackReport(kind,contentId,episodeId,player.getCurrentPosition(),android.os.Build.VERSION.SDK_INT,
-            android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL,reportFormat(vf),reportFormat(af),lastPlayerError);
+            android.os.Build.MANUFACTURER+" "+android.os.Build.MODEL,reportFormat(vf),audio,error,audioDetail());
         showReportIssues(snapshot);
     }
     private static String reportFormat(Format f){
@@ -484,12 +493,13 @@ public class PlayerActivity extends Activity {
         if(player==null||reporting||dialog!=null)return;
         List<String> names=new ArrayList<>();
         if(episodeNavigation!=null)names.add("Episodes");
-        names.add("Go to time");names.add("Playback speed");names.add("Subtitle size");names.add("Subtitle appearance");
+        names.add("Go to time");names.add("Playback info");names.add("Playback speed");names.add("Subtitle size");names.add("Subtitle appearance");
         boolean canMark=("movie".equals(kind)||episodeNavigation!=null)&&contentId!=null&&!contentId.isEmpty();
         if(canMark)names.add(Api.prefs(this).getBoolean(watchedKey(),false)?"Mark as unwatched":"Mark as watched");
         choose("Player options",names.toArray(new String[0]),0,i->{String name=names.get(i);
             if(name.equals("Episodes"))showEpisodes();
             else if(name.equals("Go to time"))handler.post(this::goToTime);
+            else if(name.equals("Playback info"))handler.post(this::showPlaybackInfo);
             else if(name.equals("Playback speed"))choose("Playback speed",new String[]{"0.75×","1× (Normal)","1.25×","1.5×"},ViewerOptions.index(player.getPlaybackParameters().speed,ViewerOptions.SPEEDS),n->{
                 if(player==null)return;float speed=ViewerOptions.SPEEDS[n];player.setPlaybackSpeed(speed);Api.prefs(this).edit().putFloat(ViewerOptions.SPEED,speed).apply();});
             else if(name.equals("Subtitle size"))choose("Subtitle size",new String[]{"Small","Normal","Large","Extra large"},ViewerOptions.index(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f),ViewerOptions.SIZES),n->{Api.prefs(this).edit().putFloat(ViewerOptions.SIZE,ViewerOptions.SIZES[n]).apply();applySubtitleAppearance();});
@@ -638,6 +648,140 @@ public class PlayerActivity extends Activity {
         audioLabel.setText(audio==null?"Audio":"Audio · "+audio);
         subtitleLabel.setText("Subtitles · "+(text==null?"Off":text));
     }
+    /* ---------------- Audio diagnostics ---------------- */
+
+    private void resetAudioDiagnostics(){audioTracks=new ArrayList<>();audioDecoder="";audioOutput="";audioErrors=new ArrayList<>();audioNoticeShown=false;pendingAudioNotice=null;}
+    /** Every audio track with its support on this TV, after each track change (selection is Media3's, unchanged). */
+    @androidx.annotation.OptIn(markerClass=androidx.media3.common.util.UnstableApi.class)
+    private void collectAudio(Tracks tracks){
+        List<AudioDiagnostics.Track> list=new ArrayList<>();
+        for(Tracks.Group g:tracks.getGroups()){if(g.getType()!=C.TRACK_TYPE_AUDIO)continue;
+            for(int i=0;i<g.length;i++){Format f=g.getTrackFormat(i);
+                list.add(new AudioDiagnostics.Track(f.sampleMimeType,f.codecs,f.language,f.channelCount==Format.NO_VALUE?0:f.channelCount,
+                    f.sampleRate==Format.NO_VALUE?0:f.sampleRate,g.getTrackSupport(i),g.isTrackSelected(i)));}}
+        if(list.isEmpty())return;   // between titles
+        audioTracks=list;
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","audio "+audioDetail());
+        if(audioNoticeShown)return;
+        if(AudioDiagnostics.nonePlayable(list)){audioNoticeShown=true;
+            audioNotice("No sound: this title's audio ("+AudioDiagnostics.friendly(list.get(0))+(list.size()>1?" and "+(list.size()-1)+" more":"")
+                +") can't be played on this TV or its current sound setup.");return;}
+        AudioDiagnostics.Track chosen=AudioDiagnostics.selected(list);
+        String preferred=Api.prefs(this).getString(SettingsPage.AUDIO_LANGUAGE,"");
+        if(chosen==null||preferred.isEmpty()||manualAudioChoice()||sameLanguage(chosen.language,preferred))return;
+        // The preferred language exists but this TV can't play it: Media3 picked a playable track instead. Say so once.
+        for(AudioDiagnostics.Track t:list)if(!t.playable()&&sameLanguage(t.language,preferred)){audioNoticeShown=true;
+            audioNotice(languageName(preferred)+" audio ("+AudioDiagnostics.friendly(t)+") can't be played on this TV; playing "
+                +languageName(chosen.language)+" ("+AudioDiagnostics.friendly(chosen)+") instead.");return;}
+    }
+    private boolean manualAudioChoice(){
+        if(player==null)return false;
+        for(TrackSelectionOverride o:player.getTrackSelectionParameters().overrides.values())if(o.getType()==C.TRACK_TYPE_AUDIO)return true;
+        return false;
+    }
+    private static boolean sameLanguage(String a,String b){
+        if(a==null||b==null||a.isEmpty()||b.isEmpty())return false;
+        try{return new Locale(a).getISO3Language().equalsIgnoreCase(new Locale(b).getISO3Language());}
+        catch(java.util.MissingResourceException e){return a.equalsIgnoreCase(b);}
+    }
+    private static String languageName(String code){
+        if(code==null||code.isEmpty()||"und".equals(code))return "Unknown-language";
+        String n=new Locale(code).getDisplayLanguage(Locale.US);return n.isEmpty()?code:n;
+    }
+    /** Shown on the controls' status line for a few seconds (or right after the card on screen closes). */
+    private void audioNotice(String text){
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","audio_notice "+text);
+        if(card.getVisibility()==View.VISIBLE){pendingAudioNotice=text;return;}
+        showControls(null);flash(text);handler.removeCallbacks(hideControls);handler.postDelayed(hideControls,8000);
+    }
+    private String audioDetail(){return AudioDiagnostics.detail(audioTracks,audioDecoder,audioOutput,audioDevice(),audioErrors);}
+    /** Decoder, output and audio-error events (Media3 analytics): what actually happened to the sound. */
+    @androidx.annotation.OptIn(markerClass=androidx.media3.common.util.UnstableApi.class)
+    private void listenToAudio(ExoPlayer p){
+        p.addAnalyticsListener(new androidx.media3.exoplayer.analytics.AnalyticsListener(){
+            @Override public void onAudioDecoderInitialized(EventTime t,String name,long initializedMs,long durationMs){audioDecoder=name;audioLog();}
+            @Override public void onAudioTrackInitialized(EventTime t,androidx.media3.exoplayer.audio.AudioSink.AudioTrackConfig c){
+                audioOutput=encodingName(c.encoding)+" "+Integer.bitCount(c.channelConfig)+"ch "+c.sampleRate/1000+"k"
+                    +(c.encoding==C.ENCODING_PCM_16BIT||c.encoding==C.ENCODING_PCM_FLOAT||c.encoding==C.ENCODING_PCM_24BIT?" decoded":" passthrough")
+                    +(c.tunneling?" tunneled":"")+(c.offload?" offload":"");audioLog();}
+            @Override public void onAudioSinkError(EventTime t,Exception e){audioError(AudioDiagnostics.errorName("sink",e));}
+            @Override public void onAudioCodecError(EventTime t,Exception e){audioError(AudioDiagnostics.errorName("codec",e));}
+            @Override public void onAudioUnderrun(EventTime t,int bufferSize,long bufferSizeMs,long sinceLastFeedMs){audioError("underrun");}
+        });
+    }
+    private void audioError(String name){audioErrors=AudioDiagnostics.keepLast(audioErrors,name,4);audioLog();}
+    private void audioLog(){if(BuildConfig.DEMO&&!audioTracks.isEmpty())android.util.Log.i("FlixTownQA","audio "+audioDetail());}
+    private static String encodingName(int e){
+        switch(e){
+            case C.ENCODING_PCM_16BIT:return "pcm16";case C.ENCODING_PCM_24BIT:return "pcm24";case C.ENCODING_PCM_FLOAT:return "pcm-float";
+            case C.ENCODING_AC3:return "ac3";case C.ENCODING_E_AC3:return "eac3";case C.ENCODING_E_AC3_JOC:return "eac3-joc";
+            case C.ENCODING_AC4:return "ac4";case C.ENCODING_DTS:return "dts";case C.ENCODING_DTS_HD:return "dts-hd";
+            case C.ENCODING_DOLBY_TRUEHD:return "truehd";default:return "encoding"+e;
+        }
+    }
+    /** This TV's audio: formats it accepts as passthrough (from the connected TV / receiver), outputs, and decoders for this title. */
+    @androidx.annotation.OptIn(markerClass=androidx.media3.common.util.UnstableApi.class)
+    private String audioDevice(){
+        StringBuilder b=new StringBuilder();
+        if(audioDevice==null){
+            StringBuilder d=new StringBuilder("pass=");
+            try{androidx.media3.exoplayer.audio.AudioCapabilities caps=androidx.media3.exoplayer.audio.AudioCapabilities.getCapabilities(
+                    this,androidx.media3.common.AudioAttributes.DEFAULT,null);
+                int[] enc={C.ENCODING_AC3,C.ENCODING_E_AC3,C.ENCODING_E_AC3_JOC,C.ENCODING_AC4,C.ENCODING_DTS,C.ENCODING_DTS_HD,C.ENCODING_DOLBY_TRUEHD};
+                int n=0;for(int e:enc)if(caps.supportsEncoding(e)){d.append(n++>0?"+":"").append(encodingName(e));}
+                if(n==0)d.append("none");d.append(" max").append(caps.getMaxChannelCount()).append("ch");
+            }catch(Throwable t){d.append("?");}
+            d.append(" out=");
+            try{android.media.AudioManager am=(android.media.AudioManager)getSystemService(AUDIO_SERVICE);
+                java.util.LinkedHashSet<String> types=new java.util.LinkedHashSet<>();
+                for(android.media.AudioDeviceInfo i:am.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS))types.add(outputName(i.getType()));
+                d.append(types.isEmpty()?"none":AudioDiagnostics.join("+",types));
+            }catch(Throwable t){d.append("?");}
+            audioDevice=d.toString();
+        }
+        b.append(audioDevice);
+        java.util.LinkedHashSet<String> mimes=new java.util.LinkedHashSet<>();for(AudioDiagnostics.Track t:audioTracks)if(!t.mime.isEmpty())mimes.add(t.mime);
+        for(String m:mimes)b.append(" dec[").append(AudioDiagnostics.codec(m,"")).append("]=").append(decoders(m));
+        return b.toString();
+    }
+    private final java.util.Map<String,String> decoderNames=new java.util.HashMap<>();
+    private String decoders(String mime){
+        String known=decoderNames.get(mime);if(known!=null)return known;
+        List<String> names=new ArrayList<>();
+        try{for(android.media.MediaCodecInfo info:new android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS).getCodecInfos()){
+                if(info.isEncoder())continue;for(String type:info.getSupportedTypes())if(type.equalsIgnoreCase(mime)){names.add(info.getName());break;}}
+        }catch(Throwable ignored){}
+        String v=names.isEmpty()?"none":AudioDiagnostics.join("+",names);decoderNames.put(mime,v);return v;
+    }
+    private static String outputName(int type){
+        switch(type){
+            case android.media.AudioDeviceInfo.TYPE_HDMI:return "hdmi";case android.media.AudioDeviceInfo.TYPE_HDMI_ARC:return "hdmi-arc";
+            case 29:return "hdmi-earc";case android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:return "bluetooth";
+            case android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:return "speaker";case android.media.AudioDeviceInfo.TYPE_USB_DEVICE:return "usb";
+            case android.media.AudioDeviceInfo.TYPE_USB_HEADSET:return "usb-headset";case android.media.AudioDeviceInfo.TYPE_LINE_ANALOG:return "analog";
+            case android.media.AudioDeviceInfo.TYPE_LINE_DIGITAL:return "spdif";case android.media.AudioDeviceInfo.TYPE_TELEPHONY:return "telephony";
+            default:return "type"+type;
+        }
+    }
+    /** Options › Playback info: what this TV does with this title's sound (for support calls and testing). */
+    private void showPlaybackInfo(){
+        if(player==null||dialog!=null)return;
+        StringBuilder m=new StringBuilder("Audio tracks:\n");
+        if(audioTracks.isEmpty())m.append("  none found in this stream\n");
+        for(AudioDiagnostics.Track t:audioTracks){
+            String lang=t.language.isEmpty()||"und".equals(t.language)?"":" · "+languageName(t.language);
+            m.append("  • ").append(AudioDiagnostics.friendly(t)).append(lang).append(t.sampleRate>0?" · "+t.sampleRate/1000+" kHz":"")
+             .append(t.selected?" · playing":t.playable()?" · available":" · can't be played on this TV").append('\n');}
+        m.append("Decoder: ").append(audioDecoder.isEmpty()?"none":audioDecoder).append('\n');
+        m.append("Sound output: ").append(audioOutput.isEmpty()?"none":audioOutput).append('\n');
+        m.append("This TV: ").append(audioDevice()).append('\n');
+        m.append("Audio problems: ").append(audioErrors.isEmpty()?"none":AudioDiagnostics.join(", ",audioErrors)).append('\n');
+        Format vf=player.getVideoFormat();m.append("Video: ").append(vf==null?"none":reportFormat(vf));
+        handler.removeCallbacks(hideControls);
+        Dialog info=Ui.dialog(this,"Playback info",m.toString(),new String[]{"Close"},0,i->{},null);dialog=info;
+        info.setOnDismissListener(d->{if(dialog==info)dialog=null;scheduleHide();});
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","playback_info "+m.toString().replace('\n','|'));
+    }
     private static String shortLanguage(Format f){
         if(f.language!=null && !f.language.isEmpty() && !"und".equals(f.language)){
             String name=new Locale(f.language).getDisplayLanguage(Locale.US);return name.isEmpty()?f.language:name;}
@@ -738,6 +882,7 @@ public class PlayerActivity extends Activity {
         if(card.getVisibility()==View.VISIBLE)hideCard();
         // A seek still waiting to be applied belongs to the episode that just ended, not to the next one.
         clearPendingSeek();
+        resetAudioDiagnostics();
         url=nextUrl;nextUrl="";lastPlayerError="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
@@ -772,6 +917,7 @@ public class PlayerActivity extends Activity {
         clearPendingSeek();
         player.pause();nextAfterMenu=false;select.run();
         url=targetUrl;episodeId=target.id;episodeExt=target.extension;subtitle=target.label;
+        resetAudioDiagnostics();
         position=0;lastSavedAt=0;lastPlayerError="";promptShown=false;nextCanceled=false;ended=false;resumeAsked=true;
         syncEpisodeNeighbors();showSubtitle();updateEpisodeButtons();status.setVisibility(View.GONE);
         // Persist the selected episode immediately, even if Back is pressed before the 15-second save threshold.

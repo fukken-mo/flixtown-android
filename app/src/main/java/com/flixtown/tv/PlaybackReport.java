@@ -8,11 +8,16 @@ final class PlaybackReport {
     static final String[] ISSUES={"stutter","no_audio","audio_sync","subtitles","wrong_title","wont_play"};
     static final String[] LABELS={"Video stutters / slow motion","No sound","Audio out of sync","Subtitle problem","Wrong movie or episode","Video won't play"};
     final String requestId=UUID.randomUUID().toString();
-    final String kind,video,audio,error,device;final int mediaId,episodeId,androidApi;final long position;
+    final String kind,video,audio,error,device,audioDiagnostics;final int mediaId,episodeId,androidApi;final long position;
     PlaybackReport(String kind,String id,String ep,long position,int api,String device,String video,String audio,String error){
+        this(kind,id,ep,position,api,device,video,audio,error,"");
+    }
+    /** {@code audioDiagnostics}: AudioDiagnostics.detail (tracks, support, decoder, output, TV capabilities, audio errors). */
+    PlaybackReport(String kind,String id,String ep,long position,int api,String device,String video,String audio,String error,String audioDiagnostics){
         this.kind=kind;mediaId=id(id);episodeId="series".equals(kind)?id(ep):0;
         this.position=Math.max(0,Math.min(604800000L,position));androidApi=api;
         this.device=clean(device,120);this.video=clean(video,80);this.audio=clean(audio,80);this.error=clean(error,80);
+        this.audioDiagnostics=clean(audioDiagnostics,1000);
     }
     boolean valid(){return ("movie".equals(kind)||"series".equals(kind))&&mediaId>0&&(!"series".equals(kind)||episodeId>0);}
     JSONObject payload(int issue)throws Exception{
@@ -20,7 +25,9 @@ final class PlaybackReport {
         return new JSONObject().put("request_id",requestId).put("type",kind).put("media_id",mediaId).put("episode_id",episodeId)
             .put("issue",ISSUES[issue]).put("position_ms",position).put("version_code",BuildConfig.VERSION_CODE)
             .put("version_name",BuildConfig.VERSION_NAME).put("android_api",androidApi).put("device",device)
-            .put("video_format",video).put("audio_format",audio).put("error_code",error);
+            .put("video_format",video).put("audio_format",audio).put("error_code",error)
+            // Newer field: the current report service ignores unknown keys, so it is stored once the service keeps it.
+            .put("audio_diagnostics",audioDiagnostics);
     }
     static int id(String s){try{int n=Integer.parseInt(s);return Math.max(0,n);}catch(Exception e){return 0;}}
     static String clean(String value,int max){
