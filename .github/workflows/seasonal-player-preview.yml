@@ -68,6 +68,7 @@ jobs:
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0x10C010:s=1920x1080" -frames:v 1 media/art/green.jpg
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0x1030D0:s=1920x1080" -frames:v 1 media/art/blue.jpg
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0xC01010:s=800x450" -frames:v 1 media/art/small.jpg
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0xD01010:s=1920x1080" -frames:v 1 media/art/red.jpg
           head -c 200000 /dev/urandom > media/art/corrupt.jpg
           ls -l media media/art
           nohup python3 .github/qa/media_server.py 8000 media > media.log 2>&1 &

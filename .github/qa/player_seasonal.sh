@@ -165,6 +165,17 @@ OFF=$(printf '%s' "$CFG" | sed 's/"enabled":true,"display_ms"/"enabled":false,"d
 live 2026-10-20 "$OFF"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 5; live 2026-10-20 "$OFF"; launch
 splash_is default false && ok "A6 seasonal splash turned off in the panel: normal splash" || bad "A6 $(splash)"
 wait_activity HomeActivity 15
+# everyday design: shown with seasonal off, and on a holiday whose picture is unusable
+EVERY=$(printf '%s' "$OFF" | sed 's#"display_ms":3000,#"display_ms":3000,"default_image":"'$ART'/red.jpg",#')
+live 2026-10-20 "$EVERY"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 6; live 2026-10-20 "$EVERY"; launch
+splash_is default true && { sleep 0.8; rgb="$(center_rgb)"; } ; note "INFO  everyday (seasonal off): $(splash) centre $rgb"
+check "A6 seasonal off with an everyday design uploaded: the everyday picture shows (red test picture)" 'splash | grep -q "event=default image=true" && set -- $rgb && [ "$1" -gt 120 ] && [ "$2" -lt 90 ]'
+shot A6-everyday 0.1; wait_activity HomeActivity 15
+EVERY_ON=$(printf '%s' "$CFG" | sed 's#"display_ms":3000,#"display_ms":3000,"default_image":"'$ART'/red.jpg",#')
+live 2026-12-26 "$EVERY_ON"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 6; live 2026-12-26 "$EVERY_ON"; launch
+splash_is christmas true && { sleep 0.8; rgb="$(center_rgb)"; }; note "INFO  christmas with a corrupt picture: $(splash) centre $rgb"
+check "A6 a holiday whose picture failed validation falls back to the everyday design" 'splash | grep -q "event=christmas image=true" && set -- $rgb && [ "$1" -gt 120 ] && [ "$2" -lt 90 ]'
+wait_activity HomeActivity 15
 # back from the background: no splash again
 live 2026-10-20 "$CFG"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 6
 adb logcat -b main -c; key HOME; sleep 2; adb shell am start $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null; sleep 4
