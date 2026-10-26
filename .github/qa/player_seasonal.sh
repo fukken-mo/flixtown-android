@@ -370,6 +370,67 @@ check "C3 controls shown: Extra large subtitles above the bar, fully visible" 'l
 check "C3 controls shown: positioned ASS captions above the bar, fully visible (letterbox, 16:9)" 'lifted assLB && lifted ass169'
 check "C3 controls hidden again: every case returns to its normal position" 'restored plain169 && restored plainLB && restored plain43 && restored xl169 && restored assLB && restored ass169'
 check "C4 Extra large stays fully on screen" 'inside xl169'
+# ====================== D. Home background artwork ======================
+demo_live '{"today":"2026-06-15","art_base":"http://10.0.2.2:8000/art"}'; launch; wait_activity HomeActivity 30; sleep 6
+SW=$(adb shell wm size | grep -oE '[0-9]+x[0-9]+' | tail -1 | cut -dx -f1)
+lastf(){ adb logcat -d -s FlixTownQA:I | grep "$1" | tail -1 | sed 's/.*FlixTownQA: //'; }
+artfor(){ adb logcat -d -s FlixTownQA:I | grep "home_art key=$1 " | tail -1 | sed 's/.*FlixTownQA: //'; }
+# expected background for a key: "branded" or the test-image id ("b=...")
+expect(){ python3 - "$1" <<'EOF'
+import sys
+k=sys.argv[1];kind,i=k.split(":");i=int(i)
+if kind=="movie":
+    n=i-1000
+    if n==99: print("b=m99")
+    elif n%3!=1: print("b=m%d"%n)
+    elif n%9 in (4,7): print("branded")
+    else: print("b=detail%d"%i)
+else:
+    n=i-5000
+    if n==99: print("b=s99")
+    elif n%4==3: print("b=sinfo%d"%i)
+    else: print("b=s%d"%n)
+EOF
+}
+# the art line for a key meets its expectation; shown art is landscape and at least half the screen width
+art_ok(){ local k="$1" e l; e=$(expect "$k"); l=$(artfor "$k")
+  if [ "$e" = branded ]; then echo "$l" | grep -q "branded"; return; fi
+  echo "$l" | grep -q "b=${e#b=}\( \|$\)" && python3 -c 'import re,sys
+m=re.search(r"bitmap=(\d+)x(\d+) screen=(\d+)",sys.argv[1]);w,h,s=map(int,m.groups()) if m else (0,0,1)
+sys.exit(0 if w>=s*0.5 and w>=h*1.3 else 1)' "$l"; }
+to_row(){ local i; for i in $(seq 1 10); do key DPAD_DOWN; sleep 1; lastf home_focus | grep -q "row=$1" && return 0; done; return 1; }
+step_row(){ # row label steps
+  local n=0 bad=0 k e i
+  for i in $(seq 1 "$3"); do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 2.2
+    k=$(lastf home_card | sed 's/home_card key=//'); e=$(expect "$k")
+    if art_ok "$k"; then n=$((n+1)); else bad=$((bad+1)); fi
+    note "INFO  $2 $k expected $e: $(artfor "$k" | sed 's/home_art key=[^ ]* //')"
+  done
+  [ "$bad" = 0 ] && [ "$n" -ge 4 ]; }
+to_row latest_movies && ok "D0 reached Latest Movies" || bad "D0 Latest Movies row not reached ($(lastf home_focus))"
+sleep 2; shot D-latest-movies 0.1
+check "D1 Latest Movies: each title shows its landscape backdrop at screen size, or the branded background when it has none (no poster stretched)" 'step_row latest_movies "Latest Movies" 9'
+shot D-latest-movies-stepped 0.1
+# rapid scrolling: ten Right presses in one burst, then the focus settles
+adb logcat -c; adb shell input keyevent KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT; sleep 3
+cards=$(adb logcat -d -s FlixTownQA:I | grep -c "home_card"); asks=$(adb logcat -d -s FlixTownQA:I | grep -c "home_focus")
+kf=$(lastf home_card | sed 's/home_card key=//'); ka=$(lastf home_art | grep -o 'key=[^ ]*' | sed 's/key=//')
+note "INFO  burst: $cards focus changes, $asks background requests; focused $kf, background for $ka ($(artfor "$kf" | sed 's/home_art key=[^ ]* //'))"
+check "D2 rapid scrolling: only the settled card asks for a background (debounced), and it is that card's (no late or stale artwork)" '[ "$cards" -ge 5 ] && [ "$asks" -le 2 ] && [ "$kf" = "$ka" ] && art_ok "$kf"'
+adb shell dumpsys gfxinfo $PKG reset > /dev/null; adb shell input keyevent KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT; sleep 2
+note "INFO  frames while scrolling back: $(adb shell dumpsys gfxinfo $PKG | grep -E 'Total frames rendered|Janky frames' | tr -s ' ' | paste -sd' ') (emulator, software GPU: indicative only)"
+to_row latest_series && ok "D3 reached Latest TV Shows" || bad "D3 Latest TV Shows row not reached ($(lastf home_focus))"
+sleep 2
+check "D4 Latest TV Shows: each show's backdrop at screen size (from its details when the list has none)" 'step_row latest_series "Latest TV Shows" 6'
+shot D-latest-series 0.1
+allbad=$(adb logcat -d -s FlixTownQA:I | grep "home_art key=" | grep -v branded | python3 -c 'import re,sys
+n=0
+for l in sys.stdin:
+    m=re.search(r"bitmap=(\d+)x(\d+) screen=(\d+)",l)
+    if not m or int(m.group(1))<int(m.group(3))*0.5 or int(m.group(1))<int(m.group(2))*1.3: n+=1
+print(n)')
+check "D5 no background anywhere on Home is a small or portrait picture (all rows and the hero, since the last burst)" '[ "$allbad" = 0 ]'
+note "INFO  screen width $SW px"
 crashB="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashB" = 0 ]'
 rm -f "$OUT"/s.raw "$OUT"/c.raw "$OUT"/flix.xml "$OUT"/ui.xml
