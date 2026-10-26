@@ -291,7 +291,7 @@ public class PlayerActivity extends Activity {
             @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();}
             @Override public void onPlayerError(PlaybackException error){
                 android.util.Log.w("FlixTownPlayer","Playback failed: "+error.getErrorCodeName()+" "+Logs.safe(error));
-                hideNow();cardForError=true;
+                hideNow();
                 // Connection problems (including a stream that timed out) are not a format problem.
                 boolean network=(error.errorCode>=PlaybackException.ERROR_CODE_IO_UNSPECIFIED && error.errorCode<PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
                     || error.errorCode==PlaybackException.ERROR_CODE_TIMEOUT;
@@ -317,6 +317,9 @@ public class PlayerActivity extends Activity {
     }
     private interface CardChoice{void select(int index);}
     private void showCard(String heading,String message,String[] labels,int focusIndex,CardChoice choice){
+        // One card at a time: whatever card was up (for example Up next with its countdown) is replaced
+        // completely, so its countdown, Back behaviour and buttons can never mix with the new card.
+        cardForNext=false;cardForError=false;
         handler.removeCallbacks(hideControls);controls.setVisibility(View.GONE);
         cardTitle.setText(heading);cardMessage.setText(message==null?"":message);cardMessage.setVisibility(message==null||message.isEmpty()?View.GONE:View.VISIBLE);
         cardActions.removeAllViews();
@@ -338,11 +341,11 @@ public class PlayerActivity extends Activity {
             && (!"series".equals(kind)||PlaybackReport.id(episodeId)>0) && !ReportsApi.url(this).isEmpty();
     }
     private void showPlaybackError(){
-        cardForError=true;
         String message=lastErrorNetwork?"The server didn't send the video. Check the connection and try again.":"This video's format isn't supported on this TV.";
         if(reportable())showCard("This title couldn't be played",message,new String[]{"Try again","Report a problem","Back"},0,i->{
             if(i==0)retry();else if(i==1){cardForError=true;showReport();}else finish();});
         else showCard("This title couldn't be played",message,new String[]{"Try again","Back"},0,i->{if(i==0)retry();else finish();});
+        cardForError=true;   // after showCard, which starts every card with a clean state
     }
     private void showReport(){
         if(player==null||dialog!=null||reporting||!reportable())return;
@@ -659,9 +662,11 @@ public class PlayerActivity extends Activity {
         if(duration>0 && duration!=C.TIME_UNSET){
             long left=duration-current;
             if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && nextUrl!=null && !nextUrl.isEmpty() && !nextCanceled && left>0){
-                if(left<=25000 && !promptShown && !reporting && dialog==null && player.isPlaying()){promptShown=true;showNext();}
+                if(left<=25000 && !promptShown && !reporting && dialog==null && player.isPlaying() && card.getVisibility()!=View.VISIBLE){promptShown=true;showNext();}
+                // The countdown belongs to the Up next card only; any other card (an error) stops it.
                 if(cardForNext && card.getVisibility()==View.VISIBLE){
-                    cardMessage.setText("Starts in "+Math.max(1,(left+999)/1000)+" seconds"+(nextSubtitle!=null&&!nextSubtitle.isEmpty()?"  ·  "+nextSubtitle:""));
+                    long s=Math.max(1,(left+999)/1000);
+                    cardMessage.setText("Starts in "+s+(s==1?" second":" seconds")+(nextSubtitle!=null&&!nextSubtitle.isEmpty()?"  ·  "+nextSubtitle:""));
                     cardMessage.setVisibility(View.VISIBLE);}   // the card opens with an empty (hidden) message line
             }
         }
