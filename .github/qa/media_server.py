@@ -17,7 +17,8 @@ ROOT = os.path.abspath(sys.argv[2])
 
 class H(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
-    def log_message(self, *a): pass
+    def log_message(self, fmt, *a):                         # request log (media.log) for the QA report
+        sys.stderr.write("%s %s\n" % (self.log_date_time_string(), fmt % a)); sys.stderr.flush()
     def do_GET(self):
         path = self.path.split("?")[0]
         mode = "plain"
@@ -53,7 +54,9 @@ class H(BaseHTTPRequestHandler):
             if start >= tail: cut = size                       # index reads at the very end are served
             src.seek(start); pos = start
             while pos <= end:
-                if cut <= pos < tail: self.close_connection = True; return   # drop the connection: the client sees a broken transfer
+                if cut <= pos < tail:                          # drop the connection: the client sees a broken transfer
+                    sys.stderr.write("drop %s range=%s at byte %d (cut %d, size %d)\n" % (path, self.headers.get("Range", ""), pos, cut, size)); sys.stderr.flush()
+                    self.close_connection = True; return
                 n = min(65536, end - pos + 1, max(1, cut - pos) if pos < cut else 65536)
                 b = src.read(n)
                 if not b: return

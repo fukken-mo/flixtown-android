@@ -112,7 +112,9 @@ d=open(sys.argv[1],'rb').read();w,h=struct.unpack('<II',d[:8]);hdr=len(d)-w*h*4;
 print(d[o],d[o+1],d[o+2])
 EOF
 }
-home_shown_ms(){ adb logcat -d -v epoch | python3 -c '
+# Splash → Home in ms; waits up to 15 s for Home's marker to reach the log (one read could come a moment too early)
+home_shown_ms(){ local i ms; for i in $(seq 1 60); do ms=$(home_shown_once); [ "$ms" != -1 ] && break; sleep 0.25; done; echo "$ms"; }
+home_shown_once(){ adb logcat -d -v epoch | python3 -c '
 import re,sys
 s=h=None
 for l in sys.stdin:
@@ -211,10 +213,13 @@ fresh(){ launch; wait_activity HomeActivity 30; sleep 4; }   # every player sect
 stream "$M/cut/subs.mkv"; fresh
 player_open open_episode
 go_to 4 38
-note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"
+note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"; shot B1-after-go-to 0.1
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
 saw_next=$(adb logcat -d -s FlixTownQA:I | grep -c "card=\[Up next\]")
 note "INFO  Up next shown before the failure: $saw_next line(s); card now: $(qaf card) / $(qaf cardmsg)"
+note "INFO  cut offsets (bytes): $(cat media/subs.mkv.cut-offset 2>/dev/null) for 4:50, $(cat media/subs.mkv.cut50-offset 2>/dev/null) for 2:30, file $(stat -c %s media/subs.mkv 2>/dev/null)"
+grep -E '/cut/|^drop /subs' media.log 2>/dev/null | tail -12 | sed 's/^/INFO  server: /' >> "$OUT/report.txt"
+adb logcat -d -s FlixTownQA:I | grep ' player ' | grep -E 'elapsed=2[6-9][0-9]' | tail -8 | grep -oE 'playing=[a-z]+|elapsed=[0-9]+|card=\[[^]]*\]' | paste -sd' ' | sed 's/^/INFO  player near the end: /' >> "$OUT/report.txt"
 note "INFO  played in the Up next window before the failure: $(adb logcat -d -s FlixTownQA:I | grep -cE 'playing=true .*elapsed=2(7[5-9]|8[0-9])') state line(s)"
 check "B1 the stream failure near the end shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
 check "B1 the Up next card was showing before (the case from the screenshot)" '[ "$saw_next" -ge 1 ]'
