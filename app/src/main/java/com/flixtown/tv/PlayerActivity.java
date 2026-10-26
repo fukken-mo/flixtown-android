@@ -58,6 +58,7 @@ public class PlayerActivity extends Activity {
     private boolean nextCanceled,promptShown,ended,resumeAsked,cardForNext,cardForError;
     private long pendingSeek=-1,lastRepeatAt;
     private Dialog dialog;
+    private SubtitlePlacement subtitles;
     private long lastSavedAt;
     private View reportButton,previousButton,nextButton,optionsButton;
     private EpisodeNavigation episodeNavigation;private boolean nextAfterMenu;
@@ -111,7 +112,7 @@ public class PlayerActivity extends Activity {
         video.setUseController(false);
         video.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);
         video.setShutterBackgroundColor(0xFF000000);
-        keepSubtitlesInSafeArea();applySubtitleAppearance();
+        subtitles=new SubtitlePlacement(this,root,video);applySubtitleAppearance();
         buildControls();
         root.requestFocus();
     }
@@ -200,21 +201,6 @@ public class PlayerActivity extends Activity {
         if(dialog!=null || pendingSeek>=0){scheduleHide();return;}
         controls.setVisibility(View.GONE);status.setVisibility(View.GONE);root.requestFocus();
     };
-    /**
-     * Subtitles stay at one fixed place, bottom-centre inside the TV safe area (5 % margins), whether
-     * the controls are shown or hidden. Nothing moves them when the controls toggle: the earlier lift
-     * (a translationY animation on the subtitle view over the video surface) left them clipped to a
-     * thin strip or gone on some TVs once the controls hid. The safe margin is the only bottom offset:
-     * Media3's own 8 % bottom gap is turned off so the two do not add up. The padding goes on the
-     * subtitle drawing layer, so the text size stays as before; the subtitle selection is untouched.
-     */
-    private void keepSubtitlesInSafeArea(){
-        androidx.media3.ui.SubtitleView subs=video.getSubtitleView();if(subs==null)return;
-        subs.setTranslationY(0);subs.setBottomPaddingFraction(0f);
-        View layer=subs.getChildCount()>0?subs.getChildAt(0):subs;
-        int x=Ui.safeX(this),y=Ui.safeY(this);
-        layer.setPadding(x,y,x,y);
-    }
     private void hideNow(){handler.removeCallbacks(hideControls);hideControls.run();}
     private void flash(String text){status.setText(text);status.setVisibility(View.VISIBLE);}
 
@@ -289,6 +275,7 @@ public class PlayerActivity extends Activity {
             @Override public void onPlayWhenReadyChanged(boolean playWhenReady,int reason){
                 if(reporting&&playWhenReady&&player!=null){player.pause();return;}updatePlayIcon();}
             @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();}
+            @Override public void onCues(androidx.media3.common.text.CueGroup cueGroup){if(subtitles!=null)subtitles.show(cueGroup.cues);}
             @Override public void onPlayerError(PlaybackException error){
                 android.util.Log.w("FlixTownPlayer","Playback failed: "+error.getErrorCodeName()+" "+Logs.safe(error));
                 hideNow();
@@ -526,8 +513,8 @@ public class PlayerActivity extends Activity {
             switchEpisode(ep,true,1,()->episodeNavigation=fresh);
         });
     }
-    private void applySubtitleAppearance(){
-        androidx.media3.ui.SubtitleView subs=video.getSubtitleView();if(subs==null)return;
+    private void applySubtitleAppearance(){if(subtitles!=null)subtitles.style(this::applySubtitleAppearance);}
+    private void applySubtitleAppearance(androidx.media3.ui.SubtitleView subs){
         float size=ViewerOptions.size(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f));
         subs.setFractionalTextSize(androidx.media3.ui.SubtitleView.DEFAULT_TEXT_SIZE_FRACTION*size);
         subs.setApplyEmbeddedFontSizes(size==1f);
@@ -776,6 +763,7 @@ public class PlayerActivity extends Activity {
         if(dialog!=null){dialog.dismiss();dialog=null;}
         if(player!=null){position=player.getCurrentPosition();if(!ended && resumeAsked)saveProgress(position,player.getDuration());
             video.setPlayer(null);player.release();player=null;}
+        if(subtitles!=null)subtitles.clear();
         super.onStop();
     }
 }
