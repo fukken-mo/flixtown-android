@@ -15,8 +15,13 @@ import java.util.concurrent.Executors;
 
 final class Images {
     private static final ExecutorService IMAGE_IO = Executors.newFixedThreadPool(4);
+    /** Full-screen backdrops have their own queue, so a burst of poster loads while scrolling never delays them. */
+    private static final ExecutorService BACKDROP_IO = Executors.newFixedThreadPool(2);
+    private static final int LARGE = 1000;
     private static final long DISK_LIMIT = 80L * 1024 * 1024;
-    private static final LruCache<String,Bitmap> MEMORY = new LruCache<String,Bitmap>(24*1024) {
+    /** Room for posters plus a few screen-size backdrops (about 4 MB each at 1080p): an eighth of the app's heap, 24 to 64 MB. */
+    private static final int MEMORY_KB = (int)Math.max(24*1024, Math.min(64*1024, Runtime.getRuntime().maxMemory()/1024/8));
+    private static final LruCache<String,Bitmap> MEMORY = new LruCache<String,Bitmap>(MEMORY_KB) {
         @Override protected int sizeOf(String key,Bitmap bitmap){return Math.max(1,bitmap.getByteCount()/1024);}
     };
     private static volatile File diskDir;
@@ -41,8 +46,8 @@ final class Images {
         String key = maxWidth + ":" + url;
         Bitmap cached = MEMORY.get(key);
         if (cached != null) { view.setImageBitmap(cached); if (ready != null) ready.run(); return; }
-        IMAGE_IO.execute(() -> {
-            // Fast scrolling queues many requests; skip the ones whose card was already rebound.
+        (maxWidth >= LARGE ? BACKDROP_IO : IMAGE_IO).execute(() -> {
+            // Fast scrolling queues many requests; skip the ones whose card or backdrop layer was already rebound.
             if (!url.equals(view.getTag())) return;
             Bitmap bmp = fetch(url, maxWidth);
             if (bmp != null) view.post(() -> { if (url.equals(view.getTag())) { view.setImageBitmap(bmp); if (ready != null) ready.run(); } });
@@ -52,7 +57,7 @@ final class Images {
     /** Warms the memory cache for one image that is about to be shown (the next hero backdrop). */
     static void prefetch(String url, int maxWidth) {
         if (!valid(url) || MEMORY.get(maxWidth + ":" + url) != null) return;
-        IMAGE_IO.execute(() -> fetch(url, maxWidth));
+        (maxWidth >= LARGE ? BACKDROP_IO : IMAGE_IO).execute(() -> fetch(url, maxWidth));
     }
     private static boolean valid(String url) {
         return url != null && (url.startsWith("https://") || url.startsWith("http://") || (BuildConfig.DEMO && url.startsWith("demo:")));

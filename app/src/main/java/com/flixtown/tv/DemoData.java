@@ -22,6 +22,13 @@ final class DemoData {
     /** Public test stream with several audio languages and subtitle tracks. */
     static final String STREAM="https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8";
     /** The movie/episode stream: STREAM, or the QA file's "stream" (e.g. a local test video with known subtitle cues). */
+    /** Backdrop address: real test images from the QA server when the test sets "art_base", else drawn ones. */
+    private static String art(String id){JSONObject live=live();String base=live==null?"":live.optString("art_base","");
+        return base.startsWith("http")?base+"/backdrop.jpg?b="+id:"demo://backdrop/"+id;}
+    /** The edge cases below (no backdrop, a poster-shaped one) only apply to the Home artwork test. */
+    private static boolean artTest(){JSONObject live=live();return live!=null&&live.optString("art_base","").startsWith("http");}
+    private static String portrait(String id){JSONObject live=live();String base=live==null?"":live.optString("art_base","");
+        return base.startsWith("http")?base+"/poster.jpg?b="+id:"demo://poster/"+id;}
     static String stream(){JSONObject live=live();String s=live==null?"":live.optString("stream","");return s.startsWith("http")?s:STREAM;}
     private static final String[] A={"Silent","Crimson","Last","Midnight","Broken","Golden","Hidden","Northern","Electric","Lost","Wild","Paper","Iron","Distant","Hollow"};
     private static final String[] B={"Harbor","Frontier","Signal","Garden","Kingdom","Horizon","Letters","Station","Empire","Tide","Orchard","Protocol","Summer","Voyage","Circuit"};
@@ -82,7 +89,7 @@ final class DemoData {
             if(++movieFetches>=2)list.put(new JSONObject().put("stream_id","1999").put("name","The Late Arrival")
                 .put("stream_icon","demo://poster/m99").put("category_id","1").put("container_extension","mp4")
                 .put("added",String.valueOf(base()-3600)).put("rating","10").put("year",2026)
-                .put("backdrop_path",new JSONArray().put("demo://backdrop/m99")).put("plot","Added to the demo server after launch, to check that new titles appear without a restart."));
+                .put("backdrop_path",new JSONArray().put(art("m99"))).put("plot","Added to the demo server after launch, to check that new titles appear without a restart."));
             for(int i=0;i<72;i++)list.put(new JSONObject().put("stream_id",String.valueOf(1000+i)).put("name",title(i,1))
                 .put("stream_icon","demo://poster/m"+i).put("category_id",String.valueOf(1+i%MOVIE_CATS.length))
                 .put("container_extension","mp4").put("added",String.valueOf(base()-DAY/2-i*2*DAY))
@@ -90,7 +97,7 @@ final class DemoData {
                 .put("rating",i%3==0?"10":String.format(Locale.US,"%.1f",5+(i*37%45)/10.0))
                 .put("tmdb",i%4==3?String.valueOf(700000+i):"")
                 .put("release_date",i==0?releaseDate(base()-3*DAY):movieYear(i)+"-01-01")
-                .put("year",movieYear(i)).put("backdrop_path",i%3==1?new JSONArray():new JSONArray().put("demo://backdrop/m"+i))
+                .put("year",movieYear(i)).put("backdrop_path",i%3==1?new JSONArray():new JSONArray().put(art("m"+i)))
                 .put("plot","A demo title used to check layouts. "+(i%2==0?"When an old signal returns from the past, a small crew must decide how much of the truth to share before the storm reaches the coast.":"Two strangers share one long night on the road.")));
             return list.toString();}
         if(url.contains("action=get_series_info")){JSONObject episodes=new JSONObject();int sid=Integer.parseInt(param(url,"series_id"));
@@ -106,21 +113,23 @@ final class DemoData {
                     .put("title","Chapter 9: Late Arrival").put("container_extension","mkv"));
                 episodes.put(String.valueOf(s),list);}
             return new JSONObject().put("info",new JSONObject().put("plot","A demo series with three seasons, used to check the season selector and episode row.")
+                .put("backdrop_path",new JSONArray().put(art("sinfo"+sid)))
                 .put("genre","Crime, Drama").put("rating","10").put("releaseDate","2021-04-02")).put("episodes",episodes).toString();}
         if(url.contains("action=get_vod_info"))return new JSONObject().put("info",new JSONObject()
                 .put("plot","When an old signal returns from the past, a small crew must decide how much of the truth to share before the storm reaches the coast. A demo synopsis long enough to wrap onto three lines on a TV screen.")
                 .put("genre","Drama, Thriller").put("duration_secs",6840).put("rating","7.6").put("releasedate","2019-09-14")
-                .put("backdrop_path",new JSONArray().put("demo://backdrop/detail"+param(url,"vod_id"))).put("cast","Ava Moreno, Daniel Okafor"))
+                // Details backdrops: none for every ninth title from the 5th, a poster-shaped picture from the 8th
+                .put("backdrop_path",vodArt(param(url,"vod_id"))).put("cast","Ava Moreno, Daniel Okafor"))
             .put("movie_data",new JSONObject().put("container_extension","mp4")).toString();
         if(url.contains("action=get_series")){JSONArray list=new JSONArray();seriesFetches++;long b=base();
             for(int i=0;i<30;i++)list.put(new JSONObject().put("series_id",String.valueOf(5000+i)).put("name",title(i,5))
                 .put("cover","demo://poster/s"+i).put("category_id",String.valueOf(50+i%SERIES_CATS.length))
                 .put("last_modified",String.valueOf(seriesModified(i,b))).put("rating","10")
                 .put("first_air_date",i==1?releaseDate(base()-3*DAY):seriesYear(i)+"-01-01")
-                .put("year",seriesYear(i)).put("backdrop_path",new JSONArray().put("demo://backdrop/s"+i)).put("genre",i%2==0?"Crime, Drama":"Documentary")
+                .put("year",seriesYear(i)).put("backdrop_path",artTest()&&i%4==3?new JSONArray():new JSONArray().put(art("s"+i))).put("genre",i%2==0?"Crime, Drama":"Documentary")
                 .put("plot","A demo series about a small town, its secrets and the people who keep them. Used to check the Home preview."));
             if(seriesFetches>=2)list.put(new JSONObject().put("series_id","5099").put("name","The Night Shift Files").put("cover","demo://poster/s99")
-                .put("category_id","50").put("first_air_date",releaseDate(b-2*DAY)).put("last_modified",String.valueOf(b-1800)).put("year",2026).put("backdrop_path",new JSONArray().put("demo://backdrop/s99"))
+                .put("category_id","50").put("first_air_date",releaseDate(b-2*DAY)).put("last_modified",String.valueOf(b-1800)).put("year",2026).put("backdrop_path",new JSONArray().put(art("s99")))
                 .put("plot","Added to the demo server after the first catalog, so it is proven new."));
             return list.toString();}
         if(url.contains("player_api.php")){
@@ -366,6 +375,12 @@ final class DemoData {
         return list.toString();}
 
     /** Locally drawn artwork: a colour gradient with the title, so layouts can be judged without network images. */
+    private static JSONArray vodArt(String vodId){
+        int i;try{i=Integer.parseInt(vodId)-1000;}catch(Exception e){i=0;}
+        if(artTest() && i%9==4)return new JSONArray();
+        if(artTest() && i%9==7)return new JSONArray().put(portrait("m"+i));
+        return new JSONArray().put(art("detail"+vodId));
+    }
     static Bitmap image(String url,int width){
         boolean poster=url.contains("/poster/"),person=url.contains("/person/");
         int w=Math.max(64,Math.min(width,480)),h=poster?w*3/2:person?w:w*9/16;

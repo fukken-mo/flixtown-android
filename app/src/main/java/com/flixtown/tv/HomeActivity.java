@@ -506,7 +506,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     @Override public void signOut(){
         Ui.dialog(this,"Sign out of Flix Town?","This TV will forget your account. Your settings stay. To watch again, scan the code or sign in with your remote.",
             new String[]{"Cancel","Sign out"},0,i->{if(i!=1)return;
-                SignOut.run(this);HERO_INFO.clear();
+                SignOut.run(this);HERO_INFO.clear();SERIES_ART.clear();ART_CHECKED.clear();
                 Intent login=new Intent(this,LoginActivity.class);login.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(login);finish();},null);
     }
@@ -589,6 +589,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
 
     @Override public void onFocus(Catalog.Item item){
         lastContentFocus=getCurrentFocus();
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","home_card key="+item.key());
         pendingFocusItem=item;handler.removeCallbacks(focusArt);
         // Wait for the D-pad to settle so fast scrolling never flashes artwork.
         handler.postDelayed(focusArt,FOCUS_ART_DELAY_MS);
@@ -602,12 +603,43 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         previewDesc.setText(desc);previewDesc.setVisibility(desc.isEmpty()?View.GONE:View.VISIBLE);
         showArtFor(item);
     };
+    /**
+     * Background for a focused card: the title's landscape backdrop (list data, details already fetched,
+     * or the Continue Watching art), sized for the screen. Movies and shows whose list entry has none get
+     * it from one details call, made only once the focus has settled and applied only if that card is
+     * still focused. With no suitable backdrop Home's branded background shows; a poster is never stretched.
+     */
     private void showArtFor(Catalog.Item item){
-        Catalog.Progress p=Catalog.progress(this,item);
-        if(!p.art.isEmpty()){ambient.show(p.art,false);return;}
-        String infoArt=heroBackdrop(item);
-        if(infoArt!=null)ambient.show(infoArt,false);
-        else ambient.show(item.poster,true);
+        if(BuildConfig.DEMO){int row=homeRows==null?-1:homeRows.getSelectedPosition();Object e=row>=0&&row<entries.size()?entries.get(row):null;
+            android.util.Log.i("FlixTownQA","home_focus key="+item.key()+" row="+(e instanceof HomeFeed.Section?((HomeFeed.Section)e).id:"?"));}
+        String art=landscapeArt(item);
+        if(art!=null || ART_CHECKED.contains(item.key()) || HERO_INFO.containsKey(item.key())){ambient.show(item.key(),art);return;}
+        ambient.show(item.key(),null);                       // never the previous title's art while this one loads
+        fetchBackdrop(item,()->{if(item==pendingFocusItem && !heroMode && !destroyed)ambient.show(item.key(),landscapeArt(item));});
+    }
+    private String landscapeArt(Catalog.Item item){return FocusArt.landscape(item.poster,Catalog.progress(this,item).art,heroBackdrop(item));}
+    /** Titles whose details were fetched for a backdrop (found or not), so each is asked for once per process. */
+    private static final java.util.Set<String> ART_CHECKED=java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private static final Map<String,String> SERIES_ART=new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Set<String> artLoading=new java.util.HashSet<>();
+    private void fetchBackdrop(Catalog.Item item,Runnable done){
+        String key=item.key();
+        if(!artLoading.add(key))return;
+        boolean movie="movie".equals(item.kind);
+        Api.IO.execute(()->{JSONObject info=null;
+            try{JSONObject data=Api.get(Api.xtream(this,movie?"get_vod_info":"get_series_info",(movie?"&vod_id=":"&series_id=")+Api.enc(item.id)));
+                info=data.optJSONObject("info");}catch(Exception ignored){}
+            JSONObject got=info;
+            runOnUiThread(()->{artLoading.remove(key);
+                if(got!=null){if(movie)HERO_INFO.put(key,got);else{String url=backdropOf(got);if(url!=null)SERIES_ART.put(key,url);}}
+                if(got!=null)ART_CHECKED.add(key);                 // a failed call may be tried again on a later focus
+                if(!destroyed)done.run();});
+        });
+    }
+    private static String backdropOf(JSONObject info){
+        JSONArray list=info.optJSONArray("backdrop_path");
+        String url=list!=null&&list.length()>0?list.optString(0,""):info.optString("backdrop_path","");
+        return url.startsWith("http")||url.startsWith("demo:")?url:null;
     }
     @Override public void onOpen(Catalog.Item item,HomeFeed.Section section){
         if(section.type==HomeFeed.CONTINUE){watch(item);return;}
@@ -769,7 +801,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         fetchHeroInfo(item);Ratings.want(item);
         // Warm only the next hero backdrop; nothing else is preloaded.
         if(featured.size()>1){Catalog.Item next=featured.get((heroIndex+1)%featured.size());String art=heroBackdrop(next);
-            if(art!=null)Images.prefetch(art,960);}
+            if(art!=null){int w=getResources().getDisplayMetrics().widthPixels;Images.prefetch(FocusArt.sized(art,w),FocusArt.decodeWidth(w));}}
     }
     private boolean hasProgress(Catalog.Item item){
         if("series".equals(item.kind))return !Api.prefs(this).getString("resume_episode_"+item.key(),"").isEmpty();
@@ -784,12 +816,11 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
     private String heroBackdrop(Catalog.Item item){
         JSONObject info=HERO_INFO.get(item.key());
-        if(info!=null){JSONArray list=info.optJSONArray("backdrop_path");String url=list!=null&&list.length()>0?list.optString(0,""):info.optString("backdrop_path","");
-            if(url.startsWith("http")||url.startsWith("demo:"))return url;}
+        if(info!=null){String url=backdropOf(info);if(url!=null)return url;}
+        String series=SERIES_ART.get(item.key());if(series!=null)return series;
         return item.hasBackdrop()?item.backdrop:null;
     }
-    private void showHeroArt(){Catalog.Item item=current();if(item==null)return;
-        String art=heroBackdrop(item);if(art!=null)ambient.show(art,false);else ambient.show(item.poster,true);}
+    private void showHeroArt(){Catalog.Item item=current();if(item==null)return;ambient.show(item.key(),heroBackdrop(item));}
     /** Movies' runtime, genre, plot and backdrop come from one details call per hero title, kept for the session. */
     private void fetchHeroInfo(Catalog.Item item){
         if(!"movie".equals(item.kind) || HERO_INFO.containsKey(item.key()))return;
