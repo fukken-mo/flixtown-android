@@ -382,7 +382,7 @@ k=sys.argv[1];kind,i=k.split(":");i=int(i)
 if kind=="movie":
     n=i-1000
     if n==99: print("b=m99")
-    elif n%3!=1: print("b=m%d"%n)
+    elif n%3!=1: print("b=m%d|b=detail%d"%(n,i))   # list backdrop, or the details one when Home already fetched it (hero)
     elif n%9 in (4,7): print("branded")
     else: print("b=detail%d"%i)
 else:
@@ -395,21 +395,21 @@ EOF
 # the art line for a key meets its expectation; shown art is landscape and at least half the screen width
 art_ok(){ local k="$1" e l; e=$(expect "$k"); l=$(artfor "$k")
   if [ "$e" = branded ]; then echo "$l" | grep -q "branded"; return; fi
-  echo "$l" | grep -q "b=${e#b=}\( \|$\)" && python3 -c 'import re,sys
+  echo "$l" | grep -qE "($e)( |$)" && python3 -c 'import re,sys
 m=re.search(r"bitmap=(\d+)x(\d+) screen=(\d+)",sys.argv[1]);w,h,s=map(int,m.groups()) if m else (0,0,1)
 sys.exit(0 if w>=s*0.5 and w>=h*1.3 else 1)' "$l"; }
 to_row(){ local i; for i in $(seq 1 10); do key DPAD_DOWN; sleep 1; lastf home_focus | grep -q "row=$1" && return 0; done; return 1; }
-step_row(){ # row label steps
+step_row(){ # row label steps kind
   local n=0 bad=0 k e i
   for i in $(seq 1 "$3"); do adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 2.2
     k=$(lastf home_card | sed 's/home_card key=//'); e=$(expect "$k")
-    if art_ok "$k"; then n=$((n+1)); else bad=$((bad+1)); fi
+    if [ "${k%%:*}" = "$4" ] && art_ok "$k"; then n=$((n+1)); else bad=$((bad+1)); fi
     note "INFO  $2 $k expected $e: $(artfor "$k" | sed 's/home_art key=[^ ]* //')"
   done
   [ "$bad" = 0 ] && [ "$n" -ge 4 ]; }
 to_row latest_movies && ok "D0 reached Latest Movies" || bad "D0 Latest Movies row not reached ($(lastf home_focus))"
 sleep 2; shot D-latest-movies 0.1
-check "D1 Latest Movies: each title shows its landscape backdrop at screen size, or the branded background when it has none (no poster stretched)" 'step_row latest_movies "Latest Movies" 9'
+check "D1 Latest Movies: each title shows its landscape backdrop at screen size, or the branded background when it has none (no poster stretched)" 'step_row latest_movies "Latest Movies" 9 movie'
 shot D-latest-movies-stepped 0.1
 # rapid scrolling: ten Right presses in one burst, then the focus settles
 adb logcat -c; adb shell input keyevent KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT KEYCODE_DPAD_RIGHT; sleep 3
@@ -417,11 +417,16 @@ cards=$(adb logcat -d -s FlixTownQA:I | grep -c "home_card"); asks=$(adb logcat 
 kf=$(lastf home_card | sed 's/home_card key=//'); ka=$(lastf home_art | grep -o 'key=[^ ]*' | sed 's/key=//')
 note "INFO  burst: $cards focus changes, $asks background requests; focused $kf, background for $ka ($(artfor "$kf" | sed 's/home_art key=[^ ]* //'))"
 check "D2 rapid scrolling: only the settled card asks for a background (debounced), and it is that card's (no late or stale artwork)" '[ "$cards" -ge 5 ] && [ "$asks" -le 2 ] && [ "$kf" = "$ka" ] && art_ok "$kf"'
-adb shell dumpsys gfxinfo $PKG reset > /dev/null; adb shell input keyevent KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT; sleep 2
+# rapid Left presses inside the row: move along it, never open the side menu
+adb logcat -c; adb shell dumpsys gfxinfo $PKG reset > /dev/null; adb shell input keyevent KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT KEYCODE_DPAD_LEFT; sleep 3
+kl=$(lastf home_card | sed 's/home_card key=//'); navs=$(adb logcat -d -s FlixTownQA:I | grep -c nav_open)
+note "INFO  six fast Left presses from $kf: now $kl, side menu opened $navs time(s)"
 note "INFO  frames while scrolling back: $(adb shell dumpsys gfxinfo $PKG | grep -E 'Total frames rendered|Janky frames' | tr -s ' ' | paste -sd' ') (emulator, software GPU: indicative only)"
+check "D2b rapid Left presses move six cards along the row and never open the side menu mid-row" '[ "$navs" = 0 ] && [ "${kl#movie:}" = "$(( ${kf#movie:} - 6 ))" ]'
+
 to_row latest_series && ok "D3 reached Latest TV Shows" || bad "D3 Latest TV Shows row not reached ($(lastf home_focus))"
 sleep 2
-check "D4 Latest TV Shows: each show's backdrop at screen size (from its details when the list has none)" 'step_row latest_series "Latest TV Shows" 6'
+check "D4 Latest TV Shows: each show's backdrop at screen size (from its details when the list has none)" 'step_row latest_series "Latest TV Shows" 6 series'
 shot D-latest-series 0.1
 allbad=$(adb logcat -d -s FlixTownQA:I | grep "home_art key=" | grep -v branded | python3 -c 'import re,sys
 n=0
@@ -466,7 +471,8 @@ check "E5 no playable audio: nothing selected, video keeps playing, the viewer i
 wait_qa controls false 12; key DPAD_UP; sleep 1; focus_ctl report && key DPAD_CENTER; sleep 1.5
 focus_to DPAD_DOWN "No sound" 4 > /dev/null; key DPAD_CENTER; sleep 1.2; focus_to DPAD_LEFT "Send report" 2 > /dev/null; key DPAD_CENTER; sleep 3
 rp="$(lastf 'report type=')"; note "INFO  demo report: ${rp}"
-check "E5 the report (demo endpoint, fake data) explains the silence in the existing fields and carries the full audio facts" 'echo "$rp" | grep -q "issue=no_audio" && echo "$rp" | grep -q "audio_format=\[none selected: 1 track, 0 playable: dts 2ch 48k en unsupported\]" && echo "$rp" | grep -q "error_code=\[audio:no_supported_track\]" && echo "$rp" | grep -q "audio_diagnostics=\[tracks=dts" && echo "$rp" | grep -q "dec\[dts\]=none" && ! echo "$rp" | grep -qiE "https?://|password|username" && echo "$rp" | grep -q "keys=14"'
+# keys: the 14-field report plus the transport's "action" and "session" (the payload itself is checked in PlaybackReportTest)
+check "E5 the report (demo endpoint, fake data) explains the silence in the existing fields and carries the full audio facts" 'echo "$rp" | grep -q "issue=no_audio" && echo "$rp" | grep -q "audio_format=\[none selected: 1 track, 0 playable: dts 2ch 48k en unsupported\]" && echo "$rp" | grep -q "error_code=\[audio:no_supported_track\]" && echo "$rp" | grep -q "audio_diagnostics=\[tracks=dts" && echo "$rp" | grep -q "dec\[dts\]=none" && ! echo "$rp" | grep -qiE "https?://|password|username" && echo "$rp" | grep -q "keys=16"'
 leave_player
 crashB="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashB" = 0 ]'
