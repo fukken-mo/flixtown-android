@@ -144,14 +144,16 @@ final class Catalog {
                              String nextId,String nextExt,long position,long duration) {
         saveProgress(c,kind,id,episodeId,episodeExt,nextId,nextExt,position,duration,true);
     }
-    /** {@code endKnown}: an empty nextId really means the last episode (false when the episode list was not available). */
+    /**
+     * Saves where playback is, however close to the end: being near the end is not finishing. Only a
+     * normal end of playback (or Up next's Play now) calls {@link #markFinished}, and Mark as watched sets
+     * the watched flag itself, so an error or Back in the closing credits keeps this episode and its
+     * position in Continue Watching. {@code endKnown} is unused here; kept for the callers' signature.
+     */
     static void saveProgress(Context c,String kind,String id,String episodeId,String episodeExt,
                              String nextId,String nextExt,long position,long duration,boolean endKnown) {
         if(kind==null || id==null || id.isEmpty() || position<15000)return;
         String key=kind+":"+id;
-        if(duration>0 && (position>=duration-30000 || position*100>=duration*95)){
-            markFinished(c,kind,id,episodeId,episodeExt,nextId,nextExt,endKnown);return;
-        }
         android.content.SharedPreferences.Editor edit=Api.prefs(c).edit();
         edit.putLong("resume_position_"+key,position).putLong("resume_duration_"+key,duration).remove(DONE+key);
         if("series".equals(kind)){
@@ -163,7 +165,7 @@ final class Catalog {
         edit.apply();
         remember(c,key);
     }
-    /** Movie finished: forget it. Episode finished: queue the next episode so Continue Watching moves on. */
+    /** Played to the end. Movie: forget it. Episode: queue the next episode so Continue Watching moves on. */
     static void markFinished(Context c,String kind,String id,String nextId,String nextExt) {
         markFinished(c,kind,id,null,null,nextId,nextExt,true);
     }

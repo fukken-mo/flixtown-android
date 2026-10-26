@@ -723,7 +723,9 @@ public class PlayerActivity extends Activity {
         String shownFor=episodeId;
         showCard("Up next","",new String[]{"Play now","Cancel"},0,i->{
             if(!java.util.Objects.equals(shownFor,episodeId))return;
-            if(i==0)playNext();else nextCanceled=true;});
+            // Play now on Up next (the closing credits) is the viewer choosing to move on: this episode counts
+            // as finished, as it would if the countdown ran out. An error or Back near the end does not.
+            if(i==0){ended=true;finishProgress();playNext();}else nextCanceled=true;});
         cardForNext=true;
     }
     private void continueAfterMenu(){
