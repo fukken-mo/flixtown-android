@@ -118,7 +118,7 @@ for l in sys.stdin:
     t=l.split()[0] if l.split() else ""
     if s is None and " splash event=" in l: s=float(t)
     if s is not None and h is None and ("FlixTownQA: home_resumed" in l or ("Displayed" in l and "HomeActivity" in l)) and float(t)>=s: h=float(t)
-print(int((h-s)*1000) if s and h else -1)'; }
+print(int((h-s)*1000) if s and h else -1, file=sys.stdout); print("splash=%s home=%s"%(s,h), file=sys.stderr)' 2>>"$OUT/timing.txt"; }
 
 adb install -r "$APK" > /dev/null || { bad "install"; exit 1; }
 adb shell settings put system screen_off_timeout 1800000 || true
@@ -141,6 +141,7 @@ live(){ demo_live "{\"today\":\"$1\"${2:+,\"seasonal\":$2}}"; }
 splash_is(){ local t=0; while [ $t -lt 20 ]; do splash | grep -q "event=$1 image=$2" && return 0; sleep 0.5; t=$((t+1)); done; return 1; }
 relaunch_today(){ live "$1" "$CFG"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 6; live "$1" "$CFG"; launch; }
 
+adb logcat -G 16M > /dev/null 2>&1 || true   # room for the splash timing lines on chatty system images
 launch --ez demo_reset true
 wait_activity HomeActivity 60 && ok "A0 signed in (QR) and Home opened" || bad "A0 Home did not open ($(resumed))"
 note "INFO  first launch: $(splash)"
@@ -213,6 +214,7 @@ note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
 saw_next=$(adb logcat -d -s FlixTownQA:I | grep -c "card=\[Up next\]")
 note "INFO  Up next shown before the failure: $saw_next line(s); card now: $(qaf card) / $(qaf cardmsg)"
+note "INFO  played in the Up next window before the failure: $(adb logcat -d -s FlixTownQA:I | grep -cE 'playing=true .*elapsed=2(7[5-9]|8[0-9])') state line(s)"
 check "B1 the stream failure near the end shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
 check "B1 the Up next card was showing before (the case from the screenshot)" '[ "$saw_next" -ge 1 ]'
 sleep 2.5; shot B1-error-card 0.1

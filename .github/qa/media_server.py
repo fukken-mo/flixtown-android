@@ -47,6 +47,8 @@ class H(BaseHTTPRequestHandler):
             self.send_header("Accept-Ranges", "bytes"); self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(end - start + 1)); self.end_headers()
             cut = int(size * 0.95) if mode == "cut" else int(size * 0.5) if mode == "cut50" else size
+            side = f + "." + mode + "-offset"                # byte offset of a playback time, measured with ffprobe
+            if mode in ("cut", "cut50") and os.path.exists(side): cut = int(open(side).read().strip())
             tail = int(size * 0.99)
             if start >= tail: cut = size                       # index reads at the very end are served
             src.seek(start); pos = start

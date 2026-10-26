@@ -61,6 +61,10 @@ jobs:
         run: |
           for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null && break; sleep 10; done
           bash .github/qa/make_subtitle_video.sh media/subs.mkv 1280x720
+          # The cut test drops the connection at a playback time, not a byte share (a still picture compresses unevenly)
+          off(){ ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,pos -of csv=p=0 media/subs.mkv | awk -F, -v t=$1 '$1+0>=t && $2!="N/A"{print $2; exit}'; }
+          off 290 > media/subs.mkv.cut-offset; off 150 > media/subs.mkv.cut50-offset
+          echo "cut offsets: $(cat media/subs.mkv.cut-offset) (4:50) $(cat media/subs.mkv.cut50-offset) (2:30) of $(stat -c %s media/subs.mkv) bytes"
           bash .github/qa/make_subtitle_video.sh media/subs43.mkv 960x720
           bash .github/qa/make_subtitle_video.sh media/letterbox.mkv 1280x536
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0x404040:s=1280x720:r=25:d=120" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -f mpegts media/live.ts
