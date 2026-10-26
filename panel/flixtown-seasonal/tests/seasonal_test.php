@@ -81,6 +81,17 @@ check('unused uploaded picture pruned', !is_file("$tmp/art/$pn") && is_file("$tm
 $c = array_values(array_filter($pub['events'], function ($e) { return $e['id'] === 'christmas'; }))[0];
 check('event without picture publishes no link', $c['image'] === '');
 
+// Everyday design
+list($en, $es, $eerr) = $store->storeUpload($up("$tmp/good.png"), 'everyday');
+$s = $store->load(); $s['default_image'] = $en; $s['default_image_sha256'] = $es; $s['enabled'] = false;
+check('everyday picture saved', $eerr === null && preg_match('/^everyday-[0-9a-f]{16}\.jpg$/', (string)$en) === 1 && $store->save($s) === []);
+$pub = $store->publicSchedule();
+check('everyday picture published as an https link, also with seasonal off', $pub['enabled'] === false && $pub['default_image'] === "https://panelsandapps.com/panels/flixtown2027/api/seasonal-art/$en" && $pub['default_image_sha256'] === $es);
+check('everyday picture is not pruned', is_file("$tmp/art/$en"));
+check('the id "everyday" is reserved', FlixSeasonalStore::sanitize(['events' => [['id' => 'everyday', 'rule' => 'fixed', 'start' => '01-01', 'end' => '01-02']]])[1] !== []);
+$s['default_image'] = ''; $store->save($s);
+check('removing the everyday picture deletes its file', !is_file("$tmp/art/$en") && $store->publicSchedule()['default_image'] === '');
+
 array_map('unlink', glob("$tmp/*/*") ?: []); array_map('unlink', glob("$tmp/*.*") ?: []); @rmdir("$tmp/data"); @rmdir("$tmp/art"); @rmdir($tmp);
 echo "\nseasonal panel: $pass passed, $fail failed\n";
 exit($fail ? 1 : 0);

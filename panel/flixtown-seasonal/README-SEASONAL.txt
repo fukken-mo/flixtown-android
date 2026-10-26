@@ -41,12 +41,18 @@ Use
 1. Sign in at https://panelsandapps.com/panels/flixtown2027/admin/ as usual, then open
        https://panelsandapps.com/panels/flixtown2027/admin/seasonal.php
    (signed out, it sends you to the normal login page; it never shows anything without it).
-2. Under Pictures, upload each approved 16:9 design (1920×1080 recommended; 1280×720 to 3840×2160;
+2. Under Pictures, upload the approved 16:9 designs (1920×1080 recommended; 1280×720 to 3840×2160;
    JPEG/PNG/WebP; 8 MB at most). The approved designs already contain the logo; the app shows them
    full screen with nothing on top.
+     Everyday design      → row "Everyday design" (normal days, holidays without a picture, seasonal off)
+     New Year             → New Year            Valentine's Day → Valentine's Day
+     St. Patrick's Day    → St. Patrick's Day   Easter          → Easter
+     Memorial Day         → Memorial Day        Independence Day (fireworks) → Independence Day
+     Halloween            → Halloween           Thanksgiving    → Thanksgiving
+     Christmas            → Christmas
 3. Adjust dates/priority if needed, then Save schedule. Status shows today's selected theme.
-4. "Restore normal splash now" turns the seasonal splash off at once (TVs show the normal Flix Town
-   splash from their next launch after checking).
+4. "Restore normal splash now" turns the holiday pictures off at once: from their next launch after
+   checking, TVs show the everyday design (or the built-in Flix Town background if none is uploaded).
 5. Add future events (for example Labor Day) without an app update: Add an event, set its dates,
    upload a picture, turn it on.
 

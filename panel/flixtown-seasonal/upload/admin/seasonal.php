@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'restore_default') {
         $s['enabled'] = false;
         $err = $store->save($s);
-        flash($err ? 'error' : 'ok', $err ? implode(' ', $err) : 'Seasonal splash is off: TVs show the normal Flix Town splash from their next launch.');
+        flash($err ? 'error' : 'ok', $err ? implode(' ', $err) : 'Seasonal splash is off: from their next launch TVs show the everyday design (or the built-in Flix Town background if none is uploaded).');
         back();
     }
     if ($action === 'turn_on') { $s['enabled'] = true; $err = $store->save($s); flash($err ? 'error' : 'ok', $err ? implode(' ', $err) : 'Seasonal splash is on.'); back(); }
@@ -73,6 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         back();
     }
     $id = (string)($_POST['event'] ?? '');
+    if ($id === 'everyday' && ($action === 'upload' || $action === 'remove_image')) {
+        if ($action === 'upload') {
+            list($name, $sha, $error) = $store->storeUpload($_FILES['picture'] ?? [], 'everyday');
+            if ($error) { flash('error', 'Everyday design: ' . $error); back(); }
+            $s['default_image'] = $name; $s['default_image_sha256'] = $sha;
+        } else { $s['default_image'] = ''; $s['default_image_sha256'] = ''; }
+        $err = $store->save($s);
+        flash($err ? 'error' : 'ok', $err ? implode(' ', $err) : ($action === 'upload' ? 'Everyday design saved.' : 'Everyday design removed (the built-in Flix Town background shows).'));
+        back();
+    }
     $i = $find($id);
     if ($i < 0) { flash('error', 'Unknown event.'); back(); }
     if ($action === 'upload') {
@@ -108,6 +118,8 @@ $selected = FlixSeasonalStore::select($s, $today);
 $year = (int)$now->format('Y');
 $flashes = $_SESSION['seasonal_flash'] ?? []; unset($_SESSION['seasonal_flash']);
 $art = function (array $e): string { return $e['image'] !== '' ? '../api/seasonal-art/' . rawurlencode($e['image']) : ''; };
+$everyday = ['id' => 'everyday', 'name' => 'Everyday design', 'image' => (string)($s['default_image'] ?? '')];
+$shown = $selected && $selected['image'] !== '' ? $selected : ($everyday['image'] !== '' ? $everyday : null);
 ?><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flix Town — Seasonal splash</title>
@@ -130,10 +142,11 @@ button.sec{background:#3a2e2e}.prev{width:192px;aspect-ratio:16/9;background:#00
 <?php foreach ($flashes as $f) echo '<div class="' . ($f[0] === 'ok' ? 'ok' : 'error') . '">' . h($f[1]) . '</div>'; ?>
 
 <div class="card">
-  <strong>Status:</strong> <?= $s['enabled'] ? 'On' : 'Off — TVs show the normal Flix Town splash' ?> ·
+  <strong>Status:</strong> <?= $s['enabled'] ? 'On' : 'Off — TVs show the everyday design' ?> ·
   <strong>Selected today</strong> (<?= h($now->format('M j, Y')) ?>, <?= h($tz->getName()) ?>):
-  <?= $selected ? h($selected['name']) . ($selected['image'] === '' ? ' (no picture: normal background)' : '') : 'Normal background' ?>
-  <?php if ($selected && $selected['image'] !== ''): ?><div class="prev big" style="margin-top:12px"><img src="<?= h($art($selected)) ?>" alt=""></div><?php endif; ?>
+  <?= $selected ? h($selected['name']) : 'No holiday' ?> — TVs show:
+  <?= $shown ? h($shown['name']) : 'the built-in Flix Town background (upload an everyday design below)' ?>
+  <?php if ($shown): ?><div class="prev big" style="margin-top:12px"><img src="<?= h($art($shown)) ?>" alt=""></div><?php endif; ?>
   <form method="post" style="margin-top:12px">
     <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
     <?php if ($s['enabled']): ?><button name="action" value="restore_default">Restore normal splash now</button>
@@ -160,13 +173,13 @@ button.sec{background:#3a2e2e}.prev{width:192px;aspect-ratio:16/9;background:#00
 </form>
 
 <div class="card"><h3 style="margin-top:0">Pictures</h3><table>
-<?php foreach ($s['events'] as $e): ?>
-  <tr><td style="width:210px"><div class="prev"><?php if ($e['image'] !== ''): ?><img src="<?= h($art($e)) ?>" alt=""><?php else: ?>No picture (normal background)<?php endif; ?></div></td>
-    <td><strong><?= h($e['name']) ?></strong><br>
+<?php foreach (array_merge([$everyday], $s['events']) as $e): ?>
+  <tr><td style="width:210px"><div class="prev"><?php if ($e['image'] !== ''): ?><img src="<?= h($art($e)) ?>" alt=""><?php else: ?>No picture<?php endif; ?></div></td>
+    <td><strong><?= h($e['name']) ?></strong><?= $e['id'] === 'everyday' ? '<div class="muted">Shown on normal days, on a holiday without a picture, and when the seasonal splash is off.</div>' : '' ?>
       <form method="post" enctype="multipart/form-data" style="margin-top:8px"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="upload"><input type="hidden" name="event" value="<?= h($e['id']) ?>">
         <input type="file" name="picture" accept="image/jpeg,image/png,image/webp" required> <button><?= $e['image'] !== '' ? 'Replace picture' : 'Upload picture' ?></button></form>
       <?php if ($e['image'] !== ''): ?><form method="post" style="margin-top:6px"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="remove_image"><input type="hidden" name="event" value="<?= h($e['id']) ?>"><button class="sec">Remove picture</button></form><?php endif; ?>
-      <?php if (!in_array($e['id'], array_column(FlixSeasonalStore::defaults()['events'], 'id'), true)): ?><form method="post" style="margin-top:6px"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="delete_event"><input type="hidden" name="event" value="<?= h($e['id']) ?>"><button class="sec">Delete event</button></form><?php endif; ?>
+      <?php if ($e['id'] !== 'everyday' && !in_array($e['id'], array_column(FlixSeasonalStore::defaults()['events'], 'id'), true)): ?><form method="post" style="margin-top:6px"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="delete_event"><input type="hidden" name="event" value="<?= h($e['id']) ?>"><button class="sec">Delete event</button></form><?php endif; ?>
     </td></tr>
 <?php endforeach; ?></table></div>
 

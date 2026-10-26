@@ -10,6 +10,8 @@
  *       (start_offset/end_offset days around Easter Sunday, U.S. Thanksgiving, U.S. Memorial Day),
  *     dates {"YYYY": ["YYYY-MM-DD","YYYY-MM-DD"]} exact dates for a year (replace the rule that year),
  *     image (file name in api/seasonal-art/), image_sha256.
+ *   default_image / default_image_sha256: the everyday design (no event, an event without a picture,
+ *     or seasonal off). The event id "everyday" is reserved for it.
  * Selection: highest priority, then the shorter range, then the alphabetically first id.
  */
 final class FlixSeasonalStore
@@ -36,7 +38,7 @@ final class FlixSeasonalStore
             if ($rule === 'fixed') { $x['start'] = $a; $x['end'] = $b; } else { $x['start_offset'] = $a; $x['end_offset'] = $b; }
             return $x;
         };
-        return ['version' => 1, 'enabled' => true, 'display_ms' => 1500, 'events' => [
+        return ['version' => 1, 'enabled' => true, 'display_ms' => 1500, 'default_image' => '', 'default_image_sha256' => '', 'events' => [
             $e('new_year', 'New Year', 'fixed', '12-27', '01-03', 60),
             $e('valentines', "Valentine's Day", 'fixed', '02-10', '02-15', 40),
             $e('st_patricks', "St. Patrick's Day", 'fixed', '03-13', '03-18', 40),
@@ -80,7 +82,9 @@ final class FlixSeasonalStore
     {
         $errors = [];
         $out = ['version' => max(1, (int)($in['version'] ?? 1)), 'enabled' => !empty($in['enabled']),
-            'display_ms' => max(800, min(3000, (int)($in['display_ms'] ?? 1500))), 'events' => []];
+            'display_ms' => max(800, min(3000, (int)($in['display_ms'] ?? 1500))), 'default_image' => '', 'default_image_sha256' => '', 'events' => []];
+        $di = (string)($in['default_image'] ?? ''); $ds = strtolower((string)($in['default_image_sha256'] ?? ''));
+        if (preg_match('/^everyday-[0-9a-f]{16}\.jpg$/', $di)) { $out['default_image'] = $di; $out['default_image_sha256'] = preg_match('/^[0-9a-f]{64}$/', $ds) ? $ds : ''; }
         $events = $in['events'] ?? null;
         if (!is_array($events) || count($events) > 40) return [$out, ['The event list is missing or too long (40 at most).']];
         $ids = [];
@@ -89,6 +93,7 @@ final class FlixSeasonalStore
             $id = (string)($e['id'] ?? '');
             if (!preg_match('/^[a-z0-9_]{1,40}$/', $id)) { $errors[] = 'Event ' . ($i + 1) . ': the id must be 1–40 lowercase letters, digits or _.'; continue; }
             if (isset($ids[$id])) { $errors[] = "Event $id appears twice."; continue; }
+            if ($id === 'everyday') { $errors[] = 'The id "everyday" is reserved for the everyday design.'; continue; }
             $ids[$id] = true;
             $name = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', (string)($e['name'] ?? $id)));
             $x = ['id' => $id, 'name' => $name === '' ? $id : mb_substr($name, 0, 60), 'enabled' => !empty($e['enabled']),
@@ -135,6 +140,8 @@ final class FlixSeasonalStore
             else { $e['image'] = ''; $e['image_sha256'] = ''; }
         }
         unset($e);
+        if ($s['default_image'] !== '' && $baseOk && is_file($this->artDir . '/' . $s['default_image'])) $s['default_image'] = rtrim($base, '/') . '/seasonal-art/' . $s['default_image'];
+        else { $s['default_image'] = ''; $s['default_image_sha256'] = ''; }
         return $s;
     }
 
@@ -180,6 +187,7 @@ final class FlixSeasonalStore
     private function pruneArt(array $schedule): void
     {
         $used = [];
+        if (($schedule['default_image'] ?? '') !== '') $used[$schedule['default_image']] = true;
         foreach ($schedule['events'] as $e) if ($e['image'] !== '') $used[$e['image']] = true;
         foreach ((array)@scandir($this->artDir) as $f) {
             if (preg_match('/^[a-z0-9_]+-[0-9a-f]{16}\.jpg$/', (string)$f) && !isset($used[$f])) @unlink($this->artDir . '/' . $f);
