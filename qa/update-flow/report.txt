@@ -1,17 +1,17 @@
 PASS  installed the older build (10010)
 PASS  panel detected 10010 from the APK
 PASS  current version: no automatic popup
-PASS  manual check: 'You’re up to date', version shown, Done
+FAIL  manual up-to-date dialog wrong
 PASS  offline start: no update dialog (silent)
-PASS  manual check offline: 'Unable to check for updates', Try again / Close
+FAIL  offline manual check dialog wrong
 PASS  offline is never reported as up to date
-PASS  playing a title before the update is published
+FAIL  player did not open (    mResumedActivity: ActivityRecord{b725732 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.RemoteGuideActivity t6})
 PASS  same link, newer APK detected (10011)
-PASS  back from the background straight into the player
+FAIL  not in the player (    mResumedActivity: ActivityRecord{b725732 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.RemoteGuideActivity t6})
 PASS  no update popup while the player is open
 PASS  left the player back to Home
 PASS  return from background: popup appears once Home is in front
-PASS  after Later: returning from the background does not ask again
+FAIL  popup came back after Later in the same launch
 PASS  exit confirmation shown
 PASS  after Exit the app process is still running (no force-stop)
 PASS  reopened after Exit: 'Update available' popup with Update now / Later
@@ -25,6 +25,6 @@ PASS  installed version is now 10011
 PASS  still signed in after the update
 PASS  now current: no automatic popup
 PASS  autoplay setting kept (Off)
-PASS  manual check after update: up to date, version 3.5.1
+FAIL  manual check after update wrong
 PASS  later launch: still no popup
-update flow: 29 passed, 0 failed
+update flow: 23 passed, 6 failed

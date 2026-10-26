@@ -1,85 +1,73 @@
-[Thu Oct 15 09:15:09 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8788) started
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56150 Accepted
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56150 [200]: GET /apk/flixtown.apk?_ft=17920557173668
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56150 Closing
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56166 Accepted
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56166 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56166 Closing
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56174 Accepted
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56174 [200]: GET /apk/flixtown.apk?_ft=17920557173521
-[Thu Oct 15 09:15:17 2026] 10.1.1.221:56174 Closing
-[Thu Oct 15 09:15:33 2026] 10.1.1.221:53242 Accepted
-[Thu Oct 15 09:15:33 2026] 10.1.1.221:53242 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:15:33 2026] 10.1.1.221:53242 Closing
-[Thu Oct 15 09:15:33 2026] 10.1.1.221:53250 Accepted
-[Thu Oct 15 09:15:33 2026] 10.1.1.221:53250 [200]: GET /apk/flixtown.apk?_ft=17920557335234
-[Thu Oct 15 09:15:33 2026] 10.1.1.221:53250 Closing
-[Thu Oct 15 09:16:11 2026] 10.1.1.221:44962 Accepted
-[Thu Oct 15 09:16:11 2026] 10.1.1.221:44962 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:16:11 2026] 10.1.1.221:44962 Closing
-[Thu Oct 15 09:16:11 2026] 10.1.1.221:44966 Accepted
-[Thu Oct 15 09:16:11 2026] 10.1.1.221:44966 [200]: GET /apk/flixtown.apk?_ft=17920557718097
-[Thu Oct 15 09:16:11 2026] 10.1.1.221:44966 Closing
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43304 Accepted
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43304 [200]: GET /apk/flixtown.apk?_ft=17920558512578
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43304 Closing
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43308 Accepted
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43308 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43308 Closing
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43318 Accepted
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43318 [200]: GET /apk/flixtown.apk?_ft=17920558518587
-[Thu Oct 15 09:17:31 2026] 10.1.1.221:43318 Closing
-[Thu Oct 15 09:17:54 2026] 10.1.1.221:50804 Accepted
-[Thu Oct 15 09:17:54 2026] 10.1.1.221:50804 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:17:54 2026] 10.1.1.221:50804 Closing
-[Thu Oct 15 09:17:54 2026] 10.1.1.221:50818 Accepted
-[Thu Oct 15 09:17:54 2026] 10.1.1.221:50818 [200]: GET /apk/flixtown.apk?_ft=17920558749124
-[Thu Oct 15 09:17:54 2026] 10.1.1.221:50818 Closing
-[Thu Oct 15 09:18:12 2026] 10.1.1.221:55972 Accepted
-[Thu Oct 15 09:18:12 2026] 10.1.1.221:55972 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:18:12 2026] 10.1.1.221:55972 Closing
-[Thu Oct 15 09:18:12 2026] 10.1.1.221:55974 Accepted
-[Thu Oct 15 09:18:12 2026] 10.1.1.221:55974 [200]: GET /apk/flixtown.apk?_ft=17920558927754
-[Thu Oct 15 09:18:12 2026] 10.1.1.221:55974 Closing
-[Thu Oct 15 09:18:43 2026] 10.1.1.221:33172 Accepted
-[Thu Oct 15 09:18:43 2026] 10.1.1.221:33172 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:18:43 2026] 10.1.1.221:33172 Closing
-[Thu Oct 15 09:18:43 2026] 10.1.1.221:33176 Accepted
-[Thu Oct 15 09:18:43 2026] 10.1.1.221:33176 [200]: GET /apk/flixtown.apk?_ft=17920559231981
-[Thu Oct 15 09:18:43 2026] 10.1.1.221:33176 Closing
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44008 Accepted
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44008 [200]: GET /apk/flixtown.apk?_ft=17920559619904
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44008 Closing
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44018 Accepted
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44018 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44018 Closing
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44030 Accepted
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44030 [200]: GET /apk/flixtown.apk?_ft=17920559619804
-[Thu Oct 15 09:19:21 2026] 10.1.1.221:44030 Closing
-[Thu Oct 15 09:19:22 2026] 10.1.1.221:44036 Accepted
-[Thu Oct 15 09:19:22 2026] 10.1.1.221:44036 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:19:22 2026] 10.1.1.221:44036 Closing
-[Thu Oct 15 09:19:22 2026] 10.1.1.221:44048 Accepted
-[Thu Oct 15 09:19:22 2026] 10.1.1.221:44048 [200]: GET /apk/flixtown.apk?_ft=17920559627090
-[Thu Oct 15 09:19:22 2026] 10.1.1.221:44048 Closing
-[Thu Oct 15 09:19:46 2026] 10.1.1.221:49254 Accepted
-[Thu Oct 15 09:19:46 2026] 10.1.1.221:49254 [200]: GET /apk/flixtown.apk?_ft=1792055986402
-[Thu Oct 15 09:19:47 2026] 10.1.1.221:49254 Closing
-[Thu Oct 15 09:20:16 2026] 10.1.1.221:40380 Accepted
-[Thu Oct 15 09:20:16 2026] 10.1.1.221:40380 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:20:16 2026] 10.1.1.221:40380 Closing
-[Thu Oct 15 09:20:16 2026] 10.1.1.221:40386 Accepted
-[Thu Oct 15 09:20:16 2026] 10.1.1.221:40386 [200]: GET /apk/flixtown.apk?_ft=17920560167690
-[Thu Oct 15 09:20:16 2026] 10.1.1.221:40386 Closing
-[Thu Oct 15 09:20:52 2026] 10.1.1.221:46826 Accepted
-[Thu Oct 15 09:20:52 2026] 10.1.1.221:46826 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:20:52 2026] 10.1.1.221:46826 Closing
-[Thu Oct 15 09:20:52 2026] 10.1.1.221:46832 Accepted
-[Thu Oct 15 09:20:52 2026] 10.1.1.221:46832 [200]: GET /apk/flixtown.apk?_ft=17920560521220
-[Thu Oct 15 09:20:52 2026] 10.1.1.221:46832 Closing
-[Thu Oct 15 09:20:59 2026] 10.1.1.221:50110 Accepted
-[Thu Oct 15 09:20:59 2026] 10.1.1.221:50110 [200]: HEAD /apk/flixtown.apk
-[Thu Oct 15 09:20:59 2026] 10.1.1.221:50110 Closing
-[Thu Oct 15 09:20:59 2026] 10.1.1.221:50124 Accepted
-[Thu Oct 15 09:20:59 2026] 10.1.1.221:50124 [200]: GET /apk/flixtown.apk?_ft=17920560596114
-[Thu Oct 15 09:20:59 2026] 10.1.1.221:50124 Closing
+[Mon Oct 26 02:45:53 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8788) started
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42438 Accepted
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42438 [200]: GET /apk/flixtown.apk?_ft=17929827626238
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42438 Closing
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42452 Accepted
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42452 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42452 Closing
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42466 Accepted
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42466 [200]: GET /apk/flixtown.apk?_ft=17929827625098
+[Mon Oct 26 02:46:02 2026] 10.1.0.234:42466 Closing
+[Mon Oct 26 02:46:20 2026] 10.1.0.234:51048 Accepted
+[Mon Oct 26 02:46:20 2026] 10.1.0.234:51048 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:46:20 2026] 10.1.0.234:51048 Closing
+[Mon Oct 26 02:46:20 2026] 10.1.0.234:51050 Accepted
+[Mon Oct 26 02:46:20 2026] 10.1.0.234:51050 [200]: GET /apk/flixtown.apk?_ft=17929827807739
+[Mon Oct 26 02:46:20 2026] 10.1.0.234:51050 Closing
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44150 Accepted
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44150 [200]: GET /apk/flixtown.apk?_ft=17929828896743
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44150 Closing
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44162 Accepted
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44162 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44162 Closing
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44168 Accepted
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44168 [200]: GET /apk/flixtown.apk?_ft=17929828898426
+[Mon Oct 26 02:48:09 2026] 10.1.0.234:44168 Closing
+[Mon Oct 26 02:48:30 2026] 10.1.0.234:46334 Accepted
+[Mon Oct 26 02:48:30 2026] 10.1.0.234:46334 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:48:30 2026] 10.1.0.234:46334 Closing
+[Mon Oct 26 02:48:30 2026] 10.1.0.234:46346 Accepted
+[Mon Oct 26 02:48:30 2026] 10.1.0.234:46346 [200]: GET /apk/flixtown.apk?_ft=17929829105750
+[Mon Oct 26 02:48:30 2026] 10.1.0.234:46346 Closing
+[Mon Oct 26 02:48:47 2026] 10.1.0.234:48234 Accepted
+[Mon Oct 26 02:48:47 2026] 10.1.0.234:48234 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:48:47 2026] 10.1.0.234:48234 Closing
+[Mon Oct 26 02:48:47 2026] 10.1.0.234:48242 Accepted
+[Mon Oct 26 02:48:47 2026] 10.1.0.234:48242 [200]: GET /apk/flixtown.apk?_ft=17929829279385
+[Mon Oct 26 02:48:47 2026] 10.1.0.234:48242 Closing
+[Mon Oct 26 02:49:17 2026] 10.1.0.234:39986 Accepted
+[Mon Oct 26 02:49:17 2026] 10.1.0.234:39986 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:49:17 2026] 10.1.0.234:39986 Closing
+[Mon Oct 26 02:49:17 2026] 10.1.0.234:39990 Accepted
+[Mon Oct 26 02:49:17 2026] 10.1.0.234:39990 [200]: GET /apk/flixtown.apk?_ft=17929829572297
+[Mon Oct 26 02:49:17 2026] 10.1.0.234:39990 Closing
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46786 Accepted
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46786 [200]: GET /apk/flixtown.apk?_ft=17929829942631
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46786 Closing
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46796 Accepted
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46796 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46796 Closing
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46802 Accepted
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46802 [200]: GET /apk/flixtown.apk?_ft=17929829941597
+[Mon Oct 26 02:49:54 2026] 10.1.0.234:46802 Closing
+[Mon Oct 26 02:49:56 2026] 10.1.0.234:51296 Accepted
+[Mon Oct 26 02:49:56 2026] 10.1.0.234:51296 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:49:56 2026] 10.1.0.234:51296 Closing
+[Mon Oct 26 02:49:56 2026] 10.1.0.234:51308 Accepted
+[Mon Oct 26 02:49:56 2026] 10.1.0.234:51308 [200]: GET /apk/flixtown.apk?_ft=17929829967437
+[Mon Oct 26 02:49:56 2026] 10.1.0.234:51308 Closing
+[Mon Oct 26 02:50:20 2026] 10.1.0.234:47342 Accepted
+[Mon Oct 26 02:50:20 2026] 10.1.0.234:47342 [200]: GET /apk/flixtown.apk?_ft=1792983020205
+[Mon Oct 26 02:50:21 2026] 10.1.0.234:47342 Closing
+[Mon Oct 26 02:50:50 2026] 10.1.0.234:58250 Accepted
+[Mon Oct 26 02:50:50 2026] 10.1.0.234:58250 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:50:50 2026] 10.1.0.234:58250 Closing
+[Mon Oct 26 02:50:50 2026] 10.1.0.234:58266 Accepted
+[Mon Oct 26 02:50:50 2026] 10.1.0.234:58266 [200]: GET /apk/flixtown.apk?_ft=17929830502232
+[Mon Oct 26 02:50:50 2026] 10.1.0.234:58266 Closing
+[Mon Oct 26 02:51:33 2026] 10.1.0.234:39890 Accepted
+[Mon Oct 26 02:51:33 2026] 10.1.0.234:39890 [200]: HEAD /apk/flixtown.apk
+[Mon Oct 26 02:51:33 2026] 10.1.0.234:39890 Closing
+[Mon Oct 26 02:51:33 2026] 10.1.0.234:39906 Accepted
+[Mon Oct 26 02:51:33 2026] 10.1.0.234:39906 [200]: GET /apk/flixtown.apk?_ft=17929830937178
+[Mon Oct 26 02:51:33 2026] 10.1.0.234:39906 Closing
