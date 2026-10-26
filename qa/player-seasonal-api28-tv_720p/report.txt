@@ -1,13 +1,13 @@
 PASS  A0 signed in (QR) and Home opened
-INFO  first launch: 10-26 03:41:22.513  3041  3041 I FlixTownQA: splash event=halloween image=false file= display_ms=1500
+INFO  first launch: 10-26 04:19:14.147  2756  2756 I FlixTownQA: splash event=halloween image=false file= display_ms=1500
 PASS  A1 first launch, no panel schedule (404): built-in schedule, normal background
-PASS  A2 Halloween picture downloaded in the background and shown on the next launch
-INFO  centre pixel: 15 192 16
-PASS  A2 the picture fills the screen (green test picture at the centre)
-PASS  A2 nothing drawn over the picture (the logo is hidden once it shows)
-INFO  splash to Home: 3174 ms (display 3000 ms)
+FAIL  A2 10-26 04:19:30.456  3709  3709 I FlixTownQA: splash event=halloween image=false file= display_ms=3000
+INFO  centre pixel: 19 21 23
+FAIL  A2 the picture fills the screen (green test picture at the centre)
+FAIL  A2 nothing drawn over the picture (the logo is hidden once it shows)
+INFO  splash to Home: 3069 ms (display 3000 ms)
 PASS  A3 splash stays for the display time, then Home (2.6–6 s)
-INFO  with OK pressed: 1143 ms
+INFO  with OK pressed: 536 ms
 PASS  A3 OK skips the splash (Home in under 2.5 s)
 PASS  A4 2026-12-26 → christmas (picture shown: false)
 PASS  A4 2026-12-27 → new_year (picture shown: true)
@@ -25,9 +25,9 @@ PASS  A4 2026-06-15 → default (picture shown: false)
 INFO  christmas = corrupt file, valentines = 800×450, July 4 = 404, St. Patrick = no picture (Halloween's cached picture is not reused)
 PASS  A5 malformed schedule ignored: the last good schedule and picture stay
 PASS  A6 seasonal splash turned off in the panel: normal splash
-INFO  everyday (seasonal off): 10-26 03:45:45.227  6868  6868 I FlixTownQA: splash event=default image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
+INFO  everyday (seasonal off): 10-26 04:23:41.139  6786  6786 I FlixTownQA: splash event=default image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
 PASS  A6 seasonal off with an everyday design uploaded: the everyday picture shows (red test picture)
-INFO  christmas with a corrupt picture: 10-26 03:45:59.295  7041  7041 I FlixTownQA: splash event=christmas image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
+INFO  christmas with a corrupt picture: 10-26 04:23:54.932  6952  6952 I FlixTownQA: splash event=christmas image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
 PASS  A6 a holiday whose picture failed validation falls back to the everyday design
 PASS  A7 returning from the background goes back to Home without the splash
 PASS  A8 opening twice quickly leaves one Home (1)
@@ -35,6 +35,20 @@ PASS  A9 intro video enabled: the intro follows the splash (Skip intro shown)
 PASS  A no Flix Town crash during the splash checks
 INFO  after Go to time: elapsed=278
 INFO  Up next shown before the failure: 0 line(s); card now: This title couldn't be played / The server didn't send the video. Check the connection and try again.
+INFO  cut offsets (bytes): 704240 for 4:50, 365341 for 2:30, file 733997
+INFO  server: 26/Oct/2026 04:25:01 "GET /cut/subs.mkv HTTP/1.1" 206 -
+INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
+INFO  server: 26/Oct/2026 04:25:02 "GET /cut/subs.mkv HTTP/1.1" 206 -
+INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
+INFO  server: 26/Oct/2026 04:25:04 "GET /cut/subs.mkv HTTP/1.1" 206 -
+INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
+INFO  server: 26/Oct/2026 04:25:07 "GET /cut/subs.mkv HTTP/1.1" 206 -
+INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
+INFO  server: 26/Oct/2026 04:25:11 "GET /cut/subs.mkv HTTP/1.1" 206 -
+INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
+INFO  server: 26/Oct/2026 04:25:16 "GET /cut/subs.mkv HTTP/1.1" 206 -
+INFO  server: drop /subs.mkv range=bytes=704240- at byte 704240 (cut 704240, size 733997)
+INFO  player near the end: playing=false elapsed=278 card=[] playing=false elapsed=278 card=[This title couldn't be played]
 INFO  played in the Up next window before the failure: 0 state line(s)
 PASS  B1 the stream failure near the end shows the error card
 FAIL  B1 the Up next card was showing before (the case from the screenshot)
@@ -48,11 +62,69 @@ INFO  Continue Watching after a failure in the last 30 s: name="resume_episode_s
 PASS  B2 a mid-way failure shows the error card
 INFO  episode 9102, saved position 140000 ms
 PASS  B2 the interrupted episode is not marked watched: it stays the resume episode with its position
-INFO  tap: elapsed 6s, pending 17s, status '→'
+INFO  tap: elapsed 6s, pending 16s, status '→'
 PASS  B3 a tap shows the pending target (+10 s) before it is applied
 PASS  B3 then it is applied once (6 → 17 s) and the marker goes
-INFO  Right then Back in one input call: pending seen 30s, elapsed 17 → 21 s
+INFO  Right then Back in one input call: pending seen 29s, elapsed 17 → 21 s
 PASS  B3 Back cancels a pending seek (pending shown, then cleared with no jump: 17 → 21 s)
-INFO  after holding Right 4 s: pending -1, elapsed 295
+INFO  after holding Right 4 s: pending 295, elapsed 295
 PASS  B3 holding Right accelerates to the end guard in 4 s (duration − 5 s = 295 s), never past it
 PASS  B3 the movie then ends normally and playback closes (no error card)
+PASS  B4 seeking while paused stays paused (5 → 15 s)
+PASS  B4 Go to time 2:30 jumps there (152 s)
+PASS  B4 cancelling Go to time leaves playback where it was (152 → 162 s; playback runs meanwhile)
+PASS  B5 an unseekable stream says so instead of seeking ('This video can't be skipped forward or back.')
+INFO  10-26 04:28:59.179 12654 12654 I FlixTownQA: subtitle_builtin_parent=video_frame
+INFO  plain169 playing while measured: false
+INFO  plain169 controls hidden: 538 660 742 684 1280 720 763
+INFO  plain169 controls shown: 538 508 742 532 1280 720 763
+INFO  plain169 subtitle_lift controls=true screen=177 frame=177 bar_top=557
+INFO  plain169 controls hidden again: 538 660 742 684 1280 720 763
+INFO  plainLB playing while measured: false
+INFO  plainLB controls hidden: 538 660 742 684 1280 720 763
+INFO  plainLB controls shown: 538 508 742 532 1280 720 763
+INFO  plainLB subtitle_lift controls=true screen=177 frame=82 bar_top=557
+INFO  plainLB controls hidden again: 538 660 742 684 1280 720 763
+INFO  plain43 playing while measured: false
+INFO  plain43 controls hidden: 538 660 742 684 1280 720 763
+INFO  plain43 controls shown: 538 508 742 532 1280 720 763
+INFO  plain43 subtitle_lift controls=true screen=177 frame=177 bar_top=557
+INFO  plain43 controls hidden again: 538 660 742 684 1280 720 763
+INFO  assLB playing while measured: false
+INFO  assLB controls hidden: 516 574 764 599 1280 720 1030
+INFO  assLB controls shown: 516 511 764 536 1280 720 1030
+INFO  assLB subtitle_lift controls=true screen=177 frame=82 bar_top=557
+INFO  assLB controls hidden again: 516 574 764 599 1280 720 1030
+INFO  ass169 playing while measured: false
+INFO  ass169 controls hidden: 472 646 808 681 1280 720 1940
+INFO  ass169 controls shown: 472 494 808 529 1280 720 1940
+INFO  ass169 subtitle_lift controls=true screen=177 frame=177 bar_top=557
+INFO  ass169 controls hidden again: 472 646 808 681 1280 720 1940
+INFO  xl169 playing while measured: false
+INFO  xl169 controls hidden: 498 646 780 681 1280 720 1629
+INFO  xl169 controls shown: 498 494 780 529 1280 720 1629
+INFO  xl169 subtitle_lift controls=true screen=177 frame=177 bar_top=557
+INFO  xl169 controls hidden again: 498 646 780 681 1280 720 1629
+INFO  plain169 text bottom at 0.95 of the screen height
+INFO  plainLB text bottom at 0.95 of the screen height
+INFO  plain43 text bottom at 0.95 of the screen height
+PASS  C1 16:9: ordinary subtitles bottom-centre near the bottom (93–97 % of height)
+PASS  C1 letterboxed movie: ordinary subtitles near the screen bottom, not inside the picture
+PASS  C1 4:3: ordinary subtitles near the bottom
+INFO  assLB bottom at 0.832 (the picture ends at about 0.872)
+PASS  C2 letterboxed: a positioned ASS caption stays inside the picture (above the black bar)
+PASS  C2 16:9: positioned ASS caption visible near the bottom
+INFO  plain169 lift: bar_top=557 hidden=[538, 660, 742, 684] shown=[538, 508, 742, 532]
+INFO  plainLB lift: bar_top=557 hidden=[538, 660, 742, 684] shown=[538, 508, 742, 532]
+INFO  plain43 lift: bar_top=557 hidden=[538, 660, 742, 684] shown=[538, 508, 742, 532]
+INFO  xl169 lift: bar_top=557 hidden=[498, 646, 780, 681] shown=[498, 494, 780, 529]
+INFO  assLB lift: bar_top=557 hidden=[516, 574, 764, 599] shown=[516, 511, 764, 536]
+INFO  ass169 lift: bar_top=557 hidden=[472, 646, 808, 681] shown=[472, 494, 808, 529]
+PASS  C3 controls shown: ordinary subtitles move above the control bar, fully visible, same size (16:9, letterbox, 4:3)
+PASS  C3 controls shown: Extra large subtitles above the bar, fully visible
+PASS  C3 controls shown: positioned ASS captions above the bar, fully visible (letterbox, 16:9)
+PASS  C3 controls hidden again: every case returns to its normal position
+PASS  C4 Extra large stays fully on screen
+PASS  no Flix Town crash
+
+player & seasonal: 54 passed, 4 failed
