@@ -1,13 +1,13 @@
 PASS  A0 signed in (QR) and Home opened
-INFO  first launch: 10-26 07:03:02.394  2824  2824 I FlixTownQA: splash event=halloween image=false file= display_ms=1500
+INFO  first launch: 10-26 07:47:26.058  2868  2868 I FlixTownQA: splash event=halloween image=false file= display_ms=1500
 PASS  A1 first launch, no panel schedule (404): built-in schedule, normal background
 PASS  A2 Halloween picture downloaded in the background and shown on the next launch
 INFO  centre pixel: 15 192 16
 PASS  A2 the picture fills the screen (green test picture at the centre)
 PASS  A2 nothing drawn over the picture (the logo is hidden once it shows)
-INFO  splash to Home: 3546 ms (display 3000 ms)
+INFO  splash to Home: 3335 ms (display 3000 ms)
 PASS  A3 splash stays for the display time, then Home (2.6–6 s)
-INFO  with OK pressed: 1261 ms
+INFO  with OK pressed: 1432 ms
 PASS  A3 OK skips the splash (Home in under 2.5 s)
 PASS  A4 2026-12-26 → christmas (picture shown: false)
 PASS  A4 2026-12-27 → new_year (picture shown: true)
@@ -25,11 +25,152 @@ PASS  A4 2026-06-15 → default (picture shown: false)
 INFO  christmas = corrupt file, valentines = 800×450, July 4 = 404, St. Patrick = no picture (Halloween's cached picture is not reused)
 PASS  A5 malformed schedule ignored: the last good schedule and picture stay
 PASS  A6 seasonal splash turned off in the panel: normal splash
-INFO  everyday (seasonal off): 10-26 07:06:16.937  6721  6721 I FlixTownQA: splash event=default image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
+INFO  everyday (seasonal off): 10-26 07:50:26.806  7572  7572 I FlixTownQA: splash event=default image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
 PASS  A6 seasonal off with an everyday design uploaded: the everyday picture shows (red test picture)
-INFO  christmas with a corrupt picture: 10-26 07:06:27.369  6896  6896 I FlixTownQA: splash event=christmas image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
+INFO  christmas with a corrupt picture: 10-26 07:50:36.110  7754  7754 I FlixTownQA: splash event=christmas image=true file=4de1a01f642c1c38bdc8143c3c45a698.img display_ms=3000 centre 208 15 16
 PASS  A6 a holiday whose picture failed validation falls back to the everyday design
 PASS  A7 returning from the background goes back to Home without the splash
 PASS  A8 opening twice quickly leaves one Home (1)
 PASS  A9 intro video enabled: the intro follows the splash (Skip intro shown)
 PASS  A no Flix Town crash during the splash checks
+INFO  after Go to time: elapsed=279
+INFO  Up next shown before the failure: 23 line(s); card now: This title couldn't be played / The server didn't send the video. Check the connection and try again.
+INFO  cut offsets (bytes): 72796571 for 4:50, 37709345 for 2:30, file 75317892
+INFO  server: 26/Oct/2026 07:52:09 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=69778772- at byte 72796571 (cut 72796571, size 75317892)
+INFO  server: 26/Oct/2026 07:52:10 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796571- at byte 72796571 (cut 72796571, size 75317892)
+INFO  server: 26/Oct/2026 07:52:11 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796571- at byte 72796571 (cut 72796571, size 75317892)
+INFO  server: 26/Oct/2026 07:52:14 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796571- at byte 72796571 (cut 72796571, size 75317892)
+INFO  server: 26/Oct/2026 07:52:17 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796571- at byte 72796571 (cut 72796571, size 75317892)
+INFO  server: 26/Oct/2026 07:52:21 "GET /cut/cut.mkv HTTP/1.1" 206 -
+INFO  server: drop /cut.mkv range=bytes=72796571- at byte 72796571 (cut 72796571, size 75317892)
+INFO  player near the end: playing=true elapsed=286 card=[Up next] playing=true elapsed=287 card=[Up next] playing=true elapsed=287 card=[Up next] playing=true elapsed=288 card=[Up next] playing=true elapsed=288 card=[Up next] playing=true elapsed=289 card=[Up next] playing=true elapsed=289 card=[Up next] playing=false elapsed=289 card=[This title couldn't be played]
+INFO  played in the Up next window before the failure: 24 state line(s)
+PASS  B1 the stream failure near the end shows the error card
+PASS  B1 the Up next card was showing before (the case from the screenshot)
+PASS  B1 the error card has no 'Starts in' countdown (2.5 s later)
+PASS  B1 Try again, Report a problem and Back
+PASS  B1 Report a problem opens the report menu
+PASS  B1 cancelling the report returns to the same error card
+PASS  B1 Try again retries; the failure shows the error card again, still without a countdown
+PASS  B1 Back on the error card leaves playback (not just the countdown)
+INFO  Continue Watching after the late failure: episode 9101 at 289799 ms (played episode 9101)
+PASS  B1 a failure in the last 30 s keeps the interrupted episode and its position (not moved on)
+PASS  B1 the interrupted episode is not marked watched
+PASS  B2 a mid-way failure shows the error card
+INFO  episode 9101, saved position 149818 ms
+PASS  B2 the interrupted episode is not marked watched: it stays the resume episode with its position
+INFO  tap: elapsed 4s, pending 14s, status '→'
+PASS  B3 a tap shows the pending target (+10 s) before it is applied
+PASS  B3 then it is applied once (4 → 15 s) and the marker goes
+INFO  Right then Back in one input call: pending seen 27s, elapsed 15 → 18 s
+PASS  B3 Back cancels a pending seek (pending shown, then cleared with no jump: 15 → 18 s)
+INFO  hold: no input device for sendevent on this emulator (acceleration covered by SeekStepTest)
+PASS  B4 seeking while paused stays paused (4 → 14 s)
+PASS  B4 Go to time 2:30 jumps there (151 s)
+PASS  B4 cancelling Go to time leaves playback where it was (151 → 162 s; playback runs meanwhile)
+INFO  Back at about 4:4x: episode 9101 at 285033 ms (played episode 9101)
+PASS  B6 Back near the end keeps the episode and its position, not watched
+INFO  Play now: playing 9102, Continue Watching 9102 (was 9101)
+PASS  B7 Play now on Up next plays the next episode, marks this one watched and moves Continue Watching on
+INFO  normal end: playing 9103, Continue Watching 9103 (was 9102)
+PASS  B8 a normal end marks the episode watched and autoplay moves Continue Watching to the next
+PASS  B5 an unseekable stream says so instead of seeking ('This video can't be skipped forward or back.')
+INFO  10-26 08:00:25.612 18635 18635 I FlixTownQA: subtitle_builtin_parent=video_frame
+INFO  plain169 playing while measured: false
+INFO  plain169 controls hidden: 808 989 1110 1027 1920 1080 1988
+INFO  plain169 controls shown: 808 761 1110 799 1920 1080 1988
+INFO  plain169 subtitle_lift controls=true screen=266 frame=266 bar_top=836
+INFO  plain169 controls hidden again: 808 989 1110 1027 1920 1080 1988
+INFO  plainLB playing while measured: false
+INFO  plainLB controls hidden: 808 989 1110 1027 1920 1080 1988
+INFO  plainLB controls shown: 808 761 1110 799 1920 1080 1988
+INFO  plainLB subtitle_lift controls=true screen=266 frame=122 bar_top=836
+INFO  plainLB controls hidden again: 808 989 1110 1027 1920 1080 1988
+INFO  plain43 playing while measured: false
+INFO  plain43 controls hidden: 776 927 1142 1027 1920 1080 4473
+INFO  plain43 controls shown: 776 699 1142 799 1920 1080 4473
+INFO  plain43 subtitle_lift controls=true screen=266 frame=266 bar_top=836
+INFO  plain43 controls hidden again: 776 927 1142 1027 1920 1080 4473
+INFO  assLB playing while measured: false
+INFO  assLB controls hidden: 774 861 1146 899 1920 1080 2464
+INFO  assLB controls shown: 774 767 1146 805 1920 1080 2464
+INFO  assLB subtitle_lift controls=true screen=266 frame=122 bar_top=836
+INFO  assLB controls hidden again: 774 861 1146 899 1920 1080 2464
+INFO  ass169 playing while measured: false
+INFO  ass169 controls hidden: 708 970 1218 1022 1920 1080 4292
+INFO  ass169 controls shown: 708 742 1218 794 1920 1080 4292
+INFO  ass169 subtitle_lift controls=true screen=266 frame=266 bar_top=836
+INFO  ass169 controls hidden again: 708 970 1218 1022 1920 1080 4292
+INFO  xl169 playing while measured: false
+INFO  xl169 controls hidden: 748 969 1172 1022 1920 1080 3608
+INFO  xl169 controls shown: 748 741 1172 794 1920 1080 3608
+INFO  xl169 subtitle_lift controls=true screen=266 frame=266 bar_top=836
+INFO  xl169 controls hidden again: 748 969 1172 1022 1920 1080 3608
+INFO  plain169 text bottom at 0.951 of the screen height
+INFO  plainLB text bottom at 0.951 of the screen height
+INFO  plain43 text bottom at 0.951 of the screen height
+PASS  C1 16:9: ordinary subtitles bottom-centre near the bottom (93–97 % of height)
+PASS  C1 letterboxed movie: ordinary subtitles near the screen bottom, not inside the picture
+PASS  C1 4:3: ordinary subtitles near the bottom
+INFO  assLB bottom at 0.832 (the picture ends at about 0.872)
+PASS  C2 letterboxed: a positioned ASS caption stays inside the picture (above the black bar)
+PASS  C2 16:9: positioned ASS caption visible near the bottom
+INFO  plain169 lift: bar_top=836 hidden=[808, 989, 1110, 1027] shown=[808, 761, 1110, 799]
+INFO  plainLB lift: bar_top=836 hidden=[808, 989, 1110, 1027] shown=[808, 761, 1110, 799]
+INFO  plain43 lift: bar_top=836 hidden=[776, 927, 1142, 1027] shown=[776, 699, 1142, 799]
+INFO  xl169 lift: bar_top=836 hidden=[748, 969, 1172, 1022] shown=[748, 741, 1172, 794]
+INFO  assLB lift: bar_top=836 hidden=[774, 861, 1146, 899] shown=[774, 767, 1146, 805]
+INFO  ass169 lift: bar_top=836 hidden=[708, 970, 1218, 1022] shown=[708, 742, 1218, 794]
+PASS  C3 controls shown: ordinary subtitles move above the control bar, fully visible, same size (16:9, letterbox, 4:3)
+PASS  C3 controls shown: Extra large subtitles above the bar, fully visible
+PASS  C3 controls shown: positioned ASS captions above the bar, fully visible (letterbox, 16:9)
+PASS  C3 controls hidden again: every case returns to its normal position
+PASS  C4 Extra large stays fully on screen
+PASS  D0 reached Latest Movies
+INFO  Latest Movies movie:1001 expected b=detail1001: url=http://10.0.2.2:8000/art/backdrop.jpg?b=detail1001 bitmap=1920x1080 screen=1920
+INFO  Latest Movies movie:1002 expected b=m2: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m2 bitmap=1920x1080 screen=1920
+INFO  Latest Movies movie:1003 expected b=m3: url=http://10.0.2.2:8000/art/backdrop.jpg?b=detail1003 bitmap=1920x1080 screen=1920
+INFO  Latest Movies movie:1004 expected branded: branded (no landscape art)
+INFO  Latest Movies movie:1005 expected b=m5: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m5 bitmap=1920x1080 screen=1920
+INFO  Latest Movies movie:1006 expected b=m6: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m6 bitmap=1920x1080 screen=1920
+INFO  Latest Movies movie:1007 expected branded: branded (unsuitable 600x900)
+INFO  Latest Movies movie:1008 expected b=m8: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m8 bitmap=1920x1080 screen=1920
+INFO  Latest Movies movie:1009 expected b=m9: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m9 bitmap=1920x1080 screen=1920
+FAIL  D1 Latest Movies: each title shows its landscape backdrop at screen size, or the branded background when it has none (no poster stretched)
+INFO  burst: 10 focus changes, 1 background requests; focused movie:1019, background for movie:1019 (url=http://10.0.2.2:8000/art/backdrop.jpg?b=detail1019 bitmap=1920x1080 screen=1920)
+PASS  D2 rapid scrolling: only the settled card asks for a background (debounced), and it is that card's (no late or stale artwork)
+INFO  frames while scrolling back: Total frames rendered: 15 Janky frames: 15 (100.00%) Janky frames (legacy): 15 (100.00%) (emulator, software GPU: indicative only)
+FAIL  D3 Latest TV Shows row not reached (home_focus key=movie:1018 row=latest_movies)
+INFO  Latest TV Shows movie:1018 expected b=m18: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m18 bitmap=1920x1080 screen=1920
+INFO  Latest TV Shows movie:1019 expected b=detail1019: url=http://10.0.2.2:8000/art/backdrop.jpg?b=detail1019 bitmap=1920x1080 screen=1920
+INFO  Latest TV Shows movie:1020 expected b=m20: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m20 bitmap=1920x1080 screen=1920
+INFO  Latest TV Shows movie:1021 expected b=m21: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m21 bitmap=1920x1080 screen=1920
+INFO  Latest TV Shows movie:1022 expected branded: branded (no landscape art)
+INFO  Latest TV Shows movie:1023 expected b=m23: url=http://10.0.2.2:8000/art/backdrop.jpg?b=m23 bitmap=1920x1080 screen=1920
+PASS  D4 Latest TV Shows: each show's backdrop at screen size (from its details when the list has none)
+PASS  D5 no background anywhere on Home is a small or portrait picture (all rows and the hero, since the last burst)
+INFO  screen width 1920 px
+INFO  AAC title: tracks=aac 2ch 48k ok *selected | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+PASS  E0 ordinary AAC audio: selected and decoded on this TV, no notice
+INFO  DTS+AAC, English preferred: tracks=dts 2ch 48k en unsupported, aac 2ch 48k es ok *selected | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[dts]=none dec[aac]=OMX.google.aac.decoder
+INFO  notice: English audio (DTS stereo) can't be played on this TV; playing Spanish (AAC stereo) instead.
+PASS  E1 the preferred-language track is unsupported: a supported track plays instead (English DTS → Spanish AAC)
+PASS  E1 the viewer is told which audio plays, without promising conversion
+PASS  E1 the TV's audio facts are recorded (passthrough formats, outputs, decoders per codec)
+PASS  E2 choosing the unsupported track is refused and the playing track stays
+INFO  playback_info Audio tracks:|  • DTS stereo · English · 48 kHz · can't be played on this TV|  • AAC stereo · Spanish · 48 kHz · playing|Decoder: OMX.google.aac.decoder|Sound output: pcm16 2ch 48k decoded|This TV: pass=none max10ch out=speaker+telephony dec[dts]=none dec[aac]=OMX.google.aac.decoder|Audio problems: none|Video: video/avc 640x360
+PASS  E3 Options › Playback info lists each audio track with its support, the decoder, output and this TV's audio
+PASS  E4 a playable preferred language is kept (Spanish AAC), no notice
+INFO  DTS only: tracks=dts 2ch 48k en unsupported | decoder=- | output=- | device=pass=none max10ch out=speaker+telephony dec[dts]=none
+INFO  notice: No sound: this title's audio (DTS stereo) can't be played on this TV or its current sound setup.
+PASS  E5 no playable audio: nothing selected, video keeps playing, the viewer is told why
+INFO  demo report: report type=movie media=1000 episode=0 issue=no_audio duplicate=false audio_format=[none selected: 1 track, 0 playable: dts 2ch 48k en unsupported] error_code=[audio:no_supported_track] audio_diagnostics=[tracks=dts 2ch 48k en unsupported | decoder=- | output=- | device=pass=none max10ch out=speaker+telephony dec[dts]=none] keys=16
+FAIL  E5 the report (demo endpoint, fake data) explains the silence in the existing fields and carries the full audio facts
+PASS  no Flix Town crash
+
+player & seasonal: 73 passed, 3 failed
