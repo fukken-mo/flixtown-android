@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Workflow: .github/workflows/seasonal-player-preview.yml (Preview only; nothing is published).
 # Focused QA (QA build, offline demo server + local media server on the host at 10.0.2.2:8000):
 #   A. seasonal startup splash: built-in schedule offline, downloaded pictures, holiday dates and the
 #      year boundary, priority tie, Easter/Thanksgiving, stale and bad pictures, malformed / disabled
