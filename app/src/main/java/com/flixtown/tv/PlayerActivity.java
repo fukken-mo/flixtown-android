@@ -220,7 +220,7 @@ public class PlayerActivity extends Activity {
     private void seekBy(int direction,KeyEvent event){
         if(player==null)return;
         if(!player.isCurrentMediaItemSeekable()){
-            flash("This video can't be skipped forward or back.");if(!controlsVisible())showControls(progressLine);else scheduleHide();return;}
+            flash("This video can't be skipped forward or back.");if(!controlsVisible())showControls(progressLine);else scheduleHide();qaState();return;}
         long now=SystemClock.uptimeMillis();
         if(event.getRepeatCount()==0)holdStartedAt=now;
         else if(now-lastRepeatAt<REPEAT_GAP_MS)return;
@@ -231,7 +231,7 @@ public class PlayerActivity extends Activity {
         pendingSeek=SeekStep.clamp(base+direction*step,duration);
         handler.removeCallbacks(commitSeek);handler.postDelayed(commitSeek,SEEK_COMMIT_MS);
         if(!controlsVisible())showControls(progressLine);else scheduleHide();
-        showSeekPreview();updateProgressUi();
+        showSeekPreview();updateProgressUi();qaState();
     }
     /** The pending target in the status line ("→ 1:02:30  (+12:00)") and as a marker; playback time stays as is. */
     private void showSeekPreview(){
@@ -247,7 +247,7 @@ public class PlayerActivity extends Activity {
     private final Runnable commitSeek=()->{
         if(pendingSeek<0 || player==null)return;
         long target=pendingSeek;clearPendingSeek();
-        player.seekTo(target);updateProgressUi();scheduleHide();
+        player.seekTo(target);updateProgressUi();scheduleHide();qaState();
     };
     /** Player options › Go to time. */
     private void goToTime(){
@@ -695,7 +695,8 @@ public class PlayerActivity extends Activity {
         if(!BuildConfig.DEMO || player==null)return;
         View f=getCurrentFocus();
         String focus=f==null?"none":f==optionsButton?"options":f==playButton?"play":f==audioButton?"audio":f==subsButton?"subs":f==reportButton?"report":f==previousButton?"previous":f==nextButton?"next":f==progressLine?"progress":"other";
-        String s="controls="+controlsVisible()+" playing="+player.isPlaying()+" reporting="+reporting+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
+        String s="controls="+controlsVisible()+" pending="+(pendingSeek<0?-1:pendingSeek/1000)+" status=["+(status!=null&&status.getVisibility()==View.VISIBLE?status.getText():"")+"]"
+            +" dialog="+(dialog!=null)+" playing="+player.isPlaying()+" reporting="+reporting+" focus="+focus+" elapsed="+player.getCurrentPosition()/1000
             +" speed="+player.getPlaybackParameters().speed+" subtitle_size="+Api.prefs(this).getFloat(ViewerOptions.SIZE,1f)+" subtitle_style="+Api.prefs(this).getInt(ViewerOptions.STYLE,0)
             +" audio=["+(audioLabel==null?"":audioLabel.getText())+"] subs=["+(subtitleLabel==null?"":subtitleLabel.getText())+"]"
             +" controls_fit="+(nextButton==null || nextButton.getRight()<=((View)nextButton.getParent()).getWidth())
