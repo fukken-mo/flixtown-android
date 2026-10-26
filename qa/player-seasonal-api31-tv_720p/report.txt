@@ -1,0 +1,76 @@
+PASS  A0 signed in (QR) and Home opened
+INFO  first launch: 10-26 02:21:23.954  2822  2822 I FlixTownQA: splash event=halloween image=false display_ms=1500
+PASS  A1 first launch, no panel schedule (404): built-in schedule, normal background
+PASS  A2 Halloween picture downloaded in the background and shown on the next launch
+INFO  centre pixel: 15 192 16
+PASS  15
+PASS  A2 nothing drawn over the picture (the logo is hidden once it shows)
+INFO  splash to Home: 3276 ms (display 3000 ms)
+PASS  A3 splash stays for the display time, then Home (2.6–6 s)
+INFO  with OK pressed: 1046 ms
+PASS  A3 OK skips the splash (Home in under 2.5 s)
+PASS  A4 2026-12-26 → christmas (picture shown: false)
+PASS  A4 2026-12-27 → new_year (picture shown: true)
+PASS  A4 2026-12-31 → new_year (picture shown: true)
+PASS  A4 2027-01-03 → new_year (picture shown: true)
+PASS  A4 2027-01-04 → default (picture shown: false)
+PASS  A4 2026-03-15 → st_patricks (picture shown: false)
+PASS  A4 2027-02-12 → valentines (picture shown: false)
+PASS  A4 2027-07-03 → independence_day (picture shown: false)
+PASS  A4 2027-08-11 → tie_a (picture shown: false)
+PASS  A4 2027-03-28 → easter (picture shown: false)
+PASS  A4 2027-03-30 → default (picture shown: false)
+PASS  A4 2027-11-25 → thanksgiving (picture shown: false)
+PASS  A4 2026-06-15 → default (picture shown: false)
+INFO  christmas = corrupt file, valentines = 800×450, July 4 = 404, St. Patrick = no picture (Halloween's cached picture is not reused)
+PASS  A5 malformed schedule ignored: the last good schedule and picture stay
+PASS  A6 seasonal splash turned off in the panel: normal splash
+PASS  A7 returning from the background goes back to Home without the splash
+PASS  A8 opening twice quickly leaves one Home (1)
+PASS  A9 intro video enabled: the intro follows the splash (Skip intro shown)
+PASS  A no Flix Town crash during the splash checks
+INFO  after Go to time: elapsed=0
+INFO  Up next shown before the failure: 0 line(s); card now:  / 
+FAIL  B1 the stream failure near the end shows the error card
+FAIL  B1 the Up next card was showing before (the case from the screenshot)
+PASS  B1 the error card has no 'Starts in' countdown (2.5 s later)
+FAIL  B1 Try again, Report a problem and Back
+FAIL  B1 Report a problem opens the report menu
+FAIL  B1 cancelling the report returns to the same error card
+PASS  B1 Try again retries; the failure shows the error card again, still without a countdown
+PASS  B1 Back on the error card leaves playback (not just the countdown)
+INFO  Continue Watching after a failure in the last 30 s: 
+FAIL  B2 a mid-way failure shows the error card
+INFO  episode 9101, saved position none ms
+FAIL  B2 the interrupted episode is not marked watched: it stays the resume episode with its position
+INFO  tap: elapsed s, pending s, status ''
+FAIL  B3 a tap shows the pending target (+10 s) before it is applied
+FAIL  B3 then it is applied once ( →  s) and the marker goes
+FAIL  B3 Back cancels a pending seek (no jump:  →  s)
+INFO  hold: no input device for sendevent on this emulator (acceleration covered by SeekStepTest)
+PASS  B4 seeking while paused stays paused (5 → 15 s)
+PASS  B4 Go to time 2:30 jumps there (152 s)
+FAIL  B4 cancelling Go to time leaves playback where it was (152 → 161 s)
+PASS  B5 an unseekable stream says so instead of seeking ('This video can't be skipped forward or back.')
+INFO  10-26 02:34:32.015  6903  6903 I FlixTownQA: subtitle_builtin_parent=video_frame
+INFO  plain169 controls hidden: 538 660 742 684 1280 720 873
+INFO  plain169 controls shown: 538 663 740 663 1280 720 20
+INFO  plainLB controls hidden: 538 660 742 684 1280 720 873
+INFO  plainLB controls shown: 538 663 740 663 1280 720 20
+INFO  plain43 controls hidden: 538 660 742 684 1280 720 873
+INFO  plain43 controls shown: 538 663 740 663 1280 720 20
+INFO  assLB controls hidden: 516 574 762 599 1280 720 1115
+INFO  assLB controls shown: 570 574 762 598 1280 720 147
+INFO  ass169 controls hidden: 470 646 808 681 1280 720 1972
+INFO  ass169 controls shown: 470 647 806 663 1280 720 508
+INFO  xl169 controls hidden: 500 646 782 681 1280 720 1563
+INFO  xl169 controls shown: 500 646 780 663 1280 720 367
+INFO  plain169 text bottom at 0.95 of the screen height
+INFO  plainLB text bottom at 0.95 of the screen height
+INFO  plain43 text bottom at 0.95 of the screen height
+PASS  C1 16:9: ordinary subtitles bottom-centre near the bottom (93–97 % of height)
+PASS  C1 letterboxed movie: ordinary subtitles near the screen bottom, not inside the picture
+PASS  C1 4:3: ordinary subtitles near the bottom
+INFO  assLB bottom at 0.832 (the picture ends at about 0.872)
+PASS  516
+PASS  C2 16:9: positioned ASS caption visible near the bottom
