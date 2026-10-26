@@ -360,6 +360,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         selectTab(target);}
     @Override public void onClose(){closeMenu();}
     private void openMenu(){if(nav.isOpen()||overlayUp)return;
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","nav_open");
         lastContentFocus=getCurrentFocus();
         handler.removeCallbacks(rotateHero);
         nav.open(tab);
@@ -969,6 +970,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
                 if(!heroMode && homeRows.hasFocus()){homeRows.setSelectedPositionSmooth(0);return true;}
                 confirmExit();return true;
             }
+            // Left inside a row moves along the row, however fast it is pressed: while the row is still scrolling,
+            // the card to the left may not be laid out yet, which used to open the side menu mid-row.
+            if(key==KeyEvent.KEYCODE_DPAD_LEFT && !nav.isOpen() && rowIndex(getCurrentFocus())>0)return super.dispatchKeyEvent(event);
             if(key==KeyEvent.KEYCODE_DPAD_LEFT && !nav.isOpen()){View focus=getCurrentFocus();
                 boolean editing=focus instanceof EditText && ((EditText)focus).getSelectionStart()>0;
                 if(focus!=null && !editing){View left=focus.focusSearch(View.FOCUS_LEFT);
@@ -978,6 +982,16 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             }
         }
         return super.dispatchKeyEvent(event);
+    }
+    /** Position of the focused card in its horizontal row, or -1 when focus is not in one. */
+    private static int rowIndex(View focus){
+        if(focus==null)return -1;
+        View child=focus;android.view.ViewParent parent=focus.getParent();
+        while(parent instanceof View){
+            if(parent instanceof HorizontalGridView)return ((HorizontalGridView)parent).getChildAdapterPosition(child);
+            child=(View)parent;parent=parent.getParent();
+        }
+        return -1;
     }
     private static boolean isDescendant(ViewGroup parent,View view){
         for(Object p=view.getParent();p instanceof View;p=((View)p).getParent())if(p==parent)return true;return false;}
