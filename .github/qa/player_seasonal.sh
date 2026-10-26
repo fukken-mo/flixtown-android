@@ -73,11 +73,15 @@ wait_qa(){ local t=0; while [ $t -lt "$3" ]; do [ "$(qaf "$1")" = "$2" ] && retu
 splash(){ qa " splash event="; }
 back_home(){ for i in 1 2 3 4 5 6; do in_activity HomeActivity && return 0; key BACK; sleep 1.2; done; in_activity HomeActivity; }
 open_movie(){ back_home; focus_to DPAD_LEFT "Home" 8 > /dev/null; focus_to DPAD_DOWN "Movies" 4 > /dev/null; key DPAD_CENTER; sleep 2.5
-  key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 3; key DPAD_CENTER; wait_activity PlayerActivity 10; sleep 4
-  if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi; }
+  key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 3; key DPAD_CENTER; wait_activity PlayerActivity 10; started; }
 open_episode(){ back_home; focus_to DPAD_LEFT "Home" 8 > /dev/null; focus_to DPAD_DOWN "TV Shows" 4 > /dev/null; key DPAD_CENTER; sleep 2.5
   key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4; focus_to DPAD_DOWN "Season" 5 > /dev/null; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER
-  wait_activity PlayerActivity 10; sleep 4; if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi; }
+  wait_activity PlayerActivity 10; started; }
+# Wait until playback runs; a partly watched title first asks "Continue watching?" (answer Start over)
+started(){ local t=0; while [ $t -lt 30 ]; do
+    [ "$(qaf card)" = "Continue watching?" ] && { key DPAD_RIGHT DPAD_CENTER; sleep 2; }
+    [ "$(qaf playing)" = "true" ] && [ "$(qaf card)" != "Continue watching?" ] && { sleep 1; return 0; }
+    sleep 0.5; t=$((t+1)); done; return 1; }
 player_open(){ for a in 1 2; do "$1"; in_activity PlayerActivity && return 0
   note "INFO  $1 attempt $a did not reach the player ($(resumed))"; shot "open-fail-$1-$a" 0.1; fresh; done; return 1; }
 leave_player(){ for i in 1 2 3; do in_activity PlayerActivity || break; key BACK; sleep 1.2; done; }
@@ -93,6 +97,11 @@ go_to(){ key DPAD_UP; sleep 0.4; key DPAD_UP; sleep 0.4; key DPAD_CENTER; sleep 
   focus_to DPAD_DOWN "Go to time" 3 > /dev/null; key DPAD_CENTER; sleep 1.2
   for f in "$@"; do for (( i=0; i<${#f}; i++ )); do adb shell input keyevent "KEYCODE_${f:$i:1}"; sleep 0.3; done; done
   focus_to DPAD_RIGHT "Go" 4 > /dev/null; key DPAD_CENTER; sleep 2; }
+# Go to time as a setup step: checked, and tried once more if the jump did not happen (logged in the report)
+go_to_ok(){ local want=$(( ${1#0}*60 + ${2#0} )) e a; for a in 1 2; do go_to "$1" "$2"; e=$(elapsed)
+    [ "${e:-0}" -ge $((want-2)) ] && [ "${e:-0}" -le $((want+20)) ] && return 0
+    note "INFO  Go to time $1:$2 attempt $a reached ${e:-?} s; dialog=$(qaf dialog)"; shot "goto-fail-$1-$2-$a" 0.1
+    [ "$(qaf dialog)" = "true" ] && { key BACK; sleep 1; }; done; return 1; }
 # Hold a D-pad key for N seconds through the emulator's input device (Android generates the repeats).
 hold(){ local code=$1 secs=$2 dev
   dev=$(adb shell getevent -lp 2>/dev/null | awk '/add device/{d=$4} /KEY_RIGHT/{print d; exit}')
@@ -221,7 +230,7 @@ fresh(){ launch; wait_activity HomeActivity 30; sleep 4; }   # every player sect
 # B1. Error replacing Up next near the end of an episode (connection dropped at 95 %)
 stream "$M/cut/cut.mkv"; clear_watched; fresh
 player_open open_episode; ep1="$(qaf episode)"
-go_to 4 38
+go_to_ok 4 38
 note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"; shot B1-after-go-to 0.1
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
 saw_next=$(adb logcat -d -s FlixTownQA:I | grep -c "card=\[Up next\]")
@@ -250,7 +259,7 @@ check "B1 the interrupted episode is not marked watched" '! watched_ep "$ep1"'
 # B2. Interrupted mid-way (50 %): not marked watched, position kept
 stream "$M/cut50/cut.mkv"; fresh
 player_open open_episode; ep="$(qaf episode)"
-go_to 2 20
+go_to_ok 2 20
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
 check "B2 a mid-way failure shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
 key BACK; sleep 2
@@ -292,14 +301,14 @@ check "B4 cancelling Go to time leaves playback where it was (${e5} → ${e6} s;
 leave_player
 # B6. Back in the closing credits (no error): episode and position kept, not watched
 stream "$M/subs.mkv"; clear_watched; fresh
-player_open open_episode; ep6="$(qaf episode)"; go_to 4 40
+player_open open_episode; ep6="$(qaf episode)"; go_to_ok 4 40
 t=0; while [ $t -lt 10 ] && [ "$(qaf card)" != "Up next" ]; do sleep 1; t=$((t+1)); done
 key BACK; sleep 1; leave_player; sleep 1; r6="$(resume_ep)"; p6=$(resume_pos)
 note "INFO  Back at about 4:4x: episode $r6 at ${p6:-none} ms (played episode $ep6)"
 check "B6 Back near the end keeps the episode and its position, not watched" '[ -n "$ep6" ] && [ "$r6" = "$ep6" ] && [ "${p6:-0}" -ge 275000 ] && ! watched_ep "$ep6"'
 # B7. Up next's Play now: the episode counts as finished and Continue Watching moves on
 stream "$M/subs.mkv"; clear_watched; fresh
-player_open open_episode; ep7="$(qaf episode)"; go_to 4 38
+player_open open_episode; ep7="$(qaf episode)"; go_to_ok 4 38
 t=0; while [ $t -lt 10 ] && [ "$(qaf card)" != "Up next" ]; do sleep 1; t=$((t+1)); done
 focus_to DPAD_LEFT "Play now" 3 > /dev/null; key DPAD_CENTER; sleep 3; now7="$(qaf episode)"; r7="$(resume_ep)"
 note "INFO  Play now: playing $now7, Continue Watching $r7 (was $ep7)"
@@ -307,7 +316,7 @@ check "B7 Play now on Up next plays the next episode, marks this one watched and
 leave_player
 # B8. Normal end with autoplay: watched, next episode queued and playing
 stream "$M/subs.mkv"; clear_watched; fresh
-player_open open_episode; ep8="$(qaf episode)"; go_to 4 45
+player_open open_episode; ep8="$(qaf episode)"; go_to_ok 4 45
 t=0; while [ $t -lt 40 ] && [ "$(qaf episode)" = "$ep8" ]; do sleep 1; t=$((t+1)); done; sleep 1; now8="$(qaf episode)"; r8="$(resume_ep)"
 note "INFO  normal end: playing $now8, Continue Watching $r8 (was $ep8)"
 check "B8 a normal end marks the episode watched and autoplay moves Continue Watching to the next" '[ -n "$ep8" ] && [ "$now8" != "$ep8" ] && [ "$r8" = "$now8" ] && watched_ep "$ep8"'
