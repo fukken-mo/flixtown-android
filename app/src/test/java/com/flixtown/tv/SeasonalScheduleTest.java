@@ -62,6 +62,14 @@ public class SeasonalScheduleTest {
             "{\"version\":1,\"valid_until\":\"soon\",\"events\":[]}","{\"version\":1,\"events\":[{\"id\":\"a\",\"rule\":\"easter\",\"start_offset\":5,\"end_offset\":-5}]}"};
         for(String b:bad){try{SeasonalSchedule.parse(new JSONObject(b),true);fail("accepted: "+b);}catch(Exception expected){}}
     }
+    @Test public void everydayPictureIsReadAndChecked() throws Exception {
+        SeasonalSchedule s=SeasonalSchedule.parse(new JSONObject("{\"version\":1,\"enabled\":false,\"default_image\":\"https://panelsandapps.com/a/everyday-0123456789abcdef.jpg\",\"events\":[]}"),true,u->u.startsWith("https://panelsandapps.com/"));
+        assertEquals("https://panelsandapps.com/a/everyday-0123456789abcdef.jpg",s.defaultImage);
+        assertNull(s.select(d("2026-12-10")));   // seasonal off: no event, the everyday picture is what shows
+        SeasonalSchedule bad=SeasonalSchedule.parse(new JSONObject("{\"version\":1,\"default_image\":\"https://elsewhere.example/x.jpg\",\"events\":[]}"),true,u->u.startsWith("https://panelsandapps.com/"));
+        assertEquals("",bad.defaultImage);
+        assertEquals("",SeasonalSchedule.defaults().defaultImage);   // built-in: the bundled background and logo
+    }
     @Test public void displayTimeIsBoundedAndImagesAreChecked() throws Exception {
         SeasonalSchedule s=SeasonalSchedule.parse(new JSONObject("{\"version\":1,\"display_ms\":60000,\"events\":[{\"id\":\"a\",\"start\":\"01-01\",\"end\":\"12-31\",\"image\":\"http://evil.example/x.jpg\"}]}"),true,u->u.startsWith("https://panelsandapps.com/"));
         assertEquals(3000,s.displayMs);assertEquals("",s.events.get(0).image);   // the address is dropped, the event keeps the normal background

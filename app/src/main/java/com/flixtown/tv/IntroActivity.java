@@ -72,7 +72,8 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
         View glow=new View(this);glow.setBackgroundResource(R.drawable.startup_glow);root.addView(glow,new FrameLayout.LayoutParams(-1,-1));
         ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.flix_logo);logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
         root.addView(logo,new FrameLayout.LayoutParams(Ui.dp(this,360),Ui.dp(this,248),Gravity.CENTER));
-        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash event="+(choice.eventId.isEmpty()?"default":choice.eventId)+" image="+(choice.image!=null)+" display_ms="+displayMs);
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash event="+(choice.eventId.isEmpty()?"default":choice.eventId)+" image="+(choice.image!=null)
+            +" file="+(choice.image==null?"":choice.image.getName())+" display_ms="+displayMs);
         if(choice.image==null)return;
         seasonal=new ImageView(this);seasonal.setScaleType(ImageView.ScaleType.CENTER_CROP);seasonal.setAlpha(0f);
         root.addView(seasonal,new FrameLayout.LayoutParams(-1,-1));

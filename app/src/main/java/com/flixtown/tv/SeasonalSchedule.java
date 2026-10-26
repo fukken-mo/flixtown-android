@@ -57,9 +57,12 @@ final class SeasonalSchedule {
     }
 
     final boolean enabled;final int displayMs;final List<Event> events;final long validUntil;
+    /** The everyday design: shown when no event applies, the event has no picture, or seasonal is off. */
+    final String defaultImage,defaultImageSha256;
     static final int MIN_DISPLAY_MS=800,MAX_DISPLAY_MS=3000,DEFAULT_DISPLAY_MS=1500;
-    private SeasonalSchedule(boolean enabled,int displayMs,List<Event> events,long validUntil){
-        this.enabled=enabled;this.displayMs=displayMs;this.events=Collections.unmodifiableList(events);this.validUntil=validUntil;}
+    private SeasonalSchedule(boolean enabled,int displayMs,List<Event> events,long validUntil,String defaultImage,String defaultImageSha256){
+        this.enabled=enabled;this.displayMs=displayMs;this.events=Collections.unmodifiableList(events);this.validUntil=validUntil;
+        this.defaultImage=defaultImage;this.defaultImageSha256=defaultImageSha256;}
 
     /** The event for {@code today} (epoch day), or null for the normal background. */
     Event select(long today){
@@ -118,7 +121,10 @@ final class SeasonalSchedule {
         }
         long valid=o.has("valid_until")?parseDate(o.optString("valid_until")):Long.MIN_VALUE;
         if(o.has("valid_until") && valid==Long.MIN_VALUE)throw new IllegalArgumentException("valid_until");
-        return new SeasonalSchedule(o.optBoolean("enabled",true),display,events,valid);
+        String everyday=o.optString("default_image","").trim();
+        if(!everyday.isEmpty() && imageCheck!=null && !imageCheck.ok(everyday))everyday="";
+        String everydaySha=o.optString("default_image_sha256","").trim().toLowerCase(Locale.US);if(!everydaySha.matches("[0-9a-f]{64}"))everydaySha="";
+        return new SeasonalSchedule(o.optBoolean("enabled",true),display,events,valid,everyday,everydaySha);
     }
     private static int monthDay(String s){
         if(s==null || !s.matches("\\d{2}-\\d{2}"))throw new IllegalArgumentException("date "+s);

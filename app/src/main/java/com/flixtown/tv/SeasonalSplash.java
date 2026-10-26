@@ -55,13 +55,18 @@ final class SeasonalSplash {
         }
         return SeasonalSchedule.defaults();
     }
-    /** What to show at this launch. Called on the main thread; reads only small local state. */
+    /**
+     * What to show at this launch. Called on the main thread; reads only small local state.
+     * Today's event picture if it is on the TV; otherwise the everyday design if it is on the TV
+     * (also when seasonal is off); otherwise null: the bundled Flix Town background and logo.
+     */
     static Choice choose(Context c){
         SeasonalSchedule s=schedule(c);SeasonalSchedule.Event e=s.select(today());
-        if(e==null)return new Choice("","",null,s.displayMs);
-        File f=e.image.isEmpty()?null:cached(c,e.image);
-        return new Choice(e.id,e.name,f!=null&&f.isFile()&&f.length()>0?f:null,s.displayMs);
+        File f=e==null||e.image.isEmpty()?null:ready(cached(c,e.image));
+        if(f==null && !s.defaultImage.isEmpty())f=ready(cached(c,s.defaultImage));
+        return e==null?new Choice("","",f,s.displayMs):new Choice(e.id,e.name,f,s.displayMs);
     }
+    private static File ready(File f){return f!=null&&f.isFile()&&f.length()>0?f:null;}
 
     /** Decodes a cached picture at no more than the screen size (RGB_565 on low-RAM TVs). Off the main thread. */
     static Bitmap decode(Context c,File f,int screenW,int screenH){
@@ -95,6 +100,7 @@ final class SeasonalSplash {
         prefs(c).edit().putString(KEY_SCHEDULE,root.toString()).putLong(KEY_FETCHED,System.currentTimeMillis()).apply();
         // Pictures for events showing now or within three weeks; everything else is removed.
         Set<String> keep=new HashSet<>();long today=today();
+        if(!parsed.defaultImage.isEmpty()){File f=cached(c,parsed.defaultImage);keep.add(f.getName());if(!f.isFile())download(parsed.defaultImage,parsed.defaultImageSha256,f);}
         for(SeasonalSchedule.Event e:parsed.events){
             if(!e.enabled || e.image.isEmpty())continue;
             boolean soon=false;for(int d=0;d<=PREFETCH_DAYS && !soon;d++)soon=e.covers(today+d);
