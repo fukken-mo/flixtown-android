@@ -62,9 +62,13 @@ jobs:
           for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null && break; sleep 10; done
           bash .github/qa/make_subtitle_video.sh media/subs.mkv 1280x720
           # The cut test drops the connection at a playback time, not a byte share (a still picture compresses unevenly)
-          off(){ ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,pos -of csv=p=0 media/subs.mkv | awk -F, -v t=$1 '$1+0>=t && $2!="N/A"{print $2; exit}'; }
-          off 290 > media/subs.mkv.cut-offset; off 150 > media/subs.mkv.cut50-offset
-          echo "cut offsets: $(cat media/subs.mkv.cut-offset) (4:50) $(cat media/subs.mkv.cut50-offset) (2:30) of $(stat -c %s media/subs.mkv) bytes"
+          # A 2 Mbit/s video for the connection-drop tests: the player buffers about 50 s ahead, so it cannot read
+          # up to the cut long before playback gets there (the tiny still-picture file was read whole at once).
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i "testsrc2=s=640x360:r=25:d=300" -f lavfi -i "anullsrc=r=48000:cl=stereo" -t 300 \
+            -c:v libx264 -preset ultrafast -b:v 2M -minrate 2M -maxrate 2M -bufsize 2M -x264-params nal-hrd=cbr -g 50 -pix_fmt yuv420p -c:a aac -b:a 64k media/cut.mkv
+          off(){ ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,pos -of csv=p=0 media/cut.mkv | awk -F, -v t=$1 '$1+0>=t && $2!="N/A"{print $2; exit}'; }
+          off 290 > media/cut.mkv.cut-offset; off 150 > media/cut.mkv.cut50-offset
+          echo "cut offsets: $(cat media/cut.mkv.cut-offset) (4:50) $(cat media/cut.mkv.cut50-offset) (2:30) of $(stat -c %s media/cut.mkv) bytes"
           bash .github/qa/make_subtitle_video.sh media/subs43.mkv 960x720
           bash .github/qa/make_subtitle_video.sh media/letterbox.mkv 1280x536
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0x404040:s=1280x720:r=25:d=120" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -f mpegts media/live.ts

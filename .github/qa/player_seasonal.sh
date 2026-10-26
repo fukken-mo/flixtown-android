@@ -142,7 +142,9 @@ CFG='{"version":5,"enabled":true,"display_ms":3000,"events":[
 CFG=$(printf '%s' "$CFG" | tr -d '\n')
 live(){ demo_live "{\"today\":\"$1\"${2:+,\"seasonal\":$2}}"; }
 splash_is(){ local t=0; while [ $t -lt 20 ]; do splash | grep -q "event=$1 image=$2" && return 0; sleep 0.5; t=$((t+1)); done; return 1; }
-relaunch_today(){ live "$1" "$CFG"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 6; live "$1" "$CFG"; launch; }
+# The background schedule/picture refresh has finished (QA build marker), up to 30 s
+wait_refresh(){ local t=0; while [ $t -lt 60 ] && ! qa seasonal_refresh_done | grep -q done; do sleep 0.5; t=$((t+1)); done; sleep 0.5; }
+relaunch_today(){ live "$1" "$CFG"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; wait_refresh; live "$1" "$CFG"; launch; }
 
 adb logcat -G 16M > /dev/null 2>&1 || true   # room for the splash timing lines on chatty system images
 launch --ez demo_reset true
@@ -174,17 +176,17 @@ live 2026-10-20 '{"_malformed":true}'; launch
 splash_is halloween true && ok "A5 malformed schedule ignored: the last good schedule and picture stay" || bad "A5 $(splash)"
 wait_activity HomeActivity 15
 OFF=$(printf '%s' "$CFG" | sed 's/"enabled":true,"display_ms"/"enabled":false,"display_ms"/')
-live 2026-10-20 "$OFF"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 5; live 2026-10-20 "$OFF"; launch
+live 2026-10-20 "$OFF"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; wait_refresh; live 2026-10-20 "$OFF"; launch
 splash_is default false && ok "A6 seasonal splash turned off in the panel: normal splash" || bad "A6 $(splash)"
 wait_activity HomeActivity 15
 # everyday design: shown with seasonal off, and on a holiday whose picture is unusable
 EVERY=$(printf '%s' "$OFF" | sed 's#"display_ms":3000,#"display_ms":3000,"default_image":"'$ART'/red.jpg",#')
-live 2026-10-20 "$EVERY"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 6; live 2026-10-20 "$EVERY"; launch
+live 2026-10-20 "$EVERY"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; wait_refresh; live 2026-10-20 "$EVERY"; launch
 splash_is default true && { sleep 0.8; rgb="$(center_rgb)"; } ; note "INFO  everyday (seasonal off): $(splash) centre $rgb"
 check "A6 seasonal off with an everyday design uploaded: the everyday picture shows (red test picture)" 'splash | grep -q "event=default image=true" && set -- $rgb && [ "$1" -gt 120 ] && [ "$2" -lt 90 ]'
 shot A6-everyday 0.1; wait_activity HomeActivity 15
 EVERY_ON=$(printf '%s' "$CFG" | sed 's#"display_ms":3000,#"display_ms":3000,"default_image":"'$ART'/red.jpg",#')
-live 2026-12-26 "$EVERY_ON"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; sleep 6; live 2026-12-26 "$EVERY_ON"; launch
+live 2026-12-26 "$EVERY_ON"; launch --ez demo_seasonal_refresh true; wait_activity HomeActivity 30; wait_refresh; live 2026-12-26 "$EVERY_ON"; launch
 splash_is christmas true && { sleep 0.8; rgb="$(center_rgb)"; }; note "INFO  christmas with a corrupt picture: $(splash) centre $rgb"
 check "A6 a holiday whose picture failed validation falls back to the everyday design" 'splash | grep -q "event=christmas image=true" && set -- $rgb && [ "$1" -gt 120 ] && [ "$2" -lt 90 ]'
 wait_activity HomeActivity 15
@@ -210,15 +212,15 @@ live 2026-06-15 '{}'
 stream(){ demo_live "{\"today\":\"2026-06-15\",\"stream\":\"$1\"}"; }
 fresh(){ launch; wait_activity HomeActivity 30; sleep 4; }   # every player section starts from a fresh launch
 # B1. Error replacing Up next near the end of an episode (connection dropped at 95 %)
-stream "$M/cut/subs.mkv"; fresh
+stream "$M/cut/cut.mkv"; fresh
 player_open open_episode
 go_to 4 38
 note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"; shot B1-after-go-to 0.1
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
 saw_next=$(adb logcat -d -s FlixTownQA:I | grep -c "card=\[Up next\]")
 note "INFO  Up next shown before the failure: $saw_next line(s); card now: $(qaf card) / $(qaf cardmsg)"
-note "INFO  cut offsets (bytes): $(cat media/subs.mkv.cut-offset 2>/dev/null) for 4:50, $(cat media/subs.mkv.cut50-offset 2>/dev/null) for 2:30, file $(stat -c %s media/subs.mkv 2>/dev/null)"
-grep -E '/cut/|^drop /subs' media.log 2>/dev/null | tail -12 | sed 's/^/INFO  server: /' >> "$OUT/report.txt"
+note "INFO  cut offsets (bytes): $(cat media/cut.mkv.cut-offset 2>/dev/null) for 4:50, $(cat media/cut.mkv.cut50-offset 2>/dev/null) for 2:30, file $(stat -c %s media/cut.mkv 2>/dev/null)"
+grep -E '/cut/|^drop /cut' media.log 2>/dev/null | tail -12 | sed 's/^/INFO  server: /' >> "$OUT/report.txt"
 adb logcat -d -s FlixTownQA:I | grep ' player ' | grep -E 'elapsed=2[6-9][0-9]' | tail -8 | grep -oE 'playing=[a-z]+|elapsed=[0-9]+|card=\[[^]]*\]' | paste -sd' ' | sed 's/^/INFO  player near the end: /' >> "$OUT/report.txt"
 note "INFO  played in the Up next window before the failure: $(adb logcat -d -s FlixTownQA:I | grep -cE 'playing=true .*elapsed=2(7[5-9]|8[0-9])') state line(s)"
 check "B1 the stream failure near the end shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
@@ -237,7 +239,7 @@ key BACK; sleep 2
 check "B1 Back on the error card leaves playback (not just the countdown)" '! in_activity PlayerActivity'
 note "INFO  Continue Watching after a failure in the last 30 s: $(adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -o 'name="resume_episode_series:[0-9]*">[^<]*' | head -1)"
 # B2. Interrupted mid-way (50 %): not marked watched, position kept
-stream "$M/cut50/subs.mkv"; fresh
+stream "$M/cut50/cut.mkv"; fresh
 player_open open_episode; ep="$(qaf episode)"
 go_to 2 20
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
@@ -249,7 +251,7 @@ note "INFO  episode $ep, saved position ${pos:-none} ms"
 check "B2 the interrupted episode is not marked watched: it stays the resume episode with its position" 'echo "$prefs" | grep -q "name=\"resume_episode_series:[0-9]*\">$ep<" && [ "${pos:-0}" -ge 100000 ]'
 # B3. Seeking on a movie
 stream "$M/subs.mkv"; fresh
-player_open open_movie; sleep 3; e0=$(elapsed)
+player_open open_movie; sleep 3; t=0; while [ $t -lt 30 ] && [ "$(elapsed)" -lt 2 ] 2>/dev/null; do sleep 0.5; t=$((t+1)); done; e0=$(elapsed)   # playback really started
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.25; set -- $(seen_pending $((e0+9)) $((e0+12))); p1=${1:--1}; st="${2:-}"
 note "INFO  tap: elapsed ${e0}s, pending ${p1}s, status '$st'"
 check "B3 a tap shows the pending target (+10 s) before it is applied" '[ "$p1" -ge $((e0+9)) ] && [ "$p1" -le $((e0+12)) ] && echo "$st" | grep -q "→"'

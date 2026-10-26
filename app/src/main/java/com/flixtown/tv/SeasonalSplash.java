@@ -87,7 +87,8 @@ final class SeasonalSplash {
         long last=prefs(c).getLong(KEY_FETCHED,0),now=System.currentTimeMillis();
         if(refreshing || (now>=last && now-last<REFRESH_MS))return;
         refreshing=true;
-        Api.IO.execute(()->{try{refresh(c);}catch(Throwable ignored){}finally{refreshing=false;}});
+        Api.IO.execute(()->{try{refresh(c);}catch(Throwable ignored){}finally{refreshing=false;
+            if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","seasonal_refresh_done");}});   // QA: the emulator test waits for this
     }
     private static void refresh(Context c) throws Exception {
         String body;
