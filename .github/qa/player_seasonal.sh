@@ -431,6 +431,43 @@ for l in sys.stdin:
 print(n)')
 check "D5 no background anywhere on Home is a small or portrait picture (all rows and the hero, since the last burst)" '[ "$allbad" = 0 ]'
 note "INFO  screen width $SW px"
+# ====================== E. Audio track support and diagnostics ======================
+focus_ctl(){ local i; for i in 1 2 3 4 5 6 7; do [ "$(qaf focus)" = "$1" ] && return 0; key DPAD_RIGHT; done; [ "$(qaf focus)" = "$1" ]; }
+audio_open(){ stream "$M/$1"; set_prefs subtitles_on:b:false audio_language:s:$2; launch; wait_activity HomeActivity 30; sleep 3; player_open open_movie; sleep 4; }
+# E0 an ordinary AAC title: selected, decoded, no notice
+audio_open subs.mkv en
+a0="$(lastf 'audio tracks=')"; note "INFO  AAC title: ${a0#audio }"
+check "E0 ordinary AAC audio: selected and decoded on this TV, no notice" 'echo "$a0" | grep -q "aac 2ch 48k.* ok \*selected" && echo "$a0" | grep -q "output=pcm" && [ -z "$(lastf audio_notice)" ]'
+leave_player
+# E1 preferred language English, but its track is DTS (unsupported here): Spanish AAC plays, the viewer is told
+audio_open audio_dts_aac.mkv en
+a1="$(lastf 'audio tracks=')"; n1="$(lastf audio_notice)"; note "INFO  DTS+AAC, English preferred: ${a1#audio }"; note "INFO  notice: ${n1#audio_notice }"
+check "E1 the preferred-language track is unsupported: a supported track plays instead (English DTS → Spanish AAC)" 'echo "$a1" | grep -q "dts 2ch 48k en unsupported" && echo "$a1" | grep -q "aac 2ch 48k es ok \*selected" && echo "$a1" | grep -q "output=pcm"'
+check "E1 the viewer is told which audio plays, without promising conversion" 'echo "$n1" | grep -q "English audio (DTS stereo) can.t be played on this TV; playing Spanish (AAC stereo) instead"'
+check "E1 the TV's audio facts are recorded (passthrough formats, outputs, decoders per codec)" 'echo "$a1" | grep -q "device=pass=" && echo "$a1" | grep -q "dec\[dts\]=none" && echo "$a1" | grep -q "dec\[aac\]=[a-zA-Z]"'
+# E2 manual choice: the unsupported track can't be chosen, the playing one stays
+wait_qa controls false 12; key DPAD_UP; sleep 1; focus_ctl audio && key DPAD_CENTER; sleep 1.5; shot E2-audio-menu 0.1
+focus_to DPAD_UP "not supported" 4 > /dev/null; key DPAD_CENTER; sleep 1; st2="$(qaf status)"; a2="$(lastf 'audio tracks=')"
+check "E2 choosing the unsupported track is refused and the playing track stays" 'echo "$st2" | grep -q "can.t be played on this TV" && echo "$a2" | grep -q "aac 2ch 48k es ok \*selected"'
+# E3 Playback info in Options
+wait_qa controls false 12; key DPAD_UP; sleep 0.4; key DPAD_UP; sleep 0.4; key DPAD_CENTER; sleep 1.2; focus_to DPAD_DOWN "Playback info" 4 > /dev/null; key DPAD_CENTER; sleep 1.5
+shot E3-playback-info 0.1; pi="$(lastf playback_info)"; note "INFO  ${pi}"
+check "E3 Options › Playback info lists each audio track with its support, the decoder, output and this TV's audio" 'echo "$pi" | grep -q "DTS stereo · English.*can.t be played on this TV" && echo "$pi" | grep -q "AAC stereo · Spanish.*playing" && echo "$pi" | grep -q "Decoder: " && echo "$pi" | grep -q "This TV: pass="'
+key BACK; sleep 1; leave_player
+# E4 preference respected when its track is playable: Spanish preferred → Spanish AAC, no notice
+audio_open audio_dts_aac.mkv es
+a4="$(lastf 'audio tracks=')"
+check "E4 a playable preferred language is kept (Spanish AAC), no notice" 'echo "$a4" | grep -q "aac 2ch 48k es ok \*selected" && [ -z "$(lastf audio_notice)" ]'
+leave_player
+# E5 only DTS: no audio track can play. Video continues, the viewer is told, and a fake (demo) report carries the facts
+audio_open audio_dts.mkv en
+a5="$(lastf 'audio tracks=')"; n5="$(lastf audio_notice)"; note "INFO  DTS only: ${a5#audio }"; note "INFO  notice: ${n5#audio_notice }"
+check "E5 no playable audio: nothing selected, video keeps playing, the viewer is told why" 'echo "$a5" | grep -q "dts 2ch 48k en unsupported" && ! echo "$a5" | grep -q selected && [ "$(qaf playing)" = "true" ] && echo "$n5" | grep -q "No sound: this title.s audio (DTS stereo) can.t be played on this TV or its current sound setup"'
+wait_qa controls false 12; key DPAD_UP; sleep 1; focus_ctl report && key DPAD_CENTER; sleep 1.5
+focus_to DPAD_DOWN "No sound" 4 > /dev/null; key DPAD_CENTER; sleep 1.2; focus_to DPAD_LEFT "Send report" 2 > /dev/null; key DPAD_CENTER; sleep 3
+rp="$(lastf 'report type=')"; note "INFO  demo report: ${rp}"
+check "E5 the report (demo endpoint, fake data) explains the silence in the existing fields and carries the full audio facts" 'echo "$rp" | grep -q "issue=no_audio" && echo "$rp" | grep -q "audio_format=\[none selected: 1 track, 0 playable: dts 2ch 48k en unsupported\]" && echo "$rp" | grep -q "error_code=\[audio:no_supported_track\]" && echo "$rp" | grep -q "audio_diagnostics=\[tracks=dts" && echo "$rp" | grep -q "dec\[dts\]=none" && ! echo "$rp" | grep -qiE "https?://|password|username" && echo "$rp" | grep -q "keys=14"'
+leave_player
 crashB="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashB" = 0 ]'
 rm -f "$OUT"/s.raw "$OUT"/c.raw "$OUT"/flix.xml "$OUT"/ui.xml
