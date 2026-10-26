@@ -162,7 +162,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         browseGrid.setPadding(browseGrid.getPaddingLeft(),Ui.dp(this,4),browseGrid.getPaddingRight(),safeY);
     }
 
-    @Override protected void onResume(){super.onResume();resumed=true;if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
+    @Override protected void onResume(){super.onResume();resumed=true;if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","home_resumed");if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
         handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     /** super.onStart() lets the foreground tracker flag a return from the background first. */

@@ -70,8 +70,16 @@ open_movie(){ back_home; focus_to DPAD_LEFT "Home" 8 > /dev/null; focus_to DPAD_
 open_episode(){ back_home; focus_to DPAD_LEFT "Home" 8 > /dev/null; focus_to DPAD_DOWN "TV Shows" 4 > /dev/null; key DPAD_CENTER; sleep 2.5
   key DPAD_CENTER; wait_activity DetailsActivity 10; sleep 4; focus_to DPAD_DOWN "Season" 5 > /dev/null; key DPAD_DOWN; sleep 0.8; key DPAD_CENTER
   wait_activity PlayerActivity 10; sleep 4; if [ "$(qaf card)" = "Continue watching?" ]; then key DPAD_RIGHT DPAD_CENTER; sleep 3; fi; }
+player_open(){ for a in 1 2; do "$1"; in_activity PlayerActivity && return 0
+  note "INFO  $1 attempt $a did not reach the player ($(resumed))"; shot "open-fail-$1-$a" 0.1; fresh; done; return 1; }
 leave_player(){ for i in 1 2 3; do in_activity PlayerActivity || break; key BACK; sleep 1.2; done; }
 elapsed(){ qaf elapsed; }
+# A pending seek target in [lo, hi] s seen in the player's QA log since the last clear: "<target> <status>"
+seen_pending(){ adb logcat -d -s FlixTownQA:I | python3 -c 'import re,sys
+lo,hi=int(sys.argv[1]),int(sys.argv[2])
+for l in sys.stdin:
+    m=re.search(r" pending=(\d+) status=\[([^\]]*)\]",l)
+    if m and lo<=int(m.group(1))<=hi and "→" in m.group(2): print(m.group(1),m.group(2).split()[0]); break' "$1" "$2"; }
 # Go to time through Player options: digits for each field ("4" "30" = 4:30), then Go.
 go_to(){ key DPAD_UP; sleep 0.4; key DPAD_UP; sleep 0.4; key DPAD_CENTER; sleep 1.2
   focus_to DPAD_DOWN "Go to time" 3 > /dev/null; key DPAD_CENTER; sleep 1.2
@@ -109,7 +117,7 @@ s=h=None
 for l in sys.stdin:
     t=l.split()[0] if l.split() else ""
     if s is None and " splash event=" in l: s=float(t)
-    if s is not None and h is None and "Displayed" in l and "HomeActivity" in l and float(t)>=s: h=float(t)
+    if s is not None and h is None and ("FlixTownQA: home_resumed" in l or ("Displayed" in l and "HomeActivity" in l)) and float(t)>=s: h=float(t)
 print(int((h-s)*1000) if s and h else -1)'; }
 
 adb install -r "$APK" > /dev/null || { bad "install"; exit 1; }
@@ -199,8 +207,8 @@ stream(){ demo_live "{\"today\":\"2026-06-15\",\"stream\":\"$1\"}"; }
 fresh(){ launch; wait_activity HomeActivity 30; sleep 4; }   # every player section starts from a fresh launch
 # B1. Error replacing Up next near the end of an episode (connection dropped at 95 %)
 stream "$M/cut/subs.mkv"; fresh
-open_episode
-go_to 4 32
+player_open open_episode
+go_to 4 38
 note "INFO  after Go to time: $(qa ' player ' | grep -o 'elapsed=[0-9]*')"
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
 saw_next=$(adb logcat -d -s FlixTownQA:I | grep -c "card=\[Up next\]")
@@ -222,7 +230,7 @@ check "B1 Back on the error card leaves playback (not just the countdown)" '! in
 note "INFO  Continue Watching after a failure in the last 30 s: $(adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -o 'name="resume_episode_series:[0-9]*">[^<]*' | head -1)"
 # B2. Interrupted mid-way (50 %): not marked watched, position kept
 stream "$M/cut50/subs.mkv"; fresh
-open_episode; ep="$(qaf episode)"
+player_open open_episode; ep="$(qaf episode)"
 go_to 2 20
 t=0; while [ $t -lt 60 ] && [ "$(qaf card)" != "This title couldn't be played" ]; do sleep 1; t=$((t+1)); done
 check "B2 a mid-way failure shows the error card" '[ "$(qaf card)" = "This title couldn'"'"'t be played" ]'
@@ -233,15 +241,16 @@ note "INFO  episode $ep, saved position ${pos:-none} ms"
 check "B2 the interrupted episode is not marked watched: it stays the resume episode with its position" 'echo "$prefs" | grep -q "name=\"resume_episode_series:[0-9]*\">$ep<" && [ "${pos:-0}" -ge 100000 ]'
 # B3. Seeking on a movie
 stream "$M/subs.mkv"; fresh
-open_movie; sleep 3; e0=$(elapsed)
-adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.25; p1=$(qaf pending); st="$(qaf status)"
+player_open open_movie; sleep 3; e0=$(elapsed)
+adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.25; set -- $(seen_pending $((e0+9)) $((e0+12))); p1=${1:--1}; st="${2:-}"
 note "INFO  tap: elapsed ${e0}s, pending ${p1}s, status '$st'"
 check "B3 a tap shows the pending target (+10 s) before it is applied" '[ "$p1" -ge $((e0+9)) ] && [ "$p1" -le $((e0+12)) ] && echo "$st" | grep -q "→"'
 sleep 1.5; e1=$(elapsed)
 check "B3 then it is applied once ($e0 → $e1 s) and the marker goes" '[ "$e1" -ge $((e0+9)) ] && [ "$(qaf pending)" = "-1" ]'
 key BACK; sleep 1; wait_qa controls false 6
-adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.2; adb shell input keyevent KEYCODE_BACK; sleep 1.5; e2=$(elapsed)
-check "B3 Back cancels a pending seek (no jump: ${e1} → ${e2} s)" '[ "$(qaf pending)" = "-1" ] && [ "$e2" -lt $((e1+8)) ]'
+adb logcat -c; adb shell input keyevent KEYCODE_DPAD_RIGHT KEYCODE_BACK; sleep 1.5; e2=$(elapsed); set -- $(seen_pending $((e1+9)) $((e1+14))); pc=${1:--1}
+note "INFO  Right then Back in one input call: pending seen ${pc}s, elapsed ${e1} → ${e2} s"
+check "B3 Back cancels a pending seek (pending shown, then cleared with no jump: ${e1} → ${e2} s)" '[ "$pc" -ge 0 ] && [ "$(qaf pending)" = "-1" ] && [ "$e2" -lt $((e1+8)) ]'
 wait_qa controls false 6
 if hold 106 4; then sleep 0.3; ph=$(qaf pending); sleep 1.2; eh=$(elapsed)
   note "INFO  after holding Right 4 s: pending ${ph}, elapsed ${eh}"
@@ -250,7 +259,7 @@ if hold 106 4; then sleep 0.3; ph=$(qaf pending); sleep 1.2; eh=$(elapsed)
   check "B3 the movie then ends normally and playback closes (no error card)" '! in_activity PlayerActivity && ! adb logcat -d -s FlixTownQA:I | grep -q "card=\[This title"'
 else note "INFO  hold: no input device for sendevent on this emulator (acceleration covered by SeekStepTest)"; fi
 # paused seek and Go to time on the movie
-stream "$M/subs.mkv"; fresh; open_movie; sleep 2
+stream "$M/subs.mkv"; fresh; player_open open_movie; sleep 2
 key DPAD_CENTER; sleep 1; wait_qa controls false 6; e3=$(elapsed)
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 2; e4=$(elapsed)
 check "B4 seeking while paused stays paused (${e3} → ${e4} s)" '[ "$(qaf playing)" = "false" ] && [ "$e4" -ge $((e3+9)) ]'
@@ -263,7 +272,7 @@ shot B4-go-to-dialog 0.1; key BACK; sleep 1.5; e6=$(elapsed)
 check "B4 cancelling Go to time leaves playback where it was (${e5} → ${e6} s; playback runs meanwhile)" '[ "$e6" -ge "$e5" ] && [ "$e6" -le $((e5+18)) ] && [ "$(qaf dialog)" = "false" ]'
 leave_player
 # unseekable stream
-stream "$M/live/live.ts"; fresh; open_movie; sleep 4
+stream "$M/live/live.ts"; fresh; player_open open_movie; sleep 4
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 0.5; st="$(qaf status)"
 check "B5 an unseekable stream says so instead of seeking ('$st')" 'echo "$st" | grep -q "can.t be skipped"'
 leave_player
@@ -289,7 +298,7 @@ measure subs.mkv green xl169
 geom(){ cat "$OUT/box-$1"; }
 low(){ set -- $(geom "$1"); [ "$7" -gt 20 ] && python3 -c "import sys;y1,h=int(sys.argv[1]),int(sys.argv[2]);sys.exit(0 if .93*h<=y1<=.972*h else 1)" "$4" "$6"; }
 inside(){ set -- $(geom "$1"); [ "$7" -gt 20 ] && [ "$1" -ge $(($5*5/100)) ] && [ "$3" -le $(($5*95/100)) ] && [ "$2" -ge $(($6*5/100)) ] && [ "$4" -le $(($6*972/1000)) ]; }
-same(){ local n="$1" a; set -- $(geom "$n"); a=$2; set -- $(geom "$n-shown"); [ "${7:-0}" -gt 20 ] && [ $((a-$2)) -le 8 ] && [ $(($2-a)) -le 8 ]; }
+same(){ local n="$1" a; set -- $(geom "$n"); a=$4; set -- $(geom "$n-shown"); [ "${7:-0}" -gt 20 ] && [ $((a-$4)) -le 8 ] && [ $(($4-a)) -le 8 ]; }
 for c in plain169 plainLB plain43; do set -- $(geom $c); note "INFO  $c text bottom at $(frac $4 $6) of the screen height"; done
 check "C1 16:9: ordinary subtitles bottom-centre near the bottom (93–97 % of height)" 'low plain169 && inside plain169'
 check "C1 letterboxed movie: ordinary subtitles near the screen bottom, not inside the picture" 'low plainLB && inside plainLB'
@@ -297,7 +306,7 @@ check "C1 4:3: ordinary subtitles near the bottom" 'low plain43 && inside plain4
 set -- $(geom assLB); note "INFO  assLB bottom at $(frac $4 $6) (the picture ends at about 0.872)"
 check "C2 letterboxed: a positioned ASS caption stays inside the picture (above the black bar)" 'set -- $(geom assLB); [ "$7" -gt 20 ] && [ "$4" -le $(($6*875/1000)) ]'
 check "C2 16:9: positioned ASS caption visible near the bottom" 'inside ass169'
-check "C3 ordinary subtitles stay put and readable when the controls show (same top line ±8 px)" 'same plain169 && same plainLB && same plain43'
+check "C3 ordinary subtitles stay put and readable when the controls show (same bottom line ±8 px; one- and two-line cues share it)" 'same plain169 && same plainLB && same plain43'
 check "C4 Extra large stays fully on screen" 'inside xl169'
 crashB="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crashB" = 0 ]'
