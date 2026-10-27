@@ -4,6 +4,7 @@ name: Release final checks (splash + upgrade data)
 # signed for production, published or deployed): unit tests, the seasonal splash checks (section A of
 # player_seasonal.sh, now also "the picture stays still") on API 28 720p and API 31 1080p, and an upgrade
 # from the 3.8.18 source (a9bd9a7) that must keep the sign-in, settings and history.
+# QA builds log "splash end shown_ms=" (the splash's own display time) next to the measured time.
 on:
   workflow_dispatch:
   push:
