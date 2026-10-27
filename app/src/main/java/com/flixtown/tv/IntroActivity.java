@@ -84,13 +84,12 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
                 if(finished||isDestroyed()||bmp==null){if(BuildConfig.DEMO && bmp==null)android.util.Log.i("FlixTownQA","splash image_failed event="+event);return;}
                 seasonal.setImageBitmap(bmp);
                 boolean animate=animationsOn();
+                // The picture only fades in; it stays completely still (no zoom) for its display time.
                 seasonal.animate().alpha(1f).setDuration(animate?250:0).withEndAction(()->logo.setVisibility(View.GONE)).start();
-                if(animate){seasonal.setScaleX(1f);seasonal.setScaleY(1f);
-                    seasonal.animate().scaleX(1.03f).scaleY(1.03f).setDuration(Math.max(800,displayMs)).start();}
                 if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash image_shown event="+event);
             });});
     }
-    /** Android's "Remove animations" / animator scale 0: no fade or zoom. */
+    /** Android's "Remove animations" / animator scale 0: no fade. */
     private boolean animationsOn(){
         try{return android.provider.Settings.Global.getFloat(getContentResolver(),android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,1f)>0f;}
         catch(Exception e){return true;}
@@ -148,6 +147,7 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
         return super.dispatchKeyEvent(event);
     }
     private void openHome(){if(finished)return;finished=true;handler.removeCallbacksAndMessages(null);
+        if(BuildConfig.DEMO&&seasonal!=null)android.util.Log.i("FlixTownQA","splash end scale="+seasonal.getScaleX()+"x"+seasonal.getScaleY());
         Intent intent=new Intent(this,HomeActivity.class);intent.putExtra(HomeActivity.EXTRA_FRESH,true);
         startActivity(intent);overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);finish();}
     @Override protected void onStop(){super.onStop();if(player!=null && !finished)player.pause();}

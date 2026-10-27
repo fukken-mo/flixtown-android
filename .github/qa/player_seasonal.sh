@@ -177,6 +177,37 @@ wait_activity HomeActivity 15; ms=$(home_shown_ms); note "INFO  splash to Home: 
 check "A3 splash stays for the display time, then Home (2.6–6 s)" '[ "$ms" -ge 2600 ] && [ "$ms" -le 6000 ]'
 launch; t=0; while [ $t -lt 20 ] && [ -z "$(splash)" ]; do sleep 0.25; t=$((t+1)); done; key DPAD_CENTER; wait_activity HomeActivity 15; ms=$(home_shown_ms); note "INFO  with OK pressed: ${ms} ms"
 check "A3 OK skips the splash (Home in under 2.5 s)" '[ "$ms" -ge 0 ] && [ "$ms" -lt 2500 ]'
+# The picture stays completely still (no zoom): frames are captured through one Halloween splash, and the
+# first and last ones with the picture fully shown (at least 0.7 s apart) must match. The test picture has a
+# grid, so any zoom moves its lines. The picture also ends the splash at its normal size.
+rm -f "$OUT"/still-*; launch
+for i in $(seq 10 25); do adb exec-out screencap > "$OUT/still-$i.raw"; echo "$i $(date +%s.%N)" >> "$OUT/still-times.txt"; done
+still="$(python3 - "$OUT" <<'PY'
+import sys,struct,glob
+out=sys.argv[1];times={}
+for l in open(out+"/still-times.txt"):
+    i,t=l.split();times[int(i)]=float(t)
+def load(i):
+    d=open("%s/still-%d.raw"%(out,i),'rb').read();w,h=struct.unpack('<II',d[:8]);return d,w,h,len(d)-w*h*4
+full=[]
+for i in sorted(times):
+    try:d,w,h,o=load(i)
+    except Exception:continue
+    c=o+((h//2)*w+w//2)*4
+    if abs(d[c+1]-192)<20 and d[c]<50 and d[c+2]<50:full.append(i)
+if len(full)<2 or times[full[-1]]-times[full[0]]<0.7:print("frames=%d span=0"%len(full));sys.exit()
+a,w,h,ha=load(full[0]);b,_,_,hb=load(full[-1]);n=d=0
+for y in range(0,h,2):
+    for x in range(0,w,2):
+        o=(y*w+x)*4;n+=1
+        if max(abs(a[ha+o+k]-b[hb+o+k]) for k in range(3))>40:d+=1
+print("frames=%d span=%.2f changed=%.4f"%(len(full),times[full[-1]]-times[full[0]],d/n))
+PY
+)"; note "INFO  splash picture frames: $still"
+rm -f "$OUT"/still-*.raw
+check "A2 the splash picture stays completely still (no zoom)" 'echo "$still" | grep -q changed= && python3 -c "import sys;sys.exit(0 if float(sys.argv[1].split(\"changed=\")[1])<0.002 else 1)" "$still"'
+wait_activity HomeActivity 15; note "INFO  $(qa 'splash end scale=')"
+check "A2 the picture is at its normal size when the splash ends" 'qa "splash end scale=" | grep -q "scale=1.0x1.0"'
 for c in "2026-12-26:christmas:false" "2026-12-27:new_year:true" "2026-12-31:new_year:true" "2027-01-03:new_year:true" "2027-01-04:default:false" \
          "2026-03-15:st_patricks:false" "2027-02-12:valentines:false" "2027-07-03:independence_day:false" "2027-08-11:tie_a:false" \
          "2027-03-28:easter:false" "2027-03-30:default:false" "2027-11-25:thanksgiving:false" "2026-06-15:default:false"; do
@@ -223,6 +254,7 @@ key DPAD_CENTER; wait_activity HomeActivity 15
 crashA="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "A no Flix Town crash during the splash checks" '[ "$crashA" = 0 ]'
 live 2026-06-15 '{}'
+if [ -n "${SPLASH_ONLY:-}" ]; then note ""; note "splash: $PASS passed, $FAIL failed"; exit 0; fi
 
 # ====================== B. Player ======================
 stream(){ demo_live "{\"today\":\"2026-06-15\",\"stream\":\"$1\"}"; }
