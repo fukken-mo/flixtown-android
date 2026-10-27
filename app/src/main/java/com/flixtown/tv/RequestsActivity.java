@@ -212,14 +212,17 @@ public class RequestsActivity extends Activity {
                 if(before==0 && !entries.isEmpty())grid.post(this::focusGrid);
             });});
     }
+    private String ackOwner;   // the signed-in account's fingerprint for NoticeAcks (read once)
     /** Notices are evaluated only on explicit history loads. No startup calls or polling. */
     private void rememberRequestState(Entry e){
         String key="request_seen_"+e.type+":"+e.id+":"+java.util.Arrays.toString(e.seasons)+":"+e.requestedAt;
         String old=Api.prefs(this).getString(key,"");
         if("ready".equals(CustomerNotices.event(e.state))&&!"local".equals(old)){readyCount++;readyTitle=e.title;}
-        if("ready".equals(CustomerNotices.event(e.state)))Api.prefs(this).edit()
-            .putBoolean("notice_seen_request:"+key.substring("request_seen_".length())+":ready",true)
-            .putBoolean("notice_seen_request:"+key.substring("request_seen_".length())+":approved",true).apply();
+        if("ready".equals(CustomerNotices.event(e.state))){
+            if(ackOwner==null){String[] account=AccountStore.read(this);ackOwner=account==null?"":SignOut.ownerId(account[0]);}
+            String base="request:"+key.substring("request_seen_".length());
+            NoticeAcks.mark(this,ackOwner,base+":ready",base+":approved");
+        }
         Api.prefs(this).edit().putString(key,e.state).apply();
     }
     private void showReadyNotice(){

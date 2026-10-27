@@ -14,7 +14,8 @@ import java.util.Map;
  * Signs this TV out (Settings, or "Use a different account" on the renewal screen): the saved
  * credentials, the account status, the account's catalog and its service sessions are removed.
  * Playback settings, watch progress and My List stay on the TV, so signing back in to the same
- * account keeps them. When a different account signs in, the previous account's My List, watch
+ * account keeps them. Dismissed Home notices are kept per account ({@link NoticeAcks}) and are never
+ * removed or shared by signing out or by another account signing in. When a different account signs in, the previous account's My List, watch
  * progress and Continue Watching are removed first (see {@link #beforeSignIn}).
  *
  * Migration from versions without an owner record: a TV that is still signed in records its
@@ -47,6 +48,7 @@ final class SignOut {
      * completely), so the new account never sees it. Same account: nothing changes.
      */
     static void beforeSignIn(Context c,String username){
+        NoticeAcks.adoptLegacy(c);   // the previous owner's dismissed notices stay with that account
         String owner=Api.prefs(c).getString(OWNER,""),mine=ownerId(username);
         // No recorded owner (data left by a version before this check, after its account signed out):
         // ownership cannot be verified, so the data is treated as another customer's and removed.

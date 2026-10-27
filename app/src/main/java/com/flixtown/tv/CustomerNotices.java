@@ -15,7 +15,7 @@ final class CustomerNotices {
     private final HomeActivity home;private final Host host;
     private final List<Notice> pending=new ArrayList<>();
     private boolean loading,snoozed;private volatile boolean closed;private long lastCheck=-1;private Dialog dialog;
-    private String[] owner;
+    private String[] owner;private String ackOwner;   // the signed-in account and its fingerprint (NoticeAcks)
     CustomerNotices(HomeActivity home,Host host){this.home=home;this.host=host;}
     static final class Notice {
         String key,title,message,type,id,tmdb,year;boolean watchable;
@@ -38,7 +38,8 @@ final class CustomerNotices {
         long now=SystemClock.elapsedRealtime();
         if(lastCheck>=0&&now-lastCheck<300000)return;
         String[] account=AccountStore.read(home);if(account==null)return;
-        owner=account.clone();lastCheck=now;loading=true;
+        owner=account.clone();ackOwner=SignOut.ownerId(account[0]);lastCheck=now;loading=true;
+        NoticeAcks.adoptLegacy(home);
         String endpoint=ReportsApi.url(home); // snapshot configuration before moving off the UI thread
         Api.IO.execute(()->{
             List<Notice> found=new ArrayList<>();
@@ -73,7 +74,7 @@ final class CustomerNotices {
                 long next=r.optLong("before_id");if(!r.optBoolean("has_more")||next<=0||next==before)break;before=next;
             }}catch(Exception ignored){}
             home.runOnUiThread(()->{loading=false;if(closed||!sameAccount())return;
-                for(Notice n:found)if(!Api.prefs(home).getBoolean("notice_seen_"+n.key,false))pending.add(n);
+                for(Notice n:found)if(!NoticeAcks.seen(home,ackOwner,n.key))pending.add(n);
                 show();});
         });
     }
@@ -93,7 +94,7 @@ final class CustomerNotices {
     private void show(){
         if(closed||snoozed||dialog!=null||pending.isEmpty()||!sameAccount()||!host.ready())return;
         // My Requests may have acknowledged a queued ready notice while Home was behind it.
-        while(!pending.isEmpty()&&Api.prefs(home).getBoolean("notice_seen_"+pending.get(0).key,false))pending.remove(0);
+        while(!pending.isEmpty()&&NoticeAcks.seen(home,ackOwner,pending.get(0).key))pending.remove(0);
         if(pending.isEmpty())return;
         Notice n=pending.get(0);Catalog.Item item=match(n);
         String action=item!=null?"Watch":"View requests";
@@ -108,12 +109,13 @@ final class CustomerNotices {
             if(item!=null)host.watch(item);else home.startActivity(new Intent(home,RequestsActivity.class).putExtra("show_my_requests",true));
         },()->{dialog=null;snoozed=true;});
     }
+    /** Dismiss, Watch or View requests: this account will not see the notice again (Later is not stored). */
     private void mark(Notice n){
-        Api.prefs(home).edit().putBoolean("notice_seen_"+n.key,true).apply();
+        NoticeAcks.mark(home,ackOwner,n.key);
         if(n.key.startsWith("request:")&&n.key.endsWith(":ready")){
             String base=n.key.substring(0,n.key.length()-6);
-            Api.prefs(home).edit().putBoolean("notice_seen_"+base+":approved",true)
-                .putString("request_seen_"+base.substring("request:".length()),"local").apply();
+            NoticeAcks.mark(home,ackOwner,base+":approved");
+            Api.prefs(home).edit().putString("request_seen_"+base.substring("request:".length()),"local").apply();
         }
     }
     void resumed(){snoozed=false;}
