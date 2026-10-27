@@ -1,0 +1,125 @@
+name: Release final checks (splash + upgrade data)
+
+# Focused checks for the final release candidate (QA builds, test key, separate package; nothing is
+# signed for production, published or deployed): unit tests, the seasonal splash checks (section A of
+# player_seasonal.sh, now also "the picture stays still") on API 28 720p and API 31 1080p, and an upgrade
+# from the 3.8.18 source (a9bd9a7) that must keep the sign-in, settings and history.
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/account-sync]
+    paths: ['.github/workflows/release-final-checks.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and QA APK (new source)
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:assembleQa --console=plain 2>&1 | tee build.log
+          mkdir -p apks && cp app/build/outputs/apk/qa/app-qa.apk apks/new-qa.apk
+          grep -E "tests completed|BUILD" build.log | tail -3
+          python3 - <<'EOF'
+          import glob,xml.etree.ElementTree as ET
+          t=f=s=0
+          for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+              r=ET.parse(p).getroot();t+=int(r.get('tests'));f+=int(r.get('failures'))+int(r.get('errors'));s+=int(r.get('skipped'))
+          print("unit tests: %d run, %d failed, %d skipped"%(t,f,s))
+          EOF
+      - name: QA APK of the released 3.8.18 source (a9bd9a7)
+        run: |
+          git worktree add ../old a9bd9a7
+          (cd ../old && ./gradlew :app:assembleQa --console=plain -q)
+          cp ../old/app/build/outputs/apk/qa/app-qa.apk apks/old-3.8.18-qa.apk
+          ls -l apks
+      - uses: actions/upload-artifact@v4
+        with: { name: release-final-qa-apks, path: apks/, retention-days: 3 }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: release-final-unit-results, path: "build.log\napp/build/test-results/", retention-days: 7 }
+  splash:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 28, profile: tv_720p }
+          - { api: 31, profile: tv_1080p }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: release-final-qa-apks, path: apks }
+      - name: Splash pictures and local server
+        run: |
+          for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null && break; sleep 10; done
+          mkdir -p media/art
+          # Green with a white grid: the centre stays green, and any zoom moves the grid lines.
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0x10C010:s=1920x1080" -vf "drawgrid=x=30:y=30:w=120:h=120:t=4:c=white" -frames:v 1 media/art/green.jpg
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0x1030D0:s=1920x1080" -frames:v 1 media/art/blue.jpg
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0xC01010:s=800x450" -frames:v 1 media/art/small.jpg
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i "color=c=0xD01010:s=1920x1080" -frames:v 1 media/art/red.jpg
+          head -c 200000 /dev/urandom > media/art/corrupt.jpg
+          nohup python3 .github/qa/media_server.py 8000 media > media.log 2>&1 &
+          sleep 1; curl -sI http://127.0.0.1:8000/art/green.jpg | head -1
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Seasonal splash on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: SPLASH_ONLY=1 APK=apks/new-qa.apk QA_OUT=qa/splash-api${{ matrix.api }}-${{ matrix.profile }} bash .github/qa/player_seasonal.sh || true
+      - name: Result
+        run: |
+          cat qa/splash-api${{ matrix.api }}-${{ matrix.profile }}/report.txt || true
+          grep -q '^splash: [0-9]* passed, 0 failed' qa/splash-api${{ matrix.api }}-${{ matrix.profile }}/report.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "splash-api${{ matrix.api }}-${{ matrix.profile }}", path: "qa/splash-api${{ matrix.api }}-${{ matrix.profile }}/report.txt\nqa/splash-api${{ matrix.api }}-${{ matrix.profile }}/screens/", retention-days: 14 }
+  upgrade-data:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: release-final-qa-apks, path: apks }
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Upgrade from 3.8.18 keeps sign-in, settings and history
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: QA_OUT=qa/upgrade-data bash .github/qa/upgrade_data.sh apks/old-3.8.18-qa.apk apks/new-qa.apk || true
+      - name: Result
+        run: |
+          cat qa/upgrade-data/report.txt || true
+          grep -q '^upgrade data: [0-9]* passed, 0 failed' qa/upgrade-data/report.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: upgrade-data, path: qa/upgrade-data/, retention-days: 14 }
