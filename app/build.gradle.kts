@@ -13,8 +13,8 @@ val releaseKeystore = System.getenv("FLIXTOWN_RELEASE_KEYSTORE")?.let { file(it)
 
 android {
     if ((project.findProperty("flixSyncTests") as String?) == "true") {
-        useLibrary("android.test.runner")
-        useLibrary("android.test.base")
+        useLibrary("android.test.runner", false)
+        useLibrary("android.test.base", false)
     }
     namespace = "com.flixtown.tv"
     compileSdk = 36
