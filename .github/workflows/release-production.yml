@@ -22,15 +22,15 @@ on:
       version_code:
         description: "versionCode (must be higher than the version customers have)"
         required: true
-        default: "10038"
+        default: "10039"
       version_name:
         description: "versionName shown in Settings"
         required: true
-        default: "3.8.18"
+        default: "3.8.19"
   # Also runs once when this file changes on a working branch (with the defaults above), so the
   # first production build does not depend on the workflow being on the default branch yet.
   push:
-    branches: ["claude/**", "codex/branding-2027", "codex/episode-controls", "codex/customer-notices"]
+    branches: ["claude/**", "codex/branding-2027", "codex/episode-controls", "codex/customer-notices", "codex/account-sync"]
     paths: [".github/workflows/release-production.yml", ".github/release/**"]
 
 permissions:
@@ -49,8 +49,8 @@ jobs:
       PREVIEW_CERT: 426f5dda091757c0e4f6adc8d4a5adeff1f0c6d448cab643a92833b5b9ff11b7
       PACKAGE: com.myflixtown.tv.native
       PANEL_UPDATE_URL: https://panelsandapps.com/panels/flixtown2027/api/app-update.php
-      VERSION_CODE: ${{ inputs.version_code || '10038' }}
-      VERSION_NAME: ${{ inputs.version_name || '3.8.18' }}
+      VERSION_CODE: ${{ inputs.version_code || '10039' }}
+      VERSION_NAME: ${{ inputs.version_name || '3.8.19' }}
     steps:
       - name: Release signing secrets present
         run: |
@@ -126,7 +126,7 @@ jobs:
           printf '%s\\n' 'Replace api/ratings.php in the existing Flix Town app panel. Keep bootstrap.php, tmdb-match.php, configuration and credentials unchanged.' > dist/panel-api/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.18' }}-${{ inputs.version_code || '10038' }}
+          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.19' }}-${{ inputs.version_code || '10039' }}
           path: |
             dist/*.apk
             dist/RELEASE-INFO.txt
@@ -174,8 +174,11 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.18' }}-${{ inputs.version_code || '10038' }}", path: new }
-      - name: Download current production 3.8.17 (required upgrade baseline)
+        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.19' }}-${{ inputs.version_code || '10039' }}", path: new }
+      - name: Download production 3.8.18 (the build being replaced; required upgrade baseline)
+        uses: actions/download-artifact@v4
+        with: { name: FlixTown-PRODUCTION-signed-3.8.18-10038, path: old-10038, run-id: 40294365946, github-token: "${{ github.token }}" }
+      - name: Download production 3.8.17 (required upgrade baseline)
         uses: actions/download-artifact@v4
         with: { name: FlixTown-PRODUCTION-signed-3.8.17-10037, path: old-10037, run-id: 40009971862, github-token: "${{ github.token }}" }
       - name: Download production 3.8.16 (version in the customer reports; required)
@@ -243,7 +246,7 @@ jobs:
           cat > upgrade.sh <<'SH'
           set -u; P=com.myflixtown.tv.native; NEW="$(ls new/*.apk)"; fail=0; tested=0; mkdir -p shots
           adb shell svc wifi disable; adb shell svc data disable; sleep 2
-          for OLD in old-10037/*.apk old-10036/*.apk old-10035/*.apk old-10034/*.apk old-10033/*.apk old-10032/*.apk old-10031/*.apk old-10030/*.apk old-10029/*.apk old-10028/*.apk old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
+          for OLD in old-10038/*.apk old-10037/*.apk old-10036/*.apk old-10035/*.apk old-10034/*.apk old-10033/*.apk old-10032/*.apk old-10031/*.apk old-10030/*.apk old-10029/*.apk old-10028/*.apk old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
             [ -f "$OLD" ] || continue; tag="$(basename "$OLD" .apk)"
             adb uninstall $P >/dev/null 2>&1; adb logcat -c; adb logcat -b crash -c 2>/dev/null || true
             adb install "$OLD" >/dev/null || { echo "FAIL  install $tag"; fail=1; continue; }
@@ -264,7 +267,50 @@ jobs:
             adb logcat -d -b crash | grep -Fq "Process: $P," && { echo "FAIL  app crash"; adb logcat -d -b crash | tail -40; fail=1; } || echo "PASS  no app crash"
           done
           [ "$tested" -gt 0 ] || { echo "FAIL  no production upgrade tested"; fail=1; }
+          bash data.sh old-10038/*.apk "$NEW" || fail=1
           adb shell svc wifi enable; exit $fail
+          SH
+          # Production 3.8.18 -> new with a TV's settings and history in the app's storage (written as root on
+          # the emulator; a signed-in session needs the live panel, so the sign-in is checked with the QA build
+          # in release-final-checks.yml). Every stored setting and history entry must survive the upgrade.
+          cat > data.sh <<'SH'
+          set -u; P=com.myflixtown.tv.native; OLD=$1; NEW=$2; F=/data/data/$P/shared_prefs/flix.xml; fail=0
+          adb root > /dev/null 2>&1; sleep 3; adb wait-for-device
+          [ "$(adb shell id -u | tr -d '\r')" = 0 ] || { echo "FAIL  data check: no root shell on this emulator image"; exit 1; }
+          adb uninstall $P > /dev/null 2>&1; adb install "$OLD" > /dev/null || { echo "FAIL  data check: install 3.8.18"; exit 1; }
+          adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 > /dev/null 2>&1; sleep 8; adb shell am force-stop $P; sleep 1
+          uid="$(adb shell stat -c %u /data/data/$P | tr -d '\r')"
+          adb shell "mkdir -p /data/data/$P/shared_prefs; [ -f $F ] || echo '<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\" ?><map></map>' > $F; chown -R $uid:$uid /data/data/$P/shared_prefs; chmod 771 /data/data/$P/shared_prefs; chmod 660 $F; restorecon -R /data/data/$P/shared_prefs"
+          adb shell cat $F > flix.xml
+          python3 - flix.xml <<'PY'
+          import sys,re
+          p=sys.argv[1];s=open(p).read()
+          seed=[('boolean','autoplay_next','false'),('boolean','subtitles_on','true'),('string','subtitle_language','fr'),('float','subtitle_size','1.4'),
+                ('string','favorites','|movie:1003||series:5002|'),('boolean','watched_movie:1005','true'),('string','continue_ids','movie:1001'),
+                ('long','resume_position_movie:1001','600000'),('long','resume_duration_movie:1001','5400000'),('string','resume_extension_movie:1001','mp4')]
+          for t,k,v in seed:
+              s=re.sub(r'\s*<[a-z]+ name="%s"[^>]*?(/>|>[^<]*</[a-z]+>)'%re.escape(k),'',s)
+              s=s.replace('</map>',('    <string name="%s">%s</string>\n</map>' if t=='string' else '    <'+t+' name="%s" value="%s" />\n</map>')%(k,v))
+          open(p,'w').write(s)
+          PY
+          adb shell "cat > $F" < flix.xml
+          adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 > /dev/null 2>&1; sleep 8; adb shell am force-stop $P; sleep 1
+          vals(){ adb shell cat $F | python3 -c 'import sys,re
+          for m in sorted(re.finditer(r"<(\w+) name=\"([^\"]+)\"(?: value=\"([^\"]*)\")?\s*(?:/>|>([^<]*)</\1>)",sys.stdin.read()),key=lambda m:m.group(2)):
+              print("%s=%s"%(m.group(2),m.group(3) if m.group(3) is not None else m.group(4)))'; }
+          vals > before.txt
+          out="$(adb install -r "$NEW" 2>&1)"; echo "$out" | grep -q Success || { echo "FAIL  data check: upgrade install: $out"; exit 1; }
+          adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 > /dev/null 2>&1; sleep 10; adb shell am force-stop $P; sleep 1
+          vals > after.txt
+          echo "INFO  3.8.18 stored $(wc -l < before.txt) preferences before the upgrade, $(wc -l < after.txt) after"
+          for k in autoplay_next subtitles_on subtitle_language subtitle_size favorites watched_movie:1005 continue_ids resume_position_movie:1001 resume_duration_movie:1001 resume_extension_movie:1001; do
+            b="$(grep -m1 "^$k=" before.txt)"
+            [ -n "$b" ] && grep -qxF "$b" after.txt && echo "PASS  3.8.18 -> new kept $b" || { echo "FAIL  3.8.18 -> new lost or changed $k (before: ${b:-missing}; after: $(grep -m1 "^$k=" after.txt))"; fail=1; }
+          done
+          lost="$(comm -23 <(cut -d= -f1 before.txt | sort -u) <(cut -d= -f1 after.txt | sort -u))"
+          echo "INFO  preferences removed by the upgrade: ${lost:-none}"
+          adb logcat -d -b crash | grep -Fq "Process: $P," && { echo "FAIL  app crash"; fail=1; } || echo "PASS  no app crash (data check)"
+          exit $fail
           SH
       - name: Upgrade on an Android TV emulator
         uses: reactivecircus/android-emulator-runner@v2
