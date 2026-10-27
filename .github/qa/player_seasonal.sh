@@ -128,9 +128,10 @@ d=open(sys.argv[1],'rb').read();w,h=struct.unpack('<II',d[:8]);hdr=len(d)-w*h*4;
 print(d[o],d[o+1],d[o+2])
 EOF
 }
-# Splash → Home in ms; waits up to 15 s for Home's marker to reach the log (one read could come a moment too early)
+# Splash → Home in ms, on the monotonic clock (the emulator can step its wall clock soon after a cold boot);
+# waits up to 15 s for Home's marker to reach the log (one read could come a moment too early)
 home_shown_ms(){ local i ms; for i in $(seq 1 60); do ms=$(home_shown_once); [ "$ms" != -1 ] && break; sleep 0.25; done; echo "$ms"; }
-home_shown_once(){ adb logcat -d -v epoch | python3 -c '
+home_shown_once(){ adb logcat -d -v monotonic | python3 -c '
 import re,sys
 s=h=None
 for l in sys.stdin:
