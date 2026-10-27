@@ -9,12 +9,17 @@ require __DIR__.'/../includes/bootstrap.php';require_once __DIR__.'/../includes/
 if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
 try {
  if(($config['services']['progress_sync']['enabled']??false)!==true||strlen(fxs_secret())<32)fxs_fail(503,'unavailable');
- $ip=(string)($_SERVER['REMOTE_ADDR']??'');if(!fxs_rate($pdo,'ip:'.$ip,600,900))fxs_fail(429,'busy');
+ // Many customers can share one public address (carrier NAT, a proxy): the per-address limit is only a flood
+ // ceiling. Sessions are limited per account; failed sign-ins per address and per username.
+ $ip=(string)($_SERVER['REMOTE_ADDR']??'');if(!fxs_rate($pdo,'ip:'.$ip,6000,900))fxs_fail(429,'busy');
  if(($in['action']??'')==='session'){
-  if(!fxs_rate($pdo,'login:'.$ip,30,900))fxs_fail(429,'busy');
-  $u=$in['username']??null;$pw=$in['password']??null;
-  if(!fxs_username($u)||!is_string($pw)||$pw===''||strlen($pw)>100)fxs_fail(401,'auth');
-  $user=tvq_flix_login($u,$pw);if(!$user)fxs_fail(401,'auth');if(!tvq_account_active($user))fxs_fail(403,'inactive');
+  $u=$in['username']??null;$pw=$in['password']??null;$name=is_string($u)?substr($u,0,100):'';
+  if(!fxs_rate_open($pdo,'fail-ip:'.$ip,30,900)||!fxs_rate_open($pdo,'fail-user:'.$name,100,900))fxs_fail(429,'busy');
+  if(!fxs_username($u)||!is_string($pw)||$pw===''||strlen($pw)>100){fxs_rate($pdo,'fail-ip:'.$ip,30,900);fxs_fail(401,'auth');}
+  $user=tvq_flix_login($u,$pw);
+  if(!$user){fxs_rate($pdo,'fail-ip:'.$ip,30,900);fxs_rate($pdo,'fail-user:'.$u,100,900);fxs_fail(401,'auth');}
+  if(!tvq_account_active($user))fxs_fail(403,'inactive');
+  if(!fxs_rate($pdo,'session:'.$u,20,900))fxs_fail(429,'busy');
   fxs_out(['ok'=>true,'session'=>fxs_token($u,time()),'ttl'=>900]);
  }
  $u=fxs_user($in['session']??null,time());if($u===null)fxs_fail(401,'session');

@@ -28,6 +28,19 @@ function fxs_rate(PDO $db,string $key,int $limit,int $window): bool {
     $q->execute([$key,$now,$old,$old,$now]);
     return $q->rowCount()===1||(int)$db->query('SELECT LAST_INSERT_ID()')->fetchColumn()<=$limit;
 }
+/* Read-only limiter check: failed sign-ins are counted only when they fail, so many customers can share one address. */
+function fxs_rate_open(PDO $db,string $key,int $limit,int $window): bool {
+    $q=$db->prepare('SELECT window_start,hits FROM tv_sync_rate WHERE k=?');$q->execute([hash('sha256',$key)]);$r=$q->fetch();
+    return !$r||(int)$r['window_start']<=time()-$window||(int)$r['hits']<$limit;
+}
+function fxs_max_records(): int {global $config;return max(1,(int)($config['services']['progress_sync']['max_records']??10000));}
+/*
+ * Revisions are microsecond timestamps, at least one above the account's last. After the database is
+ * restored from a backup, new revisions are still higher than any issued before it, so a revision
+ * number is never reused for different data.
+ */
+function fxs_next_revision(int $last): int {return max($last+1,(int)floor(microtime(true)*1000000));}
+function fxs_key($k): bool {return is_string($k)&&preg_match('/^(?:(?:resume|favorite):(movie|series):([1-9][0-9]{0,9})|watched:(movie):([1-9][0-9]{0,9})|watched:(series):([1-9][0-9]{0,9}):([1-9][0-9]{0,9}))$/D',$k)===1;}
 function fxs_active(string $u): void {
     $r=flix_api_request('GET','/api/onepanel/users/'.rawurlencode($u));
     if(!$r['ok'])fxs_fail(503,'unavailable');
@@ -38,7 +51,7 @@ function fxs_integer($v,int $max=9007199254740991): int {if(!is_int($v)||$v<0||$
 function fxs_validate($in): array {
     if(!is_array($in))fxs_fail(400,'invalid');
     $key=$in['key']??null;
-    if(!is_string($key)||!preg_match('/^(?:(?:resume|favorite):(movie|series):([1-9][0-9]{0,9})|watched:(movie):([1-9][0-9]{0,9})|watched:(series):([1-9][0-9]{0,9}):([1-9][0-9]{0,9}))$/D',$key))fxs_fail(400,'invalid');
+    if(!fxs_key($key))fxs_fail(400,'invalid');
     $op=$in['operation']??null;
     if(!is_string($op)||!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/D',$op))fxs_fail(400,'invalid');
     $v=$in['value']??null;if(!is_array($v)||!is_bool($v['present']??null))fxs_fail(400,'invalid');
@@ -58,30 +71,48 @@ function fxs_validate($in): array {
     return ['key'=>$key,'base'=>fxs_integer($in['base']??null),'operation'=>$op,'value'=>$clean];
 }
 function fxs_row(array $r): array {return ['key'=>$r['record_key'],'revision'=>(int)$r['revision'],'value'=>json_decode($r['payload'],true)];}
+/* An operation the server refuses on its own: the rest of the batch still applies (one bad record never stalls a TV). */
+function fxs_refused($o,string $reason): array {
+    $key=is_array($o)&&fxs_key($o['key']??null)?$o['key']:'';
+    $op=is_array($o)&&is_string($o['operation']??null)&&preg_match('/^[a-f0-9-]{36}$/D',$o['operation'])?$o['operation']:'';
+    return ['operation'=>$op,'key'=>$key,'accepted'=>false,'error'=>$reason,'record'=>null];
+}
 /* Account row lock serializes revisions/CAS across PHP workers, including empty-record races. */
 function fxs_exchange(PDO $db,string $u,array $in): array {
     $after=fxs_integer($in['after']??0);$through=fxs_integer($in['through']??0);
     $pull=$in['pull']??true;if(!is_bool($pull)||(!$pull&&$through>0))fxs_fail(400,'invalid');
-    $raw=$in['operations']??[];if(!is_array($raw)||array_keys($raw)!==range(0,count($raw)-1)&&count($raw)!==0||count($raw)>40)fxs_fail(400,'invalid');
-    $ops=[];$keys=[];foreach($raw as $o){$o=fxs_validate($o);if(isset($keys[$o['key']]))fxs_fail(400,'invalid');$keys[$o['key']]=true;$ops[]=$o;}
+    $anchor=$in['anchor']??'';if($anchor!==''&&!fxs_key($anchor))fxs_fail(400,'invalid');
+    $raw=$in['operations']??[];if(!is_array($raw)||array_keys($raw)!==range(0,count($raw)-1)&&count($raw)!==0||count($raw)>100)fxs_fail(400,'invalid');
+    $ops=[];$keys=[];$acks=[];
+    foreach($raw as $o){
+        try{$v=fxs_validate($o);}catch(FlixSyncError $e){$acks[]=fxs_refused($o,'invalid');continue;}
+        if(isset($keys[$v['key']]))fxs_fail(400,'invalid');$keys[$v['key']]=true;$ops[]=$v;
+    }
     if($through>0&&($ops||$after>$through))fxs_fail(400,'invalid');
-    $account=hash('sha256','flixtown-sync:'.$u);$acks=[];
+    $account=hash('sha256','flixtown-sync:'.$u);
     $db->beginTransaction();
     try {
         $q=$db->prepare('INSERT INTO tv_sync_accounts(account_id,revision) VALUES(?,0) ON DUPLICATE KEY UPDATE revision=revision');$q->execute([$account]);
         $q=$db->prepare('SELECT revision FROM tv_sync_accounts WHERE account_id=? FOR UPDATE');$q->execute([$account]);$rev=(int)$q->fetchColumn();
         if($after>$rev||$through>$rev)fxs_fail(409,'reset');
+        // Records are never deleted and a record's revision only grows. The TV's anchor is the newest record
+        // it read (at revision $after): missing or older means the database was restored from a backup.
+        if($after>0&&$anchor!==''){
+            $q=$db->prepare('SELECT revision FROM tv_sync_records WHERE account_id=? AND record_key=?');$q->execute([$account,$anchor]);$seen=$q->fetchColumn();
+            if($seen===false||(int)$seen<$after)fxs_fail(409,'reset');
+        }
+        $q=$db->prepare('SELECT COUNT(*) FROM tv_sync_records WHERE account_id=?');$q->execute([$account]);$count=(int)$q->fetchColumn();
         foreach($ops as $o){
             $q=$db->prepare('SELECT * FROM tv_sync_records WHERE account_id=? AND record_key=?');$q->execute([$account,$o['key']]);$row=$q->fetch();
-            if($row&&$row['operation_id']===$o['operation']){$acks[]=['operation'=>$o['operation'],'accepted'=>true,'record'=>fxs_row($row)];continue;}
+            if($row&&$row['operation_id']===$o['operation']){$acks[]=['operation'=>$o['operation'],'key'=>$o['key'],'accepted'=>true,'record'=>fxs_row($row)];continue;}
             if(($row?(int)$row['revision']:0)!==$o['base']){
-                $acks[]=['operation'=>$o['operation'],'accepted'=>false,'record'=>$row?fxs_row($row):['key'=>$o['key'],'revision'=>0,'value'=>['present'=>false]]];continue;
+                $acks[]=['operation'=>$o['operation'],'key'=>$o['key'],'accepted'=>false,'record'=>$row?fxs_row($row):['key'=>$o['key'],'revision'=>0,'value'=>['present'=>false]]];continue;
             }
-            if(!$row){$q=$db->prepare('SELECT COUNT(*) FROM tv_sync_records WHERE account_id=?');$q->execute([$account]);if((int)$q->fetchColumn()>=10000)fxs_fail(429,'capacity');}
-            $rev++;
+            if(!$row){if($count>=fxs_max_records()){$acks[]=fxs_refused($o,'capacity');continue;}$count++;}
+            $rev=fxs_next_revision($rev);
             $q=$db->prepare('INSERT INTO tv_sync_records(account_id,record_key,revision,operation_id,payload) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE revision=VALUES(revision),operation_id=VALUES(operation_id),payload=VALUES(payload)');
             $q->execute([$account,$o['key'],$rev,$o['operation'],json_encode($o['value'],JSON_UNESCAPED_UNICODE)]);
-            $acks[]=['operation'=>$o['operation'],'accepted'=>true,'record'=>['key'=>$o['key'],'revision'=>$rev,'value'=>$o['value']]];
+            $acks[]=['operation'=>$o['operation'],'key'=>$o['key'],'accepted'=>true,'record'=>['key'=>$o['key'],'revision'=>$rev,'value'=>$o['value']]];
         }
         $q=$db->prepare('UPDATE tv_sync_accounts SET revision=? WHERE account_id=?');$q->execute([$rev,$account]);
         if(!$pull){$db->commit();return ['ok'=>true,'acks'=>$acks,'records'=>[],'through'=>0,'after'=>$after,'more'=>false];}
