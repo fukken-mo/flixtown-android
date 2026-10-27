@@ -8,7 +8,7 @@ final class SyncRecord {
     static String entity(String pref){
         if(pref.startsWith("watched_")&&valid("watched:"+pref.substring(8)))return "watched:"+pref.substring(8);
         for(String field:RESUME)if(pref.startsWith("resume_"+field+"_")){
-            String key="resume:"+pref.substring(("resume_"+field+"_").length());return valid(key)?key:null;
+            String key="resume:"+pref.substring(("resume_"+field+"_").length());if(valid(key))return key;
         }
         return null;
     }
@@ -25,18 +25,23 @@ final class SyncRecord {
         if(key.startsWith("watched:"))return v.put("present",Boolean.TRUE.equals(prefs.get("watched_"+media)));
         boolean present=number(prefs,"resume_position_"+media)>=15000||!string(prefs,"resume_episode_"+media,"").isEmpty();
         v.put("present",present);if(!present)return v;
+        String episode=string(prefs,"resume_episode_"+media,""),next=string(prefs,"resume_next_"+media,"");
+        if(key.startsWith("resume:series:")&&!episode.matches("[1-9][0-9]{0,9}"))throw new IllegalArgumentException("episode");
+        if(!next.matches("(?:[1-9][0-9]{0,9})?"))next="";
+        if(key.startsWith("resume:movie:")){episode="";next="";}
         v.put("position",Math.max(0,Math.min(604800000,number(prefs,"resume_position_"+media))))
             .put("duration",Math.max(0,Math.min(604800000,number(prefs,"resume_duration_"+media))))
-            .put("episode",string(prefs,"resume_episode_"+media,""))
-            .put("extension",string(prefs,"resume_extension_"+media,"mp4"))
-            .put("next",string(prefs,"resume_next_"+media,""))
-            .put("next_ext",string(prefs,"resume_next_ext_"+media,"mp4"))
+            .put("episode",episode)
+            .put("extension",extension(string(prefs,"resume_extension_"+media,"mp4")))
+            .put("next",next)
+            .put("next_ext",extension(string(prefs,"resume_next_ext_"+media,"mp4")))
             .put("done",Boolean.TRUE.equals(prefs.get("resume_done_"+media)));
         String label=string(prefs,"resume_label_"+media,"");
         // Older metadata can contain arbitrary provider text; omit rather than transmit it.
         if(label.length()>80||label.matches("(?is).*(https?:|[\\p{Cntrl}]|(?:password|token|session|username)\\s*[=:]).*"))label="";
         return v.put("label",label);
     }
+    static String extension(String v){return v.matches("[a-zA-Z0-9]{1,10}")?v:"mp4";}
     static String string(Map<String,?> p,String k,String fallback){Object v=p.get(k);return v instanceof String?(String)v:fallback;}
     static long number(Map<String,?> p,String k){Object v=p.get(k);return v instanceof Long?(Long)v:0;}
     static boolean matchesOperation(String current,String sent){return current!=null&&current.equals(sent);}

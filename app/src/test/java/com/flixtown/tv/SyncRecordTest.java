@@ -32,4 +32,8 @@ public class SyncRecordTest {
   assertEquals("",SyncRecord.capture(p,"resume:series:1").getString("label"));
  }
  @Test public void compareOperationDoesNotLoseNewerLocalEdit(){assertTrue(SyncRecord.matchesOperation("a","a"));assertFalse(SyncRecord.matchesOperation("b","a"));assertFalse(SyncRecord.matchesOperation(null,"a"));}
+ @Test public void legacyExtensionsAreSanitized()throws Exception{
+  Map<String,Object> p=new HashMap<>();p.put("resume_episode_series:1","2");p.put("resume_extension_series:1","bad/path");p.put("resume_next_series:1","https://bad");
+  JSONObject r=SyncRecord.capture(p,"resume:series:1");assertEquals("mp4",r.getString("extension"));assertEquals("",r.getString("next"));
+ }
 }

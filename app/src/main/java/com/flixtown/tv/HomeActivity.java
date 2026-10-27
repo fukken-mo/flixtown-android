@@ -163,7 +163,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
 
     @Override protected void onResume(){super.onResume();resumed=true;if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","home_resumed");if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
-        AccountSync.home(this,()->{if(!destroyed&&resumed){refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});
+        AccountSync.home(this,()->{if(!destroyed&&resumed){pendingRender=true;refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
         handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
@@ -237,7 +237,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     /* ---------------- Catalog ---------------- */
 
     /** Updates come from the panel's app-update.php (see AppUpdates), not from config.php. */
-    @Override public void onConfig(JSONObject config){if(resumed)AccountSync.home(this,()->{if(!destroyed&&resumed){refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});}
+    @Override public void onConfig(JSONObject config){if(resumed)AccountSync.home(this,()->{if(!destroyed&&resumed){pendingRender=true;refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});}
     @Override public void onResult(StartupRefresh.Result r){
         if(isFinishing()||destroyed)return;
         if(r.state==StartupRefresh.EXPIRED){startActivity(new Intent(this,RenewalActivity.class));finish();return;}

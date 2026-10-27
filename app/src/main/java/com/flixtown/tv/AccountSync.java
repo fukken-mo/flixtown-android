@@ -47,12 +47,14 @@ final class AccountSync {
         if(!scope.equals(journal.getString("scope",""))){reset();journal.edit().putString("scope",scope).apply();}
         if(!owner.equals(mine)||!url.equals(endpoint)) {generation++;token="";tokenUntil=0;}
         owner=mine;endpoint=url;account=credentials;favoriteSnapshot=local.getString("favorites","");
-        // Old installs import only local records. Existing server records win their base=0 CAS.
-        if(!journal.getBoolean("seeded",false)){
-            Map<String,?> all=local.getAll();for(String pref:all.keySet()){String k=SyncRecord.entity(pref);if(k!=null)dirty.add(k);}
-            for(String k:SyncRecord.favorites(favoriteSnapshot))dirty.add("favorite:"+k);
-            captureDirty();journal.edit().putBoolean("seeded",true).apply();
-        }
+        seedLocal();
+    }
+    private void seedLocal(){
+        // Base 0 imports local-only records; an existing server record wins the initial merge.
+        if(journal.getBoolean("seeded",false))return;
+        Map<String,?> all=local.getAll();for(String pref:all.keySet()){String k=SyncRecord.entity(pref);if(k!=null)dirty.add(k);}
+        for(String k:SyncRecord.favorites(local.getString("favorites","")))dirty.add("favorite:"+k);
+        captureDirty();journal.edit().putBoolean("seeded",true).apply();
     }
     private void changed(SharedPreferences p,String key){
         if(importing||account==null||key==null||!owner.equals(p.getString(SignOut.OWNER,"")))return;
@@ -65,7 +67,7 @@ final class AccountSync {
         if(account==null||dirty.isEmpty())return;
         try{
             Map<String,?> all=local.getAll();SharedPreferences.Editor e=journal.edit();
-            for(String k:dirty){JSONObject v=SyncRecord.capture(all,k);String encoded=v.toString();
+            for(String k:dirty){JSONObject v;try{v=SyncRecord.capture(all,k);}catch(IllegalArgumentException invalid){continue;}String encoded=v.toString();
                 if(encoded.equals(journal.getString("observed:"+k,"")))continue;
                 JSONObject op=new JSONObject().put("key",k).put("base",journal.getLong("rev:"+k,0)).put("operation",UUID.randomUUID().toString()).put("value",v);
                 e.putString("pending:"+k,op.toString()).putString("observed:"+k,encoded);
@@ -182,7 +184,7 @@ final class AccountSync {
         if(!BuildConfig.DEMO)throw new IllegalStateException();
         AccountSync s=new AccountSync(c);s.transport=transport;s.owner=SignOut.ownerId("fixture");
         s.local.edit().putString(SignOut.OWNER,s.owner).apply();s.account=new String[]{"fixture","fixture-password"};
-        s.endpoint="https://fixture.invalid/sync";s.home=true;s.favoriteSnapshot=s.local.getString("favorites","");return s;
+        s.endpoint="https://fixture.invalid/sync";s.home=true;s.favoriteSnapshot=s.local.getString("favorites","");s.seedLocal();return s;
     }
     void fixtureTick(boolean playing){if(!BuildConfig.DEMO)throw new IllegalStateException();this.playing=playing;lastPull=0;nextAttempt=0;cycle(true);}
     void fixtureClose(){if(!BuildConfig.DEMO)throw new IllegalStateException();reset();local.unregisterOnSharedPreferenceChangeListener(listener);}

@@ -47,6 +47,16 @@ public class AccountSyncDeviceTest extends InstrumentationTestCase {
   main(()->Api.prefs(a).edit().remove("resume_position_movie:1").remove("resume_duration_movie:1").apply());tick(one,false);waitFor(()->server.position("resume:movie:1")==-1);
   tick(two,false);waitFor(()->!Api.prefs(b).contains("resume_position_movie:1"));assertTrue(Api.prefs(b).getString("favorites","").contains("|movie:1|"));
  }
+ public void testExistingLocalProgressMergesWithoutOverwritingCloud()throws Exception{
+  Fake server=new Fake();Context a=context("seed_server"),b=context("seed_local");AccountSync one=client(a,server);
+  main(()->Api.prefs(a).edit().putLong("resume_position_movie:1",100000).apply());tick(one,false);waitFor(()->server.position("resume:movie:1")==100000);
+  final AccountSync[] target=new AccountSync[1];main(()->{
+   Api.prefs(b).edit().clear().putLong("resume_position_movie:1",20000).putLong("resume_position_movie:2",30000).apply();
+   b.getSharedPreferences("account_sync_v1",0).edit().clear().commit();target[0]=AccountSync.fixture(b,server);clients.add(target[0]);
+  });
+  tick(target[0],false);waitFor(()->Api.prefs(b).getLong("resume_position_movie:1",0)==100000);
+  assertEquals(30000,server.position("resume:movie:2"));assertEquals(30000,Api.prefs(b).getLong("resume_position_movie:2",0));
+ }
  public void testServerDownKeepsLocalPlaybackProgress()throws Exception{
   Fake server=new Fake();server.fail=true;Context c=context("offline");AccountSync s=client(c,server);
   main(()->Api.prefs(c).edit().putLong("resume_position_movie:4",22000).apply());tick(s,true);waitFor(()->server.calls>0);
