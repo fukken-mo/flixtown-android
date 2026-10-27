@@ -147,7 +147,8 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
         return super.dispatchKeyEvent(event);
     }
     private void openHome(){if(finished)return;finished=true;handler.removeCallbacksAndMessages(null);
-        if(BuildConfig.DEMO&&seasonal!=null)android.util.Log.i("FlixTownQA","splash end scale="+seasonal.getScaleX()+"x"+seasonal.getScaleY());
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash end shown_ms="+(android.os.SystemClock.uptimeMillis()-shownAt)
+            +(seasonal!=null?" scale="+seasonal.getScaleX()+"x"+seasonal.getScaleY():""));
         Intent intent=new Intent(this,HomeActivity.class);intent.putExtra(HomeActivity.EXTRA_FRESH,true);
         startActivity(intent);overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);finish();}
     @Override protected void onStop(){super.onStop();if(player!=null && !finished)player.pause();}

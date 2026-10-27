@@ -173,7 +173,7 @@ splash_is halloween true && ok "A2 Halloween picture downloaded in the backgroun
 sleep 0.8; shot A2-halloween 0.1; rgb="$(center_rgb)"; note "INFO  centre pixel: $rgb"
 check "A2 the picture fills the screen (green test picture at the centre)" 'set -- $rgb; [ "$2" -gt 120 ] && [ "$1" -lt 90 ]'
 check "A2 nothing drawn over the picture (the logo is hidden once it shows)" 'qa "splash image_shown event=halloween" | grep -q halloween'
-wait_activity HomeActivity 15; ms=$(home_shown_ms); note "INFO  splash to Home: ${ms} ms (display 3000 ms)"
+wait_activity HomeActivity 15; ms=$(home_shown_ms); note "INFO  splash to Home: ${ms} ms (display 3000 ms; app's own count: $(qa 'splash end shown_ms=' | grep -o 'shown_ms=[0-9]*'))"
 check "A3 splash stays for the display time, then Home (2.6–6 s)" '[ "$ms" -ge 2600 ] && [ "$ms" -le 6000 ]'
 launch; t=0; while [ $t -lt 20 ] && [ -z "$(splash)" ]; do sleep 0.25; t=$((t+1)); done; key DPAD_CENTER; wait_activity HomeActivity 15; ms=$(home_shown_ms); note "INFO  with OK pressed: ${ms} ms"
 check "A3 OK skips the splash (Home in under 2.5 s)" '[ "$ms" -ge 0 ] && [ "$ms" -lt 2500 ]'
@@ -206,8 +206,8 @@ PY
 )"; note "INFO  splash picture frames: $still"
 rm -f "$OUT"/still-*.raw
 check "A2 the splash picture stays completely still (no zoom)" 'echo "$still" | grep -q changed= && python3 -c "import sys;sys.exit(0 if float(sys.argv[1].split(\"changed=\")[1])<0.002 else 1)" "$still"'
-wait_activity HomeActivity 15; note "INFO  $(qa 'splash end scale=')"
-check "A2 the picture is at its normal size when the splash ends" 'qa "splash end scale=" | grep -q "scale=1.0x1.0"'
+wait_activity HomeActivity 15; note "INFO  $(qa 'splash end shown_ms=')"
+check "A2 the picture is at its normal size when the splash ends" 'qa "splash end shown_ms=" | grep -q "scale=1.0x1.0"'
 for c in "2026-12-26:christmas:false" "2026-12-27:new_year:true" "2026-12-31:new_year:true" "2027-01-03:new_year:true" "2027-01-04:default:false" \
          "2026-03-15:st_patricks:false" "2027-02-12:valentines:false" "2027-07-03:independence_day:false" "2027-08-11:tie_a:false" \
          "2027-03-28:easter:false" "2027-03-30:default:false" "2027-11-25:thanksgiving:false" "2026-06-15:default:false"; do
