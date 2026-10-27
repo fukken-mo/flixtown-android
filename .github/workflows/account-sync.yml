@@ -100,7 +100,7 @@ jobs:
             adb install -r fixture-apks/qa/app-qa.apk
             adb install -r fixture-apks/androidTest/qa/app-qa-androidTest.apk
             adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
-            grep -q 'OK (6 tests)' device-results.txt
+            grep -q 'OK (7 tests)' device-results.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:

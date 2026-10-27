@@ -936,7 +936,7 @@ public class PlayerActivity extends Activity {
         nextEpisodeId=id;nextEpisodeExt=ext;nextSubtitle=label;
     }
     @Override protected void onResume(){super.onResume();AccountSync.player(true);ScreenAwake.on(this);}
-    @Override protected void onPause(){AccountSync.player(false);ScreenAwake.off(this);super.onPause();}
+    @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onStop(){
         if(reporting)reportRestartReady=reportWasPlaying&&!reportFromError;
         stopping=true;reporting=false;episodeLoadGeneration++;loadingEpisodes=false;
@@ -945,6 +945,7 @@ public class PlayerActivity extends Activity {
         if(player!=null){position=player.getCurrentPosition();if(!ended && resumeAsked)saveProgress(position,player.getDuration());
             video.setPlayer(null);player.release();player=null;}
         if(subtitles!=null)subtitles.clear();
+        AccountSync.player(false);
         super.onStop();
     }
 }

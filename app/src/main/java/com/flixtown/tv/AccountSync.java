@@ -22,11 +22,11 @@ final class AccountSync {
     private String owner="",endpoint="",token="",favoriteSnapshot="";
     private String[] account;
     private int generation=0;
-    private boolean importing=false,playing=false,busy=false,home=false;
+    private boolean importing=false,playing=false,busy=false,home=false,repeatRequested=false;
     private long nextAttempt=0,lastPull=0,backoff=60000,tokenUntil=0;
     private Runnable onChanged;
     private final Runnable capture=this::captureDirty;
-    private final Runnable heartbeat=()->{cycle(false);schedule();};
+    private final Runnable heartbeat=()->{cycle(home&&!playing);schedule();};
     private AccountSync(Context c){app=c.getApplicationContext();local=Api.prefs(app);journal=app.getSharedPreferences("account_sync_v1",Context.MODE_PRIVATE);local.registerOnSharedPreferenceChangeListener(listener);}
     static void home(Context c,Runnable callback){
         if(instance==null)instance=new AccountSync(c);
@@ -35,7 +35,7 @@ final class AccountSync {
     static void leaveHome(){if(instance!=null){instance.home=false;instance.onChanged=null;}}
     static void player(boolean active){if(instance!=null){instance.playing=active;if(!active){instance.captureDirty();instance.cycle(false);}instance.schedule();}}
     static void signOut(){if(instance!=null)instance.reset();}
-    private void reset(){generation++;account=null;owner="";endpoint="";token="";tokenUntil=0;dirty.clear();nextAttempt=0;lastPull=0;backoff=60000;journal.edit().clear().apply();MAIN.removeCallbacks(capture);MAIN.removeCallbacks(heartbeat);}
+    private void reset(){generation++;account=null;owner="";endpoint="";token="";tokenUntil=0;dirty.clear();repeatRequested=false;nextAttempt=0;lastPull=0;backoff=60000;journal.edit().clear().apply();MAIN.removeCallbacks(capture);MAIN.removeCallbacks(heartbeat);}
     private boolean current(int g){return generation==g&&account!=null&&owner.equals(local.getString(SignOut.OWNER,""));}
     private void configure(){
         JSONObject cfg=StartupRefresh.config();String url=cfg==null?local.getString("progress_sync_api_url",""):cfg.optString("progress_sync_api_url","").trim();
@@ -54,6 +54,9 @@ final class AccountSync {
         if(journal.getBoolean("seeded",false))return;
         Map<String,?> all=local.getAll();for(String pref:all.keySet()){String k=SyncRecord.entity(pref);if(k!=null)dirty.add(k);}
         for(String k:SyncRecord.favorites(local.getString("favorites","")))dirty.add("favorite:"+k);
+        SharedPreferences.Editor backup=journal.edit();
+        for(String key:dirty)try{backup.putString("initial:"+key,SyncRecord.capture(all,key).toString());}catch(Exception ignored){}
+        backup.apply();
         captureDirty();journal.edit().putBoolean("seeded",true).apply();
     }
     private void changed(SharedPreferences p,String key){
@@ -77,7 +80,8 @@ final class AccountSync {
     }
     private void schedule(){MAIN.removeCallbacks(heartbeat);if(account!=null&&(home||playing))MAIN.postDelayed(heartbeat,60000);}
     private void cycle(boolean pull){
-        captureDirty();if(account==null||busy||SystemClock.elapsedRealtime()<nextAttempt)return;
+        captureDirty();if(account==null||SystemClock.elapsedRealtime()<nextAttempt)return;
+        if(busy){repeatRequested=true;return;}
         if(pull&&SystemClock.elapsedRealtime()-lastPull<30000)pull=false;
         JSONArray operations=new JSONArray();
         for(Map.Entry<String,?> e:journal.getAll().entrySet())if(e.getKey().startsWith("pending:")&&operations.length()<40){try{operations.put(new JSONObject((String)e.getValue()));}catch(Exception ignored){}}
@@ -98,12 +102,13 @@ final class AccountSync {
                 MAIN.post(()->{busy=false;if(!current(g))return;
                     if(!reply.optBoolean("ok")){if("reset".equals(reply.optString("error")))resetRevisions();failed();return;}
                     token=saved;tokenUntil=exp;nextAttempt=0;backoff=60000;if(read)lastPull=SystemClock.elapsedRealtime();
-                    receive(reply,operations,read);if(reply.optBoolean("more"))page(g,url,saved,reply.optLong("after"),reply.optLong("through"),read,1);
+                    receive(reply,operations,read);if(reply.optBoolean("more"))page(g,url,saved,reply.optLong("after"),reply.optLong("through"),read,1);else finishExchange();
                 });
             }catch(Exception ignored){MAIN.post(()->{busy=false;if(current(g))failed();});}
             finally{Arrays.fill(credentials,"");}
         });
     }
+    private void finishExchange(){if(repeatRequested){repeatRequested=false;cycle(home&&!playing);}}
     private void resetRevisions(){
         SharedPreferences.Editor e=journal.edit().putLong("cursor",0);
         for(Map.Entry<String,?> item:journal.getAll().entrySet()){
@@ -117,7 +122,7 @@ final class AccountSync {
         if(count>=100||!current(g))return;busy=true;
         IO.execute(()->{try{
             JSONObject r=transport.post(url,new JSONObject().put("action","exchange").put("session",session).put("after",after).put("through",through));
-            MAIN.post(()->{busy=false;if(!current(g))return;if(!r.optBoolean("ok")){failed();return;}receive(r,new JSONArray(),read);if(r.optBoolean("more"))page(g,url,session,r.optLong("after"),through,read,count+1);});
+            MAIN.post(()->{busy=false;if(!current(g))return;if(!r.optBoolean("ok")){failed();return;}receive(r,new JSONArray(),read);if(r.optBoolean("more"))page(g,url,session,r.optLong("after"),through,read,count+1);else finishExchange();});
         }catch(Exception ignored){MAIN.post(()->{busy=false;if(current(g))failed();});}});
     }
     private void receive(JSONObject reply,JSONArray sent,boolean read){
@@ -128,6 +133,7 @@ final class AccountSync {
                 long rev=r.getLong("revision");if(rev<journal.getLong("rev:"+k,0))continue;
                 String pending=journal.getString("pending:"+k,"");JSONObject op=pending.isEmpty()?null:new JSONObject(pending);
                 e.putLong("rev:"+k,rev);
+                if(a.optBoolean("accepted"))e.remove("remote:"+k);
                 if(op!=null&&SyncRecord.matchesOperation(op.optString("operation"),a.optString("operation"))){
                     e.remove("pending:"+k);
                     if(!a.optBoolean("accepted"))e.putString("remote:"+k,r.toString());
@@ -138,10 +144,10 @@ final class AccountSync {
             if(records!=null)for(int i=0;i<records.length();i++){
                 JSONObject r=records.getJSONObject(i);String k=r.getString("key");long rev=r.getLong("revision");
                 if(!SyncRecord.valid(k)||rev<=0)throw new IOException();
-                if(!journal.contains("pending:"+k)&&rev>=journal.getLong("rev:"+k,0))e.putLong("rev:"+k,rev).putString("remote:"+k,r.toString());
+                if(!journal.contains("pending:"+k)&&rev>journal.getLong("rev:"+k,0))e.putLong("rev:"+k,rev).putString("remote:"+k,r.toString());
             }
             e.putLong("cursor",reply.getLong("after")).apply();
-            if(read&&home&&!playing)applyDeferred();
+            if(home&&!playing)applyDeferred();
         }catch(Exception ignored){failed();}
     }
     private void applyDeferred(){

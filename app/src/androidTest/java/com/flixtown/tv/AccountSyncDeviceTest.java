@@ -65,8 +65,15 @@ public class AccountSyncDeviceTest extends InstrumentationTestCase {
  public void testRemoteDoesNotChangeActivePlayback()throws Exception{
   Fake server=new Fake();Context a=context("playing_a"),b=context("playing_b");AccountSync one=client(a,server),two=client(b,server);
   main(()->Api.prefs(a).edit().putLong("resume_position_movie:5",33000).apply());tick(one,false);waitFor(()->server.position("resume:movie:5")==33000);
-  int calls=server.calls;tick(two,true);waitFor(()->server.calls>calls);Thread.sleep(300);getInstrumentation().waitForIdleSync();assertFalse(Api.prefs(b).contains("resume_position_movie:5"));
+  int calls=server.calls;tick(two,true);waitFor(()->b.getSharedPreferences("account_sync_v1",0).getLong("rev:resume:movie:5",0)==1);assertFalse(Api.prefs(b).contains("resume_position_movie:5"));
   tick(two,false);waitFor(()->Api.prefs(b).getLong("resume_position_movie:5",0)==33000);
+ }
+ public void testDeferredRemoteCannotOverwriteSubsequentLocalPlayback()throws Exception{
+  Fake server=new Fake();Context a=context("deferred_a"),b=context("deferred_b");AccountSync one=client(a,server),two=client(b,server);
+  main(()->Api.prefs(a).edit().putLong("resume_position_movie:5",33000).apply());tick(one,false);waitFor(()->server.position("resume:movie:5")==33000);
+  int calls=server.calls;tick(two,true);waitFor(()->b.getSharedPreferences("account_sync_v1",0).getLong("rev:resume:movie:5",0)==1);
+  main(()->Api.prefs(b).edit().putLong("resume_position_movie:5",55000).apply());tick(two,true);waitFor(()->server.position("resume:movie:5")==55000);
+  Thread.sleep(200);tick(two,false);Thread.sleep(300);getInstrumentation().waitForIdleSync();assertEquals(55000,Api.prefs(b).getLong("resume_position_movie:5",0));
  }
  public void testEditWhileRequestInFlightSurvivesAcknowledgement()throws Exception{
   Fake server=new Fake();Context c=context("race");AccountSync s=client(c,server);
