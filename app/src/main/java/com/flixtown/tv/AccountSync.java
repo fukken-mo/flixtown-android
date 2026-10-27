@@ -46,8 +46,9 @@ final class AccountSync {
         String scope=mine+":"+SignOut.ownerId(local.getString("server","")+"|"+url);
         if(!scope.equals(journal.getString("scope",""))){reset();journal.edit().putString("scope",scope).apply();}
         if(!owner.equals(mine)||!url.equals(endpoint)) {generation++;token="";tokenUntil=0;}
+        boolean reconnect=account==null;
         owner=mine;endpoint=url;account=credentials;favoriteSnapshot=local.getString("favorites","");
-        seedLocal();
+        seedLocal();if(reconnect)reconcileLocal();
     }
     private void seedLocal(){
         // Base 0 imports local-only records; an existing server record wins the initial merge.
@@ -58,6 +59,14 @@ final class AccountSync {
         for(String key:dirty)try{backup.putString("initial:"+key,SyncRecord.capture(all,key).toString());}catch(Exception ignored){}
         backup.apply();
         captureDirty();journal.edit().putBoolean("seeded",true).apply();
+    }
+    /** Reconstruct changes missed if Android killed the process before the grouping callback ran. */
+    private void reconcileLocal(){
+        Map<String,?> all=local.getAll();
+        for(String pref:all.keySet()){String k=SyncRecord.entity(pref);if(k!=null)dirty.add(k);}
+        for(String k:SyncRecord.favorites(local.getString("favorites","")))dirty.add("favorite:"+k);
+        for(String k:journal.getAll().keySet())if(k.startsWith("observed:")&&SyncRecord.valid(k.substring(9)))dirty.add(k.substring(9));
+        captureDirty();
     }
     private void changed(SharedPreferences p,String key){
         if(importing||account==null||key==null||!owner.equals(p.getString(SignOut.OWNER,"")))return;
@@ -190,9 +199,10 @@ final class AccountSync {
         if(!BuildConfig.DEMO)throw new IllegalStateException();
         AccountSync s=new AccountSync(c);s.transport=transport;s.owner=SignOut.ownerId("fixture");
         s.local.edit().putString(SignOut.OWNER,s.owner).apply();s.account=new String[]{"fixture","fixture-password"};
-        s.endpoint="https://fixture.invalid/sync";s.home=true;s.favoriteSnapshot=s.local.getString("favorites","");s.seedLocal();return s;
+        s.endpoint="https://fixture.invalid/sync";s.home=true;s.favoriteSnapshot=s.local.getString("favorites","");s.seedLocal();s.reconcileLocal();return s;
     }
     void fixtureTick(boolean playing){if(!BuildConfig.DEMO)throw new IllegalStateException();this.playing=playing;lastPull=0;nextAttempt=0;cycle(true);}
+    void fixtureDetach(){if(!BuildConfig.DEMO)throw new IllegalStateException();generation++;account=null;MAIN.removeCallbacks(capture);local.unregisterOnSharedPreferenceChangeListener(listener);}
     void fixtureClose(){if(!BuildConfig.DEMO)throw new IllegalStateException();reset();local.unregisterOnSharedPreferenceChangeListener(listener);}
     private static JSONObject post(String url,JSONObject body)throws Exception{
         if(!ReportsApi.safeUrl(url))throw new IOException();

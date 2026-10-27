@@ -83,6 +83,16 @@ public class AccountSyncDeviceTest extends InstrumentationTestCase {
   assertTrue(entered.await(5,TimeUnit.SECONDS));main(()->Api.prefs(c).edit().putLong("resume_position_movie:6",45000).apply());Thread.sleep(350);server.release.countDown();waitFor(()->server.position("resume:movie:6")==20000);
   Thread.sleep(300);tick(s,true);waitFor(()->server.position("resume:movie:6")==45000);
  }
+ public void testReattachFindsLocalSaveMissedByObserver()throws Exception{
+  Fake server=new Fake();Context c=context("reattach");AccountSync old=client(c,server);
+  main(()->Api.prefs(c).edit().putLong("resume_position_movie:8",20000).apply());tick(old,false);
+  waitFor(()->c.getSharedPreferences("account_sync_v1",0).getLong("rev:resume:movie:8",0)==1);
+  final AccountSync[] replacement=new AccountSync[1];main(()->{
+   old.fixtureDetach();Api.prefs(c).edit().putLong("resume_position_movie:8",45000).commit();
+   replacement[0]=AccountSync.fixture(c,server);clients.add(replacement[0]);
+  });
+  tick(replacement[0],false);waitFor(()->server.position("resume:movie:8")==45000);assertEquals(45000,Api.prefs(c).getLong("resume_position_movie:8",0));
+ }
  public void testSignOutRejectsLateResponse()throws Exception{
   Fake server=new Fake();Context c=context("signout");AccountSync s=client(c,server);server.entered=new CountDownLatch(1);CountDownLatch entered=server.entered;server.release=new CountDownLatch(1);tick(s,false);
   assertTrue(entered.await(5,TimeUnit.SECONDS));main(()->{s.fixtureClose();Api.prefs(c).edit().clear().apply();});server.release.countDown();Thread.sleep(400);getInstrumentation().waitForIdleSync();assertTrue(Api.prefs(c).getAll().isEmpty());
