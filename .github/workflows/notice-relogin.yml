@@ -1,0 +1,84 @@
+name: Notice re-login check
+
+# Resolved playback-report notices across sign-out / sign-in and account switches (.github/qa/notice_relogin.sh).
+# QA builds only (offline demo server, test key, separate package): nothing is signed for production,
+# published or deployed. "baseline" is the build before the fix (1a94f60, the 3.8.19 source), kept to show
+# the script reproduces the problem; only the current source must pass.
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/account-sync]
+    paths: ['.github/workflows/notice-relogin.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and QA APK (current source)
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:assembleQa --console=plain 2>&1 | tee build.log
+          mkdir -p apks && cp app/build/outputs/apk/qa/app-qa.apk apks/current.apk
+          python3 - <<'EOF'
+          import glob,xml.etree.ElementTree as ET
+          t=f=0
+          for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+              r=ET.parse(p).getroot();t+=int(r.get('tests'));f+=int(r.get('failures'))+int(r.get('errors'))
+          print("unit tests: %d run, %d failed"%(t,f))
+          EOF
+      - name: QA APK of the baseline (1a94f60, before the fix)
+        run: |
+          git worktree add ../base 1a94f60
+          (cd ../base && ./gradlew :app:assembleQa --console=plain -q)
+          cp ../base/app/build/outputs/apk/qa/app-qa.apk apks/baseline.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: notice-relogin-apks, path: apks/, retention-days: 3 }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: notice-relogin-unit-results, path: "build.log\napp/build/test-results/", retention-days: 7 }
+  tv:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { apk: current, api: 31, profile: tv_1080p }
+          - { apk: current, api: 28, profile: tv_720p }
+          - { apk: baseline, api: 31, profile: tv_1080p }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: notice-relogin-apks, path: apks }
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Notices across sign-out and sign-in on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: APK=apks/${{ matrix.apk }}.apk QA_OUT=qa/notice-relogin-${{ matrix.apk }}-api${{ matrix.api }} bash .github/qa/notice_relogin.sh || true
+      - name: Result
+        run: |
+          R=qa/notice-relogin-${{ matrix.apk }}-api${{ matrix.api }}/report.txt
+          cat "$R" || true
+          if [ "${{ matrix.apk }}" = baseline ]; then echo "baseline (before the fix): informational only"; exit 0; fi
+          grep -q '^notice re-login: [0-9]* passed, 0 failed' "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "notice-relogin-${{ matrix.apk }}-api${{ matrix.api }}", path: "qa/notice-relogin-${{ matrix.apk }}-api${{ matrix.api }}/", retention-days: 14 }
