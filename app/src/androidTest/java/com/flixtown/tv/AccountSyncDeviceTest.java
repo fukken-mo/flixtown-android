@@ -165,9 +165,10 @@ public class AccountSyncDeviceTest extends InstrumentationTestCase {
  /** While video plays, each save (every few seconds) is not captured or written; stopping uploads the latest. */
  public void testPlaybackSavesAreCollectedNotCapturedPerSave()throws Exception{
   Fake server=new Fake();Context c=context("per_save");AccountSync s=client(c,server);
+  AccountSync.fixtureAwaitWork();   // this TV's one-time startup scan is done before playback starts
   main(()->AccountSync.player(true));
   for(int i=0;i<12;i++){final long p=20000+i*5000;main(()->Api.prefs(c).edit().putLong("resume_position_movie:11",p).putLong("resume_duration_movie:11",600000).apply());Thread.sleep(100);}
-  Thread.sleep(800);getInstrumentation().waitForIdleSync();
+  Thread.sleep(800);getInstrumentation().waitForIdleSync();AccountSync.fixtureAwaitWork();   // anything a save had queued is written by now
   assertFalse("not captured per save while playing",journal(c).contains("pending:resume:movie:11"));assertEquals(0,server.calls);
   main(()->AccountSync.player(false));waitFor(()->server.position("resume:movie:11")==75000);
  }

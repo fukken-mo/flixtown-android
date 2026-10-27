@@ -334,6 +334,8 @@ final class AccountSync {
         s.endpoint="https://fixture.invalid/sync";s.home=true;s.favoriteSnapshot=s.local.getString("favorites","");
         instance=s;final int g=s.generation;WORK.execute(()->s.attach(g));return s;
     }
+    /** Waits until the sync worker has finished everything queued so far (startup scan, captures, journal writes). */
+    static void fixtureAwaitWork()throws Exception{if(!BuildConfig.DEMO)throw new IllegalStateException();WORK.submit(()->{}).get(10,TimeUnit.SECONDS);}
     void fixtureTick(boolean playing){if(!BuildConfig.DEMO)throw new IllegalStateException();this.playing=playing;lastPull=0;nextAttempt=0;cycle(true);}
     void fixtureDetach(){if(!BuildConfig.DEMO)throw new IllegalStateException();generation++;account=null;MAIN.removeCallbacks(capture);local.unregisterOnSharedPreferenceChangeListener(listener);if(instance==this)instance=null;}
     void fixtureClose(){if(!BuildConfig.DEMO)throw new IllegalStateException();reset(null);local.unregisterOnSharedPreferenceChangeListener(listener);if(instance==this)instance=null;}
