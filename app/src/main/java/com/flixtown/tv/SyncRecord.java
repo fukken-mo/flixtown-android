@@ -45,4 +45,26 @@ final class SyncRecord {
     static String string(Map<String,?> p,String k,String fallback){Object v=p.get(k);return v instanceof String?(String)v:fallback;}
     static long number(Map<String,?> p,String k){Object v=p.get(k);return v instanceof Long?(Long)v:0;}
     static boolean matchesOperation(String current,String sent){return current!=null&&current.equals(sent);}
+    /**
+     * A record from the server, checked with the server's own rules before anything is written to this TV.
+     * Anything else (malformed, or from a compromised server) is dropped: the episode ID and file
+     * extension end up in stream addresses, and the label is shown on screen.
+     */
+    static boolean validRemote(String key,JSONObject v){
+        if(!valid(key)||v==null||!(v.opt("present") instanceof Boolean))return false;
+        if(!key.startsWith("resume:")||!v.optBoolean("present"))return true;
+        if(!bounded(v.opt("position"))||!bounded(v.opt("duration"))||!(v.opt("done") instanceof Boolean))return false;
+        Object episode=v.opt("episode"),next=v.opt("next"),ext=v.opt("extension"),nextExt=v.opt("next_ext"),label=v.opt("label");
+        if(!(episode instanceof String)||!(next instanceof String)||!(ext instanceof String)||!(nextExt instanceof String)||!(label instanceof String))return false;
+        if(!((String)episode).matches("(?:[1-9][0-9]{0,9})?")||!((String)next).matches("(?:[1-9][0-9]{0,9})?"))return false;
+        if(key.startsWith("resume:series:")&&((String)episode).isEmpty())return false;
+        if(key.startsWith("resume:movie:")&&(!((String)episode).isEmpty()||!((String)next).isEmpty()))return false;
+        if(!((String)ext).matches("[a-zA-Z0-9]{1,10}")||!((String)nextExt).matches("[a-zA-Z0-9]{1,10}"))return false;
+        String text=(String)label;
+        return text.getBytes(java.nio.charset.StandardCharsets.UTF_8).length<=240&&!text.matches("(?is).*(https?:|[\\p{Cntrl}]|(?:password|token|session|username)\\s*[=:]).*");
+    }
+    private static boolean bounded(Object n){
+        if(!(n instanceof Integer)&&!(n instanceof Long))return false;
+        long v=((Number)n).longValue();return v>=0&&v<=604800000L;
+    }
 }
