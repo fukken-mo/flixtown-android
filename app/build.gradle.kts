@@ -31,6 +31,7 @@ android {
     defaultConfig {
         applicationId = "com.myflixtown.tv.native"
         minSdk = 23
+        testInstrumentationRunner = "android.test.InstrumentationTestRunner"
         targetSdk = 35
         versionCode = flixVersionCode
         versionName = flixVersionName

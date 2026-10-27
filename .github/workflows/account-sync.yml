@@ -1,0 +1,105 @@
+name: Account sync Preview
+on:
+  push:
+    branches: [codex/account-sync]
+    paths: ['app/**', 'panel/onepanel-account-sync/**', '.github/workflows/account-sync.yml']
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: ['mysql:8.0', 'mariadb:10.11']
+    services:
+      db:
+        image: ${{ matrix.database }}
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_DATABASE: account_sync_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -pfixture-only" --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      SYNC_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=account_sync_test;charset=utf8mb4
+      SYNC_TEST_USER: root
+      SYNC_TEST_PASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+          coverage: none
+      - run: |
+          find panel/onepanel-account-sync -name '*.php' -exec php -l {} \;
+          php panel/onepanel-account-sync/tests/test.php
+          python3 panel/onepanel-account-sync/tests/http_test.py
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and separate Preview/QA builds only
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixVersionName=3.8.18-sync-preview --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-unit-results
+          path: app/build/test-results/
+          retention-days: 5
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-Account-Sync-PREVIEW
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sync-instrumentation-apks
+          path: |
+            app/build/outputs/apk/qa/app-qa.apk
+            app/build/outputs/apk/androidTest/qa/app-qa-androidTest.apk
+          retention-days: 2
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {api: 28, profile: tv_720p}
+          - {api: 31, profile: tv_1080p}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: sync-instrumentation-apks
+          path: fixture-apks
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install -r fixture-apks/qa/app-qa.apk
+            adb install -r fixture-apks/androidTest/qa/app-qa-androidTest.apk
+            adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
+            grep -q 'OK (5 tests)' device-results.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-device-api${{ matrix.api }}
+          path: device-results.txt
+          retention-days: 7

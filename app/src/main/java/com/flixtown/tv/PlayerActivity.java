@@ -935,8 +935,8 @@ public class PlayerActivity extends Activity {
         try{nextUrl=Api.stream(this,"series",id,ext);}catch(Exception e){nextUrl="";return;}   // signed out meanwhile
         nextEpisodeId=id;nextEpisodeExt=ext;nextSubtitle=label;
     }
-    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);}
-    @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
+    @Override protected void onResume(){super.onResume();AccountSync.player(true);ScreenAwake.on(this);}
+    @Override protected void onPause(){AccountSync.player(false);ScreenAwake.off(this);super.onPause();}
     @Override protected void onStop(){
         if(reporting)reportRestartReady=reportWasPlaying&&!reportFromError;
         stopping=true;reporting=false;episodeLoadGeneration++;loadingEpisodes=false;
