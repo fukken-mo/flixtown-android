@@ -97,7 +97,7 @@ final class AccountSync {
                     session=auth.optString("session","");if(!auth.optBoolean("ok")||session.isEmpty()||session.length()>512)throw new IOException();
                     expiry=SystemClock.elapsedRealtime()+Math.min(840,Math.max(1,auth.optInt("ttl",900)-60))*1000L;
                 }
-                JSONObject reply=transport.post(url,new JSONObject().put("action","exchange").put("session",session).put("after",after).put("operations",operations));
+                JSONObject reply=transport.post(url,new JSONObject().put("action","exchange").put("session",session).put("after",after).put("pull",read).put("operations",operations));
                 final String saved=session;final long exp=expiry;
                 MAIN.post(()->{busy=false;if(!current(g))return;
                     if(!reply.optBoolean("ok")){if("reset".equals(reply.optString("error")))resetRevisions();failed();return;}
@@ -119,7 +119,7 @@ final class AccountSync {
     }
     private void failed(){token="";tokenUntil=0;nextAttempt=SystemClock.elapsedRealtime()+backoff;backoff=Math.min(900000,backoff*2);}
     private void page(int g,String url,String session,long after,long through,boolean read,int count){
-        if(count>=100||!current(g))return;busy=true;
+        if(count>=100||!current(g))return;if(playing){finishExchange();return;}busy=true;
         IO.execute(()->{try{
             JSONObject r=transport.post(url,new JSONObject().put("action","exchange").put("session",session).put("after",after).put("through",through));
             MAIN.post(()->{busy=false;if(!current(g))return;if(!r.optBoolean("ok")){failed();return;}receive(r,new JSONArray(),read);if(r.optBoolean("more"))page(g,url,session,r.optLong("after"),through,read,count+1);else finishExchange();});

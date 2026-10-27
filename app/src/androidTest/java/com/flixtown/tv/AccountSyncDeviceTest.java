@@ -32,8 +32,8 @@ public class AccountSyncDeviceTest extends InstrumentationTestCase {
      if(accepted){old=new JSONObject().put("key",k).put("revision",++rev).put("value",op.getJSONObject("value"));rows.put(k,old);}
      acks.put(new JSONObject().put("operation",op.getString("operation")).put("accepted",accepted).put("record",old));
     }
-    JSONArray records=new JSONArray();for(JSONObject row:rows.values())if(row.getLong("revision")>body.optLong("after"))records.put(row);
-    return new JSONObject().put("ok",true).put("acks",acks).put("records",records).put("after",rev).put("through",rev).put("more",false);
+    JSONArray records=new JSONArray();for(JSONObject row:rows.values())if(body.optBoolean("pull",true)&&row.getLong("revision")>body.optLong("after"))records.put(row);
+    return new JSONObject().put("ok",true).put("acks",acks).put("records",records).put("after",body.optBoolean("pull",true)?rev:body.optLong("after")).put("through",rev).put("more",false);
    }
   }
   synchronized long position(String k){JSONObject r=rows.get(k);return r==null?-1:r.optJSONObject("value").optLong("position",-1);}
@@ -65,13 +65,15 @@ public class AccountSyncDeviceTest extends InstrumentationTestCase {
  public void testRemoteDoesNotChangeActivePlayback()throws Exception{
   Fake server=new Fake();Context a=context("playing_a"),b=context("playing_b");AccountSync one=client(a,server),two=client(b,server);
   main(()->Api.prefs(a).edit().putLong("resume_position_movie:5",33000).apply());tick(one,false);waitFor(()->server.position("resume:movie:5")==33000);
-  int calls=server.calls;tick(two,true);waitFor(()->b.getSharedPreferences("account_sync_v1",0).getLong("rev:resume:movie:5",0)==1);assertFalse(Api.prefs(b).contains("resume_position_movie:5"));
+  server.entered=new CountDownLatch(1);CountDownLatch gate=server.entered;server.release=new CountDownLatch(1);tick(two,false);
+  assertTrue(gate.await(5,TimeUnit.SECONDS));tick(two,true);server.release.countDown();waitFor(()->b.getSharedPreferences("account_sync_v1",0).getLong("rev:resume:movie:5",0)==1);assertFalse(Api.prefs(b).contains("resume_position_movie:5"));
   tick(two,false);waitFor(()->Api.prefs(b).getLong("resume_position_movie:5",0)==33000);
  }
  public void testDeferredRemoteCannotOverwriteSubsequentLocalPlayback()throws Exception{
   Fake server=new Fake();Context a=context("deferred_a"),b=context("deferred_b");AccountSync one=client(a,server),two=client(b,server);
   main(()->Api.prefs(a).edit().putLong("resume_position_movie:5",33000).apply());tick(one,false);waitFor(()->server.position("resume:movie:5")==33000);
-  int calls=server.calls;tick(two,true);waitFor(()->b.getSharedPreferences("account_sync_v1",0).getLong("rev:resume:movie:5",0)==1);
+  server.entered=new CountDownLatch(1);CountDownLatch gate=server.entered;server.release=new CountDownLatch(1);tick(two,false);
+  assertTrue(gate.await(5,TimeUnit.SECONDS));tick(two,true);server.release.countDown();waitFor(()->b.getSharedPreferences("account_sync_v1",0).getLong("rev:resume:movie:5",0)==1);
   main(()->Api.prefs(b).edit().putLong("resume_position_movie:5",55000).apply());tick(two,true);waitFor(()->server.position("resume:movie:5")==55000);
   Thread.sleep(200);tick(two,false);Thread.sleep(300);getInstrumentation().waitForIdleSync();assertEquals(55000,Api.prefs(b).getLong("resume_position_movie:5",0));
  }

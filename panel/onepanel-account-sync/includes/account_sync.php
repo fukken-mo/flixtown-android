@@ -61,6 +61,7 @@ function fxs_row(array $r): array {return ['key'=>$r['record_key'],'revision'=>(
 /* Account row lock serializes revisions/CAS across PHP workers, including empty-record races. */
 function fxs_exchange(PDO $db,string $u,array $in): array {
     $after=fxs_integer($in['after']??0);$through=fxs_integer($in['through']??0);
+    $pull=$in['pull']??true;if(!is_bool($pull)||(!$pull&&$through>0))fxs_fail(400,'invalid');
     $raw=$in['operations']??[];if(!is_array($raw)||array_keys($raw)!==range(0,count($raw)-1)&&count($raw)!==0||count($raw)>40)fxs_fail(400,'invalid');
     $ops=[];$keys=[];foreach($raw as $o){$o=fxs_validate($o);if(isset($keys[$o['key']]))fxs_fail(400,'invalid');$keys[$o['key']]=true;$ops[]=$o;}
     if($through>0&&($ops||$after>$through))fxs_fail(400,'invalid');
@@ -83,6 +84,7 @@ function fxs_exchange(PDO $db,string $u,array $in): array {
             $acks[]=['operation'=>$o['operation'],'accepted'=>true,'record'=>['key'=>$o['key'],'revision'=>$rev,'value'=>$o['value']]];
         }
         $q=$db->prepare('UPDATE tv_sync_accounts SET revision=? WHERE account_id=?');$q->execute([$rev,$account]);
+        if(!$pull){$db->commit();return ['ok'=>true,'acks'=>$acks,'records'=>[],'through'=>0,'after'=>$after,'more'=>false];}
         $ceiling=$through?:$rev;
         $q=$db->prepare('SELECT record_key,revision,payload FROM tv_sync_records WHERE account_id=? AND revision>? AND revision<=? ORDER BY revision LIMIT 101');$q->execute([$account,$after,$ceiling]);$rows=$q->fetchAll();
         $more=count($rows)>100;$rows=array_slice($rows,0,100);$out=array_map('fxs_row',$rows);

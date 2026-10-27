@@ -35,6 +35,8 @@ $del=operation('resume:movie:1',2,false);$r=fxs_exchange($pdo,'alice',['operatio
 $r=fxs_exchange($pdo,'alice',['operations'=>[operation('resume:movie:1',2)]]);check(!$r['acks'][0]['accepted'],'stale device cannot resurrect removed item');
 $ops=[operation('favorite:movie:1'),operation('favorite:series:9'),operation('watched:series:9:10')];$r=fxs_exchange($pdo,'alice',['operations'=>$ops]);check(count($r['acks'])===3,'independent my list and watched records');
 $p=operation('favorite:movie:1',4,false);$r=fxs_exchange($pdo,'alice',['operations'=>[$p]]);check($r['acks'][0]['accepted'],'remove favorite independent of progress');
+$upload=fxs_exchange($pdo,'upload-only',['pull'=>false,'operations'=>[operation('resume:movie:1')]]);check($upload['records']===[]&&$upload['after']===0,'playback uploads do not pull history or advance cursor');
+check(count(fxs_exchange($pdo,'upload-only',[])['records'])===1,'history remains available after upload-only exchange');
 $before=(int)$pdo->query('SELECT COUNT(*) FROM tv_sync_records')->fetchColumn();$ops=[operation('favorite:movie:7'),operation('invalid')];reject(function()use($pdo,$ops){fxs_exchange($pdo,'alice',['operations'=>$ops]);},400,'whole batch validated');check((int)$pdo->query('SELECT COUNT(*) FROM tv_sync_records')->fetchColumn()===$before,'invalid batch makes no changes');
 for($i=1;$i<=125;$i++)fxs_exchange($pdo,'pages',['operations'=>[operation('watched:movie:'.$i)]]);
 $r=fxs_exchange($pdo,'pages',[]);check(count($r['records'])===100&&$r['more'],'bounded page');$through=$r['through'];$after=$r['after'];
