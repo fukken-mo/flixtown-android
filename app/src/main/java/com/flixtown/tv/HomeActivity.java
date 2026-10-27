@@ -237,7 +237,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     /* ---------------- Catalog ---------------- */
 
     /** Updates come from the panel's app-update.php (see AppUpdates), not from config.php. */
-    @Override public void onConfig(JSONObject config){}
+    @Override public void onConfig(JSONObject config){if(resumed)AccountSync.home(this,()->{if(!destroyed&&resumed){refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});}
     @Override public void onResult(StartupRefresh.Result r){
         if(isFinishing()||destroyed)return;
         if(r.state==StartupRefresh.EXPIRED){startActivity(new Intent(this,RenewalActivity.class));finish();return;}

@@ -67,7 +67,7 @@ function fxs_exchange(PDO $db,string $u,array $in): array {
     $account=hash('sha256','flixtown-sync:'.$u);$acks=[];
     $db->beginTransaction();
     try {
-        $q=$db->prepare('INSERT IGNORE INTO tv_sync_accounts(account_id,revision) VALUES(?,0)');$q->execute([$account]);
+        $q=$db->prepare('INSERT INTO tv_sync_accounts(account_id,revision) VALUES(?,0) ON DUPLICATE KEY UPDATE revision=revision');$q->execute([$account]);
         $q=$db->prepare('SELECT revision FROM tv_sync_accounts WHERE account_id=? FOR UPDATE');$q->execute([$account]);$rev=(int)$q->fetchColumn();
         if($after>$rev||$through>$rev)fxs_fail(409,'reset');
         foreach($ops as $o){

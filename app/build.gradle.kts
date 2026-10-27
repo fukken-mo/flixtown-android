@@ -66,6 +66,7 @@ android {
         }
     }
     buildFeatures { buildConfig = true; resValues = true }
+    testBuildType = if ((project.findProperty("flixSyncTests") as String?) == "true") "qa" else "debug"
     testOptions { unitTests.isReturnDefaultValues = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
