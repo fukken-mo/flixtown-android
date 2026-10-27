@@ -12,6 +12,10 @@ val panelUrl = "https://panelsandapps.com/panels/flixtown2027/api/"
 val releaseKeystore = System.getenv("FLIXTOWN_RELEASE_KEYSTORE")?.let { file(it) }?.takeIf { it.isFile }
 
 android {
+    if ((project.findProperty("flixSyncTests") as String?) == "true") {
+        useLibrary("android.test.runner")
+        useLibrary("android.test.base")
+    }
     namespace = "com.flixtown.tv"
     compileSdk = 36
     signingConfigs {

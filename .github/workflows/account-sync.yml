@@ -43,12 +43,16 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests and separate Preview/QA builds only
-        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixSyncTests=true -PflixVersionName=3.8.18-sync-preview --console=plain
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixSyncTests=true -PflixVersionName=3.8.18-sync-preview --console=plain 2>&1 | tee sync-build.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: sync-unit-results
-          path: app/build/test-results/
+          path: |
+            app/build/test-results/
+            sync-build.log
           retention-days: 5
       - uses: actions/upload-artifact@v4
         with:
