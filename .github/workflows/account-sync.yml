@@ -69,7 +69,7 @@ jobs:
   device:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -99,8 +99,10 @@ jobs:
           script: |
             adb install -r fixture-apks/qa/app-qa.apk
             adb install -r fixture-apks/androidTest/qa/app-qa-androidTest.apk
+            adb logcat -c
             adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
-            grep -q 'OK (8 tests)' device-results.txt
+            adb logcat -d -s FlixTownQA:I | grep sync_large | tee -a device-results.txt || true
+            grep -q 'OK (13 tests)' device-results.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:

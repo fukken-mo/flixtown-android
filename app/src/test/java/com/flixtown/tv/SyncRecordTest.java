@@ -36,4 +36,28 @@ public class SyncRecordTest {
   Map<String,Object> p=new HashMap<>();p.put("resume_episode_series:1","2");p.put("resume_extension_series:1","bad/path");p.put("resume_next_series:1","https://bad");
   JSONObject r=SyncRecord.capture(p,"resume:series:1");assertEquals("mp4",r.getString("extension"));assertEquals("",r.getString("next"));
  }
+ private static JSONObject resume(String episode)throws Exception{
+  return new JSONObject().put("present",true).put("position",20000).put("duration",90000).put("episode",episode).put("next","")
+   .put("extension","mkv").put("next_ext","mp4").put("label","S1 · E1").put("done",false);
+ }
+ @Test public void remoteRecordsAreCheckedBeforeImport()throws Exception{
+  assertTrue(SyncRecord.validRemote("resume:series:9",resume("10")));
+  assertTrue(SyncRecord.validRemote("resume:movie:1",resume("")));
+  assertTrue(SyncRecord.validRemote("resume:movie:1",new JSONObject().put("present",false)));
+  assertTrue(SyncRecord.validRemote("watched:series:9:10",new JSONObject().put("present",true)));
+  assertFalse("series needs an episode",SyncRecord.validRemote("resume:series:9",resume("")));
+  assertFalse("movie has no episode",SyncRecord.validRemote("resume:movie:1",resume("10")));
+  assertFalse("episode is numeric",SyncRecord.validRemote("resume:series:9",resume("10/../x")));
+  assertFalse("extension ends up in a stream address",SyncRecord.validRemote("resume:series:9",resume("10").put("extension","mp4?x=1")));
+  assertFalse(SyncRecord.validRemote("resume:series:9",resume("10").put("next","https://x")));
+  assertFalse("label with an address",SyncRecord.validRemote("resume:series:9",resume("10").put("label","see https://x")));
+  assertFalse("label too long",SyncRecord.validRemote("resume:series:9",resume("10").put("label",new String(new char[241]).replace('\0','a'))));
+  assertFalse("position must be a number",SyncRecord.validRemote("resume:series:9",resume("10").put("position","20000")));
+  assertFalse("position bounded",SyncRecord.validRemote("resume:series:9",resume("10").put("position",604800001L)));
+  assertFalse("negative position",SyncRecord.validRemote("resume:series:9",resume("10").put("position",-1)));
+  assertFalse("missing field",SyncRecord.validRemote("resume:series:9",new JSONObject().put("present",true)));
+  assertFalse("present must be a boolean",SyncRecord.validRemote("watched:movie:1",new JSONObject().put("present","true")));
+  assertFalse("unknown key",SyncRecord.validRemote("server",new JSONObject().put("present",true)));
+  assertFalse(SyncRecord.validRemote("watched:movie:1",null));
+ }
 }
