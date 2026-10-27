@@ -17,3 +17,19 @@ Check especially:
 - report any gaps in actual playback performance or process-kill testing. Do not call emulator state checks a real-hardware frame-rate test.
 
 Return concrete findings with file references and severity. No design changes are needed. If fixing a finding, keep it on this feature branch, add a meaningful regression check and do not change production version/signing.
+
+## Follow-up after the first review
+
+Fixed on this branch (findings 1-7 of the first review):
+1. Sync work off the main thread: capture, journal writes and store reads on a low-priority worker; no per-save capture during playback (heartbeat and stop); migration snapshot in its own file.
+2. Large imports: parsed and validated off the main thread, written in slices of 200 records with one SharedPreferences write each.
+3. Database restores: microsecond revisions (never reused), anchor-based detection, re-read without uploads, this TV's newer or lost copies uploaded again, never rolled back to the backup.
+4. Limits per account (sessions, exchanges) and failed sign-ins per address/username; per-address flood ceiling only.
+5. Operations refused one by one (invalid, capacity); the rest of the batch applies; refused versions are not resent forever.
+6. Imported records checked on the TV with the server's rules before anything is written.
+7. Leaving the player uploads and, at Home, applies waiting changes at once; an existing history catches up in quick rounds of 100.
+
+Regression tests: device tests for a 3,000-record history (longest main-thread stall and import slice measured and bounded), playback saves, restore, account switch and invalid records; PHP tests for a 2,000-record history, per-operation refusals, capacity and restores; HTTP tests for shared-address sign-ins and failed sign-in limits.
+
+Still not covered: real TV hardware (frame rate, flash wear), a real process kill (the reattach test detaches in-process), and production-scale load on the identity backend.
+
