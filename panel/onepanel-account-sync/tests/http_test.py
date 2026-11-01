@@ -19,7 +19,7 @@ $config=['services'=>['progress_sync'=>['enabled'=>true,'session_secret'=>str_re
     subprocess.run(['php','-r',"$p=new PDO(getenv('SYNC_TEST_DSN'),getenv('SYNC_TEST_USER'),getenv('SYNC_TEST_PASSWORD'));$p->exec(file_get_contents($argv[1]));$p->exec(file_get_contents($argv[1]));foreach(['tv_profiles','tv_profile_accounts'] as $t)$p->exec('DELETE FROM '.$t);",str(root/'sql'/'profiles.sql')],check=True)
     sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
     with open(dest/'server.log','wb') as log:
-      proc=subprocess.Popen(['php','-S',f'127.0.0.1:{port}','-t',str(dest)],stdout=log,stderr=log)
+      proc=subprocess.Popen(['php','-d','opcache.enable_cli=0','-S',f'127.0.0.1:{port}','-t',str(dest)],stdout=log,stderr=log)
       try:
         time.sleep(.5)
         def call(body=None,method='POST',raw=None,endpoint='tv-account-sync.php'):
@@ -72,6 +72,15 @@ $config=['services'=>['progress_sync'=>['enabled'=>true,'session_secret'=>str_re
         p['name']='Family';status,r=profile({'action':'profiles','mutation':'update','revision':rev,'profile':p});rev=r['revision']
         status,r=profile({'action':'exchange','profile':pid})
         check(any(x['key']==pp['key'] for x in r['records']),'renaming retains profile history')
+        library=dest/'includes'/'account_sync.php';current=library.read_text()
+        try:
+            library.write_text(current.replace('const FXS_PROFILE_PROTOCOL=1;','').replace('array $in,?string $profile=null','array $in'))
+            check(profile({'action':'profiles'})[0]==503,'partial panel installation cannot advertise profiles')
+            check(profile({'action':'exchange','profile':pid,'operations':[dict(pp,key='favorite:movie:889',operation=str(uuid.uuid4()))]})[0]==503,'old library cannot accept named-profile uploads as default')
+        finally:
+            library.write_text(current)
+        status,r=call({'action':'exchange','session':alice})
+        check(not any(x['key']=='favorite:movie:889' for x in r['records']),'partial installation leaves default history untouched')
         for changed in [dict(p,name='bad\nname'),dict(p,name=''),dict(p,avatar='../x'),dict(p,kids=True),dict(p,name='x'*25)]:
             check(profile({'action':'profiles','mutation':'update','revision':rev,'profile':changed})[0]==400,'invalid name/avatar or unimplemented Kids mode refused')
         status,r=profile({'action':'profiles','mutation':'delete','revision':rev,'id':pid});rev=r['revision']

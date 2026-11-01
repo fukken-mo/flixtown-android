@@ -8,6 +8,7 @@ $in=json_decode($raw,true);if(!is_array($in)||!is_object(json_decode($raw)))fxs_
 require __DIR__.'/../includes/bootstrap.php';require_once __DIR__.'/../includes/tv_requests.php';require_once __DIR__.'/../includes/account_sync.php';require_once __DIR__.'/../includes/profiles.php';
 if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
 try {
+ if(!defined('FXS_PROFILE_PROTOCOL')||FXS_PROFILE_PROTOCOL!==1||(new ReflectionFunction('fxs_exchange'))->getNumberOfParameters()<4)fxs_fail(503,'unavailable');
  if(($config['services']['progress_sync']['enabled']??false)!==true||strlen(fxs_secret())<32)fxs_fail(503,'unavailable');
  // Many customers can share one public address (carrier NAT, a proxy): the per-address limit is only a flood
  // ceiling. Sessions are limited per account; failed sign-ins per address and per username.

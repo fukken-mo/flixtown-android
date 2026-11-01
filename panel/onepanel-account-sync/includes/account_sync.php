@@ -1,4 +1,5 @@
 <?php
+const FXS_PROFILE_PROTOCOL=1;
 /* Account-scoped progress only. No Seerr calls, media writes, admin actions or credentials stored. */
 class FlixSyncError extends Exception {
     public $status; public $reason;

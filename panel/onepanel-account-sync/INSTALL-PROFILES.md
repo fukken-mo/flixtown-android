@@ -13,6 +13,9 @@ Existing account sync must already be installed and working.
    Its original three-argument/default behavior is retained for older apps.
 5. Upload new `api/tv-profile-sync.php` to OnePanel's api folder.
 
+The new endpoint refuses service if the matching updated library is missing, so
+a partially installed patch cannot write a named profile into default history.
+
 No configuration replacement, secrets, cron job or avatar uploads are needed.
 The app derives the new HTTPS endpoint next to its configured `tv-account-sync.php`.
 The avatars are bundled in the APK. Do not upload AI/EPS files to cPanel.

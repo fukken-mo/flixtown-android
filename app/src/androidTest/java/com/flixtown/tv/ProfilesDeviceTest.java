@@ -91,6 +91,7 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
   try{main(()->{findText(tree(),"Done").performClick();((View)findText(tree(),"Family").getParent()).performClick();});assertEquals(first,Profiles.activeId(c));assertEquals(1,home.getHits());}finally{getInstrumentation().removeMonitor(home);}
  }
  private void screenshot(String name)throws Exception{
+  Thread.sleep(500);getInstrumentation().waitForIdleSync(); // allow the emulator compositor to present the new page
   android.graphics.Bitmap image=getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(image);
   java.io.File dir=new java.io.File(getInstrumentation().getTargetContext().getExternalFilesDir(null),"profiles-ui");assertTrue(dir.isDirectory()||dir.mkdirs());
   try(java.io.FileOutputStream out=new java.io.FileOutputStream(new java.io.File(dir,name+".png"))){image.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}

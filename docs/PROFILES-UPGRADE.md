@@ -6,7 +6,7 @@ Branch `codex/profiles`, based on `0c90433` (foundation), which includes the gre
 watched badges and one-time notice fix. Production package, release version defaults,
 permanent signing, panel configuration and live services remain unchanged.
 
-## Implemented, awaiting checks
+## Implemented in the Preview
 
 - Full TV picker, custom name entry, all 28 supplied avatars, editing and deletion.
 - Up to six account-owned profiles, Unicode names up to 24 code points.
@@ -45,21 +45,25 @@ been verified. This Preview must not be advertised as having parental controls.
 New `tv-profile-sync.php` handles metadata and named-profile progress. The old
 `tv-account-sync.php` is unchanged. A separate endpoint prevents an old server from
 silently treating named-profile uploads as default/account uploads.
+The endpoint also verifies the matching library protocol/signature before
+advertising profiles or accepting named-profile uploads. Partial installations
+return unavailable and cannot silently write into the default history.
 Patch files and installation instructions: `panel/onepanel-account-sync/INSTALL-PROFILES.md`.
 `sql/profiles.sql` adds two metadata tables, leaving existing progress intact.
 No config replacement, cron or server avatar uploads. Use staging before live.
 
 ## Tests
 
-- Existing 168 JVM tests plus ProfilePrefs isolation/listener tests.
+- 173 JVM tests, including ProfilePrefs isolation/listener checks.
 - PHP validation, existing account-sync DB suite and real HTTP endpoint tests on
   MySQL 8.0 and MariaDB 10.11 (fake identity provider, disposable databases).
 - 19 device tests on API28 720p and API31 1080p: existing sync tests, watched-card
   test and five new profile tests. Named-profile cross-TV sync, default isolation,
   rename history retention, stale reply on switching, real editor/avatar selection
   and D-pad focus. These use offline fake services; they do not prove live latency.
-- CI is the first Android compile and PHP execution for this implementation.
-  Do not describe the results as passing until the jobs finish.
+- Android source at `601e784` passed all JVM tests and 19 device tests on both
+  setups. The final panel partial-installation guard and screenshot timing update
+  are checked by the following workflow run. See Actions for its final result.
 
 ## Remaining acceptance checks
 
