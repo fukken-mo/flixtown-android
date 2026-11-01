@@ -502,7 +502,8 @@ public class PlayerActivity extends Activity {
         if(Api.prefs(this).getBoolean(watchedKey(),false)){watchCoverage=null;return;}
         long duration=player.getDuration();if(duration<=0||duration==C.TIME_UNSET)return;
         if(watchCoverage==null||!episodeId.equals(coverageEpisode)||duration!=coverageDuration){
-            coverageEpisode=episodeId;coverageDuration=duration;autoWatchedSuppressed=false;
+            if(!episodeId.equals(coverageEpisode))autoWatchedSuppressed=false;
+            coverageEpisode=episodeId;coverageDuration=duration;
             watchCoverage=new WatchCoverage(duration,Api.prefs(this).getString("watched_coverage_"+watchedKey(),""));
         }
         watchCoverage.sample(player.getCurrentPosition(),android.os.SystemClock.elapsedRealtime(),player.isPlaying(),player.getPlaybackParameters().speed);

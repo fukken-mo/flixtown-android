@@ -7,7 +7,7 @@ public class SyncRecordTest {
  @Test public void whitelist(){
   assertEquals("resume:series:9",SyncRecord.entity("resume_next_ext_series:9"));
   assertEquals("watched:series:9:10",SyncRecord.entity("watched_series:9:10"));
-  for(String k:new String[]{"account_data","account_iv","password","server","request_seen_1","notice_seen_1","subtitle_size","resume_art_movie:1"})assertNull(k,SyncRecord.entity(k));
+  for(String k:new String[]{"watched_coverage_watched_series:9:10","account_data","account_iv","password","server","request_seen_1","notice_seen_1","subtitle_size","resume_art_movie:1"})assertNull(k,SyncRecord.entity(k));
   assertFalse(SyncRecord.valid("resume:movie:https://secret"));assertFalse(SyncRecord.valid("watched:series:9"));
  }
  @Test public void movieAndPrivateData()throws Exception{
