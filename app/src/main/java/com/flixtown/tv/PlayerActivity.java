@@ -498,7 +498,7 @@ public class PlayerActivity extends Activity {
     private long coverageDuration;
     private boolean autoWatchedSuppressed;
     private void observeViewing(){
-        if(player==null||!"series".equals(kind)||episodeId==null||episodeId.isEmpty())return;
+        if(player==null||!"series".equals(kind)||contentId==null||contentId.isEmpty()||episodeId==null||episodeId.isEmpty())return;
         if(Api.prefs(this).getBoolean(watchedKey(),false)){watchCoverage=null;return;}
         long duration=player.getDuration();if(duration<=0||duration==C.TIME_UNSET)return;
         if(watchCoverage==null||!episodeId.equals(coverageEpisode)||duration!=coverageDuration){
