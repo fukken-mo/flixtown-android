@@ -66,7 +66,7 @@ final class Profiles {
         Api.IO.execute(()->{
             ProfileCatalog imported=null;long revision=0;boolean ok=false;String error="Profiles are temporarily unavailable. Your current profile still works.";
             try{
-                JSONObject body=mutation==null?new JSONObject():new JSONObject(mutation.toString());body.put("action","profiles");body.put("session",sessionFor(app,url,credentials,Profiles::post).token);
+                JSONObject body=mutation==null?new JSONObject():new JSONObject(mutation.toString());body.put("action","profiles");body.put("session",sessionFor(app,scope,url,credentials,Profiles::post).token);
                 JSONObject r=post(url,body);
                 if(!r.optBoolean("ok")){String why=r.optString("error");if(why.equals("session"))forgetSession(app);if(why.equals("profile_conflict"))error="Profiles changed on another TV. Refresh and try again.";else if(why.equals("profile_limit"))error="This account already has six profiles.";else if(why.equals("profile_capacity"))error="Profile storage is full. Please contact support.";throw new IllegalStateException();}
                 if(r.optInt("profiles_version")!=1||!(r.opt("revision") instanceof Number)||r.optLong("revision")<=0)throw new IllegalStateException();
@@ -89,10 +89,14 @@ final class Profiles {
         });
     }
     /** Shared by default sync, named-profile sync and metadata; never locks the main thread. */
-    static Session sessionFor(Context c,String url,String[] credentials,AccountSync.Transport transport)throws Exception{
-        SharedPreferences file=store(c);String scope=scope(c);int started=epoch;Session found=SESSIONS.get(file);
+    static Session sessionFor(Context c,String expectedScope,String url,String[] credentials,AccountSync.Transport transport)throws Exception{
+        SharedPreferences file=store(c);String scope=scope(c);int started=epoch;
+        String owner=SignOut.ownerId(credentials[0]);
+        if(!expectedScope.equals(scope)||!owner.equals(raw(c).getString(SignOut.OWNER,"")))throw new IllegalStateException();
+        Session found=SESSIONS.get(file);
         if(found!=null&&found.epoch==started&&scope.equals(found.scope)&&android.os.SystemClock.elapsedRealtime()<found.until)return found;
         synchronized(AUTH_LOCK){
+            if(started!=epoch||!expectedScope.equals(scope(c))||!owner.equals(raw(c).getString(SignOut.OWNER,"")))throw new IllegalStateException();
             found=SESSIONS.get(file);if(found!=null&&found.epoch==started&&scope.equals(found.scope)&&android.os.SystemClock.elapsedRealtime()<found.until)return found;
             JSONObject r=transport.post(url,new JSONObject().put("action","session").put("username",credentials[0]).put("password",credentials[1]));
             String token=r.optString("session");if(!r.optBoolean("ok")||token.isEmpty()||token.length()>512||started!=epoch||!scope.equals(scope(c)))throw new IllegalStateException();

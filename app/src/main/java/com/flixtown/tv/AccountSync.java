@@ -36,7 +36,7 @@ final class AccountSync {
     private volatile boolean home=false,playing=false;
     /** Set on WORK when a restore repair queued uploads: sent in the next round, not a minute later. */
     private volatile boolean resend=false;
-    private String owner="",endpoint="",token="",favoriteSnapshot="",scope="";
+    private String owner="",endpoint="",token="",favoriteSnapshot="",scope="",identityScope="";
     private final String profile;
     private String[] account;
     private boolean importing=false,busy=false,repeatRequested=false,importScheduled=false;
@@ -80,7 +80,7 @@ final class AccountSync {
             NET.execute(()->{try{
                 if(!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app)))return;
                 String auth=session;
-                if(auth.isEmpty()||SystemClock.elapsedRealtime()>=until){auth=Profiles.sessionFor(app,url,credentials,transport).token;}
+                if(auth.isEmpty()||SystemClock.elapsedRealtime()>=until){auth=Profiles.sessionFor(app,expected,url,credentials,transport).token;}
                 JSONObject body=new JSONObject().put("action","exchange").put("session",auth).put("after",after).put("pull",false).put("operations",ops);
                 if(!"default".equals(profile))body.put("profile",profile);
                 transport.post(url,body); // Never consume a late response after detaching.
@@ -106,7 +106,7 @@ final class AccountSync {
         scope=wanted;
         if(!owner.equals(mine)||!url.equals(endpoint)){generation++;token="";tokenUntil=0;busy=false;}
         boolean reconnect=account==null;
-        owner=mine;endpoint=url;account=credentials;favoriteSnapshot=local.getString("favorites","");
+        owner=mine;endpoint=url;account=credentials;identityScope=Profiles.scope(app);favoriteSnapshot=local.getString("favorites","");
         if(reconnect){final int g=generation;WORK.execute(()->attach(g));}
     }
     /** WORK: first connection in this process. Imports the existing history once per account and finds saves a killed process missed. */
@@ -163,7 +163,7 @@ final class AccountSync {
         captureDirty();if(account==null||SystemClock.elapsedRealtime()<nextAttempt)return;
         if(busy){repeatRequested=true;return;}
         if(pull&&SystemClock.elapsedRealtime()-lastPull<30000)pull=false;
-        busy=true;final int g=generation;final String url=endpoint;final String[] credentials=account.clone();
+        busy=true;final int g=generation;final String url=endpoint,identity=identityScope;final String[] credentials=account.clone();
         final String existing=token;final long until=tokenUntil;final boolean read=pull&&!playing;final int limit=playing?PLAYING_BATCH:IDLE_BATCH;
         WORK.execute(()->{
             if(g!=generation){Arrays.fill(credentials,"");return;}
@@ -172,15 +172,15 @@ final class AccountSync {
             if(!restoring)for(Map.Entry<String,?> e:journal.getAll().entrySet())if(e.getKey().startsWith("pending:")&&operations.length()<limit){try{operations.put(new JSONObject((String)e.getValue()));}catch(Exception ignored){}}
             final long after=journal.getLong("cursor",0);final String anchor=journal.getString("anchor","");
             if(operations.length()==0&&!read){Arrays.fill(credentials,"");MAIN.post(()->{if(g==generation){busy=false;finishExchange();}});return;}
-            NET.execute(()->exchange(g,url,credentials,existing,until,after,anchor,read,operations,limit));
+            NET.execute(()->exchange(g,url,identity,credentials,existing,until,after,anchor,read,operations,limit));
         });
     }
     /** NET: the request; the reply is processed on WORK and finished on the main thread. */
-    private void exchange(int g,String url,String[] credentials,String existing,long until,long after,String anchor,boolean read,JSONArray operations,int limit){
+    private void exchange(int g,String url,String identity,String[] credentials,String existing,long until,long after,String anchor,boolean read,JSONArray operations,int limit){
         try{
             String session=existing;long expiry=until;
             if(session.isEmpty()||SystemClock.elapsedRealtime()>=expiry){
-                Profiles.Session auth=Profiles.sessionFor(app,url,credentials,transport);
+                Profiles.Session auth=Profiles.sessionFor(app,identity,url,credentials,transport);
                 session=auth.token;expiry=auth.until;
             }
             JSONObject body=new JSONObject().put("action","exchange").put("session",session).put("after",after).put("pull",read).put("operations",operations);
@@ -363,7 +363,7 @@ final class AccountSync {
     static AccountSync fixture(Context c,Transport transport,String user){
         if(!BuildConfig.DEMO)throw new IllegalStateException();
         AccountSync s=new AccountSync(c);s.transport=transport;s.owner=SignOut.ownerId(user);
-        s.local.edit().putString(SignOut.OWNER,s.owner).apply();s.account=new String[]{user,"fixture-password"};
+        s.local.edit().putString(SignOut.OWNER,s.owner).apply();s.identityScope=Profiles.scope(c);s.account=new String[]{user,"fixture-password"};
         s.endpoint="https://fixture.invalid/sync";s.home=true;s.favoriteSnapshot=s.local.getString("favorites","");
         instance=s;final int g=s.generation;WORK.execute(()->s.attach(g));return s;
     }
