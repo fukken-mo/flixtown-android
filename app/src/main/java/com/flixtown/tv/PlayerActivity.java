@@ -303,10 +303,14 @@ public class PlayerActivity extends Activity {
             }
             @Override public void onIsPlayingChanged(boolean playing){
                 // Stop Google TV's ambient mode from starting during a movie.
+                if(watchCoverage!=null)watchCoverage.discontinuity();
                 video.setKeepScreenOn(playing);updatePlayIcon();
             }
             @Override public void onPlayWhenReadyChanged(boolean playWhenReady,int reason){
                 if(reporting&&playWhenReady&&player!=null){player.pause();return;}updatePlayIcon();}
+            @Override public void onPositionDiscontinuity(Player.PositionInfo oldPosition,Player.PositionInfo newPosition,int reason){
+                if(watchCoverage!=null)watchCoverage.discontinuity();
+            }
             @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();collectAudio(tracks);}
             @Override public void onCues(androidx.media3.common.text.CueGroup cueGroup){if(subtitles!=null)subtitles.show(cueGroup.cues);}
             @Override public void onPlayerError(PlaybackException error){
@@ -319,6 +323,7 @@ public class PlayerActivity extends Activity {
                 if(!reporting)showPlaybackError();
             }
         });
+        if(watchCoverage!=null)watchCoverage.discontinuity();
         player.setMediaItem(MediaItem.fromUri(url));
         if(position>0)player.seekTo(position);
         player.setPlayWhenReady(reportRestartReady==null?resumeAsked:reportRestartReady);reportRestartReady=null;
@@ -488,6 +493,29 @@ public class PlayerActivity extends Activity {
         Dialog opened=Ui.picker(this,title,labels,selected,i->{dialog=null;action.select(i);if(dialog==null){continueAfterMenu();showControls(optionsButton);}});dialog=opened;
         opened.setOnDismissListener(d->{if(dialog==opened){dialog=null;continueAfterMenu();showControls(optionsButton);}});
     }
+    private WatchCoverage watchCoverage;
+    private String coverageEpisode="";
+    private long coverageDuration;
+    private boolean autoWatchedSuppressed;
+    private void observeViewing(){
+        if(player==null||!"series".equals(kind)||episodeId==null||episodeId.isEmpty())return;
+        if(Api.prefs(this).getBoolean(watchedKey(),false)){watchCoverage=null;return;}
+        long duration=player.getDuration();if(duration<=0||duration==C.TIME_UNSET)return;
+        if(watchCoverage==null||!episodeId.equals(coverageEpisode)||duration!=coverageDuration){
+            coverageEpisode=episodeId;coverageDuration=duration;autoWatchedSuppressed=false;
+            watchCoverage=new WatchCoverage(duration,Api.prefs(this).getString("watched_coverage_"+watchedKey(),""));
+        }
+        watchCoverage.sample(player.getCurrentPosition(),android.os.SystemClock.elapsedRealtime(),player.isPlaying(),player.getPlaybackParameters().speed);
+    }
+    private void saveViewing(long position){
+        if(watchCoverage==null||!"series".equals(kind)||!episodeId.equals(coverageEpisode))return;
+        android.content.SharedPreferences.Editor edit=Api.prefs(this).edit();
+        if(!autoWatchedSuppressed){
+            if(watchCoverage.complete(position))edit.putBoolean(watchedKey(),true).remove("watched_coverage_"+watchedKey());
+            else edit.putString("watched_coverage_"+watchedKey(),watchCoverage.encode());
+        }
+        edit.apply();
+    }
     private String watchedKey(){return ViewerOptions.watchedKey(kind,contentId,episodeId);}
     private void showOptions(){
         if(player==null||reporting||dialog!=null)return;
@@ -504,7 +532,7 @@ public class PlayerActivity extends Activity {
                 if(player==null)return;float speed=ViewerOptions.SPEEDS[n];player.setPlaybackSpeed(speed);Api.prefs(this).edit().putFloat(ViewerOptions.SPEED,speed).apply();});
             else if(name.equals("Subtitle size"))choose("Subtitle size",new String[]{"Small","Normal","Large","Extra large"},ViewerOptions.index(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f),ViewerOptions.SIZES),n->{Api.prefs(this).edit().putFloat(ViewerOptions.SIZE,ViewerOptions.SIZES[n]).apply();applySubtitleAppearance();});
             else if(name.equals("Subtitle appearance"))choose("Subtitle appearance",new String[]{"Original track style","White with outline","White on black","Yellow with outline"},Math.max(0,Math.min(3,Api.prefs(this).getInt(ViewerOptions.STYLE,0))),n->{Api.prefs(this).edit().putInt(ViewerOptions.STYLE,n).apply();applySubtitleAppearance();});
-            else {boolean watched=!Api.prefs(this).getBoolean(watchedKey(),false);Api.prefs(this).edit().putBoolean(watchedKey(),watched).apply();flash(watched?"Marked as watched":"Marked as unwatched");}
+            else {boolean watched=!Api.prefs(this).getBoolean(watchedKey(),false);Api.prefs(this).edit().putBoolean(watchedKey(),watched).remove("watched_coverage_"+watchedKey()).apply();autoWatchedSuppressed=!watched;if(watchCoverage!=null)watchCoverage.discontinuity();flash(watched?"Marked as watched":"Marked as unwatched");}
         });
     }
     private void showEpisodes(){
@@ -818,7 +846,7 @@ public class PlayerActivity extends Activity {
 
     private final Runnable progress=new Runnable(){@Override public void run(){
         if(player==null)return;
-        qaState();
+        qaState();observeViewing();
         long duration=player.getDuration(),current=player.getCurrentPosition();
         if(player.isPlaying() && current>=15000 && current/5000!=lastSavedAt/5000){saveProgress(current,duration);lastSavedAt=current;}
         if(controlsVisible())updateProgressUi();
@@ -852,6 +880,7 @@ public class PlayerActivity extends Activity {
     }
     private void saveProgress(long current,long duration){
         if(!ended && kind!=null && contentId!=null && !contentId.isEmpty()){
+            saveViewing(current);
             Catalog.saveProgress(this,kind,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,current,duration,endKnown());
             // "S2 · E4  Title" for the Continue Watching card on Home.
             if("series".equals(kind) && subtitle!=null && current>=15000)Api.prefs(this).edit().putString("resume_label_"+kind+":"+contentId,subtitle).apply();
@@ -887,6 +916,7 @@ public class PlayerActivity extends Activity {
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
         queueFollowingEpisode();
+        if(watchCoverage!=null)watchCoverage.discontinuity();
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
     }
     private void syncEpisodeNeighbors(){
@@ -922,6 +952,7 @@ public class PlayerActivity extends Activity {
         syncEpisodeNeighbors();showSubtitle();updateEpisodeButtons();status.setVisibility(View.GONE);
         // Persist the selected episode immediately, even if Back is pressed before the 15-second save threshold.
         Catalog.selectEpisode(this,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,subtitle);
+        if(watchCoverage!=null)watchCoverage.discontinuity();
         player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.setPlayWhenReady(keepPlaying);
         if(manual){View focus=direction<0?previousButton:nextButton;showControls(focus!=null&&focus.isEnabled()?focus:playButton);}
     }

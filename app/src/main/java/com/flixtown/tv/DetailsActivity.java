@@ -359,17 +359,17 @@ public class DetailsActivity extends Activity {
     private void showWatchedMenu(String episode){
         String key=ViewerOptions.watchedKey(kind,id,episode);boolean watched=Api.prefs(this).getBoolean(key,false);
         Ui.dialog(this,movie?title:"Episode status",watched?"Watched":"Not watched",new String[]{watched?"Mark as unwatched":"Mark as watched","Cancel"},0,i->{
-            if(i!=0)return;Api.prefs(this).edit().putBoolean(key,!watched).apply();
+            if(i!=0)return;Api.prefs(this).edit().putBoolean(key,!watched).remove("watched_coverage_"+key).apply();
             android.widget.Toast.makeText(this,watched?"Marked as unwatched":"Marked as watched",android.widget.Toast.LENGTH_SHORT).show();
             // Refresh visible badges in place without rebuilding the row or moving focus.
             if(seasonContent!=null)updateWatchedBadges(seasonContent);
         },null);
     }
     private void updateWatchedBadges(View view){
-        if(view instanceof FrameLayout && view.getTag() instanceof JSONObject){JSONObject ep=(JSONObject)view.getTag();
-            FrameLayout card=(FrameLayout)view;for(int i=0;i<card.getChildCount();i++){View child=card.getChildAt(i);
-                if(child instanceof TextView){TextView text=(TextView)child;String value=text.getText().toString();
-                    if(value.matches("(?:✓ )?[0-9]+"))text.setText((Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",id,ep.optString("id")),false)?"✓ ":"")+value.replace("✓ ",""));}}
+        if(view instanceof FrameLayout && view.getTag() instanceof JSONObject){
+            JSONObject ep=(JSONObject)view.getTag();
+            View badge=view.findViewWithTag("episode-watched-badge");
+            if(badge!=null)badge.setVisibility(Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",id,ep.optString("id")),false)?View.VISIBLE:View.GONE);
         }
         if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)updateWatchedBadges(((ViewGroup)view).getChildAt(i));
     }
@@ -486,10 +486,15 @@ public class DetailsActivity extends Activity {
         JSONObject info=ep.optJSONObject("info");String art=info==null?"":info.optString("movie_image","");
         Images.load(image,art,420);
         View shade=new View(this);shade.setBackgroundResource(R.drawable.card_shade);frame.addView(shade,new FrameLayout.LayoutParams(-1,-1));
-        TextView index=Ui.heading(this,(Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",id,ep.optString("id")),false)?"✓ ":"")+String.format(Locale.US,"%02d",number),30);
+        TextView index=Ui.heading(this,String.format(Locale.US,"%02d",number),30);
         Ui.pad(index,this,12,6,0,0);frame.addView(index);
         if(current){TextView badge=Ui.text(this,"Continue",12);badge.setBackground(Ui.rounded(Ui.ACCENT,4,this));Ui.pad(badge,this,8,2,8,2);
             FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(-2,-2,Gravity.END|Gravity.TOP);bp.setMargins(0,Ui.dp(this,10),Ui.dp(this,10),0);frame.addView(badge,bp);}
+        TextView watched=Ui.text(this,"✓ Watched",12);watched.setTag("episode-watched-badge");
+        watched.setTextColor(0xFF83E5A7);watched.setBackground(Ui.rounded(0xEE123B27,4,this));Ui.pad(watched,this,7,2,7,2);
+        watched.setVisibility(Api.prefs(this).getBoolean(ViewerOptions.watchedKey("series",id,ep.optString("id")),false)?View.VISIBLE:View.GONE);
+        FrameLayout.LayoutParams wp=new FrameLayout.LayoutParams(-2,-2,Gravity.END|Gravity.TOP);
+        wp.setMargins(0,Ui.dp(this,current?34:10),Ui.dp(this,10),0);frame.addView(watched,wp);
         TextView label=Ui.text(this,ep.optString("title","Episode "+number),13);label.setMaxLines(2);label.setEllipsize(TextUtils.TruncateAt.END);
         Ui.pad(label,this,12,0,12,8);
         frame.addView(label,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
