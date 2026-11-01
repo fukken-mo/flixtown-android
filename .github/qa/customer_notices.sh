@@ -34,25 +34,31 @@ adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.L
 wait_home;sleep 6;ok 'existing login and Home open normally'
 live '{"customer_notices":true,"notice_requests":[],"resolved_reports":[{"id":"42","type":"movie","media_id":1000,"title":"Resolved fixture"}]}'
 reopen;wait_text 'marked resolved';wait_text 'Watch';shot 01-resolved;ok 'own resolved report offers Watch'
-key BACK;sleep 4;absent 'marked resolved';ok 'Back defers without immediately reopening dialog'
-reopen;wait_text 'marked resolved';ok 'deferred report remains unread on next launch'
-focus_button Dismiss;key DPAD_CENTER;sleep 3;absent 'marked resolved';ok 'Dismiss closes resolved notice'
+key BACK;sleep 4;absent 'marked resolved';ok 'Back closes the already-seen notice'
+reopen;absent 'marked resolved';ok 'shown report stays seen after Back and relaunch'
+live '{"customer_notices":true,"notice_requests":[],"resolved_reports":[{"id":"44","type":"movie","media_id":1000,"title":"Close fixture"}]}'
+reopen;wait_text 'marked resolved';focus_button 'Got it';key DPAD_CENTER;sleep 3;absent 'marked resolved';ok 'Got it closes resolved notice'
 reopen;absent 'marked resolved';ok 'dismissed resolution does not repeat after process restart'
+live '{"customer_notices":true,"notice_requests":[],"resolved_reports":[{"id":"45","type":"movie","media_id":1000,"title":"No action fixture"}]}'
+reopen;wait_text 'marked resolved';ok 'new report is displayed without requiring a button'
+reopen;absent 'marked resolved';ok 'force-stop with notice open does not repeat it'
 live '{"customer_notices":true,"notice_requests":[],"resolved_reports":[{"id":"43","type":"movie","media_id":1000,"title":"Watch fixture"}]}'
 reopen;wait_text 'marked resolved';focus_button Watch;key DPAD_CENTER;sleep 3
 activity | grep -q DetailsActivity || { note 'FAIL Watch did not open Details';exit 1; };ok 'Watch opens existing movie Details'
 key BACK;wait_home;sleep 3;absent 'marked resolved';ok 'Watch acknowledges report without starting playback automatically'
 live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Approved fixture","year":"2020","state":"approved","requested_at":123,"seasons":[]}]}'
 reopen;wait_text 'has been approved';wait_text 'View requests';absent 'text="Watch"';shot 02-approved;ok 'approval is distinct from ready and offers no Watch'
-focus_button 'View requests';key DPAD_CENTER;sleep 3
+key BACK;reopen;absent 'has been approved';ok 'approval stays seen after Back and restart'
+live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Approved fixture","year":"2020","state":"approved","requested_at":124,"seasons":[]}]}'
+reopen;wait_text 'has been approved';focus_button 'View requests';key DPAD_CENTER;sleep 3
 activity | grep -q RequestsActivity || { note 'FAIL request notice did not open Requests';exit 1; }
 wait_text 'Approved fixture';ok 'View requests opens own My Requests history directly'
 key BACK;wait_home
-live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Seerr-only fixture","year":"2020","state":"available","requested_at":123,"seasons":[]}]}'
+live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Seerr-only fixture","year":"2020","state":"available","requested_at":124,"seasons":[]}]}'
 reopen;absent 'ready to watch';ok 'Seerr availability alone does not claim title was added to Flix Town'
-live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Ready fixture","year":"2020","state":"local","requested_at":123,"seasons":[]}]}'
+live '{"customer_notices":true,"notice_requests":[{"type":"movie","id":8100,"title":"Ready fixture","year":"2020","state":"local","requested_at":124,"seasons":[]}]}'
 reopen;wait_text 'ready to watch';shot 03-ready;ok 'same request transitions from approved to ready'
-focus_button Dismiss;key DPAD_CENTER;reopen;absent 'ready to watch';ok 'ready notice does not repeat after dismissal'
+focus_button 'Got it';key DPAD_CENTER;reopen;absent 'ready to watch';ok 'ready notice does not repeat after dismissal'
 live '{"customer_notices":true,"requests":"down","reports_down":true}'
 reopen;absent 'has been approved';absent 'marked resolved';ok 'service outage leaves Home working without error dialog'
 adb logcat -b crash -d > "$OUT/crash.txt"

@@ -1,0 +1,111 @@
+name: One-time customer notices Preview
+
+# Separate Preview/QA only. No production signing or live service calls.
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/notice-once]
+
+concurrency:
+  group: notice-once-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and QA APK (current source)
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa -PflixPreview=true -PflixVersionName=3.8.20-notice-once-preview --console=plain 2>&1 | tee build.log
+          mkdir -p apks && cp app/build/outputs/apk/qa/app-qa.apk apks/current.apk
+          python3 - <<'EOF'
+          import glob,xml.etree.ElementTree as ET
+          t=f=0
+          for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+              r=ET.parse(p).getroot();t+=int(r.get('tests'));f+=int(r.get('failures'))+int(r.get('errors'))
+          print("unit tests: %d run, %d failed"%(t,f))
+          EOF
+      - uses: actions/upload-artifact@v4
+        with: { name: notice-relogin-apks, path: apks/, retention-days: 3 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-Notice-Once-PREVIEW
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: notice-relogin-unit-results, path: "build.log\napp/build/test-results/", retention-days: 7 }
+  tv:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { apk: current, api: 31, profile: tv_1080p }
+          - { apk: current, api: 28, profile: tv_720p }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: notice-relogin-apks, path: apks }
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Notices across sign-out and sign-in on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: APK=apks/${{ matrix.apk }}.apk QA_OUT=qa/notice-relogin-${{ matrix.apk }}-api${{ matrix.api }} bash .github/qa/notice_relogin.sh || true
+      - name: Result
+        run: |
+          R=qa/notice-relogin-${{ matrix.apk }}-api${{ matrix.api }}/report.txt
+          cat "$R" || true
+          grep -q '^notice re-login: [0-9]* passed, 0 failed' "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "notice-relogin-${{ matrix.apk }}-api${{ matrix.api }}", path: "qa/notice-relogin-${{ matrix.apk }}-api${{ matrix.api }}/", retention-days: 14 }
+  notices-regression:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: notice-relogin-apks, path: apks }
+      - run: mkdir -p app/build/outputs/apk/qa && cp apks/current.apk app/build/outputs/apk/qa/app-qa.apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Existing customer-notice checks
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: QA_OUT=qa/customer-notices bash .github/qa/customer_notices.sh || true
+      - name: Result
+        run: |
+          cat qa/customer-notices/report.txt || true
+          grep -q '^Customer notices: [0-9]* passed, 0 failed' qa/customer-notices/report.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: customer-notices-regression, path: qa/customer-notices/, retention-days: 14 }

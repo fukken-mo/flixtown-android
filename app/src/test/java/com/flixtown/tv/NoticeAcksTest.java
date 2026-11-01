@@ -46,9 +46,9 @@ public class NoticeAcksTest {
         signOut();signIn(B);
         assertTrue("B keeps its own",seen(B,R43));assertFalse(seen(B,R42));
     }
-    @Test public void laterIsNotStoredAndNewResolutionsAppear(){
+    @Test public void unseenNewResolutionsAppear(){
         signIn(A);dismiss(A,R42);
-        assertFalse("Later stores nothing: still unread",seen(A,"report:44"));
+        assertFalse("not yet displayed: still unread",seen(A,"report:44"));
         assertFalse("a new resolution is unread",seen(A,R43));
         assertTrue(seen(A,R42));
     }
@@ -73,12 +73,17 @@ public class NoticeAcksTest {
         assertFalse(NoticeAcks.seen(c,"",R42));assertFalse(NoticeAcks.seen(c,null,R42));
         assertTrue(c.getSharedPreferences(NoticeAcks.FILE,0).getAll().isEmpty());
     }
-    @Test public void storageIsBoundedOldestFirst()throws Exception{
+    @Test public void oldNoticesAreNeverEvictedByNewOnes(){
         String a=SignOut.ownerId(A);
-        for(int i=0;i<NoticeAcks.MAX+5;i++){NoticeAcks.mark(c,a,"report:"+i);if(i==0||i==NoticeAcks.MAX+3)Thread.sleep(2);}
-        assertEquals(NoticeAcks.MAX,c.getSharedPreferences(NoticeAcks.FILE,0).getAll().size());
-        assertFalse("oldest forgotten",NoticeAcks.seen(c,a,"report:0"));
-        assertTrue("newest kept",NoticeAcks.seen(c,a,"report:"+(NoticeAcks.MAX+4)));
+        for(int i=0;i<1500;i++)NoticeAcks.mark(c,a,"report:"+i);
+        assertEquals(1500,c.getSharedPreferences(NoticeAcks.FILE,0).getAll().size());
+        assertTrue("oldest stays seen",NoticeAcks.seen(c,a,"report:0"));
+        assertTrue("newest kept",NoticeAcks.seen(c,a,"report:1499"));
+    }
+    @Test public void repeatedDisplayDoesNotCreateExtraEntries(){
+        String a=SignOut.ownerId(A);
+        NoticeAcks.mark(c,a,R42);NoticeAcks.mark(c,a,R42);
+        assertEquals(1,c.getSharedPreferences(NoticeAcks.FILE,0).getAll().size());
     }
     @Test public void entriesNeverContainTheUsername(){
         signIn(A);dismiss(A,R42);

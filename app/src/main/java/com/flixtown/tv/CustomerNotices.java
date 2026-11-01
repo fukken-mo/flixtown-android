@@ -99,17 +99,16 @@ final class CustomerNotices {
         Notice n=pending.get(0);Catalog.Item item=match(n);
         String action=item!=null?"Watch":"View requests";
         boolean isReport=n.key.startsWith("report:");
-        String[] labels=isReport&&item==null?new String[]{"Dismiss","Later"}:new String[]{action,"Dismiss","Later"};
+        String[] labels=isReport&&item==null?new String[]{"Got it"}:new String[]{action,"Got it"};
         dialog=Ui.dialog(home,n.title,n.message,labels,0,index->{
             dialog=null;
-            int dismiss=labels.length==2?0:1;
-            if(index==labels.length-1){snoozed=true;return;} // Later and Back leave it unread for the next foreground visit.
-            mark(n);pending.remove(0);
-            if(index==dismiss){home.getWindow().getDecorView().post(this::show);return;}
+            if(index==labels.length-1){home.getWindow().getDecorView().post(this::show);return;}
             if(item!=null)host.watch(item);else home.startActivity(new Intent(home,RequestsActivity.class).putExtra("show_my_requests",true));
         },()->{dialog=null;snoozed=true;});
+        // Showing is the acknowledgement. Back, leaving Home and closing the app cannot defer it.
+        if(dialog!=null&&dialog.isShowing()){mark(n);pending.remove(0);}
     }
-    /** Dismiss, Watch or View requests: this account will not see the notice again (Later is not stored). */
+    /** Each event is consumed when displayed, regardless of which button (or Back) the customer uses. */
     private void mark(Notice n){
         NoticeAcks.mark(home,ackOwner,n.key);
         if(n.key.startsWith("request:")&&n.key.endsWith(":ready")){

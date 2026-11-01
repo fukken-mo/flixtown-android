@@ -3,7 +3,7 @@
 # Resolved playback-report notices across sign-out and sign-in:
 #   Dismiss -> sign out -> the same account signs in again (remote and QR): the notice stays dismissed;
 #   another account on the TV still gets its own notice (nothing inherited) and its sign-in does not
-#   undo the first account's Dismiss; Later keeps a notice for the next visit; a new resolution appears.
+#   undo the first account's acknowledgement; Back never defers; a new resolution appears.
 # Results: $OUT/report.txt
 set -u
 PKG=com.myflixtown.tv.native.qa
@@ -65,7 +65,7 @@ wait_activity HomeActivity 60 && ok "A signed in (QR) and Home opened" || bad "A
 # 1. A dismisses report 42
 live "$R42" hold; launch; wait_activity HomeActivity 40
 notice_shown && ok "A: resolved report 42 is shown" || bad "A: report 42 not shown"; shot 01-a-notice
-press Dismiss; sleep 2; ! has "marked resolved" && ok "A: Dismiss closes it" || bad "A: Dismiss did not close it"
+press "Got it"; sleep 2; ! has "marked resolved" && ok "A: Dismiss closes it" || bad "A: Dismiss did not close it"
 note "INFO  after Dismiss: $(acks)"
 launch; wait_activity HomeActivity 40
 notice_absent && ok "A: still dismissed after restarting the app" || bad "A: shown again after restart"
@@ -74,32 +74,31 @@ notice_absent && ok "A: still dismissed after restarting the app" || bad "A: sho
 sign_out; note "INFO  after sign-out: $(acks)"
 remote_sign_in $A_USER $A_PASS; note "INFO  after A signs in (remote): $(acks)"
 in_activity HomeActivity && ok "A signed in again with the remote" || bad "A remote sign-in ($(resumed))"
-notice_absent && ok "A: Dismiss survives sign-out and same-account sign-in (remote)" || { bad "A: dismissed notice returned after remote sign-in"; shot 02-a-returned; press Later; }
+notice_absent && ok "A: Dismiss survives sign-out and same-account sign-in (remote)" || { bad "A: dismissed notice returned after remote sign-in"; shot 02-a-returned; key BACK; }
 
 # 3. Sign out, same account signs in with the QR code
 live "$R42"; sign_out; wait_activity HomeActivity 45; note "INFO  after A signs in (QR): $(acks)"
 in_activity HomeActivity && ok "A signed in again with the QR code" || bad "A QR sign-in ($(resumed))"
-notice_absent && ok "A: Dismiss survives sign-out and same-account sign-in (QR)" || { bad "A: dismissed notice returned after QR sign-in"; shot 03-a-returned-qr; press Later; }
+notice_absent && ok "A: Dismiss survives sign-out and same-account sign-in (QR)" || { bad "A: dismissed notice returned after QR sign-in"; shot 03-a-returned-qr; key BACK; }
 
 # 4. Another account on this TV: gets its own notice, inherits nothing
 live "$R42" hold; sign_out; remote_sign_in $B_USER $B_PASS; note "INFO  after B signs in: $(acks)"
 in_activity HomeActivity && ok "B signed in with the remote" || bad "B sign-in ($(resumed))"
 notice_shown && ok "B: report 42 is unread for B (A's Dismiss is not inherited)" || bad "B: inherited A's Dismiss"; shot 04-b-notice
 
-# 5. Later keeps it for the next visit
-press Later; sleep 2; ! has "marked resolved" && ok "B: Later closes it" || bad "B: Later did not close it"
+# 5. Back never defers an already displayed notice
+key BACK; sleep 2; ! has "marked resolved" && ok "B: Back closes it" || bad "B: Back did not close it"
 launch; wait_activity HomeActivity 40
-notice_shown && ok "B: after Later the notice comes back on the next visit" || bad "B: Later lost the notice"
-press Dismiss; sleep 2
+notice_absent && ok "B: a shown notice stays seen after Back and restart" || bad "B: Back allowed a repeat"
 
 # 6. Back to A: B's sign-in did not undo A's Dismiss
 sign_out; remote_sign_in $A_USER $A_PASS; note "INFO  after A signs in after B: $(acks)"
-notice_absent && ok "A: Dismiss survives another account signing in on this TV" || { bad "A: dismissed notice returned after B used the TV"; press Later; }
+notice_absent && ok "A: Dismiss survives another account signing in on this TV" || { bad "A: dismissed notice returned after B used the TV"; key BACK; }
 
 # 7. A genuinely new resolution appears
 live "$R42,$R43" hold; launch; wait_activity HomeActivity 40
 notice_shown && { dump; title_shown "Resolved forty-three" && ok "A: a new resolution (report 43) is shown" || bad "A: wrong notice shown ($(grep -o 'Resolved forty-[a-z]*' "$OUT/ui.xml" | head -1))"; } || bad "A: new resolution not shown"
-shot 05-a-new; press Dismiss; sleep 2
+shot 05-a-new; press "Got it"; sleep 2
 notice_absent 6 && ok "A: only the new resolution was shown (42 stays dismissed)" || bad "A: 42 shown again with 43"
 
 crash="$(adb logcat -d -b crash | grep -c "Process: $PKG,")"; check "no Flix Town crash" '[ "$crash" = 0 ]'
