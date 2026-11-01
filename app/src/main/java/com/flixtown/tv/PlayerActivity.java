@@ -533,7 +533,7 @@ public class PlayerActivity extends Activity {
                 if(player==null)return;float speed=ViewerOptions.SPEEDS[n];player.setPlaybackSpeed(speed);Api.prefs(this).edit().putFloat(ViewerOptions.SPEED,speed).apply();});
             else if(name.equals("Subtitle size"))choose("Subtitle size",new String[]{"Small","Normal","Large","Extra large"},ViewerOptions.index(Api.prefs(this).getFloat(ViewerOptions.SIZE,1f),ViewerOptions.SIZES),n->{Api.prefs(this).edit().putFloat(ViewerOptions.SIZE,ViewerOptions.SIZES[n]).apply();applySubtitleAppearance();});
             else if(name.equals("Subtitle appearance"))choose("Subtitle appearance",new String[]{"Original track style","White with outline","White on black","Yellow with outline"},Math.max(0,Math.min(3,Api.prefs(this).getInt(ViewerOptions.STYLE,0))),n->{Api.prefs(this).edit().putInt(ViewerOptions.STYLE,n).apply();applySubtitleAppearance();});
-            else {boolean watched=!Api.prefs(this).getBoolean(watchedKey(),false);Api.prefs(this).edit().putBoolean(watchedKey(),watched).remove("watched_coverage_"+watchedKey()).apply();autoWatchedSuppressed=!watched;if(watchCoverage!=null)watchCoverage.discontinuity();flash(watched?"Marked as watched":"Marked as unwatched");}
+            else {boolean watched=!Api.prefs(this).getBoolean(watchedKey(),false);Api.prefs(this).edit().putBoolean(watchedKey(),watched).remove("watched_coverage_"+watchedKey()).apply();coverageEpisode=episodeId;watchCoverage=null;autoWatchedSuppressed=!watched;flash(watched?"Marked as watched":"Marked as unwatched");}
         });
     }
     private void showEpisodes(){
