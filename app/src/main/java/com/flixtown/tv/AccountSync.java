@@ -68,17 +68,17 @@ final class AccountSync {
      * Unacknowledged operations remain journaled and are idempotently retried on the next visit. */
     private void flushLeavingProfile(){
         if(account==null||endpoint.isEmpty())return;
-        final String[] credentials=account.clone();final String expected=Profiles.scope(app),who=owner,url=endpoint,session=token;final long until=tokenUntil;
+        final int accountEpoch=Profiles.accountGeneration();final String[] credentials=account.clone();final String expected=Profiles.scope(app),who=owner,url=endpoint,session=token;final long until=tokenUntil;
         WORK.execute(()->{
-            if(!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app))){Arrays.fill(credentials,"");return;}
-            Map<String,?> all=local.getAll();Set<String> keys=localKeys(all);
+            if(accountEpoch!=Profiles.accountGeneration()||!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app))){Arrays.fill(credentials,"");return;}
+            Map<String,?> all=local.getAll();if(accountEpoch!=Profiles.accountGeneration()){Arrays.fill(credentials,"");return;}Set<String> keys=localKeys(all);
             for(String k:journal.getAll().keySet())if(k.startsWith("observed:")&&SyncRecord.valid(k.substring(9)))keys.add(k.substring(9));
             writePending(generation,keys,all,Collections.<String>emptySet());
             JSONArray ops=new JSONArray();for(Map.Entry<String,?> e:journal.getAll().entrySet())if(e.getKey().startsWith("pending:")&&ops.length()<IDLE_BATCH)try{ops.put(new JSONObject((String)e.getValue()));}catch(Exception ignored){}
             if(ops.length()==0){Arrays.fill(credentials,"");return;}
             final long after=journal.getLong("cursor",0);
             NET.execute(()->{try{
-                if(!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app)))return;
+                if(accountEpoch!=Profiles.accountGeneration()||!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app)))return;
                 String auth=session;
                 if(auth.isEmpty()||SystemClock.elapsedRealtime()>=until){auth=Profiles.sessionFor(app,expected,url,credentials,transport).token;}
                 JSONObject body=new JSONObject().put("action","exchange").put("session",auth).put("after",after).put("pull",false).put("operations",ops);
@@ -187,7 +187,7 @@ final class AccountSync {
             if(!anchor.isEmpty())body.put("anchor",anchor);
             if(!"default".equals(profile))body.put("profile",profile);
             JSONObject reply=transport.post(url,body);
-            if(!"default".equals(profile)&&!profile.equals(reply.optString("profile")))throw new IOException();
+            if(!"default".equals(profile)&&reply.optBoolean("ok")&&!profile.equals(reply.optString("profile")))throw new IOException();
             final String saved=session;final long exp=expiry;
             WORK.execute(()->{
                 if(g!=generation)return;
@@ -218,7 +218,7 @@ final class AccountSync {
                     if(!anchor.isEmpty())body.put("anchor",anchor);
                     if(!"default".equals(profile))body.put("profile",profile);
                     JSONObject r=transport.post(url,body);
-                    if(!"default".equals(profile)&&!profile.equals(r.optString("profile")))throw new IOException();
+                    if(!"default".equals(profile)&&r.optBoolean("ok")&&!profile.equals(r.optString("profile")))throw new IOException();
                     WORK.execute(()->{
                         if(g!=generation)return;
                         if(!r.optBoolean("ok")){if("reset".equals(r.optString("error"))){beginRestore();MAIN.post(()->restart(g));}else MAIN.post(()->failed(g));return;}

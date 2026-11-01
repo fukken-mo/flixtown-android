@@ -39,6 +39,7 @@ final class Profiles {
     static String journalSuffix(Context c){String id=activeId(c);return "default".equals(id)?"":"_"+scope(c)+"_"+id;}
     static synchronized boolean needsChoice(Context c){return !scope(c).isEmpty()&&!CHOSEN.contains(scope(c));}
     static synchronized void chosen(Context c){CHOSEN.add(scope(c));}
+    static int accountGeneration(){return epoch;}
     static synchronized void signOut(){epoch++;CHOSEN.clear();SESSIONS.clear();}
     static synchronized void save(Context c,String scope,ProfileCatalog data,long revision){
         Map<String,ProfileCatalog> values=CACHE.get(store(c));if(values==null){values=new LinkedHashMap<>();CACHE.put(store(c),values);}values.put(scope,data);try{store(c).edit().putString(scope+":catalog",data.encode()).putLong(scope+":revision",revision).apply();}catch(Exception impossible){throw new IllegalStateException(impossible);}

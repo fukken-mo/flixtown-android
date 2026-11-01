@@ -30,10 +30,11 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
  private AccountSync client(Context c,Fake f,String id){final AccountSync[] out={null};main(()->{seed(c,id);out[0]=AccountSync.fixture(c,f);clients.add(out[0]);});return out[0];}
  private void tick(AccountSync s){main(()->s.fixtureTick(false));}
  private static final class Fake implements AccountSync.Transport {
-  final Map<String,Map<String,JSONObject>> data=new HashMap<>();long clock;volatile int sessions;
+  final Map<String,Map<String,JSONObject>> data=new HashMap<>();long clock;volatile int sessions,exchanges;volatile boolean resetOnce;
   CountDownLatch gate,release;boolean block;
   @Override public JSONObject post(String url,JSONObject b)throws Exception{
    if(b.optString("action").equals("session")){sessions++;return new JSONObject().put("ok",true).put("session",b.getString("username")).put("ttl",900);}
+   exchanges++;if(resetOnce){resetOnce=false;return new JSONObject().put("ok",false).put("error","reset");}
    if(block){block=false;gate.countDown();release.await(10,TimeUnit.SECONDS);}
    synchronized(this){String scope=b.getString("session")+"|"+b.optString("profile","default");Map<String,JSONObject> rows=data.get(scope);if(rows==null){rows=new LinkedHashMap<>();data.put(scope,rows);}
     JSONArray acks=new JSONArray(),records=new JSONArray();JSONArray ops=b.optJSONArray("operations");if(ops!=null)for(int i=0;i<ops.length();i++){JSONObject op=ops.getJSONObject(i);String k=op.getString("key");JSONObject old=rows.get(k);boolean accepted=op.optLong("base")== (old==null?0:old.getLong("revision"));JSONObject row=old;
@@ -50,7 +51,10 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
   main(()->Api.prefs(a).edit().putLong("resume_position_movie:1",120000).putLong("resume_duration_movie:1",600000).putString("favorites","|movie:1|").putBoolean("watched_series:2:3",true).apply());
   tick(one);waitFor(()->{synchronized(f){return f.data.containsKey("fixture|"+first)&&f.data.get("fixture|"+first).size()>=3;}});
   tick(two);waitFor(()->Api.prefs(b).getLong("resume_position_movie:1",0)==120000);
-  tick(guest);tick(legacy);AccountSync.fixtureAwaitWork();Thread.sleep(200);
+  int before=f.exchanges;f.resetOnce=true;tick(two);waitFor(()->f.exchanges>=before+2);
+  waitFor(()->!b.getSharedPreferences("account_sync_v1"+Profiles.journalSuffix(b),0).getBoolean("restoring",false));
+  assertEquals("named-profile restore keeps progress",120000,Api.prefs(b).getLong("resume_position_movie:1",0));
+  tick(guest);tick(legacy);waitFor(()->{synchronized(f){return f.data.containsKey("fixture|"+second)&&f.data.containsKey("fixture|default");}});AccountSync.fixtureAwaitWork();Thread.sleep(100);
   assertFalse(Api.prefs(c).contains("resume_position_movie:1"));assertFalse(Api.prefs(d).contains("resume_position_movie:1"));assertTrue(Api.prefs(b).getBoolean("watched_series:2:3",false));assertTrue(Api.prefs(b).getString("favorites","").contains("movie:1"));
  }
  public void testSessionIsReusedAcrossProfileSwitches()throws Exception{

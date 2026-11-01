@@ -56,7 +56,7 @@ public class ProfilesActivity extends Activity {
     private void heading(String title,String subtitle){TextView h=Ui.heading(this,title,30);h.setGravity(Gravity.CENTER);body.addView(h);TextView t=Ui.text(this,subtitle,14);t.setTextColor(Ui.TEXT_2);t.setGravity(Gravity.CENTER);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=Ui.dp(this,6);p.bottomMargin=Ui.dp(this,16);body.addView(t,p);}
     private void picker(){
         editingId=null;body.removeAllViews();heading(manage?"Manage profiles":"Who’s watching?",manage?"Choose a profile to edit its name and picture.":"Your own Continue Watching, My List and watched episodes.");
-        GridLayout grid=new GridLayout(this);grid.setColumnCount(4);grid.setAlignmentMode(GridLayout.ALIGN_MARGINS);body.addView(grid);
+        GridLayout grid=new GridLayout(this);grid.setColumnCount(3);grid.setAlignmentMode(GridLayout.ALIGN_MARGINS);body.addView(grid,new LinearLayout.LayoutParams(-2,-2));
         ProfileCatalog data=Profiles.catalog(this);View selected=null;
         for(ProfileCatalog.Profile p:data.profiles){
             LinearLayout card=Ui.column(this);card.setGravity(Gravity.CENTER);card.setFocusable(true);card.setClickable(true);Ui.pad(card,this,8,7,8,6);
