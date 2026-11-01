@@ -21,6 +21,6 @@ Review PlayerActivity observer/discontinuity lifecycle, manual unwatched, episod
 
 ## Validation
 
-WatchCoverageTest covers thresholds, long/short episodes, seek jumps (including missed callbacks), replay, pause/buffering gaps, speed, persistence, corrupt data and bounded fragmentation. A separate branch-only CI builds Preview/QA, runs the complete JVM suite, then existing account-sync instrumentation (13 scenarios) on API 28 and 31. Those instrumentation scenarios test sync, not actual video/rendering; do not describe them as player or visual tests.
+WatchCoverageTest covers thresholds, long/short episodes, seek jumps (including missed callbacks), replay, pause/buffering gaps, speed, persistence, corrupt data and bounded fragmentation. A separate branch-only CI builds Preview/QA, runs the complete JVM suite, then existing account-sync instrumentation (13 scenarios) plus a real Details card badge/layout/focus check on API 28 and 31. The badge test launches Details against the offline catalog, checks label color, fit and no overlap with Continue, and calls the actual refresh method while preserving focus. These tests do not exercise actual video playback or the D-pad manual-status dialog; do not describe them as player regression tests.
 
 Local Gradle cannot download its wrapper in this environment. Compilation and JVM execution must be confirmed by CI before delivery. Physical-TV badge layout and actual playback acceptance remain required. No production APK should be built or published by this workflow.
