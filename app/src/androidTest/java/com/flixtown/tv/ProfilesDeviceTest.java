@@ -75,7 +75,7 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
   main(()->{assertNotNull(findText(tree(),"Family"));for(View v:new View[]{findText(tree(),"Done"),findText(tree(),"Family")}){assertNotNull(v);int[] pos=new int[2];v.getLocationOnScreen(pos);assertTrue(pos[1]>=0);assertTrue(pos[1]+v.getHeight()<=getInstrumentation().getTargetContext().getResources().getDisplayMetrics().heightPixels);}});
  }
  private EditText findEdit(View v){if(v instanceof EditText)return (EditText)v;if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++){EditText e=findEdit(((ViewGroup)v).getChildAt(i));if(e!=null)return e;}return null;}
- private View findDescription(View v,String d){if(d.contentEquals(v.getContentDescription()))return v;if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++){View e=findDescription(((ViewGroup)v).getChildAt(i),d);if(e!=null)return e;}return null;}
+ private View findDescription(View v,String d){if(d.equals(v.getContentDescription()==null?null:v.getContentDescription().toString()))return v;if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++){View e=findDescription(((ViewGroup)v).getChildAt(i),d);if(e!=null)return e;}return null;}
  @Override protected void tearDown()throws Exception{
   main(()->{for(AccountSync s:clients)s.fixtureClose();if(activity!=null)activity.finish();Profiles.fixture(null);Profiles.signOut();});getInstrumentation().waitForIdleSync();if(activity!=null)AccountStore.clear(getInstrumentation().getTargetContext());super.tearDown();
  }

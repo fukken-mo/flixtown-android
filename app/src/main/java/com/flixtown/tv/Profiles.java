@@ -67,7 +67,7 @@ final class Profiles {
             try{
                 JSONObject body=mutation==null?new JSONObject():new JSONObject(mutation.toString());body.put("action","profiles");body.put("session",session(url,scope,credentials));
                 JSONObject r=post(url,body);
-                if(!r.optBoolean("ok")){String why=r.optString("error");if(why.equals("profile_conflict"))error="Profiles changed on another TV. Refresh and try again.";else if(why.equals("profile_limit"))error="This account already has six profiles.";else if(why.equals("profile_capacity"))error="Profile storage is full. Please contact support.";throw new IllegalStateException();}
+                if(!r.optBoolean("ok")){String why=r.optString("error");if(why.equals("session")){token="";tokenUntil=0;}if(why.equals("profile_conflict"))error="Profiles changed on another TV. Refresh and try again.";else if(why.equals("profile_limit"))error="This account already has six profiles.";else if(why.equals("profile_capacity"))error="Profile storage is full. Please contact support.";throw new IllegalStateException();}
                 if(r.optInt("profiles_version")!=1||!(r.opt("revision") instanceof Number)||r.optLong("revision")<=0)throw new IllegalStateException();
                 JSONArray profiles=r.getJSONArray("profiles");String selected=catalog(app).selected;boolean found=false;
                 for(int i=0;i<profiles.length();i++)if(selected.equals(profiles.getJSONObject(i).optString("id")))found=true;
@@ -90,7 +90,7 @@ final class Profiles {
         synchronized(AUTH_LOCK){
         if(!scope.equals(authScope)||token.isEmpty()||android.os.SystemClock.elapsedRealtime()>=tokenUntil){
             JSONObject r=post(url,new JSONObject().put("action","session").put("username",credentials[0]).put("password",credentials[1]));
-            if(!r.optBoolean("ok")||r.optString("session").isEmpty())throw new IllegalStateException();
+            if(!r.optBoolean("ok")||r.optString("session").isEmpty()||r.optString("session").length()>512)throw new IllegalStateException();
             authScope=scope;token=r.getString("session");tokenUntil=android.os.SystemClock.elapsedRealtime()+840000;
         }return token;}
     }
