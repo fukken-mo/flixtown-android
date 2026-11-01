@@ -22,9 +22,9 @@ $config=['services'=>['progress_sync'=>['enabled'=>true,'session_secret'=>str_re
       proc=subprocess.Popen(['php','-d','opcache.enable_cli=0','-S',f'127.0.0.1:{port}','-t',str(dest)],stdout=log,stderr=log)
       try:
         time.sleep(.5)
-        def call(body=None,method='POST',raw=None,endpoint='tv-account-sync.php'):
+        def call(body=None,method='POST',raw=None,endpoint='tv-account-sync.php',server_port=None):
             data=raw if raw is not None else json.dumps(body or {}).encode()
-            req=urllib.request.Request(f'http://127.0.0.1:{port}/api/{endpoint}',data=data if method=='POST' else None,method=method,headers={'Content-Type':'application/json'})
+            req=urllib.request.Request(f'http://127.0.0.1:{port if server_port is None else server_port}/api/{endpoint}',data=data if method=='POST' else None,method=method,headers={'Content-Type':'application/json'})
             try:
                 with urllib.request.urlopen(req,timeout=5) as r:return r.status,json.load(r)
             except urllib.error.HTTPError as e:return e.code,json.load(e)
@@ -72,13 +72,21 @@ $config=['services'=>['progress_sync'=>['enabled'=>true,'session_secret'=>str_re
         p['name']='Family';status,r=profile({'action':'profiles','mutation':'update','revision':rev,'profile':p});rev=r['revision']
         status,r=profile({'action':'exchange','profile':pid})
         check(any(x['key']==pp['key'] for x in r['records']),'renaming retains profile history')
-        library=dest/'includes'/'account_sync.php';current=library.read_text()
+        # A separate cold PHP worker models an actual older installed library. Do not
+        # hot-edit an executing script: PHP/OS caches can keep serving its previous code.
+        legacy=dest/'legacy-install';shutil.copytree(dest/'api',legacy/'api');shutil.copytree(dest/'includes',legacy/'includes')
+        library=legacy/'includes'/'account_sync.php';current=library.read_text()
+        library.write_text(current.replace('const FXS_PROFILE_PROTOCOL=1;','').replace('array $in,?string $profile=null','array $in'))
+        legacy_sock=socket.socket();legacy_sock.bind(('127.0.0.1',0));legacy_port=legacy_sock.getsockname()[1];legacy_sock.close()
+        legacy_proc=subprocess.Popen(['php','-d','opcache.enable_cli=0','-S',f'127.0.0.1:{legacy_port}','-t',str(legacy)],stdout=log,stderr=log)
         try:
-            library.write_text(current.replace('const FXS_PROFILE_PROTOCOL=1;','').replace('array $in,?string $profile=null','array $in'))
-            check(profile({'action':'profiles'})[0]==503,'partial panel installation cannot advertise profiles')
-            check(profile({'action':'exchange','profile':pid,'operations':[dict(pp,key='favorite:movie:889',operation=str(uuid.uuid4()))]})[0]==503,'old library cannot accept named-profile uploads as default')
+            time.sleep(.5)
+            partial=call({'action':'profiles','session':alice},endpoint='tv-profile-sync.php',server_port=legacy_port)
+            check(partial[0]==503,'partial panel installation cannot advertise profiles: '+str(partial))
+            partial=call({'action':'exchange','session':alice,'profile':pid,'operations':[dict(pp,key='favorite:movie:889',operation=str(uuid.uuid4()))]},endpoint='tv-profile-sync.php',server_port=legacy_port)
+            check(partial[0]==503,'old library cannot accept named-profile uploads as default: '+str(partial))
         finally:
-            library.write_text(current)
+            legacy_proc.terminate();legacy_proc.wait(timeout=5)
         status,r=call({'action':'exchange','session':alice})
         check(not any(x['key']=='favorite:movie:889' for x in r['records']),'partial installation leaves default history untouched')
         for changed in [dict(p,name='bad\nname'),dict(p,name=''),dict(p,avatar='../x'),dict(p,kids=True),dict(p,name='x'*25)]:
