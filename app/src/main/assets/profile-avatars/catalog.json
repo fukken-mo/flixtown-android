@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "avatars": [
+    {
+      "id": "avatar_01",
+      "file": "avatar_01.webp",
+      "source_sha256": "6680440e65573cd12313d6dd4b7f0cb0c52bea0eaff006b33770aae878e46989"
+    },
+    {
+      "id": "avatar_02",
+      "file": "avatar_02.webp",
+      "source_sha256": "ab91eccf29cdf923ee9163bc503494e09c68ae4887bdda02d5ba1cb8cedb352a"
+    },
+    {
+      "id": "avatar_03",
+      "file": "avatar_03.webp",
+      "source_sha256": "b847bee45e62940b0bd6466ce0a7750a98192b179d4db1c8c0b342023174a976"
+    },
+    {
+      "id": "avatar_04",
+      "file": "avatar_04.webp",
+      "source_sha256": "1d0122f6654ce8975ec5689b2de1c69f894e7ffc0ce19f4b8430f74f73c1c5d3"
+    },
+    {
+      "id": "avatar_05",
+      "file": "avatar_05.webp",
+      "source_sha256": "8327fe9b07c1cab37745bd70967d6fe5760400e893f3a6725a39be702879dfae"
+    },
+    {
+      "id": "avatar_06",
+      "file": "avatar_06.webp",
+      "source_sha256": "8272b830aa92d898fc72bdeb747aa5674c4331189fd7a1e38c52a408d5d9c874"
+    },
+    {
+      "id": "avatar_07",
+      "file": "avatar_07.webp",
+      "source_sha256": "ef82b6704e672b1cb4c6485e7c31b4ef67086aaaea9c30c476beaaa4164c4f68"
+    },
+    {
+      "id": "avatar_08",
+      "file": "avatar_08.webp",
+      "source_sha256": "3fd95285fd47e2850ca58f930293f83ffbe8ffc2fdad9f985bec5e0d78aaaf98"
+    },
+    {
+      "id": "avatar_09",
+      "file": "avatar_09.webp",
+      "source_sha256": "f03e4508d97db4b422917010a1e3715d82d864a724af75951a4299d52debed7a"
+    },
+    {
+      "id": "avatar_10",
+      "file": "avatar_10.webp",
+      "source_sha256": "60d1ca74e10ac58cbd5ee41c17e5671c95bce4286529b93e66f4fcf0c2ea6c0c"
+    },
+    {
+      "id": "avatar_11",
+      "file": "avatar_11.webp",
+      "source_sha256": "7d01a07c747718f039969f05d8d4a72a4d662850e0fc510719b5a54111be1460"
+    },
+    {
+      "id": "avatar_12",
+      "file": "avatar_12.webp",
+      "source_sha256": "1c2a013b267fddd73364af56f24be53672c255466547e61f6a7b17174a234cf2"
+    },
+    {
+      "id": "avatar_13",
+      "file": "avatar_13.webp",
+      "source_sha256": "046a8adbce5fc66689d39f478386711de2a0870701427129801723fa23c3a433"
+    },
+    {
+      "id": "avatar_14",
+      "file": "avatar_14.webp",
+      "source_sha256": "050400ebe7b82b2e70881236a7729b622ee1b7799d292a7d2fab757e8c5222fa"
+    },
+    {
+      "id": "avatar_15",
+      "file": "avatar_15.webp",
+      "source_sha256": "7f7d667f1515c1eaa623965c523088fa0a71a5012a8939349ca489e829393c27"
+    },
+    {
+      "id": "avatar_16",
+      "file": "avatar_16.webp",
+      "source_sha256": "1b18128058e6978f7adb1c3f0f37b59696bd6f45c0160be1d0e3c69686c8d1aa"
+    },
+    {
+      "id": "avatar_17",
+      "file": "avatar_17.webp",
+      "source_sha256": "aec74e2ac12da439f7f220fa7c5de1919a2cd260b74407eb017ca993d16728e2"
+    },
+    {
+      "id": "avatar_18",
+      "file": "avatar_18.webp",
+      "source_sha256": "c677b11d57a68a5ce5a8d336913d602d334b0c5b766fa6188dc2c01a98a6356c"
+    },
+    {
+      "id": "avatar_19",
+      "file": "avatar_19.webp",
+      "source_sha256": "9873aecb4551413f003d4a5f44c0940e1e5fd0d6feb662db26af4b81976280ad"
+    },
+    {
+      "id": "avatar_20",
+      "file": "avatar_20.webp",
+      "source_sha256": "9cdc47faaac70418de47c718b69c2542ce280fa68ea96060a23e03481e486975"
+    },
+    {
+      "id": "avatar_21",
+      "file": "avatar_21.webp",
+      "source_sha256": "f1bbcf2f65038562b3f6a34de9fb5624b5acb53618f48b3071d99aebb404b83f"
+    },
+    {
+      "id": "avatar_22",
+      "file": "avatar_22.webp",
+      "source_sha256": "ccb3d0f873a08f2bb0439a25206c7719f124da06091fa7d592c5b14c0c7b04c1"
+    },
+    {
+      "id": "avatar_23",
+      "file": "avatar_23.webp",
+      "source_sha256": "991175e16a8d2098eb78a80d0e38fec4a0cdcca7af1c483f3c868fc0095710b7"
+    },
+    {
+      "id": "avatar_24",
+      "file": "avatar_24.webp",
+      "source_sha256": "e3fc8d96535076bc35e7f2dd9aa7ac81c96b9939aeea69a3decb8805b6b132ac"
+    },
+    {
+      "id": "avatar_25",
+      "file": "avatar_25.webp",
+      "source_sha256": "96eeaff00728939d886e9c7453c59d50515851807027db0f95d3085d89fc552c"
+    },
+    {
+      "id": "avatar_26",
+      "file": "avatar_26.webp",
+      "source_sha256": "cf87036f885507973cce6d0d70657092a4d151c7febf6be7174ccfdc770fbab5"
+    },
+    {
+      "id": "avatar_27",
+      "file": "avatar_27.webp",
+      "source_sha256": "cf58160c1335a7b29d28a24d424f6b939963ab2ded098434709313bd5b8186d1"
+    },
+    {
+      "id": "avatar_28",
+      "file": "avatar_28.webp",
+      "source_sha256": "3d0b3bc830273885775ebf13934c5c628cf0e6f826816f1969525a63f58b9938"
+    }
+  ]
+}
