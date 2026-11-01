@@ -89,6 +89,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private CustomerNotices notices;
     private Catalog.Item pendingFocusItem;
     private SettingsPage settingsPage;
+    private boolean profileCheckStarted=false,profilePromptPending=false;
     private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Requests","Settings"};
     private static final String[] TAB_NAMES={"Search","Home","Movies","TV Shows","My List","Requests","Settings"};
     private static final int[] ICONS={1,0,2,3,4,6,5};
@@ -164,8 +165,18 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
 
     @Override protected void onResume(){super.onResume();resumed=true;if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","home_resumed");if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
         AccountSync.home(this,()->{if(!destroyed&&resumed){pendingRender=true;refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});
+        if(!profileCheckStarted&&Profiles.needsChoice(this)){
+            profileCheckStarted=true;profilePromptPending=true;
+            Profiles.refresh(this,(ok,error)->{if(destroyed)return;if(ok)openProfilePickerWhenReady();else{profilePromptPending=false;Profiles.chosen(this);}});
+        }
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
         handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
+    private void openProfilePickerWhenReady(){
+        if(destroyed||isFinishing())return;
+        if(!resumed||overlayUp||!hasWindowFocus()){handler.postDelayed(this::openProfilePickerWhenReady,500);return;}
+        Profiles.chosen(this);profilePromptPending=false;
+        startActivity(new Intent(this,ProfilesActivity.class).putExtra("cached",true));
+    }
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
     @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
     /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
@@ -174,7 +185,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(hasFocus)handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     /** An update prompt only appears over Home itself: in front, focused, past the loading screen. */
     boolean readyForUpdatePrompt(){
-        return resumed && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
+        return resumed && !profilePromptPending && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
             && (exitDialog==null || !exitDialog.isShowing());
     }
     @Override protected void onPause(){AccountSync.leaveHome();resumed=false;ScreenAwake.off(this);handler.removeCallbacks(rotateHero);super.onPause();}

@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 
 final class Api {
     static final ExecutorService IO = Executors.newFixedThreadPool(3);
-    static SharedPreferences prefs(Context c) { return c.getSharedPreferences("flix", Context.MODE_PRIVATE); }
+    static SharedPreferences prefs(Context c) { return Profiles.prefs(c, c.getSharedPreferences("flix", Context.MODE_PRIVATE)); }
     static JSONObject get(String url) throws Exception { return new JSONObject(request(url, null)); }
     static JSONArray list(String url) throws Exception { return new JSONArray(request(url, null)); }
     static JSONObject post(String name, JSONObject body) throws Exception {

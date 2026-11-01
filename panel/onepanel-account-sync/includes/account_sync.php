@@ -78,7 +78,8 @@ function fxs_refused($o,string $reason): array {
     return ['operation'=>$op,'key'=>$key,'accepted'=>false,'error'=>$reason,'record'=>null];
 }
 /* Account row lock serializes revisions/CAS across PHP workers, including empty-record races. */
-function fxs_exchange(PDO $db,string $u,array $in): array {
+function fxs_exchange(PDO $db,string $u,array $in,?string $profile=null): array {
+    if($profile!==null&&(!function_exists("fxp_id")||!fxp_id($profile)||$profile==="default"))fxs_fail(400,"profile");
     $after=fxs_integer($in['after']??0);$through=fxs_integer($in['through']??0);
     $pull=$in['pull']??true;if(!is_bool($pull)||(!$pull&&$through>0))fxs_fail(400,'invalid');
     $anchor=$in['anchor']??'';if($anchor!==''&&!fxs_key($anchor))fxs_fail(400,'invalid');
@@ -89,9 +90,10 @@ function fxs_exchange(PDO $db,string $u,array $in): array {
         if(isset($keys[$v['key']]))fxs_fail(400,'invalid');$keys[$v['key']]=true;$ops[]=$v;
     }
     if($through>0&&($ops||$after>$through))fxs_fail(400,'invalid');
-    $account=hash('sha256','flixtown-sync:'.$u);
+    $account=hash('sha256','flixtown-sync:'.$u.($profile===null?'':':profile:'.$profile));
     $db->beginTransaction();
     try {
+        if($profile!==null)fxp_authorize($db,$u,$profile);
         $q=$db->prepare('INSERT INTO tv_sync_accounts(account_id,revision) VALUES(?,0) ON DUPLICATE KEY UPDATE revision=revision');$q->execute([$account]);
         $q=$db->prepare('SELECT revision FROM tv_sync_accounts WHERE account_id=? FOR UPDATE');$q->execute([$account]);$rev=(int)$q->fetchColumn();
         if($after>$rev||$through>$rev)fxs_fail(409,'reset');

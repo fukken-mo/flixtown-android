@@ -16,14 +16,15 @@ $config=['services'=>['progress_sync'=>['enabled'=>true,'session_secret'=>str_re
     # Disposable *_test database only, emptied first: this test counts sign-ins and failures exactly.
     assert re.search(r'dbname=[A-Za-z0-9_]+_test(;|$)',os.environ.get('SYNC_TEST_DSN','')),'Disposable *_test database required'
     subprocess.run(['php','-r',"$p=new PDO(getenv('SYNC_TEST_DSN'),getenv('SYNC_TEST_USER'),getenv('SYNC_TEST_PASSWORD'));$p->exec(file_get_contents($argv[1]));foreach(['tv_sync_records','tv_sync_accounts','tv_sync_rate'] as $t)$p->exec('DELETE FROM '.$t);",str(root/'sql'/'account-sync.sql')],check=True)
+    subprocess.run(['php','-r',"$p=new PDO(getenv('SYNC_TEST_DSN'),getenv('SYNC_TEST_USER'),getenv('SYNC_TEST_PASSWORD'));$p->exec(file_get_contents($argv[1]));foreach(['tv_profiles','tv_profile_accounts'] as $t)$p->exec('DELETE FROM '.$t);",str(root/'sql'/'profiles.sql')],check=True)
     sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
     with open(dest/'server.log','wb') as log:
       proc=subprocess.Popen(['php','-S',f'127.0.0.1:{port}','-t',str(dest)],stdout=log,stderr=log)
       try:
         time.sleep(.5)
-        def call(body=None,method='POST',raw=None):
+        def call(body=None,method='POST',raw=None,endpoint='tv-account-sync.php'):
             data=raw if raw is not None else json.dumps(body or {}).encode()
-            req=urllib.request.Request(f'http://127.0.0.1:{port}/api/tv-account-sync.php',data=data if method=='POST' else None,method=method,headers={'Content-Type':'application/json'})
+            req=urllib.request.Request(f'http://127.0.0.1:{port}/api/{endpoint}',data=data if method=='POST' else None,method=method,headers={'Content-Type':'application/json'})
             try:
                 with urllib.request.urlopen(req,timeout=5) as r:return r.status,json.load(r)
             except urllib.error.HTTPError as e:return e.code,json.load(e)
@@ -51,6 +52,38 @@ $config=['services'=>['progress_sync'=>['enabled'=>true,'session_secret'=>str_re
         status,r=call({'action':'exchange','session':alice,'operations':[dict(op,key='server',operation=str(uuid.uuid4()))]})
         check(status==200 and r['acks'][0]['error']=='invalid' and r['acks'][0]['record'] is None,'arbitrary pref refused on its own')
         status,r=call({'action':'exchange','session':alice});check(not any(x['key']=='server' for x in r['records']),'refused record stored nowhere')
+        # Profiles use their own endpoint. Legacy clients remain on the original default history.
+        def profile(body,session=alice):
+            return call(dict(body,session=session),endpoint='tv-profile-sync.php')
+        check(call({'action':'profiles'},endpoint='tv-profile-sync.php')[0]==401,'profile metadata requires authentication')
+        status,r=profile({'action':'profiles'});rev=r['revision']
+        check(status==200 and r['profiles_version']==1 and len(r['profiles'])==1 and r['profiles'][0]['id']=='default','default profile initialized without changing progress')
+        pid=str(uuid.uuid4());p={'id':pid,'name':'Mo','avatar':'avatar_28','kids':False}
+        status,r=profile({'action':'profiles','mutation':'create','revision':rev,'profile':p});rev=r['revision']
+        check(status==200 and len(r['profiles'])==2,'customer creates custom named avatar profile')
+        check(profile({'action':'profiles','mutation':'update','revision':rev-1,'profile':p})[0]==409,'stale catalog edits rejected')
+        pp={'key':'favorite:movie:777','base':0,'operation':str(uuid.uuid4()),'value':{'present':True}}
+        status,r=profile({'action':'exchange','profile':pid,'operations':[pp]})
+        check(status==200 and r['profile']==pid and r['acks'][0]['accepted'],'new profile writes own history')
+        check(profile({'action':'exchange','profile':pid},bob)[0]==404,'another account cannot access profile history even with known UUID')
+        status,r=call({'action':'exchange','session':alice})
+        check(any(x['key']=='favorite:movie:333' for x in r['records']) and not any(x['key']=='favorite:movie:777' for x in r['records']),'old app sees original history and no named profile history')
+        check(profile({'action':'exchange','profile':'default'})[0]==400,'default cannot be accidentally sent to named-profile protocol')
+        p['name']='Family';status,r=profile({'action':'profiles','mutation':'update','revision':rev,'profile':p});rev=r['revision']
+        status,r=profile({'action':'exchange','profile':pid})
+        check(any(x['key']==pp['key'] for x in r['records']),'renaming retains profile history')
+        for changed in [dict(p,name='bad\nname'),dict(p,name=''),dict(p,avatar='../x'),dict(p,kids=True),dict(p,name='x'*25)]:
+            check(profile({'action':'profiles','mutation':'update','revision':rev,'profile':changed})[0]==400,'invalid name/avatar or unimplemented Kids mode refused')
+        status,r=profile({'action':'profiles','mutation':'delete','revision':rev,'id':pid});rev=r['revision']
+        check(status==200 and len(r['profiles'])==1,'delete profile creates tombstone')
+        check(profile({'action':'exchange','profile':pid,'operations':[dict(pp,operation=str(uuid.uuid4()))]})[0]==404,'late deleted-profile progress cannot resurrect profile')
+        check(profile({'action':'profiles','mutation':'create','revision':rev,'profile':p})[0]==409,'deleted profile ID never reused')
+        check(profile({'action':'profiles','mutation':'delete','revision':rev,'id':'default'})[0]==400,'default cannot be deleted')
+        for i in range(5):
+            status,r=profile({'action':'profiles','mutation':'create','revision':rev,'profile':dict(p,id=str(uuid.uuid4()),name='Person '+str(i))});assert status==200;rev=r['revision']
+        check(profile({'action':'profiles','mutation':'create','revision':rev,'profile':dict(p,id=str(uuid.uuid4()))})[0]==409,'six-profile maximum serialized on server')
+        status,r=profile({'action':'profiles'},bob)
+        check(len(r['profiles'])==1 and r['profiles'][0]['name']=='My profile','account B has independent profile catalog')
         # Many customers behind one public address (carrier NAT, a proxy) all get sessions: limits are per account.
         ok=[call({'action':'session','username':'user%02d'%i,'password':'fixture-password'})[0] for i in range(40)]
         check(ok.count(200)==40,'40 accounts sharing one address all sign in')

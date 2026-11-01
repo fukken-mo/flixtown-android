@@ -35,8 +35,8 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     // ISO 639-1 codes; Media3 matches them against the stream's own language tags (en = eng, …).
     static final String[] LANGUAGE_CODES={"en","es","fr","de","it","pt","ar","hi","tr","ru","nl","pl","el","ja","ko","zh"};
 
-    private static final int ACCOUNT=0,REFRESH=1,IMAGES=2,AUTOPLAY_ROW=3,AUDIO=4,SUBTITLES=5,SUBTITLE_LANG=6,UPDATES=7,VERSION=8,SIGN_OUT=9,RENEW=10,REMOTE_GUIDE=11;
-    private static final int[] ALL_ROWS={ACCOUNT,RENEW,REFRESH,IMAGES,AUTOPLAY_ROW,AUDIO,SUBTITLES,SUBTITLE_LANG,REMOTE_GUIDE,UPDATES,VERSION,SIGN_OUT};
+    private static final int ACCOUNT=0,REFRESH=1,IMAGES=2,AUTOPLAY_ROW=3,AUDIO=4,SUBTITLES=5,SUBTITLE_LANG=6,UPDATES=7,VERSION=8,SIGN_OUT=9,RENEW=10,REMOTE_GUIDE=11,PROFILES=12;
+    private static final int[] ALL_ROWS={ACCOUNT,PROFILES,RENEW,REFRESH,IMAGES,AUTOPLAY_ROW,AUDIO,SUBTITLES,SUBTITLE_LANG,REMOTE_GUIDE,UPDATES,VERSION,SIGN_OUT};
     /** "Renew subscription" is listed only when the panel offers in-app renewal. */
     private int[] ROWS=ALL_ROWS;
     static final int ROW_WIDTH_DP=760;
@@ -127,6 +127,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         switch(row){
             case ACCOUNT:return "Subscription";
             case RENEW:return "Renew subscription";
+            case PROFILES:return "Profiles";
             case REFRESH:return "Check for new movies and shows";
             case IMAGES:return "Clear image cache";
             case AUTOPLAY_ROW:return "Autoplay next episode";
@@ -144,6 +145,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
             case ACCOUNT:{String[] account=AccountStore.read(a);
                 return (account==null?"":"Signed in as "+account[0]+"  ·  ")+accountState();}
             case RENEW:return "Add time with Cash App Pay, right here on the TV";
+            case PROFILES:return "Switch profile, choose a picture or change a name";
             case REFRESH:{if(StartupRefresh.running())return "Checking now…";
                 long at=prefs.getLong(LAST_REFRESH,0);
                 if(at<=0)return "Updates your account and the full catalog";
@@ -165,6 +167,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
         switch(row){
             case ACCOUNT:return "Check now  ›";
             case RENEW:return "Renew  ›";
+            case PROFILES:{for(ProfileCatalog.Profile p:Profiles.catalog(a).profiles)if(p.id.equals(Profiles.activeId(a)))return p.name+"  ›";return "Open  ›";}
             case AUTOPLAY_ROW:return prefs.getBoolean(AUTOPLAY,true)?"On":"Off";
             case SUBTITLES:return prefs.getBoolean(SUBTITLES_ON,false)?"On":"Off";
             case AUDIO:{String code=prefs.getString(AUDIO_LANGUAGE,"");return code.isEmpty()?"Stream default  ›":languageName(code)+"  ›";}
@@ -239,6 +242,7 @@ final class SettingsPage extends RecyclerView.Adapter<SettingsPage.Holder> {
     private void onSelect(Holder h){
         switch(h.row){
             case ACCOUNT:checkAccount(true);break;
+            case PROFILES:a.startActivity(new android.content.Intent(a,ProfilesActivity.class));break;
             case RENEW:host.openRenewal();break;
             case REFRESH:host.refreshCatalog();notifyItemChanged(indexOf(REFRESH));break;
             case IMAGES:

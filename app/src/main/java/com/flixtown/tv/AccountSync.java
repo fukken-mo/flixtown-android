@@ -37,6 +37,7 @@ final class AccountSync {
     /** Set on WORK when a restore repair queued uploads: sent in the next round, not a minute later. */
     private volatile boolean resend=false;
     private String owner="",endpoint="",token="",favoriteSnapshot="",scope="";
+    private final String profile;
     private String[] account;
     private boolean importing=false,busy=false,repeatRequested=false,importScheduled=false;
     private long nextAttempt=0,lastPull=0,backoff=60000,tokenUntil=0;
@@ -44,10 +45,11 @@ final class AccountSync {
     private Runnable onChanged;
     private final Runnable capture=this::captureDirty;
     private final Runnable heartbeat=()->{cycle(home&&!playing);schedule();};
-    private AccountSync(Context c){app=c.getApplicationContext();local=Api.prefs(app);
-        journal=app.getSharedPreferences("account_sync_v1",Context.MODE_PRIVATE);initial=app.getSharedPreferences("account_sync_initial_v1",Context.MODE_PRIVATE);
+    private AccountSync(Context c){app=c.getApplicationContext();profile=Profiles.activeId(app);local=Api.prefs(app);
+        journal=app.getSharedPreferences("account_sync_v1"+Profiles.journalSuffix(app),Context.MODE_PRIVATE);initial=app.getSharedPreferences("account_sync_initial_v1"+Profiles.journalSuffix(app),Context.MODE_PRIVATE);
         local.registerOnSharedPreferenceChangeListener(listener);}
     static void home(Context c,Runnable callback){
+        if(instance!=null&&!instance.profile.equals(Profiles.activeId(c)))detachProfile();
         if(instance==null)instance=new AccountSync(c);
         AccountSync s=instance;s.home=true;s.onChanged=callback;s.configure();s.applyDeferred();s.cycle(true);s.schedule();
     }
@@ -58,7 +60,34 @@ final class AccountSync {
         if(active)MAIN.removeCallbacks(s.capture);else{s.cycle(s.home);s.applyDeferred();}
         s.schedule();
     }
-    static void signOut(){if(instance!=null)instance.reset(null);}
+    static void signOut(){if(instance!=null){instance.reset(null);detachProfile();}}
+    /** Keep each profile's journal; cancel old replies and bind a new fixed preferences view. */
+    static void detachProfile(){if(instance!=null){AccountSync s=instance;s.flushLeavingProfile();s.generation++;s.account=null;s.home=false;s.onChanged=null;MAIN.removeCallbacks(s.capture);MAIN.removeCallbacks(s.heartbeat);s.local.unregisterOnSharedPreferenceChangeListener(s.listener);instance=null;}}
+    /** Best-effort last upload, with no reply imports or journal writes after the HTTP request.
+     * Its immutable profile snapshot cannot leak into a new account or a newly selected profile.
+     * Unacknowledged operations remain journaled and are idempotently retried on the next visit. */
+    private void flushLeavingProfile(){
+        if(account==null||endpoint.isEmpty())return;
+        final String[] credentials=account.clone();final String expected=Profiles.scope(app),who=owner,url=endpoint,session=token;final long until=tokenUntil;
+        WORK.execute(()->{
+            if(!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app))){Arrays.fill(credentials,"");return;}
+            Map<String,?> all=local.getAll();Set<String> keys=localKeys(all);
+            for(String k:journal.getAll().keySet())if(k.startsWith("observed:")&&SyncRecord.valid(k.substring(9)))keys.add(k.substring(9));
+            writePending(generation,keys,all,Collections.<String>emptySet());
+            JSONArray ops=new JSONArray();for(Map.Entry<String,?> e:journal.getAll().entrySet())if(e.getKey().startsWith("pending:")&&ops.length()<IDLE_BATCH)try{ops.put(new JSONObject((String)e.getValue()));}catch(Exception ignored){}
+            if(ops.length()==0){Arrays.fill(credentials,"");return;}
+            final long after=journal.getLong("cursor",0);
+            NET.execute(()->{try{
+                if(!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app)))return;
+                String auth=session;
+                if(auth.isEmpty()||SystemClock.elapsedRealtime()>=until){JSONObject r=transport.post(url,new JSONObject().put("action","session").put("username",credentials[0]).put("password",credentials[1]));if(!r.optBoolean("ok"))return;auth=r.optString("session");}
+                JSONObject body=new JSONObject().put("action","exchange").put("session",auth).put("after",after).put("pull",false).put("operations",ops);
+                if(!"default".equals(profile))body.put("profile",profile);
+                transport.post(url,body); // Never consume a late response after detaching.
+            }catch(Exception ignored){}finally{Arrays.fill(credentials,"");}});
+        });
+    }
+
     /** Forgets this TV's sync state (not its local progress). {@code newScope}: the account/server the journal now belongs to. */
     private void reset(String newScope){
         generation++;account=null;owner="";endpoint="";token="";tokenUntil=0;dirty.clear();busy=false;repeatRequested=false;importScheduled=false;
@@ -68,10 +97,11 @@ final class AccountSync {
     private void configure(){
         JSONObject cfg=StartupRefresh.config();String url=cfg==null?local.getString("progress_sync_api_url",""):cfg.optString("progress_sync_api_url","").trim();
         if(cfg!=null){String keep=ReportsApi.safeUrl(url)?url:"";if(!keep.equals(local.getString("progress_sync_api_url","")))local.edit().putString("progress_sync_api_url",keep).apply();}
+        if(!"default".equals(profile))url=Profiles.endpoint(app);
         String[] credentials=AccountStore.read(app);
         if(!ReportsApi.safeUrl(url)||credentials==null){account=null;endpoint="";return;}
         String mine=SignOut.ownerId(credentials[0]);if(!mine.equals(local.getString(SignOut.OWNER,"")))return;
-        String wanted=mine+":"+SignOut.ownerId(local.getString("server","")+"|"+url);
+        String wanted=mine+":"+SignOut.ownerId(local.getString("server","")+"|"+url)+("default".equals(profile)?"":":"+profile);
         if(!wanted.equals(scope)&&!wanted.equals(journal.getString("scope","")))reset(wanted);
         scope=wanted;
         if(!owner.equals(mine)||!url.equals(endpoint)){generation++;token="";tokenUntil=0;busy=false;}
@@ -156,7 +186,9 @@ final class AccountSync {
             }
             JSONObject body=new JSONObject().put("action","exchange").put("session",session).put("after",after).put("pull",read).put("operations",operations);
             if(!anchor.isEmpty())body.put("anchor",anchor);
+            if(!"default".equals(profile))body.put("profile",profile);
             JSONObject reply=transport.post(url,body);
+            if(!"default".equals(profile)&&!profile.equals(reply.optString("profile")))throw new IOException();
             final String saved=session;final long exp=expiry;
             WORK.execute(()->{
                 if(g!=generation)return;
@@ -185,7 +217,9 @@ final class AccountSync {
                 try{
                     JSONObject body=new JSONObject().put("action","exchange").put("session",session).put("after",after).put("through",through);
                     if(!anchor.isEmpty())body.put("anchor",anchor);
+                    if(!"default".equals(profile))body.put("profile",profile);
                     JSONObject r=transport.post(url,body);
+                    if(!"default".equals(profile)&&!profile.equals(r.optString("profile")))throw new IOException();
                     WORK.execute(()->{
                         if(g!=generation)return;
                         if(!r.optBoolean("ok")){if("reset".equals(r.optString("error"))){beginRestore();MAIN.post(()->restart(g));}else MAIN.post(()->failed(g));return;}
@@ -339,6 +373,7 @@ final class AccountSync {
     void fixtureTick(boolean playing){if(!BuildConfig.DEMO)throw new IllegalStateException();this.playing=playing;lastPull=0;nextAttempt=0;cycle(true);}
     void fixtureDetach(){if(!BuildConfig.DEMO)throw new IllegalStateException();generation++;account=null;MAIN.removeCallbacks(capture);local.unregisterOnSharedPreferenceChangeListener(listener);if(instance==this)instance=null;}
     void fixtureClose(){if(!BuildConfig.DEMO)throw new IllegalStateException();reset(null);local.unregisterOnSharedPreferenceChangeListener(listener);if(instance==this)instance=null;}
+    static JSONObject profilePost(String url,JSONObject body)throws Exception{return post(url,body);}
     private static JSONObject post(String url,JSONObject body)throws Exception{
         if(!ReportsApi.safeUrl(url))throw new IOException();
         HttpURLConnection c=(HttpURLConnection)new URL(url).openConnection();

@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS tv_profile_accounts (
+ account_id CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+ revision BIGINT UNSIGNED NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS tv_profiles (
+ account_id CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ profile_id VARCHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ revision BIGINT UNSIGNED NOT NULL,
+ deleted TINYINT UNSIGNED NOT NULL DEFAULT 0,
+ payload TEXT NOT NULL,
+ PRIMARY KEY(account_id,profile_id)
+) ENGINE=InnoDB;

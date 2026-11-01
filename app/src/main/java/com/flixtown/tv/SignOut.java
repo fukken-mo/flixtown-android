@@ -29,6 +29,7 @@ final class SignOut {
     static final String OWNER="account_owner";
 
     static void run(Context c){
+        Profiles.signOut();
         if(Looper.myLooper()==Looper.getMainLooper())AccountSync.signOut();else new Handler(Looper.getMainLooper()).post(AccountSync::signOut);
         AccountStore.clear(c);
         SharedPreferences.Editor e=Api.prefs(c).edit().remove("expired").remove(SettingsPage.LAST_REFRESH);

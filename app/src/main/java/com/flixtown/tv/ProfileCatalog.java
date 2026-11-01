@@ -75,7 +75,7 @@ final class ProfileCatalog {
             i+=Character.charCount(cp);
         }return name;
     }
-    static boolean validId(String id){return DEFAULT_ID.equals(id)||(id!=null&&id.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"));}
+    static boolean validId(String id){return DEFAULT_ID.equals(id)||(id!=null&&id.matches("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));}
     static boolean validAvatar(String id){
         if(id==null||!id.matches("avatar_[0-9]{2}"))return false;
         int n=Integer.parseInt(id.substring(7));return n>=1&&n<=AVATAR_COUNT;
