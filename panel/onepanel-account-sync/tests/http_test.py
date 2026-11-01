@@ -16,7 +16,7 @@ $config=['services'=>['progress_sync'=>['enabled'=>true,'session_secret'=>str_re
     # Disposable *_test database only, emptied first: this test counts sign-ins and failures exactly.
     assert re.search(r'dbname=[A-Za-z0-9_]+_test(;|$)',os.environ.get('SYNC_TEST_DSN','')),'Disposable *_test database required'
     subprocess.run(['php','-r',"$p=new PDO(getenv('SYNC_TEST_DSN'),getenv('SYNC_TEST_USER'),getenv('SYNC_TEST_PASSWORD'));$p->exec(file_get_contents($argv[1]));foreach(['tv_sync_records','tv_sync_accounts','tv_sync_rate'] as $t)$p->exec('DELETE FROM '.$t);",str(root/'sql'/'account-sync.sql')],check=True)
-    subprocess.run(['php','-r',"$p=new PDO(getenv('SYNC_TEST_DSN'),getenv('SYNC_TEST_USER'),getenv('SYNC_TEST_PASSWORD'));$p->exec(file_get_contents($argv[1]));foreach(['tv_profiles','tv_profile_accounts'] as $t)$p->exec('DELETE FROM '.$t);",str(root/'sql'/'profiles.sql')],check=True)
+    subprocess.run(['php','-r',"$p=new PDO(getenv('SYNC_TEST_DSN'),getenv('SYNC_TEST_USER'),getenv('SYNC_TEST_PASSWORD'));$p->exec(file_get_contents($argv[1]));$p->exec(file_get_contents($argv[1]));foreach(['tv_profiles','tv_profile_accounts'] as $t)$p->exec('DELETE FROM '.$t);",str(root/'sql'/'profiles.sql')],check=True)
     sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
     with open(dest/'server.log','wb') as log:
       proc=subprocess.Popen(['php','-S',f'127.0.0.1:{port}','-t',str(dest)],stdout=log,stderr=log)

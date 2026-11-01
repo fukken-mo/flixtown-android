@@ -80,7 +80,7 @@ final class AccountSync {
             NET.execute(()->{try{
                 if(!who.equals(Profiles.raw(app).getString(SignOut.OWNER,""))||!expected.equals(Profiles.scope(app)))return;
                 String auth=session;
-                if(auth.isEmpty()||SystemClock.elapsedRealtime()>=until){JSONObject r=transport.post(url,new JSONObject().put("action","session").put("username",credentials[0]).put("password",credentials[1]));if(!r.optBoolean("ok"))return;auth=r.optString("session");}
+                if(auth.isEmpty()||SystemClock.elapsedRealtime()>=until){auth=Profiles.sessionFor(app,url,credentials,transport).token;}
                 JSONObject body=new JSONObject().put("action","exchange").put("session",auth).put("after",after).put("pull",false).put("operations",ops);
                 if(!"default".equals(profile))body.put("profile",profile);
                 transport.post(url,body); // Never consume a late response after detaching.
@@ -180,9 +180,8 @@ final class AccountSync {
         try{
             String session=existing;long expiry=until;
             if(session.isEmpty()||SystemClock.elapsedRealtime()>=expiry){
-                JSONObject auth=transport.post(url,new JSONObject().put("action","session").put("username",credentials[0]).put("password",credentials[1]));
-                session=auth.optString("session","");if(!auth.optBoolean("ok")||session.isEmpty()||session.length()>512)throw new IOException();
-                expiry=SystemClock.elapsedRealtime()+Math.min(840,Math.max(1,auth.optInt("ttl",900)-60))*1000L;
+                Profiles.Session auth=Profiles.sessionFor(app,url,credentials,transport);
+                session=auth.token;expiry=auth.until;
             }
             JSONObject body=new JSONObject().put("action","exchange").put("session",session).put("after",after).put("pull",read).put("operations",operations);
             if(!anchor.isEmpty())body.put("anchor",anchor);
@@ -235,7 +234,7 @@ final class AccountSync {
     private void finishExchange(){if(repeatRequested){repeatRequested=false;cycle(home&&!playing);}}
     /** After a detected restore the cursor is 0, so the next exchange cannot be refused again: re-read at once. */
     private void restart(int g){if(g!=generation)return;busy=false;lastPull=0;cycle(home&&!playing);}
-    private void failed(int g){if(g!=generation)return;busy=false;token="";tokenUntil=0;nextAttempt=SystemClock.elapsedRealtime()+backoff;backoff=Math.min(900000,backoff*2);}
+    private void failed(int g){if(g!=generation)return;Profiles.forgetSession(app);busy=false;token="";tokenUntil=0;nextAttempt=SystemClock.elapsedRealtime()+backoff;backoff=Math.min(900000,backoff*2);}
     /**
      * WORK: the server's history went back (restored from a backup). Everything is read again; for each
      * record, this TV's copy is uploaded again where the server's is older than the one this TV had seen,

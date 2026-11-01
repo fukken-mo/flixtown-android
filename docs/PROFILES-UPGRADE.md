@@ -17,6 +17,8 @@ permanent signing, panel configuration and live services remain unchanged.
 - Profile metadata uses revisions/CAS; stale edits get a refresh message. Deleted
   IDs are tombstoned and cannot be recreated. Profile mutations and non-default
   progress writes share an account lock, so a deleted profile rejects late writes.
+- Default sync, named-profile sync and metadata reuse an in-memory account session
+  so switching profiles does not repeatedly consume the login rate limit.
 - Separate fixed-profile preferences and journals. An old HTTP response is rejected
   on switching. Progress is never routed through a mutable current-profile view.
 - A best-effort final upload on switching reads/saves on the worker and uploads
@@ -52,8 +54,8 @@ No config replacement, cron or server avatar uploads. Use staging before live.
 - Existing 168 JVM tests plus ProfilePrefs isolation/listener tests.
 - PHP validation, existing account-sync DB suite and real HTTP endpoint tests on
   MySQL 8.0 and MariaDB 10.11 (fake identity provider, disposable databases).
-- 18 device tests on API28 720p and API31 1080p: existing sync tests, watched-card
-  test and four new profile tests. Named-profile cross-TV sync, default isolation,
+- 19 device tests on API28 720p and API31 1080p: existing sync tests, watched-card
+  test and five new profile tests. Named-profile cross-TV sync, default isolation,
   rename history retention, stale reply on switching, real editor/avatar selection
   and D-pad focus. These use offline fake services; they do not prove live latency.
 - CI is the first Android compile and PHP execution for this implementation.

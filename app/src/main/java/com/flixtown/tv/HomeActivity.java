@@ -171,6 +171,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         }
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
         handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
+    boolean profileMetadataAllowed(){return resumed&&!destroyed&&!isFinishing();}
     private void openProfilePickerWhenReady(){
         if(destroyed||isFinishing())return;
         if(!resumed||overlayUp||!hasWindowFocus()){handler.postDelayed(this::openProfilePickerWhenReady,500);return;}

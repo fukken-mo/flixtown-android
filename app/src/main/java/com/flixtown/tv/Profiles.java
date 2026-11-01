@@ -17,7 +17,8 @@ final class Profiles {
     private static final Set<String> CHOSEN=new HashSet<>();
     private static final Object AUTH_LOCK=new Object();
     private static volatile int epoch;
-    private static volatile String authScope="",token="";private static volatile long tokenUntil;
+    private static final java.util.concurrent.ConcurrentHashMap<SharedPreferences,Session> SESSIONS=new java.util.concurrent.ConcurrentHashMap<>();
+    static final class Session {final String scope,token;final long until;final int epoch;Session(String scope,String token,long until,int epoch){this.scope=scope;this.token=token;this.until=until;this.epoch=epoch;}}
     static SharedPreferences raw(Context c){return c.getSharedPreferences("flix",Context.MODE_PRIVATE);}
     static SharedPreferences store(Context c){return c.getSharedPreferences("profiles_v1",Context.MODE_PRIVATE);}
     static String scope(Context c){
@@ -38,7 +39,7 @@ final class Profiles {
     static String journalSuffix(Context c){String id=activeId(c);return "default".equals(id)?"":"_"+scope(c)+"_"+id;}
     static synchronized boolean needsChoice(Context c){return !scope(c).isEmpty()&&!CHOSEN.contains(scope(c));}
     static synchronized void chosen(Context c){CHOSEN.add(scope(c));}
-    static synchronized void signOut(){epoch++;CHOSEN.clear();authScope="";token="";tokenUntil=0;}
+    static synchronized void signOut(){epoch++;CHOSEN.clear();SESSIONS.clear();}
     static synchronized void save(Context c,String scope,ProfileCatalog data,long revision){
         Map<String,ProfileCatalog> values=CACHE.get(store(c));if(values==null){values=new LinkedHashMap<>();CACHE.put(store(c),values);}values.put(scope,data);try{store(c).edit().putString(scope+":catalog",data.encode()).putLong(scope+":revision",revision).apply();}catch(Exception impossible){throw new IllegalStateException(impossible);}
     }
@@ -65,9 +66,9 @@ final class Profiles {
         Api.IO.execute(()->{
             ProfileCatalog imported=null;long revision=0;boolean ok=false;String error="Profiles are temporarily unavailable. Your current profile still works.";
             try{
-                JSONObject body=mutation==null?new JSONObject():new JSONObject(mutation.toString());body.put("action","profiles");body.put("session",session(url,scope,credentials));
+                JSONObject body=mutation==null?new JSONObject():new JSONObject(mutation.toString());body.put("action","profiles");body.put("session",sessionFor(app,url,credentials,Profiles::post).token);
                 JSONObject r=post(url,body);
-                if(!r.optBoolean("ok")){String why=r.optString("error");if(why.equals("session")){token="";tokenUntil=0;}if(why.equals("profile_conflict"))error="Profiles changed on another TV. Refresh and try again.";else if(why.equals("profile_limit"))error="This account already has six profiles.";else if(why.equals("profile_capacity"))error="Profile storage is full. Please contact support.";throw new IllegalStateException();}
+                if(!r.optBoolean("ok")){String why=r.optString("error");if(why.equals("session"))forgetSession(app);if(why.equals("profile_conflict"))error="Profiles changed on another TV. Refresh and try again.";else if(why.equals("profile_limit"))error="This account already has six profiles.";else if(why.equals("profile_capacity"))error="Profile storage is full. Please contact support.";throw new IllegalStateException();}
                 if(r.optInt("profiles_version")!=1||!(r.opt("revision") instanceof Number)||r.optLong("revision")<=0)throw new IllegalStateException();
                 JSONArray profiles=r.getJSONArray("profiles");String selected=catalog(app).selected;boolean found=false;
                 for(int i=0;i<profiles.length();i++)if(selected.equals(profiles.getJSONObject(i).optString("id")))found=true;
@@ -79,6 +80,7 @@ final class Profiles {
             MAIN.post(()->{if(started!=epoch||!scope.equals(scope(app)))return;
                 if(success){
                     // Never change the active profile underneath Details or a running player.
+                    if(c instanceof HomeActivity&&!((HomeActivity)c).profileMetadataAllowed()){done.result(false,"Profiles will refresh when you return.");return;}
                     if(c instanceof android.app.Activity){android.app.Activity a=(android.app.Activity)c;
                         if(a.isFinishing()||a.isDestroyed()||!a.hasWindowFocus()){done.result(false,"Profiles will refresh when you return.");return;}}
                     save(app,scope,data,rev);
@@ -86,14 +88,19 @@ final class Profiles {
             });
         });
     }
-    private static String session(String url,String scope,String[] credentials)throws Exception{
+    /** Shared by default sync, named-profile sync and metadata; never locks the main thread. */
+    static Session sessionFor(Context c,String url,String[] credentials,AccountSync.Transport transport)throws Exception{
+        SharedPreferences file=store(c);String scope=scope(c);int started=epoch;Session found=SESSIONS.get(file);
+        if(found!=null&&found.epoch==started&&scope.equals(found.scope)&&android.os.SystemClock.elapsedRealtime()<found.until)return found;
         synchronized(AUTH_LOCK){
-        if(!scope.equals(authScope)||token.isEmpty()||android.os.SystemClock.elapsedRealtime()>=tokenUntil){
-            JSONObject r=post(url,new JSONObject().put("action","session").put("username",credentials[0]).put("password",credentials[1]));
-            if(!r.optBoolean("ok")||r.optString("session").isEmpty()||r.optString("session").length()>512)throw new IllegalStateException();
-            authScope=scope;token=r.getString("session");tokenUntil=android.os.SystemClock.elapsedRealtime()+840000;
-        }return token;}
+            found=SESSIONS.get(file);if(found!=null&&found.epoch==started&&scope.equals(found.scope)&&android.os.SystemClock.elapsedRealtime()<found.until)return found;
+            JSONObject r=transport.post(url,new JSONObject().put("action","session").put("username",credentials[0]).put("password",credentials[1]));
+            String token=r.optString("session");if(!r.optBoolean("ok")||token.isEmpty()||token.length()>512||started!=epoch||!scope.equals(scope(c)))throw new IllegalStateException();
+            long until=android.os.SystemClock.elapsedRealtime()+Math.min(840,Math.max(1,r.optInt("ttl",900)-60))*1000L;
+            found=new Session(scope,token,until,started);SESSIONS.put(file,found);return found;
+        }
     }
+    static void forgetSession(Context c){SESSIONS.remove(store(c));}
     /** Bounded HTTPS transport, also used for profile progress. */
     private static AccountSync.Transport fixtureTransport;
     static void fixture(AccountSync.Transport transport){if(!BuildConfig.DEMO)throw new IllegalStateException();fixtureTransport=transport;}

@@ -17,7 +17,7 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
   @Override public Context getApplicationContext(){return this;}
   @Override public SharedPreferences getSharedPreferences(String n,int m){return super.getSharedPreferences("profiles_test_"+name+"_"+n,m);}
  };}
- private void main(Runnable r){getInstrumentation().runOnMainSync(r);}
+ private void main(Runnable r){final Throwable[] error={null};getInstrumentation().runOnMainSync(()->{try{r.run();}catch(Throwable t){error[0]=t;}});if(error[0]!=null)throw new AssertionError(error[0]);}
  private void waitFor(Callable<Boolean> p)throws Exception{long end=System.currentTimeMillis()+12000;while(System.currentTimeMillis()<end){getInstrumentation().waitForIdleSync();if(p.call())return;Thread.sleep(80);}fail("profile test timed out");}
  private ProfileCatalog profiles;
  private final String first="12345678-1234-4234-8234-123456789012",second="87654321-4321-4321-8321-210987654321";
@@ -30,10 +30,10 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
  private AccountSync client(Context c,Fake f,String id){final AccountSync[] out={null};main(()->{seed(c,id);out[0]=AccountSync.fixture(c,f);clients.add(out[0]);});return out[0];}
  private void tick(AccountSync s){main(()->s.fixtureTick(false));}
  private static final class Fake implements AccountSync.Transport {
-  final Map<String,Map<String,JSONObject>> data=new HashMap<>();long clock;
+  final Map<String,Map<String,JSONObject>> data=new HashMap<>();long clock;volatile int sessions;
   CountDownLatch gate,release;boolean block;
   @Override public JSONObject post(String url,JSONObject b)throws Exception{
-   if(b.optString("action").equals("session"))return new JSONObject().put("ok",true).put("session",b.getString("username")).put("ttl",900);
+   if(b.optString("action").equals("session")){sessions++;return new JSONObject().put("ok",true).put("session",b.getString("username")).put("ttl",900);}
    if(block){block=false;gate.countDown();release.await(10,TimeUnit.SECONDS);}
    synchronized(this){String scope=b.getString("session")+"|"+b.optString("profile","default");Map<String,JSONObject> rows=data.get(scope);if(rows==null){rows=new LinkedHashMap<>();data.put(scope,rows);}
     JSONArray acks=new JSONArray(),records=new JSONArray();JSONArray ops=b.optJSONArray("operations");if(ops!=null)for(int i=0;i<ops.length();i++){JSONObject op=ops.getJSONObject(i);String k=op.getString("key");JSONObject old=rows.get(k);boolean accepted=op.optLong("base")== (old==null?0:old.getLong("revision"));JSONObject row=old;
@@ -52,6 +52,10 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
   tick(two);waitFor(()->Api.prefs(b).getLong("resume_position_movie:1",0)==120000);
   tick(guest);tick(legacy);AccountSync.fixtureAwaitWork();Thread.sleep(200);
   assertFalse(Api.prefs(c).contains("resume_position_movie:1"));assertFalse(Api.prefs(d).contains("resume_position_movie:1"));assertTrue(Api.prefs(b).getBoolean("watched_series:2:3",false));assertTrue(Api.prefs(b).getString("favorites","").contains("movie:1"));
+ }
+ public void testSessionIsReusedAcrossProfileSwitches()throws Exception{
+  Fake f=new Fake();Context c=context("session_reuse");AccountSync one=client(c,f,first);tick(one);waitFor(()->{synchronized(f){return f.data.containsKey("fixture|"+first);}});assertEquals(1,f.sessions);
+  final AccountSync[] two={null};main(()->{AccountSync.detachProfile();Profiles.select(c,second);two[0]=AccountSync.fixture(c,f);clients.add(two[0]);});tick(two[0]);waitFor(()->{synchronized(f){return f.data.containsKey("fixture|"+second);}});assertEquals("profile switches reuse the same account session",1,f.sessions);
  }
  public void testProfileSwitchKeepsDefaultAndRenamesKeepHistory()throws Exception{
   Context c=context("migration");main(()->{seed(c,"default");Api.prefs(c).edit().putLong("resume_position_movie:8",90000).putString("favorites","|movie:8|").apply();Profiles.select(c,first);assertFalse(Api.prefs(c).contains("resume_position_movie:8"));Api.prefs(c).edit().putLong("resume_position_movie:8",20000).apply();Profiles.save(c,Profiles.scope(c),Profiles.catalog(c).edit(first,"Family","avatar_28",false),2);assertEquals(20000,Api.prefs(c).getLong("resume_position_movie:8",0));Profiles.select(c,"default");assertEquals(90000,Api.prefs(c).getLong("resume_position_movie:8",0));assertTrue(Api.prefs(c).getString("favorites","").contains("movie:8"));Profiles.select(c,first);assertEquals(20000,Api.prefs(c).getLong("resume_position_movie:8",0));});
@@ -72,10 +76,12 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
   activity=getInstrumentation().startActivitySync(new Intent(c,ProfilesActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("cached",true));
   getInstrumentation().waitForIdleSync();final View[] before={null};main(()->before[0]=activity.getCurrentFocus());getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);getInstrumentation().waitForIdleSync();main(()->assertNotSame(before[0],activity.getCurrentFocus()));
   screenshot("picker-six-profiles");
-  main(()->{findText(tree(),"Manage profiles").performClick();View text=findText(tree(),"Mo");assertNotNull(text);((View)text.getParent()).performClick();EditText input=findEdit(tree());assertNotNull(input);input.setText("Family");View avatar=findDescription(tree(),"Avatar 28");assertNotNull(avatar);assertTrue(avatar.isFocusable());assertTrue(avatar.getBottom()>0);avatar.performClick();});
-  getInstrumentation().waitForIdleSync();screenshot("custom-name-avatar-editor");main(()->findText(tree(),"Save").performClick());
+  main(()->{findText(tree(),"Manage profiles").performClick();View text=findText(tree(),"Mo");assertNotNull(text);((View)text.getParent()).performClick();EditText input=findEdit(tree());assertNotNull(input);input.setText("Family");View avatar=findDescription(tree(),"Avatar 28");assertNotNull(avatar);assertTrue(avatar.isFocusable());avatar.performClick();});
+  getInstrumentation().waitForIdleSync();main(()->{View avatar=findDescription(tree(),"Avatar 28");int[] pos=new int[2];avatar.getLocationOnScreen(pos);assertTrue(avatar.getHeight()>0);assertTrue(pos[1]>=0);assertTrue(pos[1]+avatar.getHeight()<=getInstrumentation().getTargetContext().getResources().getDisplayMetrics().heightPixels);});screenshot("custom-name-avatar-editor");main(()->findText(tree(),"Save").performClick());
   waitFor(()->Profiles.catalog(c).profiles.stream().anyMatch(p->p.id.equals(first)&&p.name.equals("Family")&&p.avatar.equals("avatar_28")));
   main(()->{assertNotNull(findText(tree(),"Family"));for(View v:new View[]{findText(tree(),"Done"),findText(tree(),"Family")}){assertNotNull(v);int[] pos=new int[2];v.getLocationOnScreen(pos);assertTrue(pos[1]>=0);assertTrue(pos[1]+v.getHeight()<=getInstrumentation().getTargetContext().getResources().getDisplayMetrics().heightPixels);}});
+  android.app.Instrumentation.ActivityMonitor home=getInstrumentation().addMonitor(HomeActivity.class.getName(),null,true);
+  try{main(()->{findText(tree(),"Done").performClick();((View)findText(tree(),"Family").getParent()).performClick();});assertEquals(first,Profiles.activeId(c));assertEquals(1,home.getHits());}finally{getInstrumentation().removeMonitor(home);}
  }
  private void screenshot(String name)throws Exception{
   android.graphics.Bitmap image=getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(image);

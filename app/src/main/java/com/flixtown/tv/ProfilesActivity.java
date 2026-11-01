@@ -105,6 +105,6 @@ public class ProfilesActivity extends Activity {
         Profiles.mutate(this,kind,profile,id,(ok,error)->{if(!live())return;busy=false;if(ok){picker();status.setText("Profile saved.");}else{status.setText(error);if(error.contains("another TV")){editingId=null;refresh();}}});
     }
     private void choose(String id){try{AccountSync.detachProfile();Profiles.select(this,id);returnHome();}catch(IllegalArgumentException e){status.setText("This profile is not available.");}}
-    private void returnHome(){Profiles.chosen(this);startActivity(new Intent(this,HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();}
+    private void returnHome(){Profiles.chosen(this);startActivity(new Intent(this,HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));finish();}
     @Override public void onBackPressed(){if(busy)return;if(editingId!=null){picker();return;}if(manage){manage=false;picker();return;}Profiles.chosen(this);returnHome();}
 }
