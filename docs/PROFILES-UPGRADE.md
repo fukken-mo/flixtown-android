@@ -63,7 +63,10 @@ No config replacement, cron or server avatar uploads. Use staging before live.
   and D-pad focus. These use offline fake services; they do not prove live latency.
 - Android source at `601e784` passed all JVM tests and 19 device tests on both
   setups. The final panel partial-installation guard and screenshot timing update
-  are checked by the following workflow run. See Actions for its final result.
+  passed on final source `227c571` in run 41362186270. All five jobs succeeded.
+  Final totals: 173 JVM tests; 19 device tests on each setup; 14 PHP validation,
+  53 sync database and 43 HTTP checks on each database (110 per database).
+  Picker and editor screenshots were inspected at both resolutions.
 
 ## Remaining acceptance checks
 
@@ -78,3 +81,28 @@ Neither a secure Kids boundary nor remote-device revocation is claimed.
 No production APK, release version bump, merge or publishing is authorized by this
 Preview workflow. Claude can review the exact diff; no direct Claude session has
 been established from this chat.
+
+## Preview deliverables
+
+- APK artifact: https://github.com/fukken-mo/flixtown-android/actions/runs/41362186270/artifacts/13106086447
+- Actual package: `com.myflixtown.tv.native.preview`, version
+  `3.8.20-profiles-preview` / 10040, minSdk 23. Test key, separate from production.
+- APK SHA-256: `9aaadad8d2e011418d79c12260a8fefcae15b8b4bb59d1670d410ad455a867a3`
+  (8,645,694 bytes). Bundled avatar count checked: 28.
+- Backend ZIP: `deliverables/FlixTown-Profiles-Backend-PREVIEW.zip`
+  SHA-256 `3c16d8c6df42c1408639e89e4be585b71de489d06282781a7e4adc59a0d0b9e4`.
+  Its five entries match the reviewed sources byte-for-byte. No config or secrets.
+- Independent review handoff: `docs/PROFILES-CLAUDE-REVIEW.md`.
+
+Failure history: the first complete emulator run stopped in a UI test that
+asserted avatar bounds before Android laid out the editor, with assertions escaping
+on the main thread. The helper now waits for layout and propagates failures back to
+the runner. A first screenshot capture also caught the old compositor frame; a short
+wait on the test thread fixed capture timing. The partial-installation HTTP test
+initially edited a library inside a warm PHP worker; a separate cold worker now
+models the older installed library and confirms unavailable responses without writes.
+
+Not verified on real customer hardware or live production services. Large system
+fonts, real process kills and profile-metadata database restores still need acceptance
+coverage. Progress restore handling is tested, including the named-profile reset
+response; that does not prove profile-catalog recovery after a database restore.
