@@ -63,6 +63,7 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
  private View findText(View v,String text){if(v instanceof TextView&&text.contentEquals(((TextView)v).getText()))return v;if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++){View got=findText(g.getChildAt(i),text);if(got!=null)return got;}}return null;}
  private View tree(){return activity.findViewById(android.R.id.content);}
  public void testRealNameAvatarEditorAndRemoteFocus()throws Exception{
+  profiles=profiles.add("Alex","avatar_09",false).add("Movie night","avatar_14",false).add("Guest two","avatar_28",false);
   Context c=getInstrumentation().getTargetContext();main(()->{seed(c,"default");try{AccountStore.save(c,"fixture","fixture-password","https://demo.invalid");}catch(Exception e){throw new IllegalStateException(e);}Profiles.fixture((url,b)->{
    if(b.optString("action").equals("session"))return new JSONObject().put("ok",true).put("session","fixture");
    if(b.optString("mutation").equals("update")){JSONObject p=b.getJSONObject("profile");profiles=profiles.edit(p.getString("id"),p.getString("name"),p.getString("avatar"),false);}
@@ -70,9 +71,16 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
   });});
   activity=getInstrumentation().startActivitySync(new Intent(c,ProfilesActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("cached",true));
   getInstrumentation().waitForIdleSync();final View[] before={null};main(()->before[0]=activity.getCurrentFocus());getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);getInstrumentation().waitForIdleSync();main(()->assertNotSame(before[0],activity.getCurrentFocus()));
-  main(()->{findText(tree(),"Manage profiles").performClick();View text=findText(tree(),"Mo");assertNotNull(text);((View)text.getParent()).performClick();EditText input=findEdit(tree());assertNotNull(input);input.setText("Family");View avatar=findDescription(tree(),"Avatar 28");assertNotNull(avatar);assertTrue(avatar.isFocusable());assertTrue(avatar.getBottom()>0);avatar.performClick();findText(tree(),"Save").performClick();});
+  screenshot("picker-six-profiles");
+  main(()->{findText(tree(),"Manage profiles").performClick();View text=findText(tree(),"Mo");assertNotNull(text);((View)text.getParent()).performClick();EditText input=findEdit(tree());assertNotNull(input);input.setText("Family");View avatar=findDescription(tree(),"Avatar 28");assertNotNull(avatar);assertTrue(avatar.isFocusable());assertTrue(avatar.getBottom()>0);avatar.performClick();});
+  getInstrumentation().waitForIdleSync();screenshot("custom-name-avatar-editor");main(()->findText(tree(),"Save").performClick());
   waitFor(()->Profiles.catalog(c).profiles.stream().anyMatch(p->p.id.equals(first)&&p.name.equals("Family")&&p.avatar.equals("avatar_28")));
   main(()->{assertNotNull(findText(tree(),"Family"));for(View v:new View[]{findText(tree(),"Done"),findText(tree(),"Family")}){assertNotNull(v);int[] pos=new int[2];v.getLocationOnScreen(pos);assertTrue(pos[1]>=0);assertTrue(pos[1]+v.getHeight()<=getInstrumentation().getTargetContext().getResources().getDisplayMetrics().heightPixels);}});
+ }
+ private void screenshot(String name)throws Exception{
+  android.graphics.Bitmap image=getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(image);
+  java.io.File dir=new java.io.File(getInstrumentation().getTargetContext().getExternalFilesDir(null),"profiles-ui");assertTrue(dir.isDirectory()||dir.mkdirs());
+  try(java.io.FileOutputStream out=new java.io.FileOutputStream(new java.io.File(dir,name+".png"))){image.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}
  }
  private EditText findEdit(View v){if(v instanceof EditText)return (EditText)v;if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++){EditText e=findEdit(((ViewGroup)v).getChildAt(i));if(e!=null)return e;}return null;}
  private View findDescription(View v,String d){if(d.equals(v.getContentDescription()==null?null:v.getContentDescription().toString()))return v;if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++){View e=findDescription(((ViewGroup)v).getChildAt(i),d);if(e!=null)return e;}return null;}

@@ -97,10 +97,13 @@ jobs:
             adb install -r fixture-apks/qa/app-qa.apk
             adb install -r fixture-apks/androidTest/qa/app-qa-androidTest.apk
             adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
+            adb pull /sdcard/Android/data/com.myflixtown.tv.native.qa/files/profiles-ui profiles-ui || true
             grep -q 'OK (18 tests)' device-results.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: profiles-device-api${{ matrix.api }}
-          path: device-results.txt
+          path: |
+            device-results.txt
+            profiles-ui/
           retention-days: 7

@@ -77,7 +77,7 @@ public class ProfilesActivity extends Activity {
     }
     private void styleCard(View card,boolean focus,boolean current){GradientDrawable bg=Ui.rounded(focus?0xFF43242B:0xFF1D1D27,14,this);bg.setStroke(Ui.dp(this,focus?3:1),focus?0xFFE65B60:current?0xFFB84850:0xFF34343F);card.setBackground(bg);}
     private Drawable drawable(String id){Drawable d=art.get(id);if(d!=null)return d;
-        try(InputStream in=getAssets().open("profile-avatars/"+id+".webp")){d=Drawable.createFromStream(in,id);art.put(id,d);return d;}catch(Exception e){return null;}}
+        try(InputStream in=getAssets().open("profile-avatars/"+id+".webp")){android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inSampleSize=Ui.dp(this,88)<=192?2:1;android.graphics.Bitmap bitmap=android.graphics.BitmapFactory.decodeStream(in,null,options);if(bitmap==null)return null;d=new android.graphics.drawable.BitmapDrawable(getResources(),bitmap);art.put(id,d);return d;}catch(Exception e){return null;}}
     private final Map<String,View> avatarViews=new HashMap<>();
     private void paintAvatars(){for(Map.Entry<String,View> e:avatarViews.entrySet())styleCard(e.getValue(),e.getValue().hasFocus(),e.getKey().equals(avatar));}
     private void editor(ProfileCatalog.Profile profile){
