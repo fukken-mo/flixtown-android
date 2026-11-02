@@ -1,0 +1,9 @@
+API 28
+Home [full]: injected RIGHT, DOWN, OK, BACK while unfocusable; screen behind heard []; guard blocked 0; dialog heard [KEYCODE_DPAD_RIGHT↑, KEYCODE_DPAD_DOWN↓, KEYCODE_DPAD_DOWN↑, KEYCODE_DPAD_CENTER↓, KEYCODE_DPAD_CENTER↑, click First, KEYCODE_BACK↓, KEYCODE_BACK↑]; new activities 0; screen had window focus during hold: false
+Home [guard only]: injected RIGHT, DOWN, OK, BACK while unfocusable; screen behind heard []; guard blocked 8; dialog heard []; new activities 0; screen had window focus during hold: true
+Player [full]: injected RIGHT, DOWN, OK, BACK while unfocusable; screen behind heard []; guard blocked 0; dialog heard [KEYCODE_DPAD_RIGHT↓, KEYCODE_DPAD_RIGHT↑, KEYCODE_DPAD_DOWN↓, KEYCODE_DPAD_DOWN↑, KEYCODE_DPAD_CENTER↓, KEYCODE_DPAD_CENTER↑, click Second, KEYCODE_BACK↓, KEYCODE_BACK↑]; new activities 0; screen had window focus during hold: false
+plain window opened with a dialog: tries 0, plain window keeps focus true, OK reached the plain window true
+newer dialog on top: covered dialog not recovered; plain window over a dialog: tries 0, plain window keeps focus true
+keyboard up for a dialog text field: recovery started false, tries 0, dialog focusable true
+activity paused during hold: pending 0, screen focusable true, dialog focusable true, guard removed true; activity finished during hold: pending 0, no later tries
+dismiss during hold: pending for dialog 0, screen focusable true, guard removed true; tries after close 0; Home has focus again
