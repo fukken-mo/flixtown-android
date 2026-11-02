@@ -92,7 +92,8 @@ jobs:
           grep -E "^OK|^FAILURES|Tests run|INSTRUMENTATION_STATUS: (class|test)=" device-results.txt | sed 's/INSTRUMENTATION_STATUS: //' | paste - - | grep -i design || true
           grep -E "^OK|^FAILURES|Tests run" device-results.txt || true
           echo "--- rapid close/reopen attempts ---"; cat profiles-ui/race-results.txt || true
-          grep -q 'OK (37 tests)' device-results.txt
+          echo "--- input isolation during focus recovery ---"; cat profiles-ui/isolation-results.txt || true
+          grep -q 'OK (42 tests)' device-results.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: "dialogs-design-api${{ matrix.api }}", path: "device-results.txt\nprofiles-ui/\nprofiles-logcat.txt", retention-days: 7}

@@ -55,7 +55,7 @@ public class DialogFocusRaceDeviceTest extends InstrumentationTestCase {
  private int recoveriesBefore;
  private void record(String scenario,int attempt,String problem){
   boolean failed=!problem.isEmpty()&&!problem.startsWith("keys reached it");if(failed)failures++;
-  int recovered=Ui.focusRecoveries-recoveriesBefore;recoveriesBefore=Ui.focusRecoveries;
+  int recovered=FocusRecovery.recoveries-recoveriesBefore;recoveriesBefore=FocusRecovery.recoveries;
   final boolean[] home={false};if(failed)main(()->home[0]=activity.hasWindowFocus());
   results.add((failed?"FAIL ":"ok   ")+scenario+" #"+attempt+(problem.isEmpty()?"":"  "+problem)+(failed?" (Home window focus "+home[0]+")":"")
    +(recovered>0?"  [lost focus notification recovered x"+recovered+"]":""));
@@ -66,7 +66,7 @@ public class DialogFocusRaceDeviceTest extends InstrumentationTestCase {
  private Dialog openExit(Dialog before)throws Exception{for(int i=0;i<3;i++){key(KeyEvent.KEYCODE_BACK);Dialog d=next(before);if(d!=null)return d;}return null;}
 
  public void testRapidCloseAndReopen()throws Exception{
-  recoveriesBefore=Ui.focusRecoveries;
+  recoveriesBefore=FocusRecovery.recoveries;
   for(int a=1;a<=ATTEMPTS;a++){
    // Exit: OK on Stay, then Back at once (no pause)
    Dialog first=openExit(null);if(first==null){record("exit Stay→Back",a,"exit dialog did not open");closeAll();continue;}
@@ -104,7 +104,7 @@ public class DialogFocusRaceDeviceTest extends InstrumentationTestCase {
    record("update Update now→progress",a,p);closeAll();
   }
   java.io.File dir=new java.io.File(c.getExternalFilesDir(null),"profiles-ui");dir.mkdirs();
-  try(java.io.FileWriter out=new java.io.FileWriter(new java.io.File(dir,"race-results.txt"))){out.write("API "+android.os.Build.VERSION.SDK_INT+", focus recoveries in total: "+Ui.focusRecoveries+"\n");for(String r:results)out.write(r+"\n");}
+  try(java.io.FileWriter out=new java.io.FileWriter(new java.io.File(dir,"race-results.txt"))){out.write("API "+android.os.Build.VERSION.SDK_INT+", focus recoveries in total: "+FocusRecovery.recoveries+"\n");for(String r:results)out.write(r+"\n");}
   assertEquals("dialogs left unresponsive:\n"+String.join("\n",results),0,failures);
  }
  @Override protected void tearDown()throws Exception{
