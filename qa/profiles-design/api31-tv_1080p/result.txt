@@ -1,2 +1,1 @@
-FAILURES!!!
-Tests run: 29,  Failures: 0,  Errors: 1
+OK (29 tests)
