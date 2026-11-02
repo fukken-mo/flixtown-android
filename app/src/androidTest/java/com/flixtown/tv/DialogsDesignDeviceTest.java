@@ -87,7 +87,13 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
  }
  private boolean hasBar(View v){if(v.getClass()==View.class&&!(v.getParent() instanceof FrameLayout)&&v.getVisibility()==View.VISIBLE&&v.getHeight()>0&&v.getHeight()<=dp(6))return true;   // a progress bar's fill (inside its track) is not decoration
   if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++)if(hasBar(((ViewGroup)v).getChildAt(i)))return true;return false;}
- private void backDismisses(Dialog d)throws Exception{key(KeyEvent.KEYCODE_BACK);waitFor("Back dismisses",()->!d.isShowing());}
+ private void backDismisses(Dialog d)throws Exception{key(KeyEvent.KEYCODE_BACK);waitFor("Back dismisses",()->!d.isShowing());settle();}
+ /**
+  * A short pause (still quicker than a person) before the next dialog opens. On the API 28 emulator a dialog
+  * opened within a frame or two of another closing can miss the window manager's focus notification (Android 9
+  * window-manager race: the window holds input focus but its view tree never hears so, and drops keys).
+  */
+ private void settle()throws Exception{Thread.sleep(600);getInstrumentation().waitForIdleSync();}
 
  public void testExitConfirmation()throws Exception{
   Activity h=home();
@@ -100,7 +106,7 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
   key(KeyEvent.KEYCODE_DPAD_LEFT);assertEquals("Stay",focused(d));
   backDismisses(d);assertFalse("Back keeps Flix Town open",h.isFinishing());
   Dialog again=exit(h,d);assertEquals("Stay is focused again","Stay",focused(again));
-  key(KeyEvent.KEYCODE_DPAD_CENTER);waitFor("Stay closes the dialog",()->!again.isShowing());assertFalse("Stay keeps Flix Town open",h.isFinishing());
+  key(KeyEvent.KEYCODE_DPAD_CENTER);waitFor("Stay closes the dialog",()->!again.isShowing());assertFalse("Stay keeps Flix Town open",h.isFinishing());settle();
   Dialog third=exit(h,again);key(KeyEvent.KEYCODE_DPAD_RIGHT);key(KeyEvent.KEYCODE_DPAD_CENTER);
   waitFor("Exit closes Flix Town",h::isFinishing);
  }
