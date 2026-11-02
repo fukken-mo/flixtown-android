@@ -36,10 +36,12 @@ import java.util.WeakHashMap;
  * When a window that should have focus has not heard so within a moment, its focusability is toggled briefly so
  * the window manager recomputes focus and reports it again. Rules:
  * <ul>
- * <li><b>The screen behind stays out of it.</b> Before a dialog is made unfocusable, the activity's own window is
- *     made unfocusable as well, so the window manager has no window of ours to hand focus to: remote keys wait and
- *     go to the dialog once it is focusable again. As a second guard, any key that still reaches the activity
- *     window during recovery is swallowed, together with its matching key-up.</li>
+ * <li><b>Every window behind stays out of it.</b> Before a dialog is made unfocusable, every window of ours behind
+ *     it (the activity's own window and any older dialogs still open under it) is made unfocusable as well, so the
+ *     window manager has no window of ours to hand focus to: remote keys wait and go to the dialog once it is
+ *     focusable again. As a second guard, any key that still reaches one of those windows during recovery is
+ *     swallowed, together with its matching key-up. Only flags this class added are cleared again, and each
+ *     window's own callback is put back.</li>
  * <li><b>Cancelled cleanly.</b> Pending work stops and every flag and the key guard are restored when the dialog
  *     closes, a newer dialog opens, or the activity pauses, stops or is destroyed.</li>
  * <li><b>Never against a legitimate owner.</b> Nothing happens while a newer dialog is on top or the on-screen
@@ -77,6 +79,7 @@ final class FocusRecovery {
             @Override public void onViewAttachedToWindow(View v){}
             @Override public void onViewDetachedFromWindow(View v){v.removeOnAttachStateChangeListener(this);
                 recovery.windowGone=true;recovery.finish();
+                for(Recovery r:new ArrayList<>(active))r.forget(window);   // it may be a window held behind another dialog
                 boolean wasTop=!dialogs.isEmpty()&&dialogs.get(dialogs.size()-1)==dialog;dialogs.remove(dialog);
                 if(!wasTop||!usable(activity))return;
                 // Focus returns to the dialog below, or to the screen once the last dialog has closed.
@@ -134,15 +137,14 @@ final class FocusRecovery {
     private static final class Recovery implements Runnable,ViewTreeObserver.OnWindowFocusChangeListener {
         private static final int CHECK=0,RELEASE=1,RELEASE_SCREEN=2;
         final Activity activity;final Dialog dialog;final Window window;final View decor;
-        /** The activity window, kept unfocusable while a dialog's window is (null when recovering the screen itself). */
-        final Window screen;
+        /** Windows behind a recovering dialog: guarded, and those this recovery made unfocusable (to clear again). */
+        final Map<Window,KeyGuard> guards=new java.util.LinkedHashMap<>();final List<Window> blocked=new ArrayList<>();
         final long hold;final boolean forced,screenBlockOff;
-        int tries,phase=CHECK;long ownUntil;boolean windowBlocked,screenBlocked,done,windowGone,heardDuringTry;KeyGuard guard;
+        int tries,phase=CHECK;long ownUntil;boolean windowBlocked,done,windowGone,heardDuringTry;
 
         Recovery(Activity activity,Dialog dialog,long holdForTest,boolean screenBlockOff){
             this.activity=activity;this.dialog=dialog;
             window=dialog!=null?dialog.getWindow():activity.getWindow();decor=window.getDecorView();
-            screen=dialog!=null?activity.getWindow():null;
             forced=holdForTest>0;hold=forced?holdForTest:HOLD_MS;this.screenBlockOff=screenBlockOff;
         }
         void start(long delay){active.add(this);decor.getViewTreeObserver().addOnWindowFocusChangeListener(this);main.postDelayed(this,delay);}
@@ -175,34 +177,44 @@ final class FocusRecovery {
                     tries++;heardDuringTry=false;
                     if(BuildConfig.DEMO){recoveries++;android.util.Log.i("FlixTownQA","focus_recovery window="+window.getAttributes().getTitle()+" try="+tries);}
                     ownUntil=Long.MAX_VALUE;
-                    if(screen!=null){
-                        if(guard==null)guard=KeyGuard.install(screen);
-                        if(!screenBlockOff&&(screen.getAttributes().flags&NOT_FOCUSABLE)==0){screen.addFlags(NOT_FOCUSABLE);screenBlocked=true;}
+                    for(Window behind:behind()){
+                        if(!guards.containsKey(behind)){KeyGuard g=KeyGuard.install(behind);if(g!=null)guards.put(behind,g);}
+                        if(!screenBlockOff&&!blocked.contains(behind)&&(behind.getAttributes().flags&NOT_FOCUSABLE)==0){behind.addFlags(NOT_FOCUSABLE);blocked.add(behind);}
                     }
                     window.addFlags(NOT_FOCUSABLE);windowBlocked=true;
                     phase=RELEASE;main.postDelayed(this,hold);return;
                 case RELEASE:
                     window.clearFlags(NOT_FOCUSABLE);windowBlocked=false;
-                    if(screenBlocked){phase=RELEASE_SCREEN;main.postDelayed(this,SCREEN_RELEASE_MS);return;}
+                    if(!blocked.isEmpty()){phase=RELEASE_SCREEN;main.postDelayed(this,SCREEN_RELEASE_MS);return;}
                     next();return;
                 case RELEASE_SCREEN:
-                    screen.clearFlags(NOT_FOCUSABLE);screenBlocked=false;next();
+                    unblock();next();
             }
         }
+        /** The activity window and every older dialog still open, when this recovery is for a dialog (it is the top one). */
+        private List<Window> behind(){
+            List<Window> out=new ArrayList<>();if(dialog==null)return out;
+            out.add(activity.getWindow());
+            List<Dialog> stack=open.get(activity);
+            if(stack!=null)for(Dialog d:stack)if(d!=dialog&&d.isShowing()&&d.getWindow()!=null&&d.getWindow().getDecorView().isAttachedToWindow())out.add(d.getWindow());
+            return out;
+        }
+        private void unblock(){for(Window w:blocked)w.clearFlags(NOT_FOCUSABLE);blocked.clear();}
+        /** A window behind this dialog has gone: nothing of ours is left on it to restore. */
+        void forget(Window gone){blocked.remove(gone);KeyGuard g=guards.remove(gone);if(g!=null)g.restore();}
         private void next(){phase=CHECK;ownUntil=SystemClock.uptimeMillis()+RETRY_MS;main.postDelayed(this,RETRY_MS);}
 
         void finish(){
             if(done)return;done=true;
             main.removeCallbacks(this);active.remove(this);
             if(windowBlocked&&!windowGone)window.clearFlags(NOT_FOCUSABLE);
-            if(screenBlocked)screen.clearFlags(NOT_FOCUSABLE);
-            windowBlocked=screenBlocked=false;
+            unblock();windowBlocked=false;
             ViewTreeObserver observer=decor.getViewTreeObserver();if(observer.isAlive())observer.removeOnWindowFocusChangeListener(this);
-            if(guard!=null){guard.release();guard=null;}
+            for(KeyGuard g:guards.values())g.release();guards.clear();
         }
     }
 
-    /** Swallows keys that reach the activity window while a dialog is recovering focus, and their matching key-ups. */
+    /** Swallows keys that reach a window behind a dialog while a dialog is recovering focus, and their matching key-ups. */
     private static final class KeyGuard implements InvocationHandler {
         final Window screen;final Window.Callback original,proxy;final Set<Integer> held=new HashSet<>();boolean releasing;
         private KeyGuard(Window screen,Window.Callback original){

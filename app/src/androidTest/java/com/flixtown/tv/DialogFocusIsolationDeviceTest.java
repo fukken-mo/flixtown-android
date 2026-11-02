@@ -28,6 +28,7 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
  private static final long HOLD=1500;
  private void main(Runnable r){final Throwable[] error={null};getInstrumentation().runOnMainSync(()->{try{r.run();}catch(Throwable t){error[0]=t;}});if(error[0]!=null)throw new AssertionError(error[0]);}
  private <T> T get(Callable<T> f){final Object[] out={null};main(()->{try{out[0]=f.call();}catch(Exception e){throw new RuntimeException(e);}});@SuppressWarnings("unchecked") T t=(T)out[0];return t;}
+ private int num(Callable<Integer> f){Integer n=get(f);return n==null?0:n;}
  private boolean is(Callable<Boolean> f){Boolean b=get(f);return b!=null&&b;}
  private void waitFor(String what,long ms,Callable<Boolean> p)throws Exception{long end=System.currentTimeMillis()+ms;while(System.currentTimeMillis()<end){if(get(p))return;Thread.sleep(25);}fail(what+" timed out");}
  private boolean within(long ms,Callable<Boolean> p)throws Exception{long end=System.currentTimeMillis()+ms;while(System.currentTimeMillis()<end){if(get(p))return true;Thread.sleep(25);}return false;}
@@ -74,11 +75,16 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
  private String focusName(Activity a){View f=a.getCurrentFocus();return f==null?"none":f.getClass().getSimpleName()+"@"+Integer.toHexString(System.identityHashCode(f));}
 
  /** Forces a recovery on a recording dialog over {@code screen}, injects D-pad, OK and Back while it is unfocusable, and checks isolation. */
- private void isolate(Activity screen,String where,boolean blockScreen)throws Exception{
+ private void isolate(Activity screen,String where,boolean blockScreen)throws Exception{isolate(screen,where,blockScreen,null,null);}
+ /** As above; with {@code lower} (an older dialog still open under the one recovering), it must hear nothing either. */
+ private void isolate(Activity screen,String where,boolean blockScreen,Dialog lower,List<String> lowerHeard)throws Exception{
   List<String> heard=Collections.synchronizedList(new ArrayList<>());
   Dialog d=get(()->recordingDialog(screen,heard));
   waitFor(where+" dialog focus",5000,()->d.getWindow().getDecorView().hasWindowFocus()&&d.getCurrentFocus() instanceof Button);Thread.sleep(400);
   Spy spy=get(()->new Spy(screen.getWindow()));
+  Spy lowerSpy=lower==null?null:get(()->new Spy(lower.getWindow()));
+  int lowerFlags=lower==null?0:num(()->lower.getWindow().getAttributes().flags),screenFlags=num(()->screen.getWindow().getAttributes().flags);
+  if(lowerHeard!=null)lowerHeard.clear();boolean[] lowerBlockedDuringHold={false};
   Instrumentation.ActivityMonitor monitor=getInstrumentation().addMonitor((IntentFilter)null,null,true);
   String focusBefore=get(()->focusName(screen));int blockedBefore=FocusRecovery.keysBlocked;heard.clear();
   boolean[] screenFocusDuringHold={false};
@@ -86,8 +92,12 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
    assertTrue(where+": recovery could not be forced",is(()->FocusRecovery.forceForTest(d,HOLD,blockScreen)));
    waitFor(where+" hold",2000,()->FocusRecovery.holdingForTest()&&notFocusable(d.getWindow()));
    // Guard only: wait until the window manager has really handed focus to the screen behind.
-   if(!blockScreen)waitFor(where+" screen focus during hold",1200,screen::hasWindowFocus);
-   screenFocusDuringHold[0]=is(screen::hasWindowFocus);
+   // With an older dialog open, that dialog is the topmost window left and is the one the window manager picks.
+   Callable<Boolean> behindFocused=lower!=null?()->lower.getWindow().getDecorView().hasWindowFocus():screen::hasWindowFocus;
+   if(!blockScreen)waitFor(where+" focus behind during hold",1200,behindFocused);
+   screenFocusDuringHold[0]=is(behindFocused);
+   if(lower!=null)lowerBlockedDuringHold[0]=is(()->notFocusable(lower.getWindow())&&notFocusable(screen.getWindow()));
+   if(lower!=null&&blockScreen)assertTrue(where+": the lower dialog and the screen must be unfocusable during the hold",lowerBlockedDuringHold[0]);
    inject(KeyEvent.KEYCODE_DPAD_RIGHT);inject(KeyEvent.KEYCODE_DPAD_DOWN);inject(KeyEvent.KEYCODE_DPAD_CENTER);inject(KeyEvent.KEYCODE_BACK);
    boolean stillHolding=is(()->FocusRecovery.holdingForTest()&&notFocusable(d.getWindow()));
    assertTrue(where+": the keys must be injected while the dialog is unfocusable",stillHolding);
@@ -95,9 +105,16 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
    Thread.sleep(800);getInstrumentation().waitForIdleSync();
    int blocked=FocusRecovery.keysBlocked-blockedBefore;
    String line=where+(blockScreen?" [full]":" [guard only]")+": injected RIGHT, DOWN, OK, BACK while unfocusable; screen behind heard "+spy.keys
-    +"; guard blocked "+blocked+"; dialog heard "+heard+"; new activities "+monitor.getHits()+"; screen had window focus during hold: "+screenFocusDuringHold[0];
+    +(lower==null?"":"; lower dialog heard "+lowerSpy.keys+" / "+lowerHeard+", lower dialog unfocusable during hold "+lowerBlockedDuringHold[0])
+    +"; guard blocked "+blocked+"; dialog heard "+heard+"; new activities "+monitor.getHits()+"; "+(lower==null?"screen":"lower dialog")+" had window focus during hold: "+screenFocusDuringHold[0];
    results.add(line);
    assertTrue(line,spy.keys.isEmpty());
+   if(lower!=null){
+    assertTrue(line,lowerSpy.keys.isEmpty());assertTrue(line,lowerHeard.isEmpty());assertTrue(where+": lower dialog must stay open",is(lower::isShowing));
+    assertEquals(where+": lower dialog flags must be restored exactly",lowerFlags,num(()->lower.getWindow().getAttributes().flags));
+    assertTrue(where+": lower dialog's key guard must be removed",is(()->lower.getWindow().getCallback()==lowerSpy.proxy));
+   }
+   assertEquals(where+": screen flags must be restored exactly",screenFlags,num(()->screen.getWindow().getAttributes().flags));
    assertEquals(line,0,monitor.getHits());
    assertFalse(line,is(screen::isFinishing));
    String focusAfter=get(()->focusName(screen));assertEquals(line,focusBefore,focusAfter);
@@ -111,12 +128,70 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
    getInstrumentation().sendKeyDownUpSync("Second".equals(before)?KeyEvent.KEYCODE_DPAD_LEFT:KeyEvent.KEYCODE_DPAD_RIGHT);getInstrumentation().waitForIdleSync();
    String after=get(()->d.getCurrentFocus() instanceof TextView?((TextView)d.getCurrentFocus()).getText().toString():"none");
    assertFalse(where+": the dialog must take the remote after recovery ("+before+" → "+after+")",before.equals(after));
-  }finally{getInstrumentation().removeMonitor(monitor);main(()->{spy.remove();if(d.isShowing())d.dismiss();});Thread.sleep(700);}
+  }finally{getInstrumentation().removeMonitor(monitor);main(()->{spy.remove();if(lowerSpy!=null)lowerSpy.remove();if(d.isShowing())d.dismiss();});Thread.sleep(700);}
  }
 
  public void testKeysDuringRecoveryNeverReachHome()throws Exception{
   isolate(home,"Home",true);
   isolate(home,"Home",false);
+ }
+
+ public void testStackedDialogsTopRecoveryNeverReachesLowerDialogOrHome()throws Exception{
+  List<String> lowerHeard=Collections.synchronizedList(new ArrayList<>());
+  Dialog lower=get(()->recordingDialog(home,lowerHeard));
+  waitFor("lower dialog focus",5000,()->lower.getWindow().getDecorView().hasWindowFocus());Thread.sleep(300);
+  try{
+   isolate(home,"Stacked over Home",true,lower,lowerHeard);
+   waitFor("lower dialog focus again",5000,()->lower.getWindow().getDecorView().hasWindowFocus());Thread.sleep(300);
+   isolate(home,"Stacked over Home",false,lower,lowerHeard);
+  }finally{main(()->{if(lower.isShowing())lower.dismiss();});Thread.sleep(600);}
+ }
+
+ /** Cleanup while the top dialog is held: the lower dialog closes, or the top one does. */
+ public void testStackedDialogsCleanupWhenEitherCloses()throws Exception{
+  Window.Callback screenCallback=get(home.getWindow()::getCallback);int screenFlags=num(()->home.getWindow().getAttributes().flags);
+  // 1. The lower dialog closes in the middle of the top dialog's recovery.
+  List<String> h1=new ArrayList<>(),h2=new ArrayList<>();
+  Dialog lower=get(()->recordingDialog(home,h1));waitFor("lower focus",5000,()->lower.getWindow().getDecorView().hasWindowFocus());
+  Dialog top=get(()->recordingDialog(home,h2));waitFor("top focus",5000,()->top.getWindow().getDecorView().hasWindowFocus());Thread.sleep(300);
+  assertTrue(is(()->FocusRecovery.forceForTest(top,3000,true)));
+  waitFor("hold",2000,()->FocusRecovery.holdingForTest()&&notFocusable(lower.getWindow())&&notFocusable(home.getWindow()));
+  main(lower::dismiss);
+  String lowerGone="lower dialog closed during the top dialog's hold: top recovery still pending "+(num(()->FocusRecovery.activeForTest(top))>0)
+   +", lower callback restored "+is(()->lower.getWindow().getCallback()==lower);
+  assertTrue(lowerGone,is(()->lower.getWindow().getCallback()==lower));
+  waitFor("top recovery end",8000,()->FocusRecovery.activeForTest(top)==0&&top.getWindow().getDecorView().hasWindowFocus());
+  lowerGone+=", then screen flags restored "+is(()->home.getWindow().getAttributes().flags==screenFlags)+", screen callback restored "+is(()->home.getWindow().getCallback()==screenCallback)
+   +", top focusable and focused "+is(()->!notFocusable(top.getWindow())&&top.getWindow().getDecorView().hasWindowFocus());
+  results.add(lowerGone);
+  assertEquals(lowerGone,screenFlags,num(()->home.getWindow().getAttributes().flags));
+  assertTrue(lowerGone,is(()->home.getWindow().getCallback()==screenCallback));
+  assertFalse(lowerGone,is(()->notFocusable(top.getWindow())));
+  main(top::dismiss);Thread.sleep(700);
+  // 2. The top dialog closes in the middle of its own recovery: the lower dialog comes back as it was.
+  Dialog lower2=get(()->recordingDialog(home,h1));waitFor("lower focus",5000,()->lower2.getWindow().getDecorView().hasWindowFocus());
+  int lowerFlags=num(()->lower2.getWindow().getAttributes().flags);
+  Dialog top2=get(()->recordingDialog(home,h2));waitFor("top focus",5000,()->top2.getWindow().getDecorView().hasWindowFocus());Thread.sleep(300);
+  assertTrue(is(()->FocusRecovery.forceForTest(top2,3000,true)));
+  waitFor("hold",2000,()->FocusRecovery.holdingForTest()&&notFocusable(lower2.getWindow()));
+  int tries=FocusRecovery.recoveries;
+  main(top2::dismiss);
+  String topGone="top dialog closed during its hold: pending for it "+num(()->FocusRecovery.activeForTest(top2))+", lower flags restored "+is(()->lower2.getWindow().getAttributes().flags==lowerFlags)
+   +", lower callback restored "+is(()->lower2.getWindow().getCallback()==lower2)+", screen flags restored "+is(()->home.getWindow().getAttributes().flags==screenFlags)
+   +", screen callback restored "+is(()->home.getWindow().getCallback()==screenCallback);
+  assertEquals(topGone,0,num(()->FocusRecovery.activeForTest(top2)));
+  assertEquals(topGone,lowerFlags,num(()->lower2.getWindow().getAttributes().flags));
+  assertTrue(topGone,is(()->lower2.getWindow().getCallback()==lower2));
+  assertEquals(topGone,screenFlags,num(()->home.getWindow().getAttributes().flags));
+  assertTrue(topGone,is(()->home.getWindow().getCallback()==screenCallback));
+  waitFor("lower dialog focus after the top closed",5000,()->lower2.getWindow().getDecorView().hasWindowFocus());
+  // The lower dialog takes the remote again.
+  String before=get(()->((TextView)lower2.getCurrentFocus()).getText().toString());
+  getInstrumentation().sendKeyDownUpSync("Second".equals(before)?KeyEvent.KEYCODE_DPAD_LEFT:KeyEvent.KEYCODE_DPAD_RIGHT);getInstrumentation().waitForIdleSync();
+  String after=get(()->((TextView)lower2.getCurrentFocus()).getText().toString());
+  topGone+=", lower dialog takes the remote ("+before+" → "+after+")";results.add(topGone);
+  assertFalse(topGone,before.equals(after));
+  main(lower2::dismiss);Thread.sleep(600);
  }
 
  public void testKeysDuringRecoveryNeverReachPlayer()throws Exception{
