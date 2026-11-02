@@ -98,7 +98,10 @@ final class StartupRefresh {
                 refreshAfterPlayer=false;start(a,false);
             }
             @Override public void onActivityStopped(Activity a){
-                if(visible.remove(System.identityHashCode(a)) && visible.isEmpty())backgroundSince=SystemClock.elapsedRealtime();
+                if(visible.remove(System.identityHashCode(a)) && visible.isEmpty()){
+                    backgroundSince=SystemClock.elapsedRealtime();
+                    if(a instanceof HomeActivity)((HomeActivity)a).hideForNextOpening();
+                }
             }
             @Override public void onActivityCreated(Activity a,Bundle b){}
             @Override public void onActivityResumed(Activity a){}

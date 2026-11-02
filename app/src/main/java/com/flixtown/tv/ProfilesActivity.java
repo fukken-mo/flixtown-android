@@ -19,7 +19,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /** Remote-first profile selection and name/avatar editing. No playback runs under this screen. */
-public class ProfilesActivity extends Activity {
+public class ProfilesActivity extends Activity implements StartupRefresh.Listener {
+    static final String EXTRA_ENTRY="profile_entry";
+    private boolean entry;
+    private int loadGeneration;
     private LinearLayout root,body;
     private TextView status;
     private boolean online=false,busy=true,manage=false,closed=false;
@@ -28,7 +31,10 @@ public class ProfilesActivity extends Activity {
     private final Map<String,Drawable> art=new HashMap<>();
     private String restoreId,restoreName,restoreAvatar;
     @Override public void onCreate(Bundle state){super.onCreate(state);
-        if(AccountStore.read(this)==null){finish();return;}
+        String[] account=AccountStore.read(this);if(account==null){finish();return;}
+        entry=getIntent().getBooleanExtra(EXTRA_ENTRY,false);
+        SignOut.rememberOwner(this,account[0]);
+        Profiles.configure(this,StartupRefresh.config());
         startedScope=Profiles.scope(this);startedId=Profiles.activeId(this);
         if(state!=null){restoreId=state.getString("edit");restoreName=state.getString("name");restoreAvatar=state.getString("avatar");manage=state.getBoolean("manage");}
         root=Ui.column(this);root.setBackgroundColor(0xFF101016);root.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -37,13 +43,16 @@ public class ProfilesActivity extends Activity {
         status=Ui.text(this,"Loading profiles…",14);status.setGravity(Gravity.CENTER);status.setTextColor(Ui.TEXT_2);root.addView(status,new LinearLayout.LayoutParams(-1,Ui.dp(this,36)));
         picker();
         if(getIntent().getBooleanExtra("cached",false)){busy=false;online=!getIntent().getBooleanExtra("offline",false);picker();}else refresh();
+        StartupRefresh.watchForeground(getApplication());
+        StartupRefresh.listen(this);
+        if(entry&&!StartupRefresh.startedThisProcess())StartupRefresh.start(this,false);
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putBoolean("manage",manage);if(editingId!=null){out.putString("edit",editingId);out.putString("name",name.getText().toString());out.putString("avatar",avatar);}}
     @Override protected void onResume(){super.onResume();ScreenAwake.on(this);if(startedScope!=null&&!startedScope.equals(Profiles.scope(this)))finish();}
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
-    @Override protected void onDestroy(){closed=true;super.onDestroy();}
+    @Override protected void onDestroy(){closed=true;loadGeneration++;StartupRefresh.unlisten(this);super.onDestroy();}
     private boolean live(){return !closed&&!isFinishing()&&startedScope.equals(Profiles.scope(this));}
-    private void refresh(){busy=true;Profiles.refresh(this,(ok,error)->{if(!live())return;busy=false;online=ok;
+    private void refresh(){busy=true;final int request=++loadGeneration;Profiles.refresh(this,(ok,error)->{if(request!=loadGeneration||!live())return;busy=false;online=ok;
         if(restoreId!=null&&ok){String id=restoreId;restoreId=null;ProfileCatalog.Profile p=find(id);if(p!=null||id.equals("new")){editor(p);name.setText(restoreName);if(ProfileCatalog.validAvatar(restoreAvatar)){avatar=restoreAvatar;paintAvatars();}return;}}
         picker();status.setText(ok?"Choose a profile. Use Manage profiles to change a name or avatar.":error);
     });}
@@ -102,9 +111,28 @@ public class ProfilesActivity extends Activity {
     }
     private void mutate(String kind,ProfileCatalog.Profile profile,String id){
         if(busy)return;busy=true;status.setText("Saving profile…");((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(root.getWindowToken(),0);
-        Profiles.mutate(this,kind,profile,id,(ok,error)->{if(!live())return;busy=false;if(ok){picker();status.setText("Profile saved.");}else{status.setText(error);if(error.contains("another TV")){editingId=null;refresh();}}});
+        final int request=++loadGeneration;Profiles.mutate(this,kind,profile,id,(ok,error)->{if(request!=loadGeneration||!live())return;busy=false;if(ok){picker();status.setText("Profile saved.");}else{status.setText(error);if(error.contains("another TV")){editingId=null;refresh();}}});
     }
     private void choose(String id){try{AccountSync.detachProfile();Profiles.select(this,id);returnHome();}catch(IllegalArgumentException e){status.setText("This profile is not available.");}}
-    private void returnHome(){Profiles.returningHome(this);startActivity(new Intent(this,HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));finish();}
-    @Override public void onBackPressed(){if(busy)return;if(editingId!=null){picker();return;}if(manage){manage=false;picker();return;}Profiles.chosen(this);returnHome();}
+    private void returnHome(){Profiles.returningHome(this);startActivity(new Intent(this,HomeActivity.class).putExtra(HomeActivity.EXTRA_FRESH,entry&&getIntent().getBooleanExtra(HomeActivity.EXTRA_FRESH,false)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));overridePendingTransition(0,0);finish();}
+    @Override public void onBackPressed(){
+        if(editingId!=null){if(!busy)picker();return;}
+        if(manage){if(!busy){manage=false;picker();}return;}
+        if(entry){finishAffinity();return;}
+        if(!busy)returnHome();
+    }
+    @Override public void onConfig(org.json.JSONObject config){
+        if(closed||isFinishing())return;
+        Profiles.configure(this,config);
+        String current=Profiles.scope(this);
+        if(!current.equals(startedScope)){
+            loadGeneration++;startedScope=current;startedId=Profiles.activeId(this);
+            restoreId=null;editingId=null;online=false;busy=true;picker();refresh();
+        }
+    }
+    @Override public void onResult(StartupRefresh.Result result){
+        if(!closed&&!isFinishing()&&result.state==StartupRefresh.EXPIRED){
+            startActivity(new Intent(this,RenewalActivity.class));finish();
+        }
+    }
 }

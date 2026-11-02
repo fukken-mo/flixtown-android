@@ -150,7 +150,7 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
         Profiles.appOpened();
         if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash end shown_ms="+(android.os.SystemClock.uptimeMillis()-shownAt)
             +(seasonal!=null?" scale="+seasonal.getScaleX()+"x"+seasonal.getScaleY():""));
-        Intent intent=new Intent(this,HomeActivity.class);intent.putExtra(HomeActivity.EXTRA_FRESH,true);
+        Intent intent=new Intent(this,ProfilesActivity.class);intent.putExtra(ProfilesActivity.EXTRA_ENTRY,true);intent.putExtra(HomeActivity.EXTRA_FRESH,true);
         startActivity(intent);overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);finish();}
     @Override protected void onStop(){super.onStop();if(player!=null && !finished)player.pause();}
     @Override protected void onRestart(){super.onRestart();if(player!=null && !finished)player.play();}

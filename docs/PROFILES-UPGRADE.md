@@ -132,3 +132,20 @@ https://github.com/fukken-mo/flixtown-android/actions/runs/41366120777/artifacts
 This is a separate Preview install/update, not a production release. Real-TV
 acceptance should check a launcher reopen, a Home-button background/return,
 ordinary return from playback without a duplicate picker, and offline selection.
+
+## Picker before Home
+
+Startup now routes IntroActivity directly to ProfilesActivity. Home is created
+only after selection. Direct Home routes guard before inflating any homepage views,
+and a retained Home is hidden when it leaves the app before a foreground picker.
+Ordinary in-app returns retain the same focus and do not hide or reopen profiles.
+The picker prepares sync configuration and listens for late startup config, with
+generations rejecting stale service responses. Expired accounts route to renewal.
+Back at the opening picker exits, rather than bypassing it to Home; Back in the
+Settings profile manager retains its existing behavior.
+
+Four real activity/lifecycle checks were added for splash -> picker -> Home order,
+direct Home without inflating the homepage, Back without starting Home, and an OS
+Home-button background/return with the old homepage hidden. Expected TV test count
+is now 24 per setup. Await the new CI result before handing over its Preview.
+No backend, schema, production version or signing changes.

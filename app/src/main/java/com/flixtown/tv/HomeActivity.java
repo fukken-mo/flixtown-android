@@ -89,8 +89,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private CustomerNotices notices;
     private Catalog.Item pendingFocusItem;
     private SettingsPage settingsPage;
-    private boolean profilePromptPending=false,profileRequestRunning=false;
-    private final Runnable offerProfiles=this::maybeOfferProfiles;
+    private boolean homeDeferred;
     private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Requests","Settings"};
     private static final String[] TAB_NAMES={"Search","Home","Movies","TV Shows","My List","Requests","Settings"};
     private static final int[] ICONS={1,0,2,3,4,6,5};
@@ -98,6 +97,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
 
     @Override public void onCreate(Bundle state){super.onCreate(state);
         if(Api.prefs(this).getBoolean("expired",false)){startActivity(new Intent(this,RenewalActivity.class));finish();return;}
+        if(Profiles.entryRequired(this)){deferToProfiles();return;}
         setContentView(R.layout.activity_main);updates=new AppUpdates(this);Images.init(this);
         Ratings.init(this);Ratings.listen(ratingsChanged);
         ambientSlot=findViewById(R.id.ambient_slot);ambientDim=findViewById(R.id.ambient_dim);homeScrim=findViewById(R.id.home_scrim);
@@ -134,7 +134,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         updates.setListener(()->{if(settingsPage!=null)settingsPage.updateRowChanged();});
         updates.checkOnLaunch(state==null);   // a re-created screen (state!=null) is not a new launch
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(homeDeferred)return;
         out.putString("tab",tab);out.putString("category",category);out.putInt("sort",sortMode);
         if(isBrowse())out.putInt("grid_position",browseGrid.getSelectedPosition());
     }
@@ -164,57 +164,42 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         browseGrid.setPadding(browseGrid.getPaddingLeft(),Ui.dp(this,4),browseGrid.getPaddingRight(),safeY);
     }
 
-    @Override protected void onResume(){super.onResume();resumed=true;if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","home_resumed");if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
+    @Override protected void onResume(){super.onResume();
+        if(homeDeferred)return;
+        if(Profiles.entryRequired(this)){deferToProfiles();return;}
+        findViewById(android.R.id.content).setVisibility(View.VISIBLE);
+        resumed=true;if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","home_resumed");if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
         AccountSync.home(this,()->{if(!destroyed&&resumed){pendingRender=true;refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});
         Profiles.homeResumed();
-        handler.post(offerProfiles);
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
         handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     boolean profileMetadataAllowed(){return resumed&&!destroyed&&!isFinishing();}
-    /** One picker per opening; wait for startup identity/config before asking the service. */
-    private void maybeOfferProfiles(){
-        if(destroyed||isFinishing()||!resumed)return;
-        if(!Profiles.needsChoice(this)){profilePromptPending=false;return;}
-        profilePromptPending=true;
-        if(profileRequestRunning)return;
-        if(overlayUp||StartupRefresh.running()||!hasWindowFocus()){
-            handler.removeCallbacks(offerProfiles);handler.postDelayed(offerProfiles,500);return;
-        }
-        profileRequestRunning=true;
-        final int opening=Profiles.openingGeneration();
-        final String scope=Profiles.scope(this);
-        Profiles.refresh(this,(ok,error)->{
-            profileRequestRunning=false;
-            if(destroyed||isFinishing())return;
-            if(opening!=Profiles.openingGeneration()||!scope.equals(Profiles.scope(this))){
-                profilePromptPending=false;handler.post(offerProfiles);return;
-            }
-            showOpeningProfiles(ok,opening);
-        });
-    }
-    private void showOpeningProfiles(boolean online,int opening){
-        if(destroyed||isFinishing())return;
-        if(opening!=Profiles.openingGeneration()){profilePromptPending=false;handler.post(offerProfiles);return;}
-        if(!Profiles.needsChoice(this)){profilePromptPending=false;return;}
-        if(!resumed){profilePromptPending=false;return;}
-        if(overlayUp||!hasWindowFocus()){handler.postDelayed(()->showOpeningProfiles(online,opening),500);return;}
-        Profiles.chosen(this);profilePromptPending=false;
-        startActivity(new Intent(this,ProfilesActivity.class).putExtra("cached",true).putExtra("offline",!online));
+    /** Route before inflating Home, or hide a retained Home before the next foreground frame. */
+    private void deferToProfiles(){
+        if(homeDeferred||isFinishing())return;homeDeferred=true;
+        View page=findViewById(android.R.id.content);if(page!=null)page.setVisibility(View.INVISIBLE);
+        getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Ui.BG));
+        AccountSync.leaveHome();
+        startActivity(new Intent(this,ProfilesActivity.class).putExtra(ProfilesActivity.EXTRA_ENTRY,true)
+            .putExtra(EXTRA_FRESH,getIntent().getBooleanExtra(EXTRA_FRESH,false)));
+        overridePendingTransition(0,0);finish();
     }
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
     @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
     /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
-    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);
+    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(homeDeferred)return;
         if(hasFocus && updates!=null)handler.post(updates::showPendingIfReady);
-        if(hasFocus)handler.post(offerProfiles);
         if(hasFocus)handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     /** An update prompt only appears over Home itself: in front, focused, past the loading screen. */
     boolean readyForUpdatePrompt(){
-        return resumed && !profilePromptPending && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
+        return resumed && !homeDeferred && !Profiles.needsChoice(this) && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
             && (exitDialog==null || !exitDialog.isShowing());
     }
-    @Override protected void onPause(){handler.removeCallbacks(offerProfiles);AccountSync.leaveHome();resumed=false;ScreenAwake.off(this);handler.removeCallbacks(rotateHero);super.onPause();}
-    @Override protected void onRestart(){super.onRestart();refreshAfterReturn();}
+    @Override protected void onPause(){AccountSync.leaveHome();resumed=false;ScreenAwake.off(this);handler.removeCallbacks(rotateHero);super.onPause();}
+    void hideForNextOpening(){
+        View page=findViewById(android.R.id.content);if(page!=null)page.setVisibility(View.INVISIBLE);
+    }
+    @Override protected void onRestart(){super.onRestart();if(!homeDeferred)refreshAfterReturn();}
 
     /* ---------------- Startup loading screen ---------------- */
 

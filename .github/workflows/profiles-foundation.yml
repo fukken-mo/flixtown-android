@@ -47,7 +47,7 @@ jobs:
       - run: python .github/qa/check_profile_assets.py
       - uses: gradle/actions/setup-gradle@v4
       - name: Compile and run all JVM tests
-        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixSyncTests=true -PflixVersionName=3.8.20-profiles-opening-preview --console=plain
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixSyncTests=true -PflixVersionName=3.8.20-picker-first-preview --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -100,7 +100,7 @@ jobs:
             adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
             adb logcat -d -v threadtime > profiles-logcat.txt
             adb pull /sdcard/Android/data/com.myflixtown.tv.native.qa/files/profiles-ui profiles-ui || true
-            grep -q 'OK (20 tests)' device-results.txt
+            grep -q 'OK (24 tests)' device-results.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:

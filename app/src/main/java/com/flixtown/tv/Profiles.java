@@ -38,6 +38,7 @@ final class Profiles {
     }
     static String journalSuffix(Context c){String id=activeId(c);return "default".equals(id)?"":"_"+scope(c)+"_"+id;}
     static synchronized boolean needsChoice(Context c){return OPENING.needsChoice(scope(c));}
+    static boolean entryRequired(Context c){return needsChoice(c)||(scope(c).isEmpty()&&AccountStore.read(c)!=null);}
     static synchronized void chosen(Context c){OPENING.chosen(scope(c));}
     static void appOpened(){OPENING.opened();}
     static void appForeground(boolean home){OPENING.foreground(home);}
@@ -59,6 +60,12 @@ final class Profiles {
         try{URL u=new URL(source);if(!ReportsApi.safeUrl(source)||!u.getPath().endsWith("/tv-account-sync.php")||u.getQuery()!=null||u.getRef()!=null)return "";
             return source.substring(0,source.length()-"tv-account-sync.php".length())+"tv-profile-sync.php";
         }catch(Exception e){return "";}
+    }
+    /** The picker now starts before Home, so it owns this part of config preparation. */
+    static void configure(Context c,JSONObject config){
+        if(config==null)return;String url=config.optString("progress_sync_api_url","").trim();
+        String safe=ReportsApi.safeUrl(url)?url:"";
+        if(!safe.equals(raw(c).getString("progress_sync_api_url","")))raw(c).edit().putString("progress_sync_api_url",safe).apply();
     }
     interface Done {void result(boolean ok,String error);}
     static void refresh(Context c,Done done){request(c,null,done);}
