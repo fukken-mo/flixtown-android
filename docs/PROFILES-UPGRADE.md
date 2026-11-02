@@ -123,6 +123,12 @@ Stale identity responses now finish their callback without importing another acc
 data, so startup cannot remain permanently marked as checking profiles.
 
 Added seven deterministic opening-policy JVM checks and a real offline saved-profile
-selection instrumentation test. New expected totals: 180 JVM tests, 20 device tests
-per setup. These totals require the new workflow to pass; see its result before
-claiming verification. Backend patch and database schema are unchanged.
+selection instrumentation test. Verified on source aaf3d4b8553fb0c3caa9b78ef7de1191a8e64c4a in run 41366120777:
+180 JVM tests and 20 device tests on each setup passed. Both backend jobs also
+passed. The backend patch and database schema are unchanged.
+
+Updated Preview artifact:
+https://github.com/fukken-mo/flixtown-android/actions/runs/41366120777/artifacts/13107546183
+This is a separate Preview install/update, not a production release. Real-TV
+acceptance should check a launcher reopen, a Home-button background/return,
+ordinary return from playback without a duplicate picker, and offline selection.
