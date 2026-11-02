@@ -34,7 +34,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         String[] account=AccountStore.read(this);if(account==null){finish();return;}
         entry=getIntent().getBooleanExtra(EXTRA_ENTRY,false);
         SignOut.rememberOwner(this,account[0]);
-        Profiles.configure(this,StartupRefresh.config());
+        if(entry)Profiles.configure(this,StartupRefresh.config());
         startedScope=Profiles.scope(this);startedId=Profiles.activeId(this);
         if(state!=null){restoreId=state.getString("edit");restoreName=state.getString("name");restoreAvatar=state.getString("avatar");manage=state.getBoolean("manage");}
         root=Ui.column(this);root.setBackgroundColor(0xFF101016);root.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -44,7 +44,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         picker();
         if(getIntent().getBooleanExtra("cached",false)){busy=false;online=!getIntent().getBooleanExtra("offline",false);picker();}else refresh();
         StartupRefresh.watchForeground(getApplication());
-        StartupRefresh.listen(this);
+        if(entry)StartupRefresh.listen(this);
         if(entry&&!StartupRefresh.startedThisProcess())StartupRefresh.start(this,false);
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putBoolean("manage",manage);if(editingId!=null){out.putString("edit",editingId);out.putString("name",name.getText().toString());out.putString("avatar",avatar);}}
