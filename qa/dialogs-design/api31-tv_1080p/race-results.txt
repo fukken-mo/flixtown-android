@@ -1,4 +1,4 @@
-API 31, focus recoveries in total: 8
+API 31, focus recoveries in total: 12
 ok   exit Stay→Back #1
 ok   exit Back→Back #1
 ok   notices Got it→next #1
