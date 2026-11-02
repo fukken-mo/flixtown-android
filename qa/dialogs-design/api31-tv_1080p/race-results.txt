@@ -1,9 +1,9 @@
-API 31
+API 31, focus recoveries in total: 0
 ok   exit Stay→Back #1
 ok   exit Back→Back #1
 ok   notices Got it→next #1
 ok   report picker→Send report? #1
-FAIL report Sending→reply #1  no dialog opened
+ok   report Sending→reply #1
 ok   update Update now→progress #1
 ok   exit Stay→Back #2
 ok   exit Back→Back #2
