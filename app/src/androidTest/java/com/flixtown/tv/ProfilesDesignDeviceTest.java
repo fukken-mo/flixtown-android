@@ -122,7 +122,9 @@ public class ProfilesDesignDeviceTest extends InstrumentationTestCase {
    for(String s:new String[]{"Kids","Preview"})assertFalse(s+" not mentioned",screenText(tree()).contains(s));});
   screenshot("editor-name-focused");
   key(KeyEvent.KEYCODE_DPAD_RIGHT);
-  main(()->{View f=activity.getCurrentFocus();assertNotNull(f);assertTrue("RIGHT from the name goes to the pictures",String.valueOf(f.getContentDescription()).startsWith("Avatar "));});
+  main(()->{View f=activity.getCurrentFocus();assertNotNull(f);
+   String where=f.getClass().getSimpleName()+" desc="+f.getContentDescription()+(f instanceof TextView?" text="+((TextView)f).getText():"")+(f instanceof EditText?" selection="+((EditText)f).getSelectionStart()+"-"+((EditText)f).getSelectionEnd()+"/"+((EditText)f).length():"");
+   assertEquals("RIGHT from the name goes to the chosen picture ("+where+")","Avatar 9",String.valueOf(f.getContentDescription()));});
   key(KeyEvent.KEYCODE_DPAD_RIGHT);key(KeyEvent.KEYCODE_DPAD_DOWN);
   final String[] chosen={null};main(()->chosen[0]=String.valueOf(activity.getCurrentFocus().getContentDescription()));
   key(KeyEvent.KEYCODE_DPAD_CENTER);

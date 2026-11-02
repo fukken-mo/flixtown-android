@@ -166,7 +166,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         try(InputStream in=getAssets().open("profile-avatars/"+id+".webp")){android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inSampleSize=Ui.dp(this,136)*2<=384?2:1;android.graphics.Bitmap bitmap=android.graphics.BitmapFactory.decodeStream(in,null,options);if(bitmap==null)return null;d=new android.graphics.drawable.BitmapDrawable(getResources(),bitmap);art.put(id,d);return d;}catch(Exception e){return null;}}
     private final Map<String,View> avatarViews=new HashMap<>();
     private final Map<String,AvatarRing> avatarRings=new HashMap<>();
-    private ImageView preview;private AvatarRing previewRing;
+    private ImageView preview;private AvatarRing previewRing;private Button saveButton;
     private void paintAvatars(){
         for(Map.Entry<String,AvatarRing> e:avatarRings.entrySet())e.getValue().setSelected(e.getKey().equals(avatar));
         if(preview!=null)preview.setImageDrawable(drawable(avatar));
@@ -186,6 +186,13 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         name.setGravity(Gravity.CENTER);Ui.pad(name,this,14,0,14,0);name.setBackgroundResource(R.drawable.edit_field);name.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
         // The cursor starts at the end, so one RIGHT press moves on to the pictures (LEFT still edits).
         name.setOnFocusChangeListener((v,f)->{if(f)name.setSelection(name.length());});
+        // From the end of the name, RIGHT goes to the chosen picture and DOWN to Save (LEFT and RIGHT still edit inside the name).
+        name.setOnKeyListener((v,code,e)->{
+            if(e.getAction()!=android.view.KeyEvent.ACTION_DOWN)return false;
+            if(code==android.view.KeyEvent.KEYCODE_DPAD_RIGHT&&name.getSelectionStart()==name.length()&&name.getSelectionEnd()==name.length()){View target=avatarViews.get(avatar);if(target!=null)return target.requestFocus();}
+            if(code==android.view.KeyEvent.KEYCODE_DPAD_DOWN&&saveButton!=null)return saveButton.requestFocus();
+            return false;
+        });
         LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,Ui.dp(this,50));np.topMargin=Ui.dp(this,14);left.addView(name,np);
         TextView hint=Ui.text(this,"Up to 24 characters",13);hint.setTextColor(Ui.TEXT_3);hint.setGravity(Gravity.CENTER);LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=Ui.dp(this,6);left.addView(hint,hp);
         // Right: every picture, selected one ringed in red.
@@ -201,7 +208,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
             image.setOnClickListener(v->{if(!busy){avatar=id;paintAvatars();}});
         }paintAvatars();
         LinearLayout actions=Ui.row(this);actions.setGravity(Gravity.CENTER);LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,-2);ap.topMargin=Ui.dp(this,26);body.addView(actions,ap);
-        Button saveButton=Ui.primaryButton(this,"Save");saveButton.setTextSize(16);saveButton.setOnClickListener(v->{if(!busy)save();});
+        saveButton=Ui.primaryButton(this,"Save");saveButton.setTextSize(16);saveButton.setOnClickListener(v->{if(!busy)save();});
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(Ui.dp(this,150),Ui.dp(this,48));sp.leftMargin=sp.rightMargin=Ui.dp(this,8);actions.addView(saveButton,sp);
         Button cancel=Ui.button(this,"Cancel");cancel.setTextSize(16);cancel.setOnClickListener(v->{if(!busy)picker();});
         LinearLayout.LayoutParams cnp=new LinearLayout.LayoutParams(Ui.dp(this,150),Ui.dp(this,48));cnp.leftMargin=cnp.rightMargin=Ui.dp(this,8);actions.addView(cancel,cnp);
