@@ -1,16 +1,16 @@
-showing=true focus=android.widget.Button{e0542c2 VFED..C.. .F...... 0,0-186,67} decorFocus=false attached=true same=false activityFocus=false probe: focus Stay -> Stay decorFocus=false
+showing=true focus=android.widget.Button{104a7b0 VFED..C.. .F...... 0,0-186,67} decorFocus=false attached=true same=false activityFocus=false probe: focus Stay -> Stay decorFocus=false
 
 WINDOW MANAGER WINDOWS (dumpsys window windows)
-  Window #0 Window{ea7fda9 u0 DockedStackDivider}:
-    mDisplayId=0 stackId=0 mSession=Session{e8416e3 2181:u0a10007} mClient=android.os.BinderProxy@6bb06e2
-    mOwnerUid=10007 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
+  Window #0 Window{a20b79d u0 DockedStackDivider}:
+    mDisplayId=0 stackId=0 mSession=Session{cf7f4f4 2079:u0a10010} mClient=android.os.BinderProxy@7e1066b
+    mOwnerUid=10010 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
     mAttrs={(0,0)(64xfill) sim={adjust=pan} layoutInDisplayCutoutMode=always ty=DOCK_DIVIDER fmt=TRANSLUCENT
       fl=NOT_FOCUSABLE NOT_TOUCH_MODAL WATCH_OUTSIDE_TOUCH SPLIT_TOUCH HARDWARE_ACCELERATED FLAG_SLIPPERY
       pfl=NO_MOVE_ANIMATION
       vsysui=LAYOUT_STABLE LAYOUT_HIDE_NAVIGATION LAYOUT_FULLSCREEN}
-    Requested w=64 h=720 mLayoutSeq=118
+    Requested w=64 h=720 mLayoutSeq=598
     mBaseLayer=21000 mSubLayer=0 mAnimLayer=0+=0 mLastLayer=0
-    mToken=WindowToken{7b9dd30 android.os.BinderProxy@e86fa73}
+    mToken=WindowToken{2ba1661 android.os.BinderProxy@c8685c8}
     mViewVisibility=0x4 mHaveFrame=true mObscured=false
     mSeq=0 mSystemUiVisibility=0x700
     mPolicyVisibility=false mPolicyVisibilityAfterAnim=false mAppOpVisibility=true parentHidden=false mPermanentlyHidden=false mHiddenWhileSuspended=false mForceHideNonSystemOverlayWindow=false
@@ -28,21 +28,21 @@ WINDOW MANAGER WINDOWS (dumpsys window windows)
         outset=[0,0][0,0]
     Cur insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] surface=[0,0][0,0] outsets=[0,0][0,0] cutout=DisplayCutout{insets=Rect(0, 0 - 0, 0) boundingRect=Rect(0, 0 - 0, 0)}
     Lst insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] physical=[0,0][0,0] outset=[0,0][0,0] cutout=com.android.server.wm.utils.WmDisplayCutout@3c1
-    WindowStateAnimator{35fcef8 DockedStackDivider}:
+    WindowStateAnimator{8c90025 DockedStackDivider}:
       mDrawState=NO_SURFACE       mLastHidden=false
       mSystemDecorRect=[0,0][0,0] mLastClipRect=[0,0][0,0]
       mShownAlpha=0.0 mAlpha=1.0 mLastAlpha=0.0
     isOnScreen=false
     isVisible=false
-  Window #1 Window{df62498 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
-    mDisplayId=0 stackId=1 mSession=Session{d40c766 3103:u0a10051} mClient=android.os.BinderProxy@4039e7b
+  Window #1 Window{ecdce19 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
+    mDisplayId=0 stackId=2 mSession=Session{94d1ad2 2861:u0a10051} mClient=android.os.BinderProxy@debe960
     mOwnerUid=10051 mShowToOwnerOnly=true package=com.myflixtown.tv.native.qa appop=NONE
     mAttrs={(0,0)(719xwrap) gr=CENTER sim={adjust=pan} ty=APPLICATION fmt=TRANSPARENT wanim=0x10302f9 surfaceInsets=Rect(43, 43 - 43, 43)
       fl=DIM_BEHIND SPLIT_TOUCH HARDWARE_ACCELERATED}
-    Requested w=719 h=222 mLayoutSeq=118
+    Requested w=719 h=222 mLayoutSeq=598
     mBaseLayer=21000 mSubLayer=0 mAnimLayer=0+=0 mLastLayer=0
-    mToken=AppWindowToken{cd05e63 token=Token{dcc492 ActivityRecord{5853a1d u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5}}}
-    mAppToken=AppWindowToken{cd05e63 token=Token{dcc492 ActivityRecord{5853a1d u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5}}}
+    mToken=AppWindowToken{f395fb8 token=Token{4f0521b ActivityRecord{a29d42a u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t6}}}
+    mAppToken=AppWindowToken{f395fb8 token=Token{4f0521b ActivityRecord{a29d42a u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t6}}}
      isAnimatingWithSavedSurface()= mAppDied=false    drawnStateEvaluated=true    mightAffectAllDrawn=true
     mViewVisibility=0x0 mHaveFrame=true mObscured=false
     mSeq=0 mSystemUiVisibility=0x0
@@ -58,23 +58,23 @@ WINDOW MANAGER WINDOWS (dumpsys window windows)
         outset=[0,0][0,0]
     Cur insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] surface=[43,43][43,43] outsets=[0,0][0,0] cutout=DisplayCutout{insets=Rect(0, 0 - 0, 0) boundingRect=Rect(0, 0 - 0, 0)}
     Lst insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] physical=[0,0][0,0] outset=[0,0][0,0] cutout=com.android.server.wm.utils.WmDisplayCutout@3c1
-    WindowStateAnimator{caadfd1 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
-       mAnimationIsEntrance=true      mSurface=Surface(name=com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity)/@0x1992a36
+    WindowStateAnimator{d3e85fa com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
+       mAnimationIsEntrance=true      mSurface=Surface(name=com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity)/@0x9cd67ab
       Surface: shown=true layer=0 alpha=1.0 rect=(0.0,0.0) 805 x 308 transform=(1.0, 0.0, 1.0, 0.0)
       mDrawState=HAS_DRAWN       mLastHidden=false
       mSystemDecorRect=[0,0][719,222] mLastClipRect=[0,0][805,308]
     isOnScreen=true
     isVisible=true
-  Window #2 Window{754ca43 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
-    mDisplayId=0 stackId=1 mSession=Session{d40c766 3103:u0a10051} mClient=android.os.BinderProxy@b01f3f2
+  Window #2 Window{905f80b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
+    mDisplayId=0 stackId=2 mSession=Session{94d1ad2 2861:u0a10051} mClient=android.os.BinderProxy@779bda
     mOwnerUid=10051 mShowToOwnerOnly=true package=com.myflixtown.tv.native.qa appop=NONE
     mAttrs={(0,0)(fillxfill) sim={adjust=resize forwardNavigation} ty=BASE_APPLICATION wanim=0x10302f8
       fl=KEEP_SCREEN_ON LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
       pfl=FORCE_DRAW_STATUS_BAR_BACKGROUND}
-    Requested w=1280 h=720 mLayoutSeq=118
+    Requested w=1280 h=720 mLayoutSeq=598
     mBaseLayer=21000 mSubLayer=0 mAnimLayer=0+=0 mLastLayer=0
-    mToken=AppWindowToken{cd05e63 token=Token{dcc492 ActivityRecord{5853a1d u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5}}}
-    mAppToken=AppWindowToken{cd05e63 token=Token{dcc492 ActivityRecord{5853a1d u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5}}}
+    mToken=AppWindowToken{f395fb8 token=Token{4f0521b ActivityRecord{a29d42a u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t6}}}
+    mAppToken=AppWindowToken{f395fb8 token=Token{4f0521b ActivityRecord{a29d42a u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t6}}}
      isAnimatingWithSavedSurface()= mAppDied=false    drawnStateEvaluated=true    mightAffectAllDrawn=true
     mViewVisibility=0x0 mHaveFrame=true mObscured=false
     mSeq=0 mSystemUiVisibility=0x0
@@ -90,23 +90,23 @@ WINDOW MANAGER WINDOWS (dumpsys window windows)
         outset=[0,0][0,0]
     Cur insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] surface=[0,0][0,0] outsets=[0,0][0,0] cutout=DisplayCutout{insets=Rect(0, 0 - 0, 0) boundingRect=Rect(0, 0 - 0, 0)}
     Lst insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] physical=[0,0][0,0] outset=[0,0][0,0] cutout=com.android.server.wm.utils.WmDisplayCutout@3c1
-    WindowStateAnimator{4d79d37 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
-      mSurface=Surface(name=com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity)/@0x13ee2a4
+    WindowStateAnimator{b4d6e08 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}:
+      mSurface=Surface(name=com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity)/@0x9ae79a1
       Surface: shown=true layer=0 alpha=1.0 rect=(0.0,0.0) 1280 x 720 transform=(1.0, 0.0, 1.0, 0.0)
       mDrawState=HAS_DRAWN       mLastHidden=false
       mSystemDecorRect=[0,0][1280,720] mLastClipRect=[0,0][1280,720]
     isOnScreen=true
     isVisible=true
-  Window #3 Window{7a1cc25 u0 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}:
-    mDisplayId=0 stackId=0 mSession=Session{6be4ee 2697:u0a10013} mClient=android.os.BinderProxy@270281c
-    mOwnerUid=10013 mShowToOwnerOnly=true package=com.google.android.tvlauncher appop=NONE
+  Window #3 Window{f74d39c u0 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}:
+    mDisplayId=0 stackId=0 mSession=Session{9a53896 2605:u0a10009} mClient=android.os.BinderProxy@78b570f
+    mOwnerUid=10009 mShowToOwnerOnly=true package=com.google.android.tvlauncher appop=NONE
     mAttrs={(0,0)(fillxfill) sim={adjust=pan} ty=BASE_APPLICATION wanim=0x10302f8
       fl=LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED LOCAL_FOCUS_MODE DRAWS_SYSTEM_BAR_BACKGROUNDS
       pfl=FORCE_DRAW_STATUS_BAR_BACKGROUND}
-    Requested w=1280 h=720 mLayoutSeq=91
+    Requested w=1280 h=720 mLayoutSeq=576
     mBaseLayer=21000 mSubLayer=0 mAnimLayer=0+=0 mLastLayer=0
-    mToken=AppWindowToken{5d4b01e token=Token{baac59 ActivityRecord{ca458a0 u0 com.google.android.tvlauncher/.HomeScreen t4}}}
-    mAppToken=AppWindowToken{5d4b01e token=Token{baac59 ActivityRecord{ca458a0 u0 com.google.android.tvlauncher/.HomeScreen t4}}}
+    mToken=AppWindowToken{cb8dd50 token=Token{35f6713 ActivityRecord{b74c202 u0 com.google.android.tvlauncher/.HomeScreen t4}}}
+    mAppToken=AppWindowToken{cb8dd50 token=Token{35f6713 ActivityRecord{b74c202 u0 com.google.android.tvlauncher/.HomeScreen t4}}}
      isAnimatingWithSavedSurface()= mAppDied=false    drawnStateEvaluated=true    mightAffectAllDrawn=true
     mViewVisibility=0x8 mHaveFrame=true mObscured=true
     mSeq=0 mSystemUiVisibility=0x0
@@ -122,20 +122,20 @@ WINDOW MANAGER WINDOWS (dumpsys window windows)
         outset=[0,0][1280,720]
     Cur insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] surface=[0,0][0,0] outsets=[0,0][0,0] cutout=DisplayCutout{insets=Rect(0, 0 - 0, 0) boundingRect=Rect(0, 0 - 0, 0)}
     Lst insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] physical=[0,0][0,0] outset=[0,0][0,0] cutout=com.android.server.wm.utils.WmDisplayCutout@3c1
-    WindowStateAnimator{faca80d com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}:
+    WindowStateAnimator{bdf07c6 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}:
       mDrawState=NO_SURFACE       mLastHidden=true
       mSystemDecorRect=[0,0][1280,720] mLastClipRect=[0,0][1280,720]
     isOnScreen=false
     isVisible=false
-  Window #4 Window{9c158f9 u0 com.android.systemui.ImageWallpaper}:
-    mDisplayId=0 stackId=0 mSession=Session{e8416e3 2181:u0a10007} mClient=android.os.BinderProxy@c5d53c0
-    mOwnerUid=10007 mShowToOwnerOnly=true package=com.android.systemui appop=NONE
+  Window #4 Window{a82281f u0 com.android.systemui.ImageWallpaper}:
+    mDisplayId=0 stackId=0 mSession=Session{cf7f4f4 2079:u0a10010} mClient=android.os.BinderProxy@d0cefbe
+    mOwnerUid=10010 mShowToOwnerOnly=true package=com.android.systemui appop=NONE
     mAttrs={(0,0)(1280x720) gr=TOP START CENTER layoutInDisplayCutoutMode=always ty=WALLPAPER fmt=RGBX_8888 wanim=0x1030308
       fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN LAYOUT_NO_LIMITS LAYOUT_INSET_DECOR}
-    Requested w=1280 h=720 mLayoutSeq=75
+    Requested w=1280 h=720 mLayoutSeq=60
     mIsImWindow=false mIsWallpaper=true mIsFloatingLayer=true mWallpaperVisible=false
     mBaseLayer=11000 mSubLayer=0 mAnimLayer=0+=0 mLastLayer=0
-    mToken=WallpaperWindowToken{e0c56f2 token=android.os.Binder@c0819fd}
+    mToken=WallpaperWindowToken{fda6740 token=android.os.Binder@7aa22c3}
     mViewVisibility=0x0 mHaveFrame=true mObscured=true
     mSeq=0 mSystemUiVisibility=0x0
     mGivenContentInsets=[0,0][0,0] mGivenVisibleInsets=[0,0][0,0]
@@ -150,8 +150,8 @@ WINDOW MANAGER WINDOWS (dumpsys window windows)
         outset=[0,0][1280,720]
     Cur insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] surface=[0,0][0,0] outsets=[0,0][0,0] cutout=DisplayCutout{insets=Rect(0, 0 - 0, 0) boundingRect=Rect(0, 0 - 0, 0)}
     Lst insets: overscan=[0,0][0,0] content=[0,0][0,0] visible=[0,0][0,0] stable=[0,0][0,0] physical=[0,0][0,0] outset=[0,0][0,0] cutout=com.android.server.wm.utils.WmDisplayCutout@3c1
-    WindowStateAnimator{ec5b3c2 com.android.systemui.ImageWallpaper}:
-       mAnimationIsEntrance=true      mSurface=Surface(name=com.android.systemui.ImageWallpaper)/@0xfed5d3
+    WindowStateAnimator{b78d387 com.android.systemui.ImageWallpaper}:
+       mAnimationIsEntrance=true      mSurface=Surface(name=com.android.systemui.ImageWallpaper)/@0x44f62b4
       Surface: shown=false layer=0 alpha=0.0 rect=(0.0,0.0) 1280 x 720 transform=(1.0, 0.0, 1.0, 0.0)
       mDrawState=HAS_DRAWN       mLastHidden=true
       mSystemDecorRect=[0,0][0,0] mLastClipRect=[0,0][0,0]
@@ -162,20 +162,20 @@ WINDOW MANAGER WINDOWS (dumpsys window windows)
 
   mGlobalConfiguration={1.0 ?mcc?mnc [en_US] ldltr sw540dp w961dp h540dp 213dpi lrg long land television finger -keyb/v/h dpad/v winConfig={ mBounds=Rect(0, 0 - 1280, 720) mAppBounds=Rect(0, 0 - 1280, 720) mWindowingMode=fullscreen mActivityType=undefined} s.5}
   mHasPermanentDpad=true
-  mCurrentFocus=Window{df62498 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}
-  mFocusedApp=AppWindowToken{cd05e63 token=Token{dcc492 ActivityRecord{5853a1d u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5}}}
+  mCurrentFocus=Window{ecdce19 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}
+  mFocusedApp=AppWindowToken{f395fb8 token=Token{4f0521b ActivityRecord{a29d42a u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t6}}}
   mInTouchMode=false
-  mLastDisplayFreezeDuration=0 due to Window{2f20fbe u0 com.android.systemui.ImageWallpaper}
-  mLastWakeLockHoldingWindow=Window{754ca43 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity} mLastWakeLockObscuringWindow=null
+  mLastDisplayFreezeDuration=0 due to Window{86ee14a u0 com.android.systemui.ImageWallpaper}
+  mLastWakeLockHoldingWindow=Window{905f80b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity} mLastWakeLockObscuringWindow=null
   SnapshotCache
   mSystemDecorLayer=0 mScreenRect=[0,0][1280,720]
   mTraversalScheduled=false
-  mHoldScreenWindow=Window{754ca43 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}
-  mObscuringWindow=Window{754ca43 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}
+  mHoldScreenWindow=Window{905f80b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}
+  mObscuringWindow=Window{905f80b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}
   mWallpaperTarget=null
   mLastWallpaperX=-1.0 mLastWallpaperY=-1.0
   mSystemBooted=true mDisplayEnabled=true
-  mTransactionSequence=173
+  mTransactionSequence=846
   mDisplayFrozen=false windows=0 client=false apps=0 waitingForConfig=false
   mRotation=0 mAltOrientation=false
   mLastWindowForcedOrientation=-1 mLastOrientation=0
@@ -186,8 +186,8 @@ WINDOW MANAGER WINDOWS (dumpsys window windows)
     mNextAppTransition=TRANSIT_UNSET
     mAppTransitionState=APP_STATE_IDLE
     mLastUsedAppTransition=TRANSIT_TASK_OPEN
-    mLastOpeningApp=AppWindowToken{cd05e63 token=Token{dcc492 ActivityRecord{5853a1d u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5}}}
-    mLastClosingApp=AppWindowToken{5d4b01e token=Token{baac59 ActivityRecord{ca458a0 u0 com.google.android.tvlauncher/.HomeScreen t4}}}
+    mLastOpeningApp=AppWindowToken{f395fb8 token=Token{4f0521b ActivityRecord{a29d42a u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t6}}}
+    mLastClosingApp=AppWindowToken{cb8dd50 token=Token{35f6713 ActivityRecord{b74c202 u0 com.google.android.tvlauncher/.HomeScreen t4}}}
 
 
 INPUT MANAGER (dumpsys input)
@@ -401,28 +401,28 @@ Input Reader State:
 Input Dispatcher State:
   DispatchEnabled: 1
   DispatchFrozen: 0
-  FocusedApplication: name='AppWindowToken{cd05e63 token=Token{dcc492 ActivityRecord{5853a1d u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t5}}}', dispatchingTimeout=5000.000ms
-  FocusedWindow: name='Window{df62498 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}'
+  FocusedApplication: name='AppWindowToken{f395fb8 token=Token{4f0521b ActivityRecord{a29d42a u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity t6}}}', dispatchingTimeout=5000.000ms
+  FocusedWindow: name='Window{ecdce19 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}'
   TouchStates: <no displays touched>
   Windows:
-    0: name='Window{ea7fda9 u0 DockedStackDivider}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=false, canReceiveKeys=false, flags=0x21840028, type=0x000007f2, layer=0, frame=[0,0][0,0], scale=1.000000, touchableRegion=[0,-64][64,64], inputFeatures=0x00000000, ownerPid=2181, ownerUid=10007, dispatchingTimeout=5000.000ms
-    1: name='Window{df62498 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', displayId=0, paused=false, hasFocus=true, hasWallpaper=false, visible=true, canReceiveKeys=true, flags=0x01800022, type=0x00000002, layer=0, frame=[280,249][999,471], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=3103, ownerUid=10051, dispatchingTimeout=5000.000ms
-    2: name='Window{754ca43 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=true, canReceiveKeys=true, flags=0x818101a0, type=0x00000001, layer=0, frame=[0,0][1280,720], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=3103, ownerUid=10051, dispatchingTimeout=5000.000ms
-    3: name='Window{7a1cc25 u0 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=false, canReceiveKeys=false, flags=0x83810120, type=0x00000001, layer=0, frame=[0,0][1280,720], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=2697, ownerUid=10013, dispatchingTimeout=5000.000ms
-    4: name='Window{9c158f9 u0 com.android.systemui.ImageWallpaper}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=false, canReceiveKeys=false, flags=0x00010318, type=0x000007dd, layer=0, frame=[0,0][1280,720], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=2181, ownerUid=10007, dispatchingTimeout=5000.000ms
+    0: name='Window{a20b79d u0 DockedStackDivider}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=false, canReceiveKeys=false, flags=0x21840028, type=0x000007f2, layer=0, frame=[0,0][0,0], scale=1.000000, touchableRegion=[0,-64][64,64], inputFeatures=0x00000000, ownerPid=2079, ownerUid=10010, dispatchingTimeout=5000.000ms
+    1: name='Window{ecdce19 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', displayId=0, paused=false, hasFocus=true, hasWallpaper=false, visible=true, canReceiveKeys=true, flags=0x01800022, type=0x00000002, layer=0, frame=[280,249][999,471], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=2861, ownerUid=10051, dispatchingTimeout=5000.000ms
+    2: name='Window{905f80b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=true, canReceiveKeys=true, flags=0x818101a0, type=0x00000001, layer=0, frame=[0,0][1280,720], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=2861, ownerUid=10051, dispatchingTimeout=5000.000ms
+    3: name='Window{f74d39c u0 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=false, canReceiveKeys=false, flags=0x83810120, type=0x00000001, layer=0, frame=[0,0][1280,720], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=2605, ownerUid=10009, dispatchingTimeout=5000.000ms
+    4: name='Window{a82281f u0 com.android.systemui.ImageWallpaper}', displayId=0, paused=false, hasFocus=false, hasWallpaper=false, visible=false, canReceiveKeys=false, flags=0x00010318, type=0x000007dd, layer=0, frame=[0,0][1280,720], scale=1.000000, touchableRegion=[0,0][1280,720], inputFeatures=0x00000000, ownerPid=2079, ownerUid=10010, dispatchingTimeout=5000.000ms
   MonitoringChannels:
     0: 'WindowManager (server)'
   RecentQueue: length=10
-    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=19, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=17122.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=19, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=17122.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=21, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=17121.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=21, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=17118.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=4, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=17098.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=4, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=17097.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=4, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=16490.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=4, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=16478.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=22, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=521.6ms
-    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=22, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=519.6ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=21, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=21368.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=21, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=21367.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=23, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=20210.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=23, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=20209.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=23, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=20147.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=23, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=20138.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=4, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=16568.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=4, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=16560.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=DOWN, flags=0x00000008, keyCode=22, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=519.4ms
+    KeyEvent(deviceId=-1, source=0x00000101, action=UP, flags=0x00000008, keyCode=22, scanCode=0, metaState=0x00000000, repeatCount=0), policyFlags=0x69000000, age=518.4ms
   PendingEvent: <none>
   InboundQueue: <empty>
   ReplacedKeys: <empty>
@@ -430,19 +430,19 @@ Input Dispatcher State:
     0: channelName='WindowManager (server)', windowName='monitor', status=NORMAL, monitor=true, inputPublisherBlocked=false
       OutboundQueue: <empty>
       WaitQueue: <empty>
-    1: channelName='df62498 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity (server)', windowName='Window{df62498 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', status=NORMAL, monitor=false, inputPublisherBlocked=false
+    1: channelName='ecdce19 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity (server)', windowName='Window{ecdce19 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', status=NORMAL, monitor=false, inputPublisherBlocked=false
       OutboundQueue: <empty>
       WaitQueue: <empty>
-    2: channelName='754ca43 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity (server)', windowName='Window{754ca43 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', status=NORMAL, monitor=false, inputPublisherBlocked=false
+    2: channelName='f74d39c com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen (server)', windowName='Window{f74d39c u0 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}', status=NORMAL, monitor=false, inputPublisherBlocked=false
       OutboundQueue: <empty>
       WaitQueue: <empty>
-    3: channelName='7a1cc25 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen (server)', windowName='Window{7a1cc25 u0 com.google.android.tvlauncher/com.google.android.tvlauncher.HomeScreen}', status=NORMAL, monitor=false, inputPublisherBlocked=false
+    3: channelName='a82281f com.android.systemui.ImageWallpaper (server)', windowName='Window{a82281f u0 com.android.systemui.ImageWallpaper}', status=NORMAL, monitor=false, inputPublisherBlocked=false
       OutboundQueue: <empty>
       WaitQueue: <empty>
-    4: channelName='9c158f9 com.android.systemui.ImageWallpaper (server)', windowName='Window{9c158f9 u0 com.android.systemui.ImageWallpaper}', status=NORMAL, monitor=false, inputPublisherBlocked=false
+    4: channelName='a20b79d DockedStackDivider (server)', windowName='Window{a20b79d u0 DockedStackDivider}', status=NORMAL, monitor=false, inputPublisherBlocked=false
       OutboundQueue: <empty>
       WaitQueue: <empty>
-    5: channelName='ea7fda9 DockedStackDivider (server)', windowName='Window{ea7fda9 u0 DockedStackDivider}', status=NORMAL, monitor=false, inputPublisherBlocked=false
+    5: channelName='905f80b com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity (server)', windowName='Window{905f80b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.HomeActivity}', status=NORMAL, monitor=false, inputPublisherBlocked=false
       OutboundQueue: <empty>
       WaitQueue: <empty>
   AppSwitch: not pending

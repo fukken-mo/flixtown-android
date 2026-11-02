@@ -1,0 +1,37 @@
+API 28
+FAIL exit Stay→Back #1  no dialog opened
+FAIL exit Back→Back #1  no dialog opened
+ok   notices Got it→next #1
+ok   report picker→Send report? #1
+ok   report Sending→reply #1
+ok   update Update now→progress #1
+FAIL exit Stay→Back #2  no dialog opened
+FAIL exit Back→Back #2  no dialog opened
+ok   notices Got it→next #2
+ok   report picker→Send report? #2
+FAIL report Sending→reply #2  no dialog opened
+ok   update Update now→progress #2
+FAIL exit Stay→Back #3  no dialog opened
+FAIL exit Back→Back #3  no dialog opened
+ok   notices Got it→next #3
+ok   report picker→Send report? #3
+ok   report Sending→reply #3
+ok   update Update now→progress #3
+FAIL exit Stay→Back #4  no dialog opened
+FAIL exit Back→Back #4  no dialog opened
+ok   notices Got it→next #4
+ok   report picker→Send report? #4
+ok   report Sending→reply #4
+ok   update Update now→progress #4
+FAIL exit Stay→Back #5  no dialog opened
+FAIL exit Back→Back #5  no dialog opened
+ok   notices Got it→next #5
+ok   report picker→Send report? #5
+FAIL report Sending→reply #5  no dialog opened
+ok   update Update now→progress #5
+FAIL exit Stay→Back #6  no dialog opened
+FAIL exit Back→Back #6  no dialog opened
+ok   notices Got it→next #6
+ok   report picker→Send report? #6
+ok   report Sending→reply #6
+ok   update Update now→progress #6
