@@ -21,7 +21,7 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
  private void waitFor(Callable<Boolean> p)throws Exception{long end=System.currentTimeMillis()+12000;while(System.currentTimeMillis()<end){getInstrumentation().waitForIdleSync();if(p.call())return;Thread.sleep(80);}fail("profile test timed out");}
  private ProfileCatalog profiles;
  private final String first="12345678-1234-4234-8234-123456789012",second="87654321-4321-4321-8321-210987654321";
- @Override protected void setUp()throws Exception{super.setUp();profiles=new ProfileCatalog(Arrays.asList(new ProfileCatalog.Profile("default","My profile","avatar_01",false),new ProfileCatalog.Profile(first,"Mo","avatar_02",false),new ProfileCatalog.Profile(second,"Guest","avatar_03",false)),"default");}
+ @Override protected void setUp()throws Exception{super.setUp();main(StartupRefresh::reset);profiles=new ProfileCatalog(Arrays.asList(new ProfileCatalog.Profile("default","My profile","avatar_01",false),new ProfileCatalog.Profile(first,"Mo","avatar_02",false),new ProfileCatalog.Profile(second,"Guest","avatar_03",false)),"default");}
  private void seed(Context c,String selected){
   Profiles.raw(c).edit().clear().putString(SignOut.OWNER,SignOut.ownerId("fixture")).putString("server","https://demo.invalid").putString("progress_sync_api_url","https://fixture.invalid/api/tv-account-sync.php").commit();
   Profiles.save(c,Profiles.scope(c),profiles.select(selected),1);c.getSharedPreferences("profile_history_"+Profiles.scope(c)+"_"+selected,0).edit().clear().commit();

@@ -59,7 +59,7 @@ public class ProfileEntryDeviceTest extends InstrumentationTestCase {
   Instrumentation.ActivityMonitor pickers=monitor(ProfilesActivity.class,false);
   try(android.os.ParcelFileDescriptor fd=getInstrumentation().getUiAutomation().executeShellCommand("input keyevent KEYCODE_HOME")){Thread.sleep(500);}
   waitFor(()->{final boolean[] hidden={false};main(()->hidden[0]=page[0].getVisibility()==View.INVISIBLE);return hidden[0];});
-  try(android.os.ParcelFileDescriptor fd=getInstrumentation().getUiAutomation().executeShellCommand("am start -n "+c.getPackageName()+"/com.flixtown.tv.HomeActivity --activity-reorder-to-front")){Thread.sleep(300);}
+  main(()->c.startActivity(new Intent(c,HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)));
   activity=pickers.waitForActivityWithTimeout(10000);assertNotNull("reopening shows profiles",activity);
   main(()->{assertEquals("old homepage remains hidden",View.INVISIBLE,page[0].getVisibility());});
  }
