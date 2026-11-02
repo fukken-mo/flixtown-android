@@ -52,7 +52,7 @@ public class ProfileEntryDeviceTest extends InstrumentationTestCase {
   assertEquals("Back does not bypass profile choice",0,homes.getHits());
  }
  public void testForegroundReturnHidesExistingHomeUntilPicker()throws Exception{
-  main(()->Profiles.chosen(c));
+  main(()->Profiles.returningHome(c));
   activity=getInstrumentation().startActivitySync(new Intent(c,HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
   Activity home=activity;final View[] page={null};main(()->page[0]=home.findViewById(android.R.id.content));
   assertNotNull(home.findViewById(com.flixtown.tv.R.id.home_rows));
