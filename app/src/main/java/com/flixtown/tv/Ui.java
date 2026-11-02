@@ -134,7 +134,41 @@ final class Ui {
             ||l.equals("ok")||l.equals("done")||l.equals("hide")||l.equals("continue");
     }
 
-    /* ---------------- Dialogs ---------------- */
+    /* ---------------- Dialogs ----------------
+     * One look for every confirmation and information dialog: a solid charcoal card with softly rounded
+     * corners, a centred title and short message, and neutral buttons. Focus is the only thing drawn in
+     * Flix Town red (a filled button), so the remote's position, and the safe default, are unmistakable.
+     * No accent bars, dividers or heavy borders.
+     */
+    static final int DIALOG_SURFACE=0xFF19181D,DIALOG_BUTTON=0xFF2A292F,DESTRUCTIVE_TEXT=0xFFF08A86;
+    /** QA builds only: the dialog shown last, so device tests can reach its window. Never set in Preview or production. */
+    static volatile Dialog lastShown;
+    static GradientDrawable dialogSurface(Context c){
+        GradientDrawable d=new GradientDrawable();d.setColor(DIALOG_SURFACE);d.setCornerRadius(dp(c,20));d.setStroke(dp(c,1),0x14FFFFFF);return d;
+    }
+    /** Labels for actions that remove something (shown in a soft red until focused). */
+    static boolean destructive(String label){
+        String l=label.trim().toLowerCase(java.util.Locale.ROOT);
+        return l.startsWith("delete")||l.startsWith("sign out")||l.startsWith("remove");
+    }
+    /** Dialog button: neutral charcoal; focused, it fills with Flix Town red behind a faint halo. */
+    static Button dialogButton(Context c,String label){
+        Button b=button(c,label);b.setTextSize(17);b.setMinWidth(dp(c,140));
+        int l=b.getPaddingLeft(),t=b.getPaddingTop(),r=b.getPaddingRight(),bo=b.getPaddingBottom();
+        android.graphics.drawable.StateListDrawable states=new android.graphics.drawable.StateListDrawable();
+        states.addState(new int[]{android.R.attr.state_focused},dialogButtonLayer(c,true));
+        states.addState(new int[]{},dialogButtonLayer(c,false));
+        states.setExitFadeDuration(90);b.setBackground(states);b.setPadding(l,t,r,bo);
+        b.setTextColor(new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused},{}},
+            new int[]{Color.WHITE,destructive(label)?DESTRUCTIVE_TEXT:0xFFE4DFDA}));
+        return b;
+    }
+    private static android.graphics.drawable.Drawable dialogButtonLayer(Context c,boolean focused){
+        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,12));surface.setColor(focused?PRIMARY_FOCUS:DIALOG_BUTTON);
+        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,12+HALO));halo.setColor(focused?0x40CE4B4A:0x00000000);
+        android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
+        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);return layers;
+    }
 
     static Dialog newDialog(Activity activity){
         Dialog dialog=new Dialog(activity);
@@ -150,15 +184,19 @@ final class Ui {
         int width=Math.min(dp(activity,widthDp),screenW-2*safeX(activity));
         int height=fixedHeight?Math.min(dp(activity,maxHeightDp),screenH-2*safeY(activity)):WindowManager.LayoutParams.WRAP_CONTENT;
         window.setLayout(width,height);
+        if(BuildConfig.DEMO)lastShown=dialog;
     }
     static LinearLayout sheet(Activity activity,String title,String message){
-        LinearLayout body=column(activity);pad(body,activity,32,26,32,26);body.setBackground(glass(activity,18));
-        View accent=new View(activity);accent.setBackground(rounded(ACCENT,2,activity));
-        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(activity,32),dp(activity,3));ap.bottomMargin=dp(activity,14);body.addView(accent,ap);
-        TextView heading=heading(activity,title,23);heading.setMaxLines(2);heading.setEllipsize(TextUtils.TruncateAt.END);body.addView(heading);
+        LinearLayout body=column(activity);pad(body,activity,36,30,36,28);body.setBackground(dialogSurface(activity));
+        body.setGravity(Gravity.CENTER_HORIZONTAL);body.setClipChildren(false);body.setClipToPadding(false);
+        TextView heading=heading(activity,title,24);heading.setMaxLines(2);heading.setEllipsize(TextUtils.TruncateAt.END);heading.setGravity(Gravity.CENTER);
+        body.addView(heading,new LinearLayout.LayoutParams(-1,-2));
         if(message!=null && !message.isEmpty()){
-            TextView m=text(activity,message,16);m.setTextColor(TEXT_2);m.setLineSpacing(0,1.15f);m.setMaxLines(5);m.setEllipsize(TextUtils.TruncateAt.END);
-            LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,8);body.addView(m,mp);
+            // Short messages are centred; multi-line information (lists, technical details) reads from the left.
+            boolean list=message.indexOf('\n')>=0;
+            TextView m=text(activity,message,16);m.setTextColor(TEXT_2);m.setLineSpacing(0,1.2f);m.setMaxLines(list?12:6);m.setEllipsize(TextUtils.TruncateAt.END);
+            m.setGravity(list?Gravity.START:Gravity.CENTER);
+            LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,10);body.addView(m,mp);
         }
         return body;
     }
@@ -175,16 +213,14 @@ final class Ui {
         boolean horizontal=labels.length<=3 && longest<=20;
         // Actions are sized to their labels (a stacked list takes the width of its longest label).
         LinearLayout buttons=horizontal?row(activity):column(activity);buttons.setClipChildren(false);buttons.setClipToPadding(false);
-        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.topMargin=dp(activity,20);body.addView(buttons,bp);
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(horizontal?-2:-1,-2);bp.topMargin=dp(activity,26);body.addView(buttons,bp);
         Button focus=null;final boolean[] chosen={false};
-        int primary=Math.max(0,Math.min(focusIndex,labels.length-1));
         for(int i=0;i<labels.length;i++){
             final int index=i;
-            Button b=i==primary && !dismissive(labels[i])?primaryButton(activity,labels[i]):button(activity,labels[i]);b.setTextSize(17);
+            Button b=dialogButton(activity,labels[i]);
             LinearLayout.LayoutParams p=horizontal?new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,50))
                 :new LinearLayout.LayoutParams(-1,dp(activity,50));
-            b.setMinWidth(dp(activity,120));
-            if(horizontal){if(i>0)p.leftMargin=dp(activity,10);}
+            if(horizontal){if(i>0)p.leftMargin=dp(activity,12);}
             else if(i>0)p.topMargin=dp(activity,6);
             buttons.addView(b,p);
             b.setOnClickListener(v->{chosen[0]=true;dialog.dismiss();action.select(index);});
@@ -192,7 +228,7 @@ final class Ui {
         }
         dialog.setContentView(body);
         dialog.setOnCancelListener(d->{if(!chosen[0] && onCancel!=null)onCancel.run();});
-        showWindow(activity,dialog,horizontal?520:470,false,0);
+        showWindow(activity,dialog,horizontal?540:480,false,0);
         if(focus!=null){Button f=focus;f.post(f::requestFocus);}
         return dialog;
     }
@@ -211,39 +247,32 @@ final class Ui {
     static Dialog notice(Activity activity,String title,String message,String muted,String[] labels,int focusIndex,
                          boolean cancelable,Choice action,Runnable onCancel){
         Dialog dialog=newDialog(activity);
-        LinearLayout body=column(activity);pad(body,activity,30,24,30,24);
-        // Solid (not see-through) so the hero title behind never shows through the card.
-        GradientDrawable surface=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xFF211F25,0xFF17161A,0xFF111014});
-        surface.setCornerRadius(dp(activity,18));surface.setStroke(dp(activity,1),HAIRLINE);body.setBackground(surface);
-        LinearLayout top=row(activity);top.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout body=column(activity);pad(body,activity,36,28,36,28);body.setBackground(dialogSurface(activity));
+        body.setGravity(Gravity.CENTER_HORIZONTAL);body.setClipChildren(false);body.setClipToPadding(false);
         android.widget.ImageView mark=new android.widget.ImageView(activity);mark.setImageResource(R.drawable.flix_logo);
-        mark.setScaleType(android.widget.ImageView.ScaleType.FIT_START);mark.setAdjustViewBounds(true);
-        top.addView(mark,new LinearLayout.LayoutParams(dp(activity,62),dp(activity,40)));
-        View accent=new View(activity);accent.setBackground(rounded(ACCENT,2,activity));
-        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(activity,28),dp(activity,3));ap.leftMargin=dp(activity,14);top.addView(accent,ap);
-        body.addView(top);
-        TextView heading=heading(activity,title,22);heading.setMaxLines(2);heading.setEllipsize(TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,16);body.addView(heading,hp);
-        TextView m=text(activity,message,16);m.setTextColor(TEXT_2);m.setLineSpacing(0,1.18f);m.setMaxLines(4);m.setEllipsize(TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,8);body.addView(m,mp);
+        mark.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);mark.setAdjustViewBounds(true);mark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        body.addView(mark,new LinearLayout.LayoutParams(dp(activity,62),dp(activity,40)));
+        TextView heading=heading(activity,title,24);heading.setMaxLines(2);heading.setEllipsize(TextUtils.TruncateAt.END);heading.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,14);body.addView(heading,hp);
+        TextView m=text(activity,message,16);m.setTextColor(TEXT_2);m.setLineSpacing(0,1.2f);m.setMaxLines(5);m.setEllipsize(TextUtils.TruncateAt.END);m.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,10);body.addView(m,mp);
         if(muted!=null && !muted.isEmpty()){
-            TextView q=text(activity,muted,13);q.setTextColor(TEXT_3);q.setMaxLines(3);q.setEllipsize(TextUtils.TruncateAt.END);
+            TextView q=text(activity,muted,13);q.setTextColor(TEXT_3);q.setMaxLines(3);q.setEllipsize(TextUtils.TruncateAt.END);q.setGravity(Gravity.CENTER);
             LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(-1,-2);qp.topMargin=dp(activity,10);body.addView(q,qp);
         }
         LinearLayout buttons=row(activity);buttons.setClipChildren(false);buttons.setClipToPadding(false);
-        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.topMargin=dp(activity,22);body.addView(buttons,bp);
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.topMargin=dp(activity,26);body.addView(buttons,bp);
         Button focus=null;final boolean[] chosen={false};
         for(int i=0;i<labels.length;i++){final int index=i;
-            Button b=i==Math.max(0,Math.min(focusIndex,labels.length-1)) && !dismissive(labels[i])?primaryButton(activity,labels[i]):button(activity,labels[i]);
-            b.setTextSize(16);b.setMinWidth(dp(activity,124));
+            Button b=dialogButton(activity,labels[i]);
             LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,50));
-            if(i>0)p.leftMargin=dp(activity,10);buttons.addView(b,p);
+            if(i>0)p.leftMargin=dp(activity,12);buttons.addView(b,p);
             b.setOnClickListener(v->{chosen[0]=true;dialog.dismiss();action.select(index);});
             if(i==Math.max(0,Math.min(focusIndex,labels.length-1)))focus=b;
         }
         dialog.setContentView(body);dialog.setCancelable(cancelable);dialog.setCanceledOnTouchOutside(false);
         dialog.setOnCancelListener(d->{if(!chosen[0] && onCancel!=null)onCancel.run();});
-        showWindow(activity,dialog,500,false,0);
+        showWindow(activity,dialog,520,false,0);
         if(focus!=null){Button f=focus;f.post(f::requestFocus);}
         return dialog;
     }
@@ -261,16 +290,16 @@ final class Ui {
     static Progress progress(Activity activity,String title,String button,Runnable onButton){
         Dialog dialog=newDialog(activity);
         LinearLayout body=sheet(activity,title,null);
-        TextView message=text(activity,"",16);message.setTextColor(TEXT_2);
+        TextView message=text(activity,"",16);message.setTextColor(TEXT_2);message.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,8);body.addView(message,mp);
-        int track=dp(activity,406);
+        int track=dp(activity,400);
         android.widget.FrameLayout bars=new android.widget.FrameLayout(activity);bars.setBackground(rounded(0x26FFFFFF,2,activity));
         View bar=new View(activity);bar.setBackground(rounded(GLOW,2,activity));bars.addView(bar,new android.widget.FrameLayout.LayoutParams(0,-1));
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(track,dp(activity,4));bp.topMargin=dp(activity,16);body.addView(bars,bp);
-        Button b=button(activity,button);b.setTextSize(17);b.setMinWidth(dp(activity,120));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,50));lp.topMargin=dp(activity,22);
+        Button b=dialogButton(activity,button);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(activity,50));lp.topMargin=dp(activity,26);
         body.addView(b,lp);b.setOnClickListener(v->{dialog.dismiss();if(onButton!=null)onButton.run();});
-        dialog.setContentView(body);showWindow(activity,dialog,470,false,0);b.post(b::requestFocus);
+        dialog.setContentView(body);showWindow(activity,dialog,480,false,0);b.post(b::requestFocus);
         return new Progress(dialog,message,bar,track);
     }
 
@@ -296,9 +325,9 @@ final class Ui {
                 TextView item=(TextView)holder.itemView;boolean isSelected=position==selected;
                 item.setText(isSelected?"✓  "+labels[position]:labels[position]);
                 item.setTextColor(isSelected?TEXT:TEXT_2);
-                item.setBackground(pill(activity,item.isFocused(),isSelected,10));
-                item.setOnFocusChangeListener((v,focused)->{v.setBackground(pill(activity,focused,isSelected,10));
-                    ((TextView)v).setTextColor(focused||isSelected?TEXT:TEXT_2);});
+                item.setBackground(choiceRow(activity,item.isFocused(),isSelected));
+                item.setOnFocusChangeListener((v,focused)->{v.setBackground(choiceRow(activity,focused,isSelected));
+                    ((TextView)v).setTextColor(focused?Color.WHITE:isSelected?TEXT:TEXT_2);});
                 item.setOnClickListener(v->{dialog.dismiss();action.select(position);});
             }
         });
@@ -313,6 +342,10 @@ final class Ui {
         return dialog;
     }
 
+    /** Picker row: red fill when focused (as dialog buttons), a quiet charcoal fill for the current choice. */
+    private static GradientDrawable choiceRow(Context c,boolean focused,boolean selected){
+        GradientDrawable d=new GradientDrawable();d.setCornerRadius(dp(c,10));d.setColor(focused?PRIMARY_FOCUS:selected?DIALOG_BUTTON:0x00000000);return d;
+    }
     /** Runs once after the view's next layout pass (for focusing grid items that are not laid out yet). */
     static void afterLayout(View view,Runnable action){
         view.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener(){
