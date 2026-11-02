@@ -52,6 +52,14 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
   final String[] state={""};main(()->{Dialog d=Ui.lastShown;state[0]=d==null?"no dialog":"showing="+d.isShowing()+" focus="+d.getCurrentFocus()+" decorFocus="+d.getWindow().getDecorView().hasWindowFocus()
    +" attached="+d.getWindow().getDecorView().isAttachedToWindow()+" same="+(d==before)+" activityFocus="+(activity!=null&&activity.hasWindowFocus());});
   try{screenshot("FAILED-"+System.currentTimeMillis());}catch(Throwable ignored){}
+  // Do remote keys still reach the dialog? (Its Stay/first button is focused inside the dialog.)
+  final String[] probe={""};Dialog last=Ui.lastShown;
+  if(last!=null){final String[] f0={""};main(()->f0[0]=String.valueOf(last.getCurrentFocus() instanceof TextView?((TextView)last.getCurrentFocus()).getText():last.getCurrentFocus()));
+   key(KeyEvent.KEYCODE_DPAD_RIGHT);Thread.sleep(500);
+   main(()->probe[0]=" probe: focus "+f0[0]+" -> "+(last.getCurrentFocus() instanceof TextView?((TextView)last.getCurrentFocus()).getText():last.getCurrentFocus())+" decorFocus="+last.getWindow().getDecorView().hasWindowFocus());}
+  try{java.io.File dir=new java.io.File(c.getExternalFilesDir(null),"profiles-ui");dir.mkdirs();
+   try(java.io.FileWriter out=new java.io.FileWriter(new java.io.File(dir,"dialog-FAILED-window.txt"))){out.write(state[0]+probe[0]+"\n\n"+shell("dumpsys window windows")+"\n\n"+shell("dumpsys input"));}}catch(Throwable ignored){}
+  state[0]+=probe[0];
   fail("dialog not focused; "+state[0]+" ; "+w);return null;
  }
  private String shell(String cmd)throws Exception{

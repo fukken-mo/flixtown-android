@@ -99,7 +99,7 @@ jobs:
         if: always()
         run: |
           D=qa/dialogs-design/api${{ matrix.api }}-${{ matrix.profile }}
-          rm -rf /tmp/shots && mkdir -p /tmp/shots && cp profiles-ui/*.png /tmp/shots/ 2>/dev/null || true
+          rm -rf /tmp/shots && mkdir -p /tmp/shots && cp profiles-ui/*.png profiles-ui/*.txt /tmp/shots/ 2>/dev/null || true
           grep -E "^OK|^FAILURES|Tests run" device-results.txt > /tmp/shots/result.txt || true
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3 4 5 6 7 8; do
