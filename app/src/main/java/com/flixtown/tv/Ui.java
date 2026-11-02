@@ -185,6 +185,39 @@ final class Ui {
         int height=fixedHeight?Math.min(dp(activity,maxHeightDp),screenH-2*safeY(activity)):WindowManager.LayoutParams.WRAP_CONTENT;
         window.setLayout(width,height);
         if(BuildConfig.DEMO)lastShown=dialog;
+        // Window focus: the dialog must hear that it has focus, and so must the screen behind once the last dialog closes.
+        View decor=window.getDecorView();openDialogs++;
+        recoverFocus(window,dialog::isShowing);
+        decor.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
+            @Override public void onViewAttachedToWindow(View v){}
+            @Override public void onViewDetachedFromWindow(View v){v.removeOnAttachStateChangeListener(this);
+                if(--openDialogs>0||activity.isFinishing()||activity.isDestroyed())return;
+                Window screen=activity.getWindow();if(screen!=null)recoverFocus(screen,()->openDialogs==0&&!activity.isFinishing()&&!activity.isDestroyed()
+                    &&screen.getDecorView().getWindowVisibility()==View.VISIBLE);}
+        });
+    }
+    /** Dialogs shown with {@link #showWindow} and still attached (main thread only). */
+    private static int openDialogs;
+    /** QA builds only: how many times a lost focus notification was recovered (see {@link #recoverFocus}). */
+    static volatile int focusRecoveries;
+    interface Check{boolean wanted();}
+    /**
+     * Android 9 can lose a window-focus notification when a dialog opens or closes in the same moment as another
+     * window change (closing one dialog and opening the next, or pressing Back right after OK): the window keeps
+     * input focus in the window manager, but its views never hear so and drop every remote key, so the screen looks
+     * frozen. If {@code window} should have focus and has not heard within a moment, its focusability is toggled
+     * for one frame so the window manager recomputes focus and reports it again. A few tries, then it stops; nothing
+     * happens when focus arrives normally.
+     */
+    static void recoverFocus(Window window,Check check){
+        View decor=window.getDecorView();int[] tries={0};Runnable[] step={null};
+        step[0]=()->{
+            if(!check.wanted()||!decor.isAttachedToWindow()||decor.hasWindowFocus()||tries[0]++>=4)return;
+            if(BuildConfig.DEMO){focusRecoveries++;android.util.Log.i("FlixTownQA","focus_recovery window="+window.getAttributes().getTitle()+" try="+tries[0]);}
+            window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+            decor.postDelayed(()->{window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);decor.postDelayed(step[0],350);},80);
+        };
+        decor.postDelayed(step[0],250);
     }
     static LinearLayout sheet(Activity activity,String title,String message){
         LinearLayout body=column(activity);pad(body,activity,36,30,36,28);body.setBackground(dialogSurface(activity));
