@@ -5,26 +5,26 @@ FAIL  manual up-to-date dialog wrong
 PASS  offline start: no update dialog (silent)
 FAIL  offline manual check dialog wrong
 PASS  offline is never reported as up to date
-FAIL  player did not open (    mResumedActivity: ActivityRecord{b725732 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.RemoteGuideActivity t6})
+PASS  playing a title before the update is published
 PASS  same link, newer APK detected (10011)
-FAIL  not in the player (    mResumedActivity: ActivityRecord{b725732 u0 com.myflixtown.tv.native.qa/com.flixtown.tv.RemoteGuideActivity t6})
+PASS  back from the background straight into the player
 PASS  no update popup while the player is open
-PASS  left the player back to Home
-PASS  return from background: popup appears once Home is in front
-FAIL  popup came back after Later in the same launch
-PASS  exit confirmation shown
+FAIL  could not get back to Home (    mResumedActivity: ActivityRecord{bd85a7f u0 com.google.android.tvlauncher/.MainActivity t4})
+FAIL  no popup after returning from the background
+PASS  after Later: returning from the background does not ask again
+FAIL  exit confirmation not shown
 PASS  after Exit the app process is still running (no force-stop)
-PASS  reopened after Exit: 'Update available' popup with Update now / Later
-PASS  release notes shown
+FAIL  no automatic popup when reopening after Exit
+FAIL  release notes missing
 PASS  after Later: no duplicate popup while navigating
 PASS  panel marks the update required
-PASS  required update: 'Update required', only Update now
-PASS  Back does not dismiss a required update
-PASS  Android's installer confirmation accepted
-PASS  installed version is now 10011
+FAIL  required popup wrong
+FAIL  required popup dismissed by Back
+FAIL  installer button not found
+FAIL  installed version is 10010
 PASS  still signed in after the update
 PASS  now current: no automatic popup
-PASS  autoplay setting kept (Off)
+FAIL  autoplay setting lost
 FAIL  manual check after update wrong
 PASS  later launch: still no popup
-update flow: 23 passed, 6 failed
+update flow: 16 passed, 13 failed
