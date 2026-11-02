@@ -108,7 +108,7 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
    assertTrue(where+": the key guard must be removed",is(()->screen.getWindow().getCallback()==spy.proxy));
    // And the dialog takes the remote normally afterwards.
    String before=get(()->((TextView)d.getCurrentFocus()).getText().toString());
-   getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);getInstrumentation().waitForIdleSync();
+   getInstrumentation().sendKeyDownUpSync("Second".equals(before)?KeyEvent.KEYCODE_DPAD_LEFT:KeyEvent.KEYCODE_DPAD_RIGHT);getInstrumentation().waitForIdleSync();
    String after=get(()->d.getCurrentFocus() instanceof TextView?((TextView)d.getCurrentFocus()).getText().toString():"none");
    assertFalse(where+": the dialog must take the remote after recovery ("+before+" → "+after+")",before.equals(after));
   }finally{getInstrumentation().removeMonitor(monitor);main(()->{spy.remove();if(d.isShowing())d.dismiss();});Thread.sleep(700);}
@@ -236,7 +236,10 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
  }
 
  @Override protected void tearDown()throws Exception{
-  main(()->{Dialog d=Ui.lastShown;if(d!=null&&d.isShowing())d.dismiss();Ui.lastShown=null;if(home!=null)home.finishAffinity();AccountSync.signOut();StartupRefresh.reset();Profiles.signOut();});
+  main(()->{Dialog d=Ui.lastShown;
+   // A dialog left over a screen that the test already finished went with that screen's window.
+   try{if(d!=null&&d.isShowing())d.dismiss();}catch(IllegalArgumentException gone){}
+   Ui.lastShown=null;if(home!=null)home.finishAffinity();AccountSync.signOut();StartupRefresh.reset();Profiles.signOut();});
   getInstrumentation().waitForIdleSync();AccountStore.clear(c);
   java.io.File dir=new java.io.File(c.getExternalFilesDir(null),"profiles-ui");dir.mkdirs();
   try(java.io.FileWriter out=new java.io.FileWriter(new java.io.File(dir,"isolation-results.txt"))){out.write("API "+android.os.Build.VERSION.SDK_INT+"\n");synchronized(results){for(String r:results)out.write(r+"\n");}}
