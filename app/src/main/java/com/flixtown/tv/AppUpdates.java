@@ -199,15 +199,18 @@ final class AppUpdates {
     private void offer(){
         if(activity.isFinishing() || info==null || isPromptShowing())return;
         UpdateInfo u=info;
-        String notes=u.notes.isEmpty()?null:"What’s new: "+u.notes;
         Ui.Choice start=i->{if(i!=0){laterFor=u.versionCode;return;}
             if(state==State.READY && ready!=null && ready.isFile())install();else download();};
+        prompt=offerPrompt(activity,u,start,()->laterFor=u.versionCode);
+    }
+    /** The update offer (presentation only): the panel's notes become the "What’s new" list. A required update cannot be dismissed. */
+    static android.app.Dialog offerPrompt(android.app.Activity activity,UpdateInfo u,Ui.Choice start,Runnable later){
+        java.util.List<String> features=UpdateInfo.features(u.notes);
         if(u.required)
-            prompt=Ui.notice(activity,"Update required","A new version of Flix Town is needed to continue. Update now to keep watching.",
-                notes,new String[]{"Update now"},0,false,start,null);
-        else
-            prompt=Ui.notice(activity,"Update available","A new version of Flix Town is ready. Update now for the latest improvements.",
-                notes,new String[]{"Update now","Later"},0,true,start,()->laterFor=u.versionCode);
+            return Ui.notice(activity,"Update required","A new version of Flix Town is needed to continue. Update now to keep watching.",
+                null,features,new String[]{"Update now"},0,false,start,null);
+        return Ui.notice(activity,"Update available","A new version of Flix Town is ready. Update now for the latest improvements.",
+            null,features,new String[]{"Update now","Later"},0,true,start,later);
     }
     private void showUpToDate(){
         if(activity.isFinishing() || isPromptShowing())return;

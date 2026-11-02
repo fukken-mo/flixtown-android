@@ -46,10 +46,13 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
  private Dialog shown(Dialog before)throws Exception{
   long end=System.currentTimeMillis()+15000;
   while(System.currentTimeMillis()<end){getInstrumentation().waitForIdleSync();Dialog d=Ui.lastShown;
-   final boolean[] ready={false};if(d!=null&&d!=before)main(()->ready[0]=d.isShowing()&&d.getCurrentFocus() instanceof Button&&d.getWindow().getDecorView().hasWindowFocus());
+   final boolean[] ready={false};if(d!=null&&d!=before)main(()->ready[0]=d.isShowing()&&d.getCurrentFocus()!=null&&d.getWindow().getDecorView().hasWindowFocus());
    if(ready[0]){Thread.sleep(250);getInstrumentation().waitForIdleSync();return d;}Thread.sleep(100);}
   StringBuilder w=new StringBuilder();for(String line:shell("dumpsys window windows").split("\n"))if(line.contains("mCurrentFocus")||line.contains("mFocusedApp"))w.append(line.trim()).append(" ; ");
-  fail("dialog not focused; "+w);return null;
+  final String[] state={""};main(()->{Dialog d=Ui.lastShown;state[0]=d==null?"no dialog":"showing="+d.isShowing()+" focus="+d.getCurrentFocus()+" decorFocus="+d.getWindow().getDecorView().hasWindowFocus()
+   +" attached="+d.getWindow().getDecorView().isAttachedToWindow()+" same="+(d==before)+" activityFocus="+(activity!=null&&activity.hasWindowFocus());});
+  try{screenshot("FAILED-"+System.currentTimeMillis());}catch(Throwable ignored){}
+  fail("dialog not focused; "+state[0]+" ; "+w);return null;
  }
  private String shell(String cmd)throws Exception{
   try(android.os.ParcelFileDescriptor fd=getInstrumentation().getUiAutomation().executeShellCommand(cmd);
@@ -155,6 +158,60 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
   key(KeyEvent.KEYCODE_DPAD_DOWN);assertEquals("Title Z–A",focused(p));screenshot("picker");backDismisses(p);
   final Ui.Progress[] progress={null};main(()->{progress[0]=Ui.progress(h,"Downloading update","Hide",null);progress[0].set("Downloading… 6.2 of 6.6 MB",64);});Dialog g=shown(p);
   checkLayout(g,"Downloading update");assertEquals("Hide",focused(g));screenshot("progress");main(()->progress[0].dismiss());
+ }
+ private UpdateInfo update(String notes,boolean required)throws Exception{
+  return UpdateInfo.parse(new JSONObject().put("ok",true).put("package","fixture").put("update_version_code",10041).put("update_version_name","3.8.21")
+   .put("update_apk_url","https://updates.invalid/flixtown.apk").put("update_sha256","0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+   .put("update_notes",notes).put("update_required",required),"fixture",10040,false);
+ }
+ private List<TextView> featureLines(Dialog d){List<TextView> out=new ArrayList<>();ViewGroup list=(ViewGroup)((ViewGroup)root(d).findViewWithTag("whats_new")).getChildAt(0);
+  for(int i=0;i<list.getChildCount();i++)out.add((TextView)list.getChildAt(i));return out;}
+ public void testUpdateWhatsNewFeatures()throws Exception{
+  Activity h=home();
+  String notes="What’s new:\n- Profiles: choose who’s watching when Flix Town opens\n• Continue Watching and My List follow each profile across your TVs\n"
+   +"Clearer dialogs with an unmistakable remote focus\n-Faster loading on slower connections\n\n* Fixed: a dismissed notice could return after signing in again";
+  UpdateInfo u=update(notes,false);
+  main(()->AppUpdates.offerPrompt(h,u,i->{},null));Dialog d=shown(null);
+  checkLayout(d,"Update available");assertEquals("Update now is focused",  "Update now",focused(d));
+  main(()->{List<TextView> lines=featureLines(d);
+   assertEquals("one line per feature (the heading line and the blank line are skipped)",5,lines.size());
+   String[] want={"Profiles: choose who’s watching when Flix Town opens","Continue Watching and My List follow each profile across your TVs",
+    "Clearer dialogs with an unmistakable remote focus","Faster loading on slower connections","Fixed: a dismissed notice could return after signing in again"};
+   for(int i=0;i<5;i++){TextView t=lines.get(i);assertEquals("feature "+i+" without a second bullet",want[i],t.getText().toString());
+    android.text.style.BulletSpan[] bullets=((android.text.Spanned)t.getText()).getSpans(0,t.length(),android.text.style.BulletSpan.class);assertEquals("one bullet",1,bullets.length);
+    assertEquals("features read from the left",Gravity.LEFT,Gravity.getAbsoluteGravity(t.getGravity(),t.getLayoutDirection())&Gravity.HORIZONTAL_GRAVITY_MASK);}
+   TextView title=(TextView)text(root(d),"Update available");assertEquals("title centred",Gravity.CENTER_HORIZONTAL,title.getGravity()&Gravity.HORIZONTAL_GRAVITY_MASK);
+   View scroll=root(d).findViewWithTag("whats_new");assertFalse("a short list scrolls nowhere and takes no focus",scroll.isFocusable());
+   Rect rs=screen(scroll),rb=screen(text(root(d),"Update now"));assertTrue("buttons below the list",rb.top>rs.bottom);});
+  key(KeyEvent.KEYCODE_DPAD_UP);assertEquals("a short list is not a focus stop","Update now",focused(d));
+  screenshot("update-whats-new");backDismisses(d);
+  UpdateInfo r=update("- Required security update\n- Faster start",true);
+  main(()->AppUpdates.offerPrompt(h,r,i->{},null));Dialog q=shown(d);
+  checkLayout(q,"Update required");assertEquals(Collections.singletonList("Update now"),labels(q));
+  key(KeyEvent.KEYCODE_BACK);Thread.sleep(500);assertTrue("a required update cannot be dismissed",q.isShowing());
+  screenshot("update-required");main(q::dismiss);
+ }
+ public void testUpdateLongNotesScroll()throws Exception{
+  Activity h=home();StringBuilder notes=new StringBuilder();
+  for(int i=1;i<=24;i++)notes.append(i%3==0?"• ":i%3==1?"- ":"").append("Improvement number ").append(i).append(i%4==0?": a longer description that wraps onto a second line on the TV":"").append('\n');
+  UpdateInfo u=update(notes.toString(),false);
+  main(()->AppUpdates.offerPrompt(h,u,i->{},null));Dialog d=shown(null);
+  checkLayout(d,"Update available");assertEquals("Update now",focused(d));
+  final android.widget.ScrollView[] scroll={null};
+  main(()->{scroll[0]=(android.widget.ScrollView)root(d).findViewWithTag("whats_new");assertEquals("all 24 features present",24,featureLines(d).size());
+   assertTrue("a long list scrolls",scroll[0].canScrollVertically(1));assertTrue("and can take focus",scroll[0].isFocusable());
+   assertNotNull("the popup says how to read more",text(root(d),"Press ▲ to read all notes"));
+   for(Button b:buttons(root(d),new ArrayList<>())){Rect r=screen(b);assertTrue(b.getText()+" stays on screen",r.bottom<=c.getResources().getDisplayMetrics().heightPixels);}});
+  screenshot("update-long-notes-top");
+  key(KeyEvent.KEYCODE_DPAD_UP);main(()->assertSame("UP from the buttons focuses the notes",scroll[0],d.getCurrentFocus()));
+  for(int i=0;i<40;i++){final boolean[] more={true};main(()->more[0]=scroll[0].canScrollVertically(1)&&scroll[0].isFocused());if(!more[0])break;key(KeyEvent.KEYCODE_DPAD_DOWN);}
+  main(()->{assertFalse("DOWN reaches the end of the notes",scroll[0].canScrollVertically(1));
+   TextView last=featureLines(d).get(23);Rect rl=screen(last),rs=screen(scroll[0]);assertTrue("the last feature is fully visible",rl.bottom<=rs.bottom&&rl.top>=rs.top);});
+  if(scroll[0].isFocused()){Thread.sleep(300);screenshot("update-long-notes-end");key(KeyEvent.KEYCODE_DPAD_DOWN);}
+  else screenshot("update-long-notes-end");
+  assertEquals("DOWN at the end returns to the buttons","Update now",focused(d));
+  key(KeyEvent.KEYCODE_DPAD_RIGHT);assertEquals("Later",focused(d));
+  backDismisses(d);
  }
  private void screenshot(String name)throws Exception{
   Thread.sleep(400);getInstrumentation().waitForIdleSync();

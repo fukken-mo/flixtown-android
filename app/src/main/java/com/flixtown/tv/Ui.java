@@ -246,6 +246,15 @@ final class Ui {
      */
     static Dialog notice(Activity activity,String title,String message,String muted,String[] labels,int focusIndex,
                          boolean cancelable,Choice action,Runnable onCancel){
+        return notice(activity,title,message,muted,null,labels,focusIndex,cancelable,action,onCancel);
+    }
+    /**
+     * As above, with an optional "What’s new" list (update offers): one bulleted feature per line, left-aligned
+     * under centred title and buttons. Long lists scroll inside a capped area (UP from the buttons focuses it,
+     * UP/DOWN read it, DOWN at the end returns to the buttons), so nothing is cut off and the buttons stay on screen.
+     */
+    static Dialog notice(Activity activity,String title,String message,String muted,java.util.List<String> features,String[] labels,int focusIndex,
+                         boolean cancelable,Choice action,Runnable onCancel){
         Dialog dialog=newDialog(activity);
         LinearLayout body=column(activity);pad(body,activity,36,28,36,28);body.setBackground(dialogSurface(activity));
         body.setGravity(Gravity.CENTER_HORIZONTAL);body.setClipChildren(false);body.setClipToPadding(false);
@@ -260,6 +269,7 @@ final class Ui {
             TextView q=text(activity,muted,13);q.setTextColor(TEXT_3);q.setMaxLines(3);q.setEllipsize(TextUtils.TruncateAt.END);q.setGravity(Gravity.CENTER);
             LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(-1,-2);qp.topMargin=dp(activity,10);body.addView(q,qp);
         }
+        if(features!=null && !features.isEmpty())whatsNew(activity,body,features);
         LinearLayout buttons=row(activity);buttons.setClipChildren(false);buttons.setClipToPadding(false);
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.topMargin=dp(activity,26);body.addView(buttons,bp);
         Button focus=null;final boolean[] chosen={false};
@@ -277,6 +287,35 @@ final class Ui {
         return dialog;
     }
 
+    /** The update notice's feature list: a small left-aligned heading and one red-bulleted line per feature, scrolling when long. */
+    private static void whatsNew(Activity activity,LinearLayout body,java.util.List<String> features){
+        TextView heading=heading(activity,"What’s new",15);heading.setTextColor(TEXT);heading.setGravity(Gravity.START);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,20);body.addView(heading,hp);
+        final int maxHeight=Math.min(dp(activity,168),Math.round(activity.getResources().getDisplayMetrics().heightPixels*0.3f));
+        android.widget.ScrollView scroll=new android.widget.ScrollView(activity){
+            @Override protected void onMeasure(int w,int h){super.onMeasure(w,View.MeasureSpec.makeMeasureSpec(maxHeight,View.MeasureSpec.AT_MOST));}
+        };
+        scroll.setTag("whats_new");scroll.setContentDescription("What’s new");scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        scroll.setVerticalFadingEdgeEnabled(true);scroll.setFadingEdgeLength(dp(activity,22));scroll.setScrollbarFadingEnabled(false);
+        scroll.setFocusable(false);pad(scroll,activity,12,6,12,6);
+        android.graphics.drawable.StateListDrawable frame=new android.graphics.drawable.StateListDrawable();
+        GradientDrawable focused=rounded(0x14FFFFFF,12,activity);focused.setStroke(dp(activity,2),GLOW);
+        frame.addState(new int[]{android.R.attr.state_focused},focused);frame.addState(new int[]{},rounded(0x00000000,12,activity));
+        scroll.setBackground(frame);
+        LinearLayout list=column(activity);
+        for(String feature:features){
+            android.text.SpannableString line=new android.text.SpannableString(feature);
+            line.setSpan(new android.text.style.BulletSpan(dp(activity,12),GLOW),0,line.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            TextView t=text(activity,"",15);t.setText(line);t.setTextColor(TEXT_2);t.setLineSpacing(0,1.15f);t.setGravity(Gravity.START);
+            LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-1,-2);if(list.getChildCount()>0)tp.topMargin=dp(activity,6);list.addView(t,tp);
+        }
+        scroll.addView(list,new android.widget.FrameLayout.LayoutParams(-1,-2));
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=dp(activity,6);sp.leftMargin=sp.rightMargin=-dp(activity,12);body.addView(scroll,sp);
+        TextView more=text(activity,"Press ▲ to read all notes",13);more.setTextColor(TEXT_3);more.setGravity(Gravity.CENTER);more.setVisibility(View.GONE);
+        LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=dp(activity,6);body.addView(more,mp);
+        // Only a list taller than its area takes focus (and says so); a short list is plain text.
+        afterLayout(scroll,()->{boolean long_=scroll.canScrollVertically(1);scroll.setFocusable(long_);more.setVisibility(long_?View.VISIBLE:View.GONE);});
+    }
     /** A dialog whose message and bar can change while it is open (update download). */
     static final class Progress {
         final Dialog dialog;private final TextView message;private final View bar;private final int track;

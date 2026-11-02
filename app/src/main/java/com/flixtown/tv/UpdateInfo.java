@@ -57,5 +57,20 @@ final class UpdateInfo {
         return out.toString();
     }
 
+    /**
+     * The panel's update notes as a feature list: one feature per line (line breaks entered in the panel are
+     * kept), blank lines skipped, and a leading "-", "•" or "*" dropped so the popup's own bullet is never
+     * doubled. A line that only says "What's new" is skipped, since the popup already shows that heading.
+     */
+    static java.util.List<String> features(String notes){
+        java.util.List<String> out=new java.util.ArrayList<>();if(notes==null)return out;
+        for(String line:notes.split("\\r\\n|\\r|\\n")){
+            String t=line.trim().replaceFirst("^(?:(?:[•*]|-(?!\\d))\\s*)+","").trim();
+            if(t.isEmpty()||t.replaceAll("[’']","").replaceFirst(":$","").trim().equalsIgnoreCase("whats new"))continue;
+            out.add(t);
+        }
+        return out;
+    }
+
     String sizeLabel(){return size<=0?"":String.format(Locale.US,"%.1f MB",size/1048576.0);}
 }

@@ -58,4 +58,30 @@ public class UpdateInfoTest {
     @Test public void hexIsLowerCaseAndPadded(){
         assertEquals("000fff",UpdateInfo.hex(new byte[]{0,15,(byte)255}));
     }
+
+    // "What's new": one feature per line, bullets never doubled
+    @Test public void notesBecomeOneFeaturePerLine(){
+        assertEquals(java.util.Arrays.asList("Faster profile switching","Subtitles stay readable","Continue Watching syncs between TVs"),
+            UpdateInfo.features("- Faster profile switching\n• Subtitles stay readable\nContinue Watching syncs between TVs"));
+    }
+    @Test public void panelLineBreaksOfAnyKindAreKept(){
+        assertEquals(java.util.Arrays.asList("One","Two","Three","Four"),UpdateInfo.features("One\r\nTwo\rThree\n\n  \nFour\n"));
+    }
+    @Test public void bulletsAreNeverDoubled(){
+        assertEquals(java.util.Arrays.asList("Dash","Bullet","Star","Mixed","No space"),
+            UpdateInfo.features("-  Dash\n•Bullet\n* Star\n• - Mixed\n-No space"));
+    }
+    @Test public void aNegativeNumberIsNotABullet(){
+        assertEquals(java.util.Collections.singletonList("-5% buffering on slow connections"),UpdateInfo.features("-5% buffering on slow connections"));
+    }
+    @Test public void aWhatsNewHeadingLineIsNotAFeature(){
+        assertEquals(java.util.Collections.singletonList("Faster start"),UpdateInfo.features("What’s new:\n- Faster start"));
+        assertEquals(java.util.Collections.singletonList("Faster start"),UpdateInfo.features("What's New\nFaster start"));
+    }
+    @Test public void emptyOrMissingNotesHaveNoFeatures(){
+        assertTrue(UpdateInfo.features("").isEmpty());assertTrue(UpdateInfo.features(null).isEmpty());assertTrue(UpdateInfo.features(" \n - \n•").isEmpty());
+    }
+    @Test public void oneLineNotesStayOneFeature(){
+        assertEquals(java.util.Collections.singletonList("Bug fixes and improvements"),UpdateInfo.features("Bug fixes and improvements"));
+    }
 }
