@@ -50,7 +50,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
     @Override protected void onDestroy(){closed=true;loadGeneration++;StartupRefresh.unlisten(this);super.onDestroy();}
     private boolean live(){return !closed&&!isFinishing()&&startedScope.equals(Profiles.scope(this));}
     private void refresh(){busy=true;final int request=++loadGeneration;Profiles.refresh(this,(ok,error)->{if(request!=loadGeneration||!live())return;busy=false;online=ok;
-        if(restoreId!=null&&ok){String id=restoreId;restoreId=null;ProfileCatalog.Profile p=find(id);if(p!=null||id.equals("new")){editor(p);name.setText(restoreName);if(ProfileCatalog.validAvatar(restoreAvatar)){avatar=restoreAvatar;paintAvatars();}return;}}
+        if(restoreId!=null&&ok){String id=restoreId;restoreId=null;ProfileCatalog.Profile p=find(id);if(p!=null||id.equals("new")){editor(p);name.setText(restoreName);name.setSelection(name.length());if(ProfileCatalog.validAvatar(restoreAvatar)){avatar=restoreAvatar;paintAvatars();}return;}}
         picker();if(!ok)note(error,false);
     });}
     private ProfileCatalog.Profile find(String id){for(ProfileCatalog.Profile p:Profiles.catalog(this).profiles)if(p.id.equals(id))return p;return null;}
@@ -73,7 +73,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         body=Ui.column(this);body.setGravity(Gravity.CENTER_HORIZONTAL);body.setClipChildren(false);body.setClipToPadding(false);page.addView(body,new LinearLayout.LayoutParams(-1,-2));
         statusRow=Ui.row(this);statusRow.setGravity(Gravity.CENTER);LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,Ui.dp(this,30));sp.topMargin=Ui.dp(this,14);page.addView(statusRow,sp);
         spinner=new ProgressBar(this,null,android.R.attr.progressBarStyleSmall);spinner.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(Ui.GLOW));
-        LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(Ui.dp(this,16),Ui.dp(this,16));pp.rightMargin=Ui.dp(this,10);statusRow.addView(spinner,pp);
+        LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(Ui.dp(this,20),Ui.dp(this,20));pp.rightMargin=Ui.dp(this,10);statusRow.addView(spinner,pp);
         status=Ui.text(this,"",14);status.setTextColor(Ui.TEXT_2);status.setGravity(Gravity.CENTER);status.setMaxLines(2);statusRow.addView(status,new LinearLayout.LayoutParams(-2,-2));
         note("Loading profiles…",true);
     }
@@ -92,6 +92,13 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         states.addState(new int[]{android.R.attr.state_focused},on);states.addState(new int[]{},off);states.setExitFadeDuration(90);return states;
     }
     private void addAction(LinearLayout actions,View b){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,Ui.dp(this,44));p.leftMargin=p.rightMargin=Ui.dp(this,8);actions.addView(b,p);}
+    /** LEFT on the first action and RIGHT on the last stay in the row instead of jumping up to the avatars. */
+    private static void containRow(LinearLayout actions){
+        int n=actions.getChildCount();if(n==0)return;
+        View first=actions.getChildAt(0),last=actions.getChildAt(n-1);
+        for(View v:new View[]{first,last})if(v.getId()==View.NO_ID)v.setId(View.generateViewId());
+        first.setNextFocusLeftId(first.getId());last.setNextFocusRightId(last.getId());
+    }
     private void heading(String title,String subtitle){
         TextView h=Ui.heading(this,title,34);h.setGravity(Gravity.CENTER);h.setLetterSpacing(-0.01f);body.addView(h,new LinearLayout.LayoutParams(-1,-2));
         TextView t=Ui.text(this,subtitle,15);t.setTextColor(Ui.TEXT_3);t.setGravity(Gravity.CENTER);t.setVisibility(subtitle==null?View.GONE:View.VISIBLE);
@@ -130,6 +137,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         if(online&&count<ProfileCatalog.MAX_PROFILES)addAction(actions,button("+  Add profile",()->editor(null)));
         if(online)addAction(actions,button(manage?"Done":"Manage profiles",()->{manage=!manage;picker();}));
         else if(!busy)addAction(actions,button("Retry",this::refresh));
+        containRow(actions);
         if(busy)note("Loading profiles…",true);
         else note(online?"":"You’re offline. You can still choose a saved profile.",false);
         if(selected!=null)selected.requestFocus();else if(row.getChildCount()>0)row.getChildAt(0).requestFocus();
@@ -176,6 +184,8 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
         left.addView(previewFrame,new LinearLayout.LayoutParams(Ui.dp(this,128+2*RING_PAD),Ui.dp(this,128+2*RING_PAD)));
         name=new EditText(this);name.setSingleLine(true);name.setTextColor(Ui.TEXT);name.setTextSize(18);name.setHintTextColor(Ui.TEXT_3);name.setHint("Profile name");name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(48)});name.setText(profile==null?"":profile.name);
         name.setGravity(Gravity.CENTER);Ui.pad(name,this,14,0,14,0);name.setBackgroundResource(R.drawable.edit_field);name.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+        // The cursor starts at the end, so one RIGHT press moves on to the pictures (LEFT still edits).
+        name.setOnFocusChangeListener((v,f)->{if(f)name.setSelection(name.length());});
         LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(-1,Ui.dp(this,50));np.topMargin=Ui.dp(this,14);left.addView(name,np);
         TextView hint=Ui.text(this,"Up to 24 characters",13);hint.setTextColor(Ui.TEXT_3);hint.setGravity(Gravity.CENTER);LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=Ui.dp(this,6);left.addView(hint,hp);
         // Right: every picture, selected one ringed in red.
@@ -199,6 +209,7 @@ public class ProfilesActivity extends Activity implements StartupRefresh.Listene
             TextView delete=button("Delete profile",()->Ui.dialog(this,"Delete "+profile.name+"?","This profile will no longer be available on your TVs. Other profiles are kept.",new String[]{"Delete","Cancel"},1,which->{if(which==0)mutate("delete",null,profile.id);},null ));
             LinearLayout.LayoutParams dp=new LinearLayout.LayoutParams(-2,Ui.dp(this,44));dp.leftMargin=Ui.dp(this,24);actions.addView(delete,dp);
         }
+        containRow(actions);
         note("",false);name.requestFocus();
     }
     private void save(){
