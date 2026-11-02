@@ -68,8 +68,7 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
 
  public void testExitConfirmation()throws Exception{
   Activity h=home();
-  Dialog d=null;for(int i=0;i<3&&d==null;i++){key(KeyEvent.KEYCODE_BACK);Thread.sleep(400);getInstrumentation().waitForIdleSync();Dialog s=Ui.lastShown;if(s!=null&&s.isShowing())d=s;}
-  assertNotNull("Back on Home asks before leaving",d);d=shown(null);
+  Dialog d=exit(h,null);
   checkLayout(d,"Exit Flix Town?");assertEquals(Arrays.asList("Stay","Exit"),labels(d));
   assertEquals("Stay is focused",  "Stay",focused(d));screenshot("exit-stay-focused");
   key(KeyEvent.KEYCODE_DPAD_RIGHT);assertEquals("Exit",focused(d));screenshot("exit-exit-focused");
@@ -77,10 +76,15 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
   key(KeyEvent.KEYCODE_DPAD_DOWN);key(KeyEvent.KEYCODE_DPAD_UP);assertEquals("Exit",focused(d));
   key(KeyEvent.KEYCODE_DPAD_LEFT);assertEquals("Stay",focused(d));
   backDismisses(d);assertFalse("Back keeps Flix Town open",h.isFinishing());
-  key(KeyEvent.KEYCODE_BACK);Dialog again=shown(d);assertEquals("Stay is focused again","Stay",focused(again));
+  Dialog again=exit(h,d);assertEquals("Stay is focused again","Stay",focused(again));
   key(KeyEvent.KEYCODE_DPAD_CENTER);waitFor("Stay closes the dialog",()->!again.isShowing());assertFalse("Stay keeps Flix Town open",h.isFinishing());
-  key(KeyEvent.KEYCODE_BACK);Dialog third=shown(again);key(KeyEvent.KEYCODE_DPAD_RIGHT);key(KeyEvent.KEYCODE_DPAD_CENTER);
+  Dialog third=exit(h,again);key(KeyEvent.KEYCODE_DPAD_RIGHT);key(KeyEvent.KEYCODE_DPAD_CENTER);
   waitFor("Exit closes Flix Town",h::isFinishing);
+ }
+ /** Back on Home: from a row Home first glides up to the hero (existing behaviour), then asks before leaving. */
+ private Dialog exit(Activity h,Dialog before)throws Exception{
+  for(int i=0;i<3;i++){key(KeyEvent.KEYCODE_BACK);Thread.sleep(400);getInstrumentation().waitForIdleSync();Dialog s=Ui.lastShown;if(s!=null&&s!=before&&s.isShowing())return shown(before);}
+  fail("Back on Home did not ask before leaving");return null;
  }
  public void testSignOutConfirmationIsSafeByDefault()throws Exception{
   Activity h=home();
@@ -121,7 +125,7 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
    +"Decoder: c2.android.aac.decoder\nSound output: pcm16 2ch 48k decoded\nThis TV: HDMI · stereo\nAudio problems: none\nVideo: video/hevc 3840x2160";
   main(()->Ui.dialog(h,"Playback info",info,new String[]{"Close"},0,i->{},null));Dialog i2=shown(d);
   checkLayout(i2,"Playback info");
-  main(()->{TextView m=(TextView)text(root(i2),info);assertEquals("information reads from the left",Gravity.START,m.getGravity()&Gravity.HORIZONTAL_GRAVITY_MASK);
+  main(()->{TextView m=(TextView)text(root(i2),info);assertEquals("information reads from the left",Gravity.LEFT,Gravity.getAbsoluteGravity(m.getGravity(),m.getLayoutDirection())&Gravity.HORIZONTAL_GRAVITY_MASK);
    assertTrue("every line shown ("+m.getLineCount()+")",m.getLineCount()>=9&&m.getLineCount()<=12&&m.getLayout().getEllipsisCount(m.getLineCount()-1)==0);});
   screenshot("multi-line-info");backDismisses(i2);
  }
