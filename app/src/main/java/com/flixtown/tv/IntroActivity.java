@@ -147,6 +147,7 @@ public class IntroActivity extends Activity implements StartupRefresh.Listener {
         return super.dispatchKeyEvent(event);
     }
     private void openHome(){if(finished)return;finished=true;handler.removeCallbacksAndMessages(null);
+        Profiles.appOpened();
         if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","splash end shown_ms="+(android.os.SystemClock.uptimeMillis()-shownAt)
             +(seasonal!=null?" scale="+seasonal.getScaleX()+"x"+seasonal.getScaleY():""));
         Intent intent=new Intent(this,HomeActivity.class);intent.putExtra(HomeActivity.EXTRA_FRESH,true);

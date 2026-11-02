@@ -89,7 +89,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private CustomerNotices notices;
     private Catalog.Item pendingFocusItem;
     private SettingsPage settingsPage;
-    private boolean profileCheckStarted=false,profilePromptPending=false;
+    private boolean profilePromptPending=false,profileRequestRunning=false;
+    private final Runnable offerProfiles=this::maybeOfferProfiles;
     private static final String[] TABS={"Search","Home","Movies","Series","Favorites","Requests","Settings"};
     private static final String[] TAB_NAMES={"Search","Home","Movies","TV Shows","My List","Requests","Settings"};
     private static final int[] ICONS={1,0,2,3,4,6,5};
@@ -165,31 +166,54 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
 
     @Override protected void onResume(){super.onResume();resumed=true;if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","home_resumed");if(notices!=null)notices.resumed();ScreenAwake.on(this);scheduleRotation();
         AccountSync.home(this,()->{if(!destroyed&&resumed){pendingRender=true;refreshAfterReturn();if(tab.equals("Favorites"))updateBrowseInPlace();}});
-        if(!profileCheckStarted&&Profiles.needsChoice(this)){
-            profileCheckStarted=true;profilePromptPending=true;
-            Profiles.refresh(this,(ok,error)->{if(destroyed)return;if(ok)openProfilePickerWhenReady();else{profilePromptPending=false;Profiles.chosen(this);}});
-        }
+        Profiles.homeResumed();
+        handler.post(offerProfiles);
         if(updates!=null){updates.resume();handler.post(updates::showPendingIfReady);}
         handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     boolean profileMetadataAllowed(){return resumed&&!destroyed&&!isFinishing();}
-    private void openProfilePickerWhenReady(){
+    /** One picker per opening; wait for startup identity/config before asking the service. */
+    private void maybeOfferProfiles(){
+        if(destroyed||isFinishing()||!resumed)return;
+        if(!Profiles.needsChoice(this)){profilePromptPending=false;return;}
+        profilePromptPending=true;
+        if(profileRequestRunning)return;
+        if(overlayUp||StartupRefresh.running()||!hasWindowFocus()){
+            handler.removeCallbacks(offerProfiles);handler.postDelayed(offerProfiles,500);return;
+        }
+        profileRequestRunning=true;
+        final int opening=Profiles.openingGeneration();
+        final String scope=Profiles.scope(this);
+        Profiles.refresh(this,(ok,error)->{
+            profileRequestRunning=false;
+            if(destroyed||isFinishing())return;
+            if(opening!=Profiles.openingGeneration()||!scope.equals(Profiles.scope(this))){
+                profilePromptPending=false;handler.post(offerProfiles);return;
+            }
+            showOpeningProfiles(ok,opening);
+        });
+    }
+    private void showOpeningProfiles(boolean online,int opening){
         if(destroyed||isFinishing())return;
-        if(!resumed||overlayUp||!hasWindowFocus()){handler.postDelayed(this::openProfilePickerWhenReady,500);return;}
+        if(opening!=Profiles.openingGeneration()){profilePromptPending=false;handler.post(offerProfiles);return;}
+        if(!Profiles.needsChoice(this)){profilePromptPending=false;return;}
+        if(!resumed){profilePromptPending=false;return;}
+        if(overlayUp||!hasWindowFocus()){handler.postDelayed(()->showOpeningProfiles(online,opening),500);return;}
         Profiles.chosen(this);profilePromptPending=false;
-        startActivity(new Intent(this,ProfilesActivity.class).putExtra("cached",true));
+        startActivity(new Intent(this,ProfilesActivity.class).putExtra("cached",true).putExtra("offline",!online));
     }
     /** super.onStart() lets the foreground tracker flag a return from the background first. */
     @Override protected void onStart(){super.onStart();if(updates!=null)updates.checkOnReturn();}
     /** Focus comes back when the intro, a dialog or another screen goes away: the moment for a waiting update prompt. */
     @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);
         if(hasFocus && updates!=null)handler.post(updates::showPendingIfReady);
+        if(hasFocus)handler.post(offerProfiles);
         if(hasFocus)handler.postDelayed(()->{if(notices!=null)notices.check();},1500);}
     /** An update prompt only appears over Home itself: in front, focused, past the loading screen. */
     boolean readyForUpdatePrompt(){
         return resumed && !profilePromptPending && !isFinishing() && !destroyed && !overlayUp && hasWindowFocus()
             && (exitDialog==null || !exitDialog.isShowing());
     }
-    @Override protected void onPause(){AccountSync.leaveHome();resumed=false;ScreenAwake.off(this);handler.removeCallbacks(rotateHero);super.onPause();}
+    @Override protected void onPause(){handler.removeCallbacks(offerProfiles);AccountSync.leaveHome();resumed=false;ScreenAwake.off(this);handler.removeCallbacks(rotateHero);super.onPause();}
     @Override protected void onRestart(){super.onRestart();refreshAfterReturn();}
 
     /* ---------------- Startup loading screen ---------------- */

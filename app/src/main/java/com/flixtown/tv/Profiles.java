@@ -14,7 +14,7 @@ import java.util.*;
 final class Profiles {
     private static final Handler MAIN=new Handler(Looper.getMainLooper());
     private static final Map<SharedPreferences,Map<String,ProfileCatalog>> CACHE=new WeakHashMap<>();
-    private static final Set<String> CHOSEN=new HashSet<>();
+    private static final ProfileOpening OPENING=new ProfileOpening();
     private static final Object AUTH_LOCK=new Object();
     private static volatile int epoch;
     private static final java.util.concurrent.ConcurrentHashMap<SharedPreferences,Session> SESSIONS=new java.util.concurrent.ConcurrentHashMap<>();
@@ -37,10 +37,15 @@ final class Profiles {
         return new ProfilePrefs(raw,c.getSharedPreferences("profile_history_"+scope+"_"+id,Context.MODE_PRIVATE));
     }
     static String journalSuffix(Context c){String id=activeId(c);return "default".equals(id)?"":"_"+scope(c)+"_"+id;}
-    static synchronized boolean needsChoice(Context c){return !scope(c).isEmpty()&&!CHOSEN.contains(scope(c));}
-    static synchronized void chosen(Context c){CHOSEN.add(scope(c));}
+    static synchronized boolean needsChoice(Context c){return OPENING.needsChoice(scope(c));}
+    static synchronized void chosen(Context c){OPENING.chosen(scope(c));}
+    static void appOpened(){OPENING.opened();}
+    static void appForeground(boolean home){OPENING.foreground(home);}
+    static void homeResumed(){OPENING.homeResumed();}
+    static void returningHome(Context c){OPENING.returningHome(scope(c));}
+    static int openingGeneration(){return OPENING.generation();}
     static int accountGeneration(){return epoch;}
-    static synchronized void signOut(){epoch++;CHOSEN.clear();SESSIONS.clear();}
+    static synchronized void signOut(){epoch++;OPENING.opened();SESSIONS.clear();}
     static synchronized void save(Context c,String scope,ProfileCatalog data,long revision){
         Map<String,ProfileCatalog> values=CACHE.get(store(c));if(values==null){values=new LinkedHashMap<>();CACHE.put(store(c),values);}values.put(scope,data);try{store(c).edit().putString(scope+":catalog",data.encode()).putLong(scope+":revision",revision).apply();}catch(Exception impossible){throw new IllegalStateException(impossible);}
     }
@@ -78,7 +83,7 @@ final class Profiles {
                 imported=data;revision=r.getLong("revision");ok=true;
             }catch(Exception ignored){}finally{Arrays.fill(credentials,"");}
             final boolean success=ok;final String message=error;final ProfileCatalog data=imported;final long rev=revision;
-            MAIN.post(()->{if(started!=epoch||!scope.equals(scope(app)))return;
+            MAIN.post(()->{if(started!=epoch||!scope.equals(scope(app))){done.result(false,"Profiles changed. Please try again.");return;}
                 if(success){
                     // Never change the active profile underneath Details or a running player.
                     if(c instanceof HomeActivity&&!((HomeActivity)c).profileMetadataAllowed()){done.result(false,"Profiles will refresh when you return.");return;}

@@ -73,6 +73,16 @@ public class ProfilesDeviceTest extends InstrumentationTestCase {
  }
  private View findText(View v,String text){if(v instanceof TextView&&text.contentEquals(((TextView)v).getText()))return v;if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++){View got=findText(g.getChildAt(i),text);if(got!=null)return got;}}return null;}
  private View tree(){return activity.findViewById(android.R.id.content);}
+ public void testOfflineOpeningShowsSavedProfilesAndKeepsTheirHistory()throws Exception{
+  Context c=getInstrumentation().getTargetContext();
+  main(()->{seed(c,"default");try{AccountStore.save(c,"fixture","fixture-password","https://demo.invalid");}catch(Exception e){throw new IllegalStateException(e);}
+   Profiles.select(c,first);Api.prefs(c).edit().putLong("resume_position_movie:44",90000).apply();Profiles.select(c,"default");});
+  activity=getInstrumentation().startActivitySync(new Intent(c,ProfilesActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("cached",true).putExtra("offline",true));
+  getInstrumentation().waitForIdleSync();
+  main(()->{assertNotNull(findText(tree(),"Mo"));assertNotNull(findText(tree(),"Retry"));assertNull(findText(tree(),"Manage profiles"));});
+  android.app.Instrumentation.ActivityMonitor home=getInstrumentation().addMonitor(HomeActivity.class.getName(),null,true);
+  try{main(()->((View)findText(tree(),"Mo").getParent()).performClick());assertEquals(first,Profiles.activeId(c));assertEquals(90000,Api.prefs(c).getLong("resume_position_movie:44",0));assertEquals(1,home.getHits());}finally{getInstrumentation().removeMonitor(home);}
+ }
  public void testRealNameAvatarEditorAndRemoteFocus()throws Exception{
   profiles=profiles.add("Alex","avatar_09",false).add("Movie night","avatar_14",false).add("Guest two","avatar_28",false);
   Context c=getInstrumentation().getTargetContext();main(()->{seed(c,"default");try{AccountStore.save(c,"fixture","fixture-password","https://demo.invalid");}catch(Exception e){throw new IllegalStateException(e);}Profiles.fixture((url,b)->{

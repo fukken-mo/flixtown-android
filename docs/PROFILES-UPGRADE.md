@@ -106,3 +106,23 @@ Not verified on real customer hardware or live production services. Large system
 fonts, real process kills and profile-metadata database restores still need acceptance
 coverage. Progress restore handling is tested, including the named-profile reset
 response; that does not prove profile-catalog recovery after a database restore.
+
+
+## Ask who's watching on each opening
+
+The opening update resets the one-opening choice on launcher/intro entry and real
+application foreground returns. An internal return from the picker is consumed
+without starting another opening, and an ordinary return from Details/playback
+does not reset the choice. Returning directly to the player defers choice until
+Home, so playback is not interrupted.
+
+Home waits for startup config/catalog refresh and its own window before requesting
+profile metadata. A failed request uses saved profiles in an offline picker rather
+than silently skipping the picker. Offline mode allows selection, not profile edits.
+Stale identity responses now finish their callback without importing another account's
+data, so startup cannot remain permanently marked as checking profiles.
+
+Added seven deterministic opening-policy JVM checks and a real offline saved-profile
+selection instrumentation test. New expected totals: 180 JVM tests, 20 device tests
+per setup. These totals require the new workflow to pass; see its result before
+claiming verification. Backend patch and database schema are unchanged.

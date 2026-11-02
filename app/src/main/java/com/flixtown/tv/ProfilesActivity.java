@@ -36,7 +36,7 @@ public class ProfilesActivity extends Activity {
         body=Ui.column(this);body.setGravity(Gravity.CENTER_HORIZONTAL);root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
         status=Ui.text(this,"Loading profiles…",14);status.setGravity(Gravity.CENTER);status.setTextColor(Ui.TEXT_2);root.addView(status,new LinearLayout.LayoutParams(-1,Ui.dp(this,36)));
         picker();
-        if(getIntent().getBooleanExtra("cached",false)){busy=false;online=true;picker();}else refresh();
+        if(getIntent().getBooleanExtra("cached",false)){busy=false;online=!getIntent().getBooleanExtra("offline",false);picker();}else refresh();
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putBoolean("manage",manage);if(editingId!=null){out.putString("edit",editingId);out.putString("name",name.getText().toString());out.putString("avatar",avatar);}}
     @Override protected void onResume(){super.onResume();ScreenAwake.on(this);if(startedScope!=null&&!startedScope.equals(Profiles.scope(this)))finish();}
@@ -105,6 +105,6 @@ public class ProfilesActivity extends Activity {
         Profiles.mutate(this,kind,profile,id,(ok,error)->{if(!live())return;busy=false;if(ok){picker();status.setText("Profile saved.");}else{status.setText(error);if(error.contains("another TV")){editingId=null;refresh();}}});
     }
     private void choose(String id){try{AccountSync.detachProfile();Profiles.select(this,id);returnHome();}catch(IllegalArgumentException e){status.setText("This profile is not available.");}}
-    private void returnHome(){Profiles.chosen(this);startActivity(new Intent(this,HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));finish();}
+    private void returnHome(){Profiles.returningHome(this);startActivity(new Intent(this,HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));finish();}
     @Override public void onBackPressed(){if(busy)return;if(editingId!=null){picker();return;}if(manage){manage=false;picker();return;}Profiles.chosen(this);returnHome();}
 }
