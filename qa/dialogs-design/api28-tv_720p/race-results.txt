@@ -1,23 +1,23 @@
-API 28, focus recoveries in total: 19
+API 28, focus recoveries in total: 24
 ok   exit Stay→Back #1  [lost focus notification recovered x1]
 ok   exit Back→Back #1  [lost focus notification recovered x2]
 ok   notices Got it→next #1
 ok   report picker→Send report? #1
 ok   report Sending→reply #1
 ok   update Update now→progress #1
-ok   exit Stay→Back #2  [lost focus notification recovered x1]
+ok   exit Stay→Back #2  [lost focus notification recovered x2]
 ok   exit Back→Back #2  [lost focus notification recovered x2]
 ok   notices Got it→next #2
 ok   report picker→Send report? #2
 ok   report Sending→reply #2
 ok   update Update now→progress #2
-ok   exit Stay→Back #3
-ok   exit Back→Back #3  [lost focus notification recovered x2]
+ok   exit Stay→Back #3  [lost focus notification recovered x1]
+ok   exit Back→Back #3
 ok   notices Got it→next #3
 ok   report picker→Send report? #3
 ok   report Sending→reply #3
 ok   update Update now→progress #3
-ok   exit Stay→Back #4
+ok   exit Stay→Back #4  [lost focus notification recovered x2]
 ok   exit Back→Back #4  [lost focus notification recovered x1]
 ok   notices Got it→next #4
 ok   report picker→Send report? #4
@@ -29,8 +29,8 @@ ok   notices Got it→next #5
 ok   report picker→Send report? #5
 ok   report Sending→reply #5
 ok   update Update now→progress #5
-ok   exit Stay→Back #6  [lost focus notification recovered x1]
-ok   exit Back→Back #6
+ok   exit Stay→Back #6
+ok   exit Back→Back #6  [lost focus notification recovered x2]
 ok   notices Got it→next #6
 ok   report picker→Send report? #6
 ok   report Sending→reply #6
