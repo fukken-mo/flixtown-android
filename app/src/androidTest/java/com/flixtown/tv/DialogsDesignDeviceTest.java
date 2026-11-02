@@ -43,7 +43,19 @@ public class DialogsDesignDeviceTest extends InstrumentationTestCase {
   final Activity h=activity;waitFor("Home",()->h.findViewById(R.id.home_rows)!=null&&h.hasWindowFocus());Thread.sleep(1500);return h;
  }
  // ---- dialog helpers ----
- private Dialog shown(Dialog before)throws Exception{waitFor("dialog",()->{Dialog d=Ui.lastShown;return d!=null&&d!=before&&d.isShowing()&&d.getWindow().getDecorView().hasWindowFocus();});Thread.sleep(250);getInstrumentation().waitForIdleSync();return Ui.lastShown;}
+ private Dialog shown(Dialog before)throws Exception{
+  long end=System.currentTimeMillis()+15000;
+  while(System.currentTimeMillis()<end){getInstrumentation().waitForIdleSync();Dialog d=Ui.lastShown;
+   final boolean[] ready={false};if(d!=null&&d!=before)main(()->ready[0]=d.isShowing()&&d.getCurrentFocus() instanceof Button&&d.getWindow().getDecorView().hasWindowFocus());
+   if(ready[0]){Thread.sleep(250);getInstrumentation().waitForIdleSync();return d;}Thread.sleep(100);}
+  StringBuilder w=new StringBuilder();for(String line:shell("dumpsys window windows").split("\n"))if(line.contains("mCurrentFocus")||line.contains("mFocusedApp"))w.append(line.trim()).append(" ; ");
+  fail("dialog not focused; "+w);return null;
+ }
+ private String shell(String cmd)throws Exception{
+  try(android.os.ParcelFileDescriptor fd=getInstrumentation().getUiAutomation().executeShellCommand(cmd);
+      java.io.InputStream in=new android.os.ParcelFileDescriptor.AutoCloseInputStream(fd)){
+   java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();byte[] b=new byte[4096];int n;while((n=in.read(b))>0)out.write(b,0,n);return out.toString("UTF-8");}
+ }
  private View root(Dialog d){return d.getWindow().getDecorView();}
  private View text(View v,String s){if(v instanceof TextView&&s.contentEquals(((TextView)v).getText()))return v;if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++){View f=text(((ViewGroup)v).getChildAt(i),s);if(f!=null)return f;}return null;}
  private List<Button> buttons(View v,List<Button> out){if(v instanceof Button&&v.getVisibility()==View.VISIBLE)out.add((Button)v);if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++)buttons(((ViewGroup)v).getChildAt(i),out);return out;}
