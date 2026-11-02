@@ -1,2 +1,2 @@
 FAILURES!!!
-Tests run: 34,  Failures: 2,  Errors: 0
+Tests run: 36,  Failures: 1,  Errors: 0
