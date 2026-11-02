@@ -1,0 +1,110 @@
+name: Profile picker design Preview
+
+# Redesigned profile picker and editor (presentation only). Preview package (.preview, test key) and QA
+# builds only: nothing is signed for production, published or deployed, and versions are not changed.
+# Runs the existing profile checks plus ProfilesDesignDeviceTest (real D-pad events, layout at the
+# focused scale, one to six profiles, long names, editor, loading/offline/error) on API 28 720p and
+# API 31 1080p, and commits the screenshots to qa/profiles-design/ on this branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/profile-picker-design]
+    paths: ['app/**', '.github/workflows/profiles-design.yml']
+permissions:
+  contents: write
+concurrency:
+  group: profiles-design-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python -m pip install Pillow==11.3.0
+      - run: python .github/qa/check_profile_assets.py
+      - uses: gradle/actions/setup-gradle@v4
+      - name: JVM tests, Preview APK, QA and instrumentation APKs
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixSyncTests=true -PflixVersionName=3.8.20-profiles-design-preview --console=plain 2>&1 | tee build.log
+          python3 - <<'EOF'
+          import glob,xml.etree.ElementTree as ET
+          t=f=0
+          for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+              r=ET.parse(p).getroot();t+=int(r.get('tests'));f+=int(r.get('failures'))+int(r.get('errors'))
+          print("unit tests: %d run, %d failed"%(t,f))
+          EOF
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/aapt2" dump badging app/build/outputs/apk/debug/app-debug.apk | head -1
+          sha256sum app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: profiles-design-test-results, path: "build.log\napp/build/test-results/", retention-days: 7}
+      - uses: actions/upload-artifact@v4
+        with: {name: FlixTown-Profiles-Design-PREVIEW, path: app/build/outputs/apk/debug/app-debug.apk, retention-days: 14}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: profiles-design-device-apks
+          path: |
+            app/build/outputs/apk/qa/app-qa.apk
+            app/build/outputs/apk/androidTest/qa/app-qa-androidTest.apk
+          retention-days: 2
+  device:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {api: 28, profile: tv_720p}
+          - {api: 31, profile: tv_1080p}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: {name: profiles-design-device-apks, path: fixture-apks}
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install -r fixture-apks/qa/app-qa.apk
+            adb install -r fixture-apks/androidTest/qa/app-qa-androidTest.apk
+            adb logcat -c
+            adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
+            adb logcat -d -v threadtime > profiles-logcat.txt
+            adb pull /sdcard/Android/data/com.myflixtown.tv.native.qa/files/profiles-ui profiles-ui || true
+      - name: Result
+        run: |
+          grep -E "^OK|^FAILURES|Tests run|INSTRUMENTATION_STATUS: (class|test)=" device-results.txt | sed 's/INSTRUMENTATION_STATUS: //' | paste - - | grep -i design || true
+          grep -E "^OK|^FAILURES|Tests run" device-results.txt || true
+          grep -q 'OK (29 tests)' device-results.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: "profiles-design-api${{ matrix.api }}", path: "device-results.txt\nprofiles-ui/\nprofiles-logcat.txt", retention-days: 7}
+      - name: Commit screenshots
+        if: always()
+        run: |
+          D=qa/profiles-design/api${{ matrix.api }}-${{ matrix.profile }}
+          rm -rf /tmp/shots && mkdir -p /tmp/shots && cp profiles-ui/*.png /tmp/shots/ 2>/dev/null || true
+          grep -E "^OK|^FAILURES|Tests run" device-results.txt > /tmp/shots/result.txt || true
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3 4 5 6 7 8; do
+            git fetch -q origin ${GITHUB_REF_NAME} && git checkout -q -f -B results FETCH_HEAD && rm -rf "$D" && mkdir -p "$D" && cp /tmp/shots/* "$D"/ && git add -A "$D" \
+              && { git diff --cached --quiet || git commit -q -m "Profile picker design screenshots, API ${{ matrix.api }} ${{ matrix.profile }} (${GITHUB_SHA::7}) [skip ci]"; } \
+              && git push -q origin HEAD:${GITHUB_REF_NAME} && echo pushed && break
+            sleep $((i*3 + RANDOM % 7))
+          done
