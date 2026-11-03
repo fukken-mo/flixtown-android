@@ -147,9 +147,13 @@ public class AccountSyncDeviceTest extends InstrumentationTestCase {
    for(int i=1;i<=500;i++)fav.append("|series:").append(i).append('|');e.putString("favorites",fav.toString());});
   Stalls seeding=new Stalls();seeding.start();   // after the test's own 3,000-key setup write
   long seedStart=SystemClock.uptimeMillis();
-  for(int round=0;round<40&&server.count("fixture")<3000;round++){tick(one,false);long before=server.count("fixture");
-   long end=System.currentTimeMillis()+3000;while(System.currentTimeMillis()<end&&server.count("fixture")==before)Thread.sleep(50);}
-  assertEquals(3000,server.count("fixture"));long seedMs=SystemClock.uptimeMillis()-seedStart,seedStall=seeding.finish();
+  // A server count change is not an exchange completion; bounded rounds can be spent while busy.
+  long seedStall;try{
+   long deadline=SystemClock.uptimeMillis()+120000;
+   while(server.count("fixture")<3000&&SystemClock.uptimeMillis()<deadline){tick(one,false);Thread.sleep(250);}
+   assertEquals(3000,server.count("fixture"));
+  }finally{seedStall=seeding.finish();}
+  long seedMs=SystemClock.uptimeMillis()-seedStart;
   AccountSync.maxMainSliceMs=0;Stalls importing=new Stalls();importing.start();long importStart=SystemClock.uptimeMillis();
   AccountSync two=client(b,server);tick(two,false);
   waitFor(()->Api.prefs(b).getLong("resume_position_movie:1000",0)==21000&&Api.prefs(b).getBoolean("watched_series:7:1500",false)

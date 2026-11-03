@@ -90,8 +90,8 @@ public class DialogFocusRaceDeviceTest extends InstrumentationTestCase {
    Dialog picker=next(null);Thread.sleep(400);key(KeyEvent.KEYCODE_DPAD_CENTER);
    Dialog confirm=next(picker);record("report picker→Send report?",a,responsive(confirm,true));
    if(confirm!=null&&confirm.isShowing()){key(KeyEvent.KEYCODE_DPAD_CENTER);
-    Dialog waiting=next(confirm);Dialog reply=null;long end=System.currentTimeMillis()+4000;
-    while(System.currentTimeMillis()<end){Dialog d=Ui.lastShown;if(d!=null&&d!=waiting&&d!=confirm&&d.isShowing()){reply=d;break;}Thread.sleep(20);}
+    Dialog reply=null;long end=System.currentTimeMillis()+4000;
+    while(System.currentTimeMillis()<end){Dialog d=Ui.lastShown;if(d!=null&&d!=sending[0]&&d!=confirm&&d.isShowing()){reply=d;break;}Thread.sleep(20);}
     record("report Sending→reply",a,responsive(reply,true));}
    closeAll();
    // Update: "Update now" closes the offer and opens the download progress
