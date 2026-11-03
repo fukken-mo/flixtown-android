@@ -74,8 +74,13 @@ jobs:
             adb install -r apks/qa/app-qa.apk
             adb install -r apks/androidTest/qa/app-qa-androidTest.apk
             adb logcat -c
-            adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
+            timeout 15m adb shell am instrument -w -r com.myflixtown.tv.native.qa.test/android.test.InstrumentationTestRunner | tee device-results.txt
             adb logcat -d -v threadtime > device-logcat.txt
+      - name: Capture diagnostics
+        if: always()
+        run: |
+          timeout 20s adb logcat -d -v threadtime > device-logcat.txt || true
+          timeout 20s adb shell dumpsys activity activities > activity-state.txt || true
       - name: Require all tests
         run: grep -q 'OK (47 tests)' device-results.txt
       - uses: actions/upload-artifact@v4
@@ -85,6 +90,7 @@ jobs:
           path: |
             device-results.txt
             device-logcat.txt
+            activity-state.txt
           retention-days: 7
   preview:
     needs: [build, device]
