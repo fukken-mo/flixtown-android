@@ -45,6 +45,7 @@ import java.util.Locale;
 public class PlayerActivity extends Activity {
     private static final long HIDE_MS=3000,SEEK_STEP_MS=10000,SEEK_COMMIT_MS=450,REPEAT_GAP_MS=150;
     private ExoPlayer player;
+    private Button skipIntro; private IntroMarker introMarker; private int introGeneration; private java.util.concurrent.Future<?> introRequest;
     private PlayerView video;
     private FrameLayout root;
     private View controls,card;
@@ -119,6 +120,33 @@ public class PlayerActivity extends Activity {
         subtitles=new SubtitlePlacement(this,root,video,findViewById(R.id.player_overlay),findViewById(R.id.player_bottom));applySubtitleAppearance();
         buildControls();
         root.requestFocus();
+        if(BuildConfig.PREVIEW){
+            skipIntro=Ui.button(this,"Skip intro");skipIntro.setVisibility(View.GONE);
+            FrameLayout.LayoutParams sp=new FrameLayout.LayoutParams(-2,Ui.dp(this,48),Gravity.BOTTOM|Gravity.END);
+            sp.rightMargin=Ui.safeX(this);sp.bottomMargin=Ui.dp(this,145);root.addView(skipIntro,sp);
+            skipIntro.setOnClickListener(v->{if(player!=null&&introMarker!=null&&introMarker.available(player.getCurrentPosition(),player.getDuration(),player.isCurrentMediaItemSeekable())){
+                clearPendingSeek();if(watchCoverage!=null)watchCoverage.discontinuity();player.seekTo(introMarker.endMs);updateIntroButton();
+            }});
+        }
+    }
+    private void loadIntro(){
+        if(introRequest!=null){introRequest.cancel(true);introRequest=null;}
+        final int token=++introGeneration;introMarker=null;updateIntroButton();
+        if(!BuildConfig.PREVIEW||BuildConfig.DEMO||!"series".equals(kind))return;
+        final String requested=episodeId,endpoint;
+        try{endpoint=Api.xtream(this,"get_series_info","&series_id="+Api.enc(contentId));}catch(Exception ignored){return;}
+        introRequest=IntroPreview.load(endpoint,requested,marker->runOnUiThread(()->{
+            if(token!=introGeneration||stopping||isFinishing()||isDestroyed()||!java.util.Objects.equals(requested,episodeId))return;
+            introMarker=marker;updateIntroButton();
+        }));
+    }
+    private void updateIntroButton(){
+        if(skipIntro==null)return;
+        boolean visible=player!=null&&introMarker!=null&&dialog==null&&!reporting&&!stopping&&resumeAsked
+            &&card.getVisibility()!=View.VISIBLE&&player.getPlayerError()==null
+            &&introMarker.available(player.getCurrentPosition(),player.getDuration(),player.isCurrentMediaItemSeekable());
+        boolean focused=skipIntro.hasFocus();skipIntro.setVisibility(visible?View.VISIBLE:View.GONE);
+        if(!visible&&focused){if(controlsVisible())playButton.requestFocus();else root.requestFocus();}
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
         out.putBoolean("resume_asked",resumeAsked);out.putLong("position",player!=null?player.getCurrentPosition():position);
@@ -203,6 +231,7 @@ public class PlayerActivity extends Activity {
     private void scheduleHide(){handler.removeCallbacks(hideControls);if(dialog==null)handler.postDelayed(hideControls,HIDE_MS);}
     private final Runnable hideControls=()->{
         if(dialog!=null || pendingSeek>=0){scheduleHide();return;}
+        if(skipIntro!=null&&skipIntro.hasFocus())return;
         controls.setVisibility(View.GONE);status.setVisibility(View.GONE);if(subtitles!=null)subtitles.controlsChanged();root.requestFocus();
     };
     private void hideNow(){handler.removeCallbacks(hideControls);hideControls.run();}
@@ -324,7 +353,7 @@ public class PlayerActivity extends Activity {
             }
         });
         if(watchCoverage!=null)watchCoverage.discontinuity();
-        player.setMediaItem(MediaItem.fromUri(url));
+        player.setMediaItem(MediaItem.fromUri(url));loadIntro();
         if(position>0)player.seekTo(position);
         player.setPlayWhenReady(reportRestartReady==null?resumeAsked:reportRestartReady);reportRestartReady=null;
         player.prepare();
@@ -442,6 +471,13 @@ public class PlayerActivity extends Activity {
 
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         int key=event.getKeyCode();
+        if(skipIntro!=null&&skipIntro.getVisibility()==View.VISIBLE&&dialog==null&&card.getVisibility()!=View.VISIBLE){
+            if(skipIntro.hasFocus()){
+                if(key==KeyEvent.KEYCODE_BACK||key==KeyEvent.KEYCODE_DPAD_DOWN){if(event.getAction()==KeyEvent.ACTION_DOWN)showControls(playButton);return true;}
+                if(key==KeyEvent.KEYCODE_DPAD_UP||key==KeyEvent.KEYCODE_DPAD_LEFT||key==KeyEvent.KEYCODE_DPAD_RIGHT){if(event.getAction()==KeyEvent.ACTION_DOWN)showControls(playButton);return true;}
+                if(Ui.isSelect(key))return super.dispatchKeyEvent(event);
+            }else if(key==KeyEvent.KEYCODE_DPAD_UP&&event.getAction()==KeyEvent.ACTION_DOWN){skipIntro.requestFocus();return true;}
+        }
         if(player==null || dialog!=null)return super.dispatchKeyEvent(event);
         if(key==KeyEvent.KEYCODE_BACK){
             if(event.getAction()!=KeyEvent.ACTION_DOWN || event.getRepeatCount()>0)return true;
@@ -847,7 +883,7 @@ public class PlayerActivity extends Activity {
 
     private final Runnable progress=new Runnable(){@Override public void run(){
         if(player==null)return;
-        qaState();observeViewing();
+        qaState();observeViewing();updateIntroButton();
         long duration=player.getDuration(),current=player.getCurrentPosition();
         if(player.isPlaying() && current>=15000 && current/5000!=lastSavedAt/5000){saveProgress(current,duration);lastSavedAt=current;}
         if(controlsVisible())updateProgressUi();
@@ -918,7 +954,7 @@ public class PlayerActivity extends Activity {
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
         queueFollowingEpisode();
         if(watchCoverage!=null)watchCoverage.discontinuity();
-        player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play();
+        player.setMediaItem(MediaItem.fromUri(url));loadIntro();player.prepare();player.play();
     }
     private void syncEpisodeNeighbors(){
         EpisodeNavigation.Episode next=episodeNavigation.adjacent(1);
@@ -954,7 +990,7 @@ public class PlayerActivity extends Activity {
         // Persist the selected episode immediately, even if Back is pressed before the 15-second save threshold.
         Catalog.selectEpisode(this,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,subtitle);
         if(watchCoverage!=null)watchCoverage.discontinuity();
-        player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.setPlayWhenReady(keepPlaying);
+        player.setMediaItem(MediaItem.fromUri(url));loadIntro();player.prepare();player.setPlayWhenReady(keepPlaying);
         if(manual){View focus=direction<0?previousButton:nextButton;showControls(focus!=null&&focus.isEnabled()?focus:playButton);}
     }
     /** After moving on to the next episode: the one after it becomes "next" (Up next card, autoplay, Continue Watching). */
@@ -971,7 +1007,7 @@ public class PlayerActivity extends Activity {
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onStop(){
         if(reporting)reportRestartReady=reportWasPlaying&&!reportFromError;
-        stopping=true;reporting=false;episodeLoadGeneration++;loadingEpisodes=false;
+        stopping=true;if(introRequest!=null){introRequest.cancel(true);introRequest=null;}introGeneration++;introMarker=null;updateIntroButton();reporting=false;episodeLoadGeneration++;loadingEpisodes=false;
         handler.removeCallbacksAndMessages(null);
         if(dialog!=null){dialog.dismiss();dialog=null;}
         if(player!=null){position=player.getCurrentPosition();if(!ended && resumeAsked)saveProgress(position,player.getDuration());

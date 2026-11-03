@@ -1,0 +1,38 @@
+Flix Town Skip intro pilot (Preview only)
+
+This is NOT a production release. The app's production version/signing/update panel are unchanged.
+Install the separate .preview APK only after its workflow passes. No production credentials are
+embedded. The detector's Episode 1 marker is known to start early. This pilot tests integration,
+not detection accuracy. The app never skips automatically.
+
+1. Copy export.py to /root/flixtown-intro-export.py on the Jellyfin server.
+2. Run:
+   python3 /root/flixtown-intro-export.py --output /root/intro-preview.json
+3. Download that JSON through Bitvise SFTP. Upload it to:
+   public_html/panels/flixtown2027/api/intro-preview.json
+   URL: https://panelsandapps.com/panels/flixtown2027/api/intro-preview.json
+   Upload only the exported JSON. Never upload a Jellyfin DB, config, password or API key.
+4. Install the passing Preview, sign in normally, open 1883, Season 1, an episode.
+   During the detected range, Skip intro appears. It does NOT steal focus. Press Up to focus it,
+   then OK. The player seeks to the marker end and preserves playing/paused state.
+   Back or another direction on the button returns to ordinary player controls.
+5. Check seeking into/out of the range; previous/next episode and autoplay must clear old markers.
+   Movies and episodes without markers have no button. Network errors must not stop playback.
+
+Exporter reads both DBs read-only, handles WAL normally, omits disabled/suppressed markers, rejects
+ambiguous identities and invalid ranges. Only TMDb 118357 under /media/series/1883 is exported.
+Contains show ID, season/episode, runtime and intro times only. No paths, customer data or keys.
+
+Matching requires get_series_info.info.tmdb_id (or tmdb) and explicit season/episode_num/id fields.
+No title/list-position fallback. Playback runtime must agree within 2 seconds; runtime agreement
+alone cannot prove identical cuts, so this pilot relies on the confirmed common source files.
+
+The snapshot is manual for this first test. After re-analysis, re-export/upload to update it.
+Do not add the entire library or cron yet. A production integration needs fresh markers tied to
+file changes and broader detection validation. No timing offset is applied to other episodes.
+
+Rollback: remove intro-preview.json and close/reopen Preview, or uninstall Preview.
+Production ignores this file and this feature is guarded by BuildConfig.PREVIEW.
+
+The previously reported Preview playback error is unresolved because its wording was unavailable.
+This work does not claim to repair that separate issue.
