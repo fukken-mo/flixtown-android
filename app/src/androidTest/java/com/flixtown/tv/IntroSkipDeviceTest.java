@@ -28,14 +28,15 @@ public class IntroSkipDeviceTest extends InstrumentationTestCase {
  }
  @Override protected void tearDown()throws Exception{if(a!=null)main(a::finish);super.tearDown();}
  private void marker(boolean playing)throws Exception{main(()->{try{player().setPlayWhenReady(playing);player().seekTo(9000);set("introMarker",new IntroMarker(8000,12000,player().getDuration()));update();}catch(Exception e){throw new RuntimeException(e);}});waitFor(()->button().getVisibility()==View.VISIBLE);}
- public void testSkipWithRemoteAndNoFocusSteal()throws Exception{
-  marker(true);assertFalse(get(()->button().hasFocus()));getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);waitFor(()->button().hasFocus());
+ public void testSkipSelectedOnAppearanceWithOneOk()throws Exception{
+  marker(true);waitFor(()->button().hasFocus());
   getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);waitFor(()->player().getCurrentPosition()>=12000&&button().getVisibility()==View.GONE);
   assertTrue(get(()->player().getPlayWhenReady()));
  }
  public void testPausedSkipPreservesPauseAndBackReturnsToControls()throws Exception{
-  marker(false);getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);waitFor(()->button().hasFocus());
+  marker(false);waitFor(()->button().hasFocus());
   getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);waitFor(()->!button().hasFocus());assertFalse(get(()->a.isFinishing()));
+  Thread.sleep(1100);assertFalse("progress updates must not take focus back",get(()->button().hasFocus()));
   getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP);waitFor(()->button().hasFocus());
   getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);waitFor(()->player().getCurrentPosition()>=12000);assertFalse(get(()->player().getPlayWhenReady()));
  }

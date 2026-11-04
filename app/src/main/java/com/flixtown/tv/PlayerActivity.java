@@ -145,7 +145,10 @@ public class PlayerActivity extends Activity {
         boolean visible=player!=null&&introMarker!=null&&dialog==null&&!reporting&&!stopping&&resumeAsked
             &&card.getVisibility()!=View.VISIBLE&&player.getPlayerError()==null
             &&introMarker.available(player.getCurrentPosition(),player.getDuration(),player.isCurrentMediaItemSeekable());
-        boolean focused=skipIntro.hasFocus();skipIntro.setVisibility(visible?View.VISIBLE:View.GONE);
+        boolean focused=skipIntro.hasFocus(),appearing=visible&&skipIntro.getVisibility()!=View.VISIBLE;
+        skipIntro.setVisibility(visible?View.VISIBLE:View.GONE);
+        // Select once on appearance. Later progress updates must respect remote navigation away.
+        if(appearing)skipIntro.requestFocus();
         if(!visible&&focused){if(controlsVisible())playButton.requestFocus();else root.requestFocus();}
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);
