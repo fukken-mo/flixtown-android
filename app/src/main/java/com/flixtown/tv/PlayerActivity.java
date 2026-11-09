@@ -120,7 +120,7 @@ public class PlayerActivity extends Activity {
         subtitles=new SubtitlePlacement(this,root,video,findViewById(R.id.player_overlay),findViewById(R.id.player_bottom));applySubtitleAppearance();
         buildControls();
         root.requestFocus();
-        if(BuildConfig.PREVIEW){
+        if(!BuildConfig.DEMO){
             skipIntro=Ui.button(this,"Skip intro");skipIntro.setVisibility(View.GONE);
             FrameLayout.LayoutParams sp=new FrameLayout.LayoutParams(-2,Ui.dp(this,48),Gravity.BOTTOM|Gravity.END);
             sp.rightMargin=Ui.safeX(this);sp.bottomMargin=Ui.dp(this,145);root.addView(skipIntro,sp);
@@ -132,7 +132,7 @@ public class PlayerActivity extends Activity {
     private void loadIntro(){
         if(introRequest!=null){introRequest.cancel(true);introRequest=null;}
         final int token=++introGeneration;introMarker=null;updateIntroButton();
-        if(!BuildConfig.PREVIEW||BuildConfig.DEMO||!"series".equals(kind))return;
+        if(BuildConfig.DEMO||!"series".equals(kind))return;
         final String requested=episodeId,endpoint;
         try{endpoint=Api.xtream(this,"get_series_info","&series_id="+Api.enc(contentId));}catch(Exception ignored){return;}
         introRequest=IntroPreview.load(endpoint,requested,marker->runOnUiThread(()->{
