@@ -21,13 +21,22 @@ Open the `nimertv` folder (not the repository root) in Android Studio.
 
 ### Release build and signing
 
-A release APK is signed only when a key is supplied. Create `nimertv/keystore.properties`
-(ignored by git — never commit it or the keystore):
+Nimer TV has one permanent production signing key (created 11 November 2026 for the first
+release). Its public certificate fingerprint is pinned in `release-signer.sha256`:
+
+```
+SHA-256  11:AF:C2:34:D4:73:65:AE:11:E0:85:E0:3F:F1:51:CB:82:EC:A6:6B:68:B8:84:99:5A:59:6C:E7:A5:34:B5:E1
+```
+
+The keystore and its passwords are **not** in this repository and must never be added to
+it, to a ZIP of the source, or to any chat or email.
+
+To build a release locally, create `nimertv/keystore.properties` (ignored by git):
 
 ```properties
 storeFile=/absolute/path/to/nimertv-release.jks
 storePassword=...
-keyAlias=...
+keyAlias=nimertv
 keyPassword=...
 ```
 
@@ -35,30 +44,63 @@ or set `NIMER_KEYSTORE_FILE`, `NIMER_KEYSTORE_PASSWORD`, `NIMER_KEY_ALIAS`,
 `NIMER_KEY_PASSWORD`. Then:
 
 ```bash
-./gradlew :app:assembleRelease -PnimerVersionCode=4 -PnimerVersionName=3.0.1
+./gradlew :app:assembleRelease
+cp app/build/outputs/apk/release/app-release.apk NimerTV27.apk
+./verify-release.sh NimerTV27.apk
 ```
 
-Without a key the release APK is unsigned and cannot be installed.
+`verify-release.sh` fails unless the APK is `com.nimertv.app`, is not debuggable and is
+signed by exactly the pinned production certificate. It prints the version code and the
+file's SHA-256 for the panel. Without a key the release APK is unsigned and cannot be
+installed.
 
-**The signing key is the app's identity.** Android only installs an update signed with the
-same key as the installed app. Keep the keystore and its passwords backed up in at least
-two safe places; if it is lost, existing customers can never be updated and must uninstall
-and reinstall. If an earlier Nimer TV build is already on customer devices, releases must
-be signed with that same key.
+GitHub Actions (`.github/workflows/build-nimertv.yml`) builds the debug APK and runs the
+tests on every push that touches `nimertv/`. When the repository secrets
+`NIMER_KEYSTORE_BASE64`, `NIMER_KEYSTORE_PASSWORD`, `NIMER_KEY_ALIAS` and
+`NIMER_KEY_PASSWORD` exist, it also builds `NimerTV27.apk`, runs `verify-release.sh` on it
+and uploads it as the `NimerTV27-release` artifact.
 
-GitHub Actions (`.github/workflows/build-nimertv.yml`) runs the tests and builds the debug
-APK on every push that touches `nimertv/`. If the repository secrets
-`NIMER_KEYSTORE_BASE64` (the keystore, Base64-encoded), `NIMER_KEYSTORE_PASSWORD`,
-`NIMER_KEY_ALIAS` and `NIMER_KEY_PASSWORD` exist, it also builds the signed release APK.
+### Backing up the signing key
 
-## Publishing an update
+Android only installs an update signed with the same key as the installed app. If the
+keystore or its password is lost, no customer can ever be updated again: every customer
+would have to uninstall and reinstall. If it leaks, someone else can sign updates.
 
-1. Raise `nimerVersionCode` (and `nimerVersionName`) — in `gradle.properties` or with `-P`.
-   The version code must be higher than every build already published.
-2. Build the release APK with the same signing key as before.
-3. Upload it over the existing file so the download URL stays the same.
-4. Publish the new version in the panel (APK update management) so the configuration API
-   announces the new `version_code`, the file's `sha256` and whether it is mandatory.
+- Keep the keystore file in at least two places you control, e.g. an encrypted USB drive
+  stored offline and a password manager's secure file attachment.
+- Keep the passwords in a password manager, not in the same plain folder as the keystore.
+- Never store either in GitHub (other than as Actions secrets), cPanel, the panel's web
+  root, a shared drive link, email or chat.
+- After the first backup, check it: `keytool -list -v -keystore nimertv-release.jks` with
+  the password must show the fingerprint above.
+
+## Publishing a release
+
+Permanent file name and address (never change them):
+
+```
+NimerTV27.apk
+https://panelsandapps.com/downloads/myapps/nimertv/NimerTV27.apk
+```
+
+Every release keeps the package `com.nimertv.app` and the production certificate, and has
+a higher `versionCode` than every build published before.
+
+| Release | versionCode | versionName |
+| --- | --- | --- |
+| First production release | 3 | 3.0.0 |
+
+1. For an update, raise `nimerVersionCode` and `nimerVersionName` in `gradle.properties`
+   and add a row to the table above. (Skip for the first release.)
+2. Build the release APK and run `./verify-release.sh NimerTV27.apk`.
+3. Install that exact file on a real Android TV and test it (see "Not yet verified on
+   hardware"). For an update, install it over the previous release to confirm Android
+   accepts it.
+4. Upload it to the server as `NimerTV27.apk`, replacing the existing file.
+5. In the panel's APK update management, publish the version: the new version code, the
+   download address above, and the `file SHA256` printed by `verify-release.sh`. The
+   certificate fingerprint above (without colons, lowercase) goes in the signer field if
+   the panel has one.
 
 The app decides from the panel's `version_code` only — never from the file name or date.
 It checks at startup, when the app returns to the foreground (at most every 15 minutes)
@@ -75,6 +117,9 @@ A mandatory update cannot be skipped: the customer can install, retry or exit. T
 situations deliberately do not lock the app, because no installable update exists: the
 panel announces a version without a checksum, or the file on the server is older than the
 announced version. Both show an explanation with a Continue button; fix the panel entry.
+
+A debug build and a release build are signed with different keys. Uninstall any debug
+build from a device before installing `NimerTV27.apk` on it.
 
 ## Panel API contract
 

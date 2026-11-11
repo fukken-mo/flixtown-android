@@ -45,14 +45,15 @@ jobs:
         run: |
           echo "$NIMER_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/nimer-release.jks"
           NIMER_KEYSTORE_FILE="$RUNNER_TEMP/nimer-release.jks" ./gradlew :app:assembleRelease --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/NimerTV.apk"
-          sha256sum "$RUNNER_TEMP/NimerTV.apk"
           rm -f "$RUNNER_TEMP/nimer-release.jks"
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/NimerTV27.apk"
+          # Fails the build unless the APK carries the permanent production certificate.
+          ./verify-release.sh "$RUNNER_TEMP/NimerTV27.apk" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: env.NIMER_KEYSTORE_BASE64 != ''
         with:
-          name: NimerTV-release
-          path: ${{ runner.temp }}/NimerTV.apk
+          name: NimerTV27-release
+          path: ${{ runner.temp }}/NimerTV27.apk
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
