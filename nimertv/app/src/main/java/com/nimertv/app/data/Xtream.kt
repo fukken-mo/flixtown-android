@@ -139,8 +139,12 @@ object XtreamParser {
 
     private fun JsonObject.long(key: String): Long = s(key).toDoubleOrNull()?.toLong() ?: 0
     private fun JsonObject.int(key: String): Int = long(key).toInt()
-    private fun JsonObject.rating(): Double =
-        (s("rating").toDoubleOrNull() ?: s("rating_5based").toDoubleOrNull()?.times(2) ?: 0.0).takeIf { it in 0.1..10.0 } ?: 0.0
+    /** Ten-point provider rating, or 0 when the provider supplies none. Never invented. */
+    private fun JsonObject.rating(): Double {
+        val ten = s("rating").toDoubleOrNull()?.takeIf { it > 0 }
+        val five = s("rating_5based").toDoubleOrNull()?.takeIf { it > 0 }
+        return (ten ?: five?.times(2) ?: 0.0).takeIf { it in 0.1..10.0 } ?: 0.0
+    }
 
     private fun JsonObject.obj(key: String): JsonObject? = get(key)?.takeIf { it.isJsonObject }?.asJsonObject
 

@@ -63,7 +63,15 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     packaging.resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
-    testOptions.unitTests.isReturnDefaultValues = true
+    testOptions.unitTests {
+        isReturnDefaultValues = true
+        isIncludeAndroidResources = true
+        all {
+            it.systemProperty("robolectric.graphicsMode", "NATIVE")
+            // Screenshots of the rendered screens are written to app/build/screens/.
+            it.systemProperty("roborazzi.test.record", "true")
+        }
+    }
 }
 
 dependencies {
@@ -83,6 +91,15 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer-hls:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
 
+    // Screen rendering and remote-navigation tests run on the JVM (Robolectric); no device needed.
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.32.2")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.32.2")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 }

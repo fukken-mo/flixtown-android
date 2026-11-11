@@ -54,30 +54,35 @@ import java.util.Locale
 private class Section<T>(val categories: List<Category>, val items: List<T>)
 
 @Composable
-private fun ScreenTitle(title: String, subtitle: String, onSearch: (() -> Unit)?, searchModifier: Modifier = Modifier) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = Type.Title.copy(fontWeight = FontWeight.Black))
-            Text(subtitle, style = Type.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (onSearch != null) PillButton("Search", onSearch, searchModifier, icon = Icons.Filled.Search)
+private fun ScreenTitle(title: String, subtitle: String) {
+    Column(Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
+        Text(title, style = Type.Title.copy(fontWeight = FontWeight.Black))
+        Text(subtitle, style = Type.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
+/**
+ * Left rail: Search, fixed entries and provider categories. Everything focusable on the left
+ * lives here, so pressing Right always lands in the content list.
+ */
 @Composable
 private fun CategoryRail(
     screen: Screen,
     fixed: List<Pair<String, String>>,
     categories: List<Category>,
     selected: String,
+    onSearch: () -> Unit,
     onSelect: (String) -> Unit,
 ) {
     LazyColumn(
         state = screen.listState("rail"),
         modifier = Modifier.width(208.dp).fillMaxHeight(),
-        contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
+        contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp, start = 4.dp, end = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        item("__search") {
+            PillButton("Search", onSearch, Modifier.fillMaxWidth().padding(bottom = 8.dp).rememberFocus(screen.focus, "search"), icon = Icons.Filled.Search)
+        }
         items(fixed, key = { it.first }) { (id, name) ->
             RailItem(name, selected == id, { onSelect(id) }, Modifier.rememberFocus(screen.focus, "cat:$id"))
         }
@@ -122,14 +127,13 @@ fun LiveScreen(screen: Screen.Live, nav: Nav, catalog: Catalog, library: Library
                 CategoryRail(
                     screen,
                     listOf(Screen.ALL to "All channels", Screen.FAVORITES to "★  Favorites", Screen.RECENT to "Recently watched"),
-                    d.data.categories, screen.category,
+                    d.data.categories, screen.category, { nav.push(Screen.Search()) },
                 ) { screen.category = it }
 
                 Spacer(Modifier.width(16.dp))
 
                 Column(Modifier.weight(1f).fillMaxHeight()) {
-                    ScreenTitle("Live TV", "$categoryName  ·  ${channels.size} channels", { nav.push(Screen.Search()) },
-                        Modifier.rememberFocus(screen.focus, "search"))
+                    ScreenTitle("Live TV", "$categoryName  ·  ${channels.size} channels")
                     if (channels.isEmpty()) {
                         Message(
                             "Nothing here yet",
@@ -321,10 +325,10 @@ private fun <T : Any> PosterBrowser(
                     else -> section.categories.firstOrNull { it.id == category }?.name.orEmpty()
                 }
 
-                CategoryRail(screen, listOf(Screen.ALL to "All $noun", Screen.FAVORITES to "★  Favorites"), section.categories, category, onCategory)
+                CategoryRail(screen, listOf(Screen.ALL to "All $noun", Screen.FAVORITES to "★  Favorites"), section.categories, category, onSearch, onCategory)
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f).fillMaxHeight()) {
-                    ScreenTitle(title, "$categoryName  ·  ${items.size} titles  ·  Hold OK to favorite", onSearch, Modifier.rememberFocus(screen.focus, "search"))
+                    ScreenTitle(title, "$categoryName  ·  ${items.size} titles  ·  Hold OK to favorite")
                     if (items.isEmpty()) {
                         Message(
                             "Nothing here yet",

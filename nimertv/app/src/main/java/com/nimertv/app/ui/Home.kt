@@ -31,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -107,6 +106,14 @@ fun HomeScreen(
             series.value?.recent.orEmpty().map { Featured(null, it, it.rating) }
         pool.filter { it.rating > 0 }.sortedByDescending { it.rating }.take(20).takeIf { it.size >= 5 }.orEmpty()
     }
+    val recentMovies = movies.value?.recent?.take(ROW_SIZE).orEmpty()
+    val recentSeries = series.value?.recent?.take(ROW_SIZE).orEmpty()
+    val liveFeed = live.value
+    val movieFeed = movies.value
+    val seriesFeed = series.value
+    val liveStatus = statusText(live)
+    val movieStatus = statusText(movies)
+    val seriesStatus = statusText(series)
     val config = app.panel?.config
     val now = System.currentTimeMillis()
     val banners = config?.announcements.orEmpty().filter { !it.popup && it.activeAt(now) }
@@ -158,25 +165,25 @@ fun HomeScreen(
         }
 
         item("hero") {
-            Row(Modifier.fillMaxWidth().height(196.dp).padding(horizontal = 48.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+            Row(Modifier.fillMaxWidth().height(184.dp).padding(horizontal = 48.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                 HeroCard(
                     title = "LIVE TV",
-                    caption = live.value?.let { count(it.channels.size, "channels") } ?: statusText(live),
-                    art = live.value?.art.orEmpty(), logos = true,
+                    caption = liveFeed?.let { count(it.channels.size, "channels") } ?: liveStatus,
+                    art = liveFeed?.art.orEmpty(), logos = true,
                     onClick = { nav.push(Screen.Live()) },
                     modifier = Modifier.weight(1f).rememberFocus(screen.focus, "hero:live"),
                 )
                 HeroCard(
                     title = "MOVIES",
-                    caption = movies.value?.let { count(it.all.size, "movies") } ?: statusText(movies),
-                    art = movies.value?.art.orEmpty(), logos = false,
+                    caption = movieFeed?.let { count(it.all.size, "movies") } ?: movieStatus,
+                    art = movieFeed?.art.orEmpty(), logos = false,
                     onClick = { nav.push(Screen.Movies()) },
                     modifier = Modifier.weight(1f).rememberFocus(screen.focus, "hero:movies"),
                 )
                 HeroCard(
                     title = "SERIES",
-                    caption = series.value?.let { count(it.all.size, "series") } ?: statusText(series),
-                    art = series.value?.art.orEmpty(), logos = false,
+                    caption = seriesFeed?.let { count(it.all.size, "series") } ?: seriesStatus,
+                    art = seriesFeed?.art.orEmpty(), logos = false,
                     onClick = { nav.push(Screen.SeriesList()) },
                     modifier = Modifier.weight(1f).rememberFocus(screen.focus, "hero:series"),
                 )
@@ -241,7 +248,8 @@ fun HomeScreen(
             }
         }
 
-        movies.value?.recent?.take(ROW_SIZE)?.takeIf { it.isNotEmpty() }?.let { list ->
+        if (recentMovies.isNotEmpty()) {
+            val list = recentMovies
             item("recentMovies") {
                 HomeRow("Recently Added Movies") {
                     items(list, key = { it.id }) { m ->
@@ -252,7 +260,8 @@ fun HomeScreen(
             }
         }
 
-        series.value?.recent?.take(ROW_SIZE)?.takeIf { it.isNotEmpty() }?.let { list ->
+        if (recentSeries.isNotEmpty()) {
+            val list = recentSeries
             item("recentSeries") {
                 HomeRow("Recently Added Series") {
                     items(list, key = { it.id }) { s ->
@@ -289,14 +298,29 @@ private fun HeroCard(title: String, caption: String, art: List<String>, logos: B
     FocusSurface(onClick = onClick, modifier = modifier.fillMaxHeight(), shape = RoundedCornerShape(20.dp), focusedScale = 1.05f) { focused ->
         Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Palette.PurpleDeep, Palette.BackgroundPurple))))
         if (art.isNotEmpty()) {
-            Row(Modifier.fillMaxSize().alpha(if (focused) 0.85f else 0.5f), horizontalArrangement = Arrangement.spacedBy(if (logos) 10.dp else 0.dp)) {
-                art.take(if (logos) 4 else 5).forEach { url ->
-                    AsyncImage(
-                        model = url,
-                        contentDescription = null,
-                        contentScale = if (logos) ContentScale.Fit else ContentScale.Crop,
-                        modifier = Modifier.weight(1f).fillMaxHeight().padding(vertical = if (logos) 44.dp else 0.dp),
-                    )
+            if (logos) {
+                // Channel logos sit along the top edge, clear of the title.
+                Row(
+                    Modifier.fillMaxWidth().height(78.dp).padding(start = 16.dp, end = 16.dp, top = 18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    art.take(4).forEach { url ->
+                        AsyncImage(
+                            model = url, contentDescription = null, contentScale = ContentScale.Fit,
+                            alpha = if (focused) 1f else 0.75f,
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                        )
+                    }
+                }
+            } else {
+                Row(Modifier.fillMaxSize()) {
+                    art.take(3).forEach { url ->
+                        AsyncImage(
+                            model = url, contentDescription = null, contentScale = ContentScale.Crop,
+                            alpha = if (focused) 0.9f else 0.6f,
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                        )
+                    }
                 }
             }
         }

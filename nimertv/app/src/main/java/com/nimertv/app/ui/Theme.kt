@@ -51,6 +51,6 @@ object Type {
     val Caption = base.copy(fontSize = 11.sp, color = Palette.TextDim)
     val Overline = base.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, color = Palette.PurpleLight)
 
-    /** Long provider descriptions: Arabic paragraphs read from the right. */
-    val Paragraph = Body.copy(textAlign = TextAlign.Start, color = Palette.TextDim)
+    /** Long provider descriptions; Arabic is ordered right-to-left but stays on the layout's left edge. */
+    val Paragraph = Body.copy(color = Palette.TextDim)
 }
