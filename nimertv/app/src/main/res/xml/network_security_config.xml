@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Xtream provider address is delivered by the Nimer TV panel at runtime and the
+  provider currently serves plain HTTP (API, streams and poster images, often from
+  several hosts and after redirects). Android's network security config cannot list
+  hosts that are only known at runtime, so cleartext stays allowed by default and is
+  explicitly forbidden for the panel itself: configuration, splash artwork and APK
+  updates always travel over verified HTTPS. The app additionally refuses non-HTTPS
+  panel, splash and update URLs in code.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">panelsandapps.com</domain>
+    </domain-config>
+</network-security-config>
