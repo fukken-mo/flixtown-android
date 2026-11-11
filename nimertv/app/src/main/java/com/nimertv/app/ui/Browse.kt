@@ -116,7 +116,7 @@ fun LiveScreen(screen: Screen.Live, nav: Nav, catalog: Catalog, library: Library
                         Screen.ALL -> all
                         Screen.FAVORITES -> all.associateBy { it.id }.let { m -> favorites.mapNotNull(m::get) }
                         Screen.RECENT -> all.associateBy { it.id }.let { m -> recents.mapNotNull(m::get) }
-                        else -> all.filter { it.categoryId == screen.category }
+                        else -> all.filter { screen.category in it.categoryIds }
                     }
                 }
                 val categoryName = when (screen.category) {
@@ -196,8 +196,8 @@ private fun ChannelRow(
             )
             LogoArt(channel.logo, "", Modifier.size(width = 52.dp, height = 34.dp).background(Color(0x22FFFFFF), RoundedCornerShape(6.dp)), inset = 4.dp)
             Spacer(Modifier.width(12.dp))
-            // Full channel name: wraps onto a second line instead of being cut off.
-            Text(channel.name, style = Type.Label.copy(fontWeight = FontWeight.SemiBold), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            // Full channel name on one line: the text shrinks to fit before it is ever cut off.
+            FitText(channel.name, Type.Label.copy(fontWeight = FontWeight.SemiBold), Palette.Text, Modifier.weight(1f), minSize = 10.5f)
             if (favorite) Text("★", color = Palette.Gold, style = Type.Label)
         }
     }
@@ -269,7 +269,7 @@ fun MoviesScreen(screen: Screen.Movies, nav: Nav, catalog: Catalog, library: Lib
         favorites = library.favoriteMovies.toList(),
         continuing = ProgressRules.continueWatching(library.progress.values.filter { it.kind == Progress.MOVIE }, limit = 60)
             .mapNotNull { p -> p.id.toIntOrNull()?.let { it to p.fraction } },
-        idOf = { it.id }, categoryOf = { it.categoryId }, nameOf = { it.name }, posterOf = { it.poster },
+        idOf = { it.id }, categoriesOf = { it.categoryIds }, nameOf = { it.name }, posterOf = { it.poster },
         onOpen = { nav.push(Screen.MovieDetail(it)) },
         onFavorite = { library.toggleMovie(it.id) },
         onSearch = { nav.push(Screen.Search()) },
@@ -287,7 +287,7 @@ fun SeriesScreen(screen: Screen.SeriesList, nav: Nav, catalog: Catalog, library:
         favorites = library.favoriteSeries.toList(),
         continuing = ProgressRules.continueWatching(library.progress.values.filter { it.kind == Progress.EPISODE }, limit = 60)
             .map { it.seriesId to it.fraction },
-        idOf = { it.id }, categoryOf = { it.categoryId }, nameOf = { it.name }, posterOf = { it.cover },
+        idOf = { it.id }, categoriesOf = { it.categoryIds }, nameOf = { it.name }, posterOf = { it.cover },
         onOpen = { nav.push(Screen.SeriesDetail(it)) },
         onFavorite = { library.toggleSeries(it.id) },
         onSearch = { nav.push(Screen.Search()) },
@@ -307,7 +307,7 @@ private fun <T : Any> PosterBrowser(
     /** Titles with an unfinished movie/episode, newest first, with the watched fraction. */
     continuing: List<Pair<Int, Float>>,
     idOf: (T) -> Int,
-    categoryOf: (T) -> String,
+    categoriesOf: (T) -> List<String>,
     nameOf: (T) -> String,
     posterOf: (T) -> String,
     onOpen: (T) -> Unit,
@@ -327,7 +327,7 @@ private fun <T : Any> PosterBrowser(
                         Screen.ALL -> section.items
                         Screen.CONTINUE -> section.items.associateBy(idOf).let { m -> continuing.mapNotNull { m[it.first] } }
                         Screen.FAVORITES -> section.items.associateBy(idOf).let { m -> favorites.mapNotNull(m::get) }
-                        else -> section.items.filter { categoryOf(it) == category }
+                        else -> section.items.filter { category in categoriesOf(it) }
                     }
                 }
                 val categoryName = when (category) {
@@ -383,5 +383,5 @@ private fun <T : Any> PosterBrowser(
     }
 }
 
-private val RAIL_WIDTH = 190.dp
-private val RAIL_GAP = 26.dp
+private val RAIL_WIDTH = 214.dp
+private val RAIL_GAP = 22.dp

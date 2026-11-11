@@ -89,7 +89,7 @@ a higher `versionCode` than every build published before.
 | Release | versionCode | versionName |
 | --- | --- | --- |
 | Internal test build (never published) | 3 | 3.0.0 |
-| First production release | 4 | 3.1.0 |
+| First production release | 5 | 3.1.1 |
 
 1. For an update, raise `nimerVersionCode` and `nimerVersionName` in `gradle.properties`
    and add a row to the table above. (Skip for the first release.)
@@ -187,7 +187,7 @@ network request, a holiday first seen during a launch appears from the next laun
 
 ## Tests
 
-`./gradlew :app:testDebugUnitTest` runs 39 tests on the JVM:
+`./gradlew :app:testDebugUnitTest` runs 40 tests on the JVM:
 
 - `PanelConfigTest` — the captured live panel response, validation, splash scheduling
   (start, end, switch-over, stale forced splash), update decisions, archive identity checks.

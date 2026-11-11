@@ -27,6 +27,7 @@ data class Channel(
     val logo: String,
     val categoryId: String,
     val hasArchive: Boolean,
+    val categoryIds: List<String> = listOf(categoryId),
 )
 
 data class Movie(
@@ -38,6 +39,7 @@ data class Movie(
     val rating: Double,
     val ext: String,
     val year: String,
+    val categoryIds: List<String> = listOf(categoryId),
 )
 
 data class Series(
@@ -53,6 +55,7 @@ data class Series(
     val rating: Double,
     val backdrop: String,
     val lastModified: Long,
+    val categoryIds: List<String> = listOf(categoryId),
 )
 
 data class MovieInfo(
@@ -144,6 +147,16 @@ object XtreamParser {
         val ten = s("rating").toDoubleOrNull()?.takeIf { it > 0 }
         val five = s("rating_5based").toDoubleOrNull()?.takeIf { it > 0 }
         return (ten ?: five?.times(2) ?: 0.0).takeIf { it in 0.1..10.0 } ?: 0.0
+    }
+
+    /** Every category a title belongs to: `category_id` plus the `category_ids` array some panels use. */
+    private fun JsonObject.categories(): List<String> {
+        val out = LinkedHashSet<String>()
+        s("category_id").let { if (it.isNotEmpty()) out.add(it) }
+        get("category_ids")?.takeIf { it.isJsonArray }?.asJsonArray?.forEach {
+            if (it.isJsonPrimitive) it.asString.trim().let { id -> if (id.isNotEmpty()) out.add(id) }
+        }
+        return out.toList()
     }
 
     private fun JsonObject.obj(key: String): JsonObject? = get(key)?.takeIf { it.isJsonObject }?.asJsonObject
@@ -243,6 +256,7 @@ object XtreamParser {
             logo = o.s("stream_icon"),
             categoryId = o.s("category_id"),
             hasArchive = o.s("tv_archive") == "1",
+            categoryIds = o.categories(),
         )
     }
 
@@ -258,6 +272,7 @@ object XtreamParser {
             rating = o.rating(),
             ext = o.s("container_extension").ifEmpty { "mp4" },
             year = o.s("year").take(4),
+            categoryIds = o.categories(),
         )
     }
 
@@ -277,6 +292,7 @@ object XtreamParser {
             rating = o.rating(),
             backdrop = o.backdrop(),
             lastModified = o.long("last_modified"),
+            categoryIds = o.categories(),
         )
     }
 

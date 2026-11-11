@@ -63,6 +63,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 
@@ -193,6 +195,25 @@ fun PillButton(
     }
 }
 
+/**
+ * Single-line text that steps its font size down until the whole string fits, and only then
+ * falls back to an ellipsis. Used where long provider names must stay on one line.
+ */
+@Composable
+fun FitText(text: String, style: TextStyle, color: Color, modifier: Modifier = Modifier, minSize: Float = 8.5f) {
+    var size by remember(text) { mutableStateOf(style.fontSize.value) }
+    Text(
+        text,
+        style = style.copy(fontSize = size.sp),
+        color = color,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+        onTextLayout = { if (it.hasVisualOverflow && size > minSize) size = (size - 0.75f).coerceAtLeast(minSize) },
+    )
+}
+
 /** Left-rail entry (categories, seasons). */
 @Composable
 fun RailItem(
@@ -212,15 +233,8 @@ fun RailItem(
         background = if (selected) Palette.Purple.copy(alpha = 0.22f) else Color.Transparent,
         focusedBackground = Palette.Purple.copy(alpha = 0.55f),
     ) { focused ->
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text,
-                style = Type.Label,
-                color = if (focused || selected) Color.White else Palette.TextDim,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+        Row(Modifier.padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            FitText(text, Type.Label, if (focused || selected) Color.White else Palette.TextDim, Modifier.weight(1f))
             if (trailing != null) Text(trailing, style = Type.Caption, color = if (focused) Color.White else Palette.TextFaint)
         }
     }
@@ -318,7 +332,7 @@ fun PosterCard(
             if (progress != null) ProgressBar(progress, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp))
         }
         Spacer(Modifier.height(8.dp))
-        Text(title, style = Type.Label, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+        Text(title, style = Type.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
     }
 }
 

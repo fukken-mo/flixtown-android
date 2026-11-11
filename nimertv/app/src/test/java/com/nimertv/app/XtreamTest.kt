@@ -87,6 +87,17 @@ class XtreamTest {
         assertEquals(9.0, list[2].rating, 0.001)
     }
 
+    @Test fun titlesCanBelongToSeveralCategories() {
+        val list = XtreamParser.list(
+            StringReader("""[{"stream_id":1,"name":"A","category_id":"10","category_ids":[10,22]},
+                {"stream_id":2,"name":"B","category_id":null,"category_ids":[22]},{"stream_id":3,"name":"C","category_id":"7"}]"""),
+            XtreamParser::movie,
+        )
+        assertEquals(listOf("10", "22"), list[0].categoryIds)
+        assertEquals(listOf("22"), list[1].categoryIds)
+        assertEquals(listOf("7"), list[2].categoryIds)
+    }
+
     private val movie = Movie(1, "A", "poster", "1", 0, 0.0, "mp4", "")
 
     @Test fun movieInfoHandlesEmptyAndFullMetadata() {
