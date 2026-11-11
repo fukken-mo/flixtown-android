@@ -212,12 +212,12 @@ fun RailItem(
         background = if (selected) Palette.Purple.copy(alpha = 0.22f) else Color.Transparent,
         focusedBackground = Palette.Purple.copy(alpha = 0.55f),
     ) { focused ->
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text,
                 style = Type.Label,
                 color = if (focused || selected) Color.White else Palette.TextDim,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
@@ -318,7 +318,7 @@ fun PosterCard(
             if (progress != null) ProgressBar(progress, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp))
         }
         Spacer(Modifier.height(8.dp))
-        Text(title, style = Type.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+        Text(title, style = Type.Label, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
     }
 }
 

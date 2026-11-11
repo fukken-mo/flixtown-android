@@ -62,6 +62,17 @@ fun AccountScreen(app: NimerApp, screen: Screen.Account, onRefresh: () -> Unit, 
                 if (session.maxConnections.isNotEmpty()) Field("Screens", session.maxConnections)
                 Field("App version", "${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})")
             }
+            Spacer(Modifier.height(16.dp))
+            Text("HOME LAYOUT", style = Type.Overline)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                HomeStyle.names.forEachIndexed { index, name ->
+                    PillButton(
+                        name, { app.chooseHomeStyle(index) },
+                        Modifier.rememberFocus(screen.focus, "home:$index"), primary = app.homeStyle == index,
+                    )
+                }
+            }
             SupportLine(config?.support)
         }
         Column(Modifier.width(300.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {

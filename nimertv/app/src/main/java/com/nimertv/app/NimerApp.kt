@@ -51,6 +51,14 @@ class NimerApp : Application(), ImageLoaderFactory {
     /** Latest panel configuration (cached copy until the first sync completes). */
     var panel by mutableStateOf<PanelSnapshot?>(null)
 
+    var homeStyle by mutableStateOf(0)
+        private set
+
+    fun chooseHomeStyle(style: Int) {
+        homeStyle = style
+        sessionStore.homeStyle = style
+    }
+
     var session by mutableStateOf<Session?>(null)
         private set
     var library: Library? = null
@@ -70,6 +78,7 @@ class NimerApp : Application(), ImageLoaderFactory {
         sessionStore = SessionStore(this)
         updater = Updater(this)
         panel = panelRepository.cached()
+        homeStyle = sessionStore.homeStyle
     }
 
     fun signIn(s: Session, persist: Boolean = true) {

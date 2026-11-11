@@ -1,11 +1,13 @@
 package com.nimertv.app.ui
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -15,9 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -27,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,316 +37,313 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nimertv.app.BuildConfig
 import com.nimertv.app.NimerApp
-import com.nimertv.app.PlayRequest
 import com.nimertv.app.R
-import com.nimertv.app.VodItem
 import com.nimertv.app.data.Catalog
 import com.nimertv.app.data.Channel
-import com.nimertv.app.data.Library
-import com.nimertv.app.data.Movie
-import com.nimertv.app.data.Progress
-import com.nimertv.app.data.ProgressRules
-import com.nimertv.app.data.Series
+import com.nimertv.app.data.Session
 import com.nimertv.app.data.UpdateLogic
 import com.nimertv.app.data.UpdateState
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
-private class LiveFeed(val channels: List<Channel>, val art: List<String>)
-private class MovieFeed(val all: List<Movie>, val recent: List<Movie>, val art: List<String>)
-private class SeriesFeed(val all: List<Series>, val recent: List<Series>, val art: List<String>)
+/** Home layouts the customer can pick on the Account screen. */
+object HomeStyle {
+    const val PANELS = 0
+    const val SPOTLIGHT = 1
+    const val MARQUEE = 2
+    val names = listOf("Panels", "Spotlight", "Marquee")
+}
 
-/** Movie or series picked for the Featured row from the provider's own ratings. */
-private class Featured(val movie: Movie?, val series: Series?, val rating: Double)
+/** One of the three destinations with real provider numbers and artwork. */
+private class Destination(
+    val key: String,
+    val title: String,
+    val tagline: String,
+    val caption: String,
+    val art: List<String>,
+    val logos: Boolean,
+    val open: () -> Unit,
+)
+
+private class Feed(val count: Int, val art: List<String>)
 
 private fun count(n: Int, noun: String) = NumberFormat.getIntegerInstance(Locale.US).format(n) + " " + noun
 
+/** Subscription line for the top of the home screen; the flag is true when it needs attention. */
+fun expiryText(session: Session, now: Long = System.currentTimeMillis()): Pair<String, Boolean> {
+    if (session.expiresAtSec <= 0) return "Subscription active  ·  no expiry date" to false
+    val end = session.expiresAtSec * 1000
+    val date = SimpleDateFormat("d MMMM yyyy", Locale.US).format(Date(end))
+    val days = (end - now) / 86_400_000L
+    return when {
+        end <= now -> "Subscription expired on $date" to true
+        days < 1 -> "Subscription expires today" to true
+        days <= 7 -> "Subscription expires $date  ·  ${days + 1} days left" to true
+        else -> "Subscription expires $date" to false
+    }
+}
+
 @Composable
-fun HomeScreen(
-    app: NimerApp,
-    screen: Screen.Home,
-    nav: Nav,
-    catalog: Catalog,
-    library: Library,
-    reload: Int,
-    onShowUpdate: () -> Unit,
-) {
+fun HomeScreen(app: NimerApp, screen: Screen.Home, nav: Nav, catalog: Catalog, reload: Int, onShowUpdate: () -> Unit) {
     val context = LocalContext.current
     var retry by remember { mutableIntStateOf(0) }
+    var focusedKey by remember { mutableStateOf((screen.focus.key as? String)?.takeIf { it.startsWith("hero:") } ?: "hero:live") }
 
     val live by rememberLoadable(reload, retry) {
         val channels = catalog.channels()
-        LiveFeed(channels, channels.asSequence().map { it.logo }.filter { it.isNotBlank() }.distinct().take(8).toList())
+        Feed(channels.size, channels.asSequence().map { it.logo }.filter { it.isNotBlank() }.distinct().take(8).toList())
     }
     val movies by rememberLoadable(reload, retry) {
         val all = catalog.movies()
-        val recent = all.sortedByDescending { it.added }.take(RECENT_POOL)
-        MovieFeed(all, recent, recent.asSequence().map { it.poster }.filter { it.isNotBlank() }.take(5).toList())
+        Feed(all.size, all.sortedByDescending { it.added }.asSequence().map { it.poster }.filter { it.isNotBlank() }.distinct().take(6).toList())
     }
     val series by rememberLoadable(reload, retry) {
         val all = catalog.series()
-        val recent = all.sortedByDescending { it.lastModified }.take(RECENT_POOL)
-        SeriesFeed(all, recent, recent.asSequence().map { it.cover }.filter { it.isNotBlank() }.take(5).toList())
+        Feed(all.size, all.sortedByDescending { it.lastModified }.asSequence().map { it.cover }.filter { it.isNotBlank() }.distinct().take(6).toList())
     }
 
+    fun caption(l: Loadable<Feed>, noun: String) = when (l) {
+        is Loadable.Ready -> count(l.data.count, noun)
+        is Loadable.Failed -> "Unavailable"
+        Loadable.Loading -> "Loading…"
+    }
+    val destinations = listOf(
+        Destination("hero:live", "LIVE TV", "Watch channels as they air", caption(live, "channels"), live.value?.art.orEmpty(), true) { nav.push(Screen.Live()) },
+        Destination("hero:movies", "MOVIES", "Browse the film library", caption(movies, "movies"), movies.value?.art.orEmpty(), false) { nav.push(Screen.Movies()) },
+        Destination("hero:series", "SERIES", "Seasons and episodes", caption(series, "series"), series.value?.art.orEmpty(), false) { nav.push(Screen.SeriesList()) },
+    )
     val failure = listOf(live, movies, series).filterIsInstance<Loadable.Failed>().firstOrNull()
-    val continueWatching = ProgressRules.continueWatching(library.progress.values)
-    val favoriteChannels = remember(live, library.favoriteChannels.toList()) {
-        val byId = live.value?.channels?.associateBy { it.id }.orEmpty()
-        library.favoriteChannels.mapNotNull { byId[it] }
-    }
-    val featured = remember(movies, series) {
-        val pool = movies.value?.recent.orEmpty().map { Featured(it, null, it.rating) } +
-            series.value?.recent.orEmpty().map { Featured(null, it, it.rating) }
-        pool.filter { it.rating > 0 }.sortedByDescending { it.rating }.take(20).takeIf { it.size >= 5 }.orEmpty()
-    }
-    val recentMovies = movies.value?.recent?.take(ROW_SIZE).orEmpty()
-    val recentSeries = series.value?.recent?.take(ROW_SIZE).orEmpty()
-    val liveFeed = live.value
-    val movieFeed = movies.value
-    val seriesFeed = series.value
-    val liveStatus = statusText(live)
-    val movieStatus = statusText(movies)
-    val seriesStatus = statusText(series)
     val config = app.panel?.config
     val now = System.currentTimeMillis()
     val banners = config?.announcements.orEmpty().filter { !it.popup && it.activeAt(now) }
     val updateAvailable = UpdateLogic.state(config?.update, BuildConfig.VERSION_CODE, context.packageName) != UpdateState.NONE
+    val session = app.session
+    val focused = destinations.firstOrNull { it.key == focusedKey } ?: destinations.first()
 
-    LazyColumn(
-        state = screen.listState("home"),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 24.dp, bottom = 36.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp),
-    ) {
-        item("top") {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                Image(painterResource(R.drawable.nimer_logo), "Nimer TV", Modifier.size(46.dp))
-                Spacer(Modifier.width(12.dp))
-                Column {
+    Box(Modifier.fillMaxSize()) {
+        if (app.homeStyle == HomeStyle.MARQUEE) MarqueeBackdrop(focused)
+
+        Column(Modifier.fillMaxSize().padding(horizontal = 44.dp, vertical = 22.dp)) {
+            // Top bar: brand · subscription expiry (centre) · search and account.
+            Box(Modifier.fillMaxWidth().height(46.dp)) {
+                Row(Modifier.align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically) {
+                    Image(painterResource(R.drawable.nimer_logo), "Nimer TV", Modifier.size(44.dp))
+                    Spacer(Modifier.width(10.dp))
                     Text("NIMER TV", style = Type.Section.copy(fontWeight = FontWeight.Black, letterSpacing = 3.sp))
-                    Text("Live TV · Movies · Series", style = Type.Caption)
                 }
-                Spacer(Modifier.weight(1f))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (updateAvailable) PillButton("Update available", onShowUpdate, Modifier.rememberFocus(screen.focus, "update"), primary = true)
+                if (session != null) {
+                    val (text, warn) = expiryText(session, now)
+                    Text(
+                        text,
+                        style = Type.Label.copy(fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                        color = if (warn) Palette.Gold else Palette.Text,
+                        maxLines = 1,
+                        modifier = Modifier.align(Alignment.Center)
+                            .background(if (warn) Palette.Gold.copy(alpha = 0.16f) else Color(0x14FFFFFF), RoundedCornerShape(50))
+                            .padding(horizontal = 18.dp, vertical = 8.dp),
+                    )
+                }
+                Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (updateAvailable) PillButton("Update", onShowUpdate, Modifier.rememberFocus(screen.focus, "update"), primary = true)
                     PillButton("Search", { nav.push(Screen.Search()) }, Modifier.rememberFocus(screen.focus, "search"), icon = Icons.Filled.Search)
                     PillButton("Account", { nav.push(Screen.Account()) }, Modifier.rememberFocus(screen.focus, "account"), icon = Icons.Filled.AccountCircle)
                 }
             }
-        }
 
-        if (banners.isNotEmpty()) {
-            item("banners") {
-                Column(Modifier.padding(horizontal = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    banners.forEach { a ->
-                        Row(
-                            Modifier.fillMaxWidth()
-                                .background(if (a.priority) Palette.Gold.copy(alpha = 0.16f) else Palette.Purple.copy(alpha = 0.16f), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text("NOTICE", style = Type.Overline.copy(color = if (a.priority) Palette.Gold else Palette.PurpleLight))
-                            Spacer(Modifier.width(14.dp))
-                            Column {
-                                if (a.title.isNotEmpty()) Text(a.title, style = Type.Label.copy(fontWeight = FontWeight.Bold))
-                                if (a.message.isNotEmpty()) Text(a.message, style = Type.Caption.copy(color = Palette.Text), maxLines = 3)
-                            }
-                        }
-                    }
+            banners.take(1).forEach { a ->
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    Modifier.fillMaxWidth()
+                        .background(if (a.priority) Palette.Gold.copy(alpha = 0.16f) else Palette.Purple.copy(alpha = 0.16f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("NOTICE", style = Type.Overline.copy(color = if (a.priority) Palette.Gold else Palette.PurpleLight))
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        listOf(a.title, a.message).filter { it.isNotEmpty() }.joinToString("  —  "),
+                        style = Type.Label, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
-        }
-
-        item("hero") {
-            Row(Modifier.fillMaxWidth().height(184.dp).padding(horizontal = 48.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                HeroCard(
-                    title = "LIVE TV",
-                    caption = liveFeed?.let { count(it.channels.size, "channels") } ?: liveStatus,
-                    art = liveFeed?.art.orEmpty(), logos = true,
-                    onClick = { nav.push(Screen.Live()) },
-                    modifier = Modifier.weight(1f).rememberFocus(screen.focus, "hero:live"),
-                )
-                HeroCard(
-                    title = "MOVIES",
-                    caption = movieFeed?.let { count(it.all.size, "movies") } ?: movieStatus,
-                    art = movieFeed?.art.orEmpty(), logos = false,
-                    onClick = { nav.push(Screen.Movies()) },
-                    modifier = Modifier.weight(1f).rememberFocus(screen.focus, "hero:movies"),
-                )
-                HeroCard(
-                    title = "SERIES",
-                    caption = seriesFeed?.let { count(it.all.size, "series") } ?: seriesStatus,
-                    art = seriesFeed?.art.orEmpty(), logos = false,
-                    onClick = { nav.push(Screen.SeriesList()) },
-                    modifier = Modifier.weight(1f).rememberFocus(screen.focus, "hero:series"),
-                )
-            }
-        }
-
-        if (failure != null) {
-            item("failure") {
-                Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (failure != null) {
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(failure.message, style = Type.Body, color = Palette.Danger, modifier = Modifier.weight(1f))
                     PillButton("Try again", { retry++ }, Modifier.rememberFocus(screen.focus, "retry"), icon = Icons.Filled.Refresh)
                 }
             }
-        }
 
-        if (continueWatching.isNotEmpty()) {
-            item("continue") {
-                HomeRow("Continue Watching", "Hold OK to remove") {
-                    items(continueWatching, key = { it.key }) { p ->
-                        PosterCard(
-                            title = p.title,
-                            poster = p.poster,
-                            badge = p.subtitle.takeIf { it.isNotEmpty() && p.kind == Progress.EPISODE },
-                            progress = p.fraction,
-                            onClick = {
-                                play(context, PlayRequest.Vod(listOf(VodItem(p.key, p.kind, p.id, p.title, p.subtitle, p.poster, p.ext, p.seriesId)), 0, startOver = false))
-                            },
-                            onLongClick = { library.clearProgress(p.key) },
-                            modifier = Modifier.width(POSTER_WIDTH).rememberFocus(screen.focus, "cw:${p.key}"),
-                        )
-                    }
-                }
-            }
-        }
-
-        if (favoriteChannels.isNotEmpty()) {
-            item("favorites") {
-                HomeRow("Favorite Channels") {
-                    items(favoriteChannels, key = { it.id }) { ch ->
-                        ChannelTile(ch, Modifier.rememberFocus(screen.focus, "fav:${ch.id}")) {
-                            play(context, PlayRequest.Live(favoriteChannels, favoriteChannels.indexOf(ch)))
-                        }
-                    }
-                }
-            }
-        }
-
-        if (featured.isNotEmpty()) {
-            item("featured") {
-                HomeRow("Featured", "Top rated among new arrivals") {
-                    items(featured, key = { if (it.movie != null) "m${it.movie.id}" else "s${it.series!!.id}" }) { f ->
-                        val badge = "★ " + String.format(Locale.US, "%.1f", f.rating)
-                        if (f.movie != null) {
-                            PosterCard(f.movie.name, f.movie.poster, { nav.push(Screen.MovieDetail(f.movie)) },
-                                Modifier.width(POSTER_WIDTH).rememberFocus(screen.focus, "feat:m${f.movie.id}"), badge = badge)
-                        } else if (f.series != null) {
-                            PosterCard(f.series.name, f.series.cover, { nav.push(Screen.SeriesDetail(f.series)) },
-                                Modifier.width(POSTER_WIDTH).rememberFocus(screen.focus, "feat:s${f.series.id}"), badge = badge)
-                        }
-                    }
-                }
-            }
-        }
-
-        if (recentMovies.isNotEmpty()) {
-            val list = recentMovies
-            item("recentMovies") {
-                HomeRow("Recently Added Movies") {
-                    items(list, key = { it.id }) { m ->
-                        PosterCard(m.name, m.poster, { nav.push(Screen.MovieDetail(m)) },
-                            Modifier.width(POSTER_WIDTH).rememberFocus(screen.focus, "rm:${m.id}"))
-                    }
-                }
-            }
-        }
-
-        if (recentSeries.isNotEmpty()) {
-            val list = recentSeries
-            item("recentSeries") {
-                HomeRow("Recently Added Series") {
-                    items(list, key = { it.id }) { s ->
-                        PosterCard(s.name, s.cover, { nav.push(Screen.SeriesDetail(s)) },
-                            Modifier.width(POSTER_WIDTH).rememberFocus(screen.focus, "rs:${s.id}"))
-                    }
+            Spacer(Modifier.height(18.dp))
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                when (app.homeStyle) {
+                    HomeStyle.SPOTLIGHT -> SpotlightHome(screen, destinations, focusedKey) { focusedKey = it }
+                    HomeStyle.MARQUEE -> MarqueeHome(screen, destinations, focused) { focusedKey = it }
+                    else -> PanelsHome(screen, destinations, focusedKey) { focusedKey = it }
                 }
             }
         }
     }
 }
 
-private fun statusText(l: Loadable<*>) = when (l) {
-    is Loadable.Failed -> "Unavailable"
-    else -> "Loading…"
+/* ------------------------------------------------------------------ shared artwork */
+
+@Composable
+private fun PosterStrip(art: List<String>, count: Int, alpha: Float, modifier: Modifier = Modifier) {
+    Row(modifier) {
+        art.take(count).forEach { url ->
+            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, alpha = alpha, modifier = Modifier.weight(1f).fillMaxHeight())
+        }
+    }
 }
 
 @Composable
-private fun HomeRow(title: String, hint: String? = null, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
-    Column {
-        SectionHeader(title, Modifier.padding(horizontal = 48.dp), hint)
-        Spacer(Modifier.height(4.dp))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 48.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            content = content,
-        )
+private fun LogoGrid(art: List<String>, columns: Int, rows: Int, alpha: Float, modifier: Modifier = Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        art.take(columns * rows).chunked(columns).forEach { line ->
+            Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                line.forEach { url ->
+                    Box(Modifier.weight(1f).fillMaxHeight().background(Color(0x1FFFFFFF), RoundedCornerShape(10.dp))) {
+                        AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Fit, alpha = alpha, modifier = Modifier.fillMaxSize().padding(8.dp))
+                    }
+                }
+                repeat(columns - line.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
     }
 }
 
-/** One of the three main destinations: real provider artwork under a cinematic purple wash. */
+/* ------------------------------------------------------------------ Concept 1: Panels */
+
+/** Three tall cinematic panels; the focused one widens. */
 @Composable
-private fun HeroCard(title: String, caption: String, art: List<String>, logos: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    FocusSurface(onClick = onClick, modifier = modifier.fillMaxHeight(), shape = RoundedCornerShape(20.dp), focusedScale = 1.05f) { focused ->
-        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Palette.PurpleDeep, Palette.BackgroundPurple))))
-        if (art.isNotEmpty()) {
-            if (logos) {
-                // Channel logos sit along the top edge, clear of the title.
-                Row(
-                    Modifier.fillMaxWidth().height(78.dp).padding(start = 16.dp, end = 16.dp, top = 18.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    art.take(4).forEach { url ->
-                        AsyncImage(
-                            model = url, contentDescription = null, contentScale = ContentScale.Fit,
-                            alpha = if (focused) 1f else 0.75f,
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                        )
+private fun PanelsHome(screen: Screen.Home, destinations: List<Destination>, focusedKey: String, onFocus: (String) -> Unit) {
+    Row(Modifier.fillMaxSize().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+        destinations.forEach { d ->
+            val isFocused = d.key == focusedKey
+            val weight by animateFloatAsState(if (isFocused) 1.35f else 1f, tween(260), label = "panel")
+            FocusSurface(
+                onClick = d.open, onFocused = { onFocus(d.key) },
+                modifier = Modifier.weight(weight).fillMaxHeight().rememberFocus(screen.focus, d.key),
+                shape = RoundedCornerShape(24.dp), focusedScale = 1.02f,
+            ) { focused ->
+                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Palette.PurpleDeep, Palette.BackgroundPurple))))
+                if (d.art.isNotEmpty()) {
+                    if (d.logos) {
+                        LogoGrid(d.art, 2, 3, if (focused) 1f else 0.7f, Modifier.fillMaxWidth().fillMaxHeight(0.62f).padding(18.dp))
+                    } else {
+                        PosterStrip(d.art, 2, if (focused) 0.95f else 0.6f, Modifier.fillMaxSize())
                     }
                 }
-            } else {
-                Row(Modifier.fillMaxSize()) {
-                    art.take(3).forEach { url ->
-                        AsyncImage(
-                            model = url, contentDescription = null, contentScale = ContentScale.Crop,
-                            alpha = if (focused) 0.9f else 0.6f,
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                        )
+                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.35f to Color.Transparent, 0.72f to Palette.Background.copy(alpha = 0.82f), 1f to Palette.Background)))
+                Column(Modifier.align(Alignment.BottomStart).padding(22.dp)) {
+                    Text(if (focused) "PRESS OK TO OPEN" else "BROWSE", style = Type.Overline.copy(color = if (focused) Palette.Gold else Palette.PurpleLight))
+                    Text(d.title, style = Type.Display, color = Color.White, maxLines = 1)
+                    Text(d.caption, style = Type.Label.copy(fontWeight = FontWeight.SemiBold), color = Palette.Text, maxLines = 1)
+                    Text(d.tagline, style = Type.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------ Concept 2: Spotlight */
+
+/** Brand on the left, three wide banners stacked on the right. */
+@Composable
+private fun SpotlightHome(screen: Screen.Home, destinations: List<Destination>, focusedKey: String, onFocus: (String) -> Unit) {
+    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(0.36f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Image(painterResource(R.drawable.nimer_logo), "Nimer TV", Modifier.fillMaxWidth(0.72f).weight(1f, fill = false))
+            Spacer(Modifier.height(8.dp))
+            Text("LIVE TV  ·  MOVIES  ·  SERIES", style = Type.Overline)
+        }
+        Spacer(Modifier.width(20.dp))
+        Column(Modifier.weight(0.64f).fillMaxHeight().padding(bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            destinations.forEach { d ->
+                FocusSurface(
+                    onClick = d.open, onFocused = { onFocus(d.key) },
+                    modifier = Modifier.fillMaxWidth().weight(1f).rememberFocus(screen.focus, d.key),
+                    shape = RoundedCornerShape(20.dp), focusedScale = 1.03f,
+                ) { focused ->
+                    Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Palette.PurpleDeep, Palette.BackgroundPurple))))
+                    if (d.art.isNotEmpty()) {
+                        val artModifier = Modifier.align(Alignment.CenterEnd).fillMaxWidth(0.62f).fillMaxHeight()
+                        if (d.logos) LogoGrid(d.art, 4, 1, if (focused) 1f else 0.7f, artModifier.padding(vertical = 22.dp, horizontal = 16.dp))
+                        else PosterStrip(d.art, 5, if (focused) 0.95f else 0.6f, artModifier)
+                    }
+                    Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0.3f to Palette.Background.copy(alpha = 0.95f), 0.7f to Palette.Background.copy(alpha = if (focused) 0.1f else 0.45f))))
+                    Column(Modifier.align(Alignment.CenterStart).padding(start = 26.dp)) {
+                        Text(d.title, style = Type.Display, color = Color.White)
+                        Text(d.caption, style = Type.Label.copy(fontWeight = FontWeight.SemiBold), color = if (focused) Palette.Gold else Palette.PurpleLight)
+                        Text(d.tagline, style = Type.Caption)
                     }
                 }
             }
         }
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    0f to Palette.Background.copy(alpha = 0.25f),
-                    0.45f to Palette.BackgroundPurple.copy(alpha = if (focused) 0.35f else 0.6f),
-                    1f to Palette.Background.copy(alpha = 0.96f),
-                ),
-            ),
-        )
-        Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
-            Text(if (focused) "PRESS OK TO OPEN" else "BROWSE", style = Type.Overline.copy(color = if (focused) Palette.Gold else Palette.PurpleLight))
-            Spacer(Modifier.height(2.dp))
-            Text(title, style = Type.Display, color = Color.White)
-            Text(caption, style = Type.Label, color = Palette.TextDim)
-        }
-        Box(
-            Modifier.align(Alignment.BottomStart).fillMaxWidth().height(3.dp)
-                .background(Brush.horizontalGradient(listOf(Palette.Purple, if (focused) Palette.PurpleLight else Color.Transparent))),
-        )
     }
 }
 
-/** 16:9 channel tile used on the home screen and in search results. */
+/* ------------------------------------------------------------------ Concept 3: Marquee */
+
+@Composable
+private fun MarqueeBackdrop(focused: Destination) {
+    Crossfade(focused.key, animationSpec = tween(350), label = "backdrop") { key ->
+        Box(Modifier.fillMaxSize()) {
+            if (key == focused.key && focused.art.isNotEmpty()) {
+                if (focused.logos) {
+                    LogoGrid(focused.art, 4, 2, 0.8f, Modifier.align(Alignment.TopEnd).fillMaxWidth(0.6f).fillMaxHeight(0.62f).padding(top = 96.dp, end = 44.dp))
+                } else {
+                    PosterStrip(focused.art, 6, 0.55f, Modifier.fillMaxSize())
+                }
+            }
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Palette.Background.copy(alpha = 0.96f), 0.5f to Palette.Background.copy(alpha = 0.6f), 1f to Palette.Background.copy(alpha = 0.25f))))
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Palette.Background.copy(alpha = 0.7f), 0.3f to Color.Transparent, 0.62f to Palette.Background.copy(alpha = 0.7f), 1f to Palette.Background)))
+        }
+    }
+}
+
+/** Full-screen artwork for the highlighted section, with the three choices along the bottom. */
+@Composable
+private fun MarqueeHome(screen: Screen.Home, destinations: List<Destination>, focused: Destination, onFocus: (String) -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        Column(Modifier.weight(1f).fillMaxWidth(0.55f), verticalArrangement = Arrangement.Center) {
+            Text("NOW BROWSING", style = Type.Overline.copy(color = Palette.Gold))
+            Text(focused.title, style = Type.Display.copy(fontSize = 56.sp), color = Color.White)
+            Text(focused.caption, style = Type.Title, color = Palette.PurpleLight)
+            Spacer(Modifier.height(4.dp))
+            Text(focused.tagline, style = Type.Body, color = Palette.TextDim)
+        }
+        Row(Modifier.fillMaxWidth().height(86.dp).padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            destinations.forEach { d ->
+                FocusSurface(
+                    onClick = d.open, onFocused = { onFocus(d.key) },
+                    modifier = Modifier.weight(1f).fillMaxHeight().rememberFocus(screen.focus, d.key),
+                    shape = RoundedCornerShape(18.dp), focusedScale = 1.04f,
+                    background = Color(0x99140C24), focusedBackground = Palette.Purple.copy(alpha = 0.85f),
+                ) { isFocused ->
+                    Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 22.dp)) {
+                        Text(d.title, style = Type.Title.copy(fontWeight = FontWeight.Black, letterSpacing = 1.sp), color = Color.White)
+                        Text(d.caption, style = Type.Caption, color = if (isFocused) Color.White else Palette.TextDim)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------ tiles shared with Search */
+
+/** 16:9 channel tile used in search results. */
 @Composable
 fun ChannelTile(channel: Channel, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Column(modifier.width(150.dp)) {
@@ -354,10 +351,8 @@ fun ChannelTile(channel: Channel, modifier: Modifier = Modifier, onClick: () -> 
             LogoArt(channel.logo, channel.name, Modifier.fillMaxSize(), inset = 14.dp)
         }
         Spacer(Modifier.height(8.dp))
-        Text(channel.name, style = Type.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+        Text(channel.name, style = Type.Label, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
     }
 }
 
-private const val RECENT_POOL = 300
-private const val ROW_SIZE = 24
 val POSTER_WIDTH = 118.dp

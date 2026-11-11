@@ -88,7 +88,8 @@ a higher `versionCode` than every build published before.
 
 | Release | versionCode | versionName |
 | --- | --- | --- |
-| First production release | 3 | 3.0.0 |
+| Internal test build (never published) | 3 | 3.0.0 |
+| First production release | 4 | 3.1.0 |
 
 1. For an update, raise `nimerVersionCode` and `nimerVersionName` in `gradle.properties`
    and add a row to the table above. (Skip for the first release.)
@@ -186,7 +187,7 @@ network request, a holiday first seen during a launch appears from the next laun
 
 ## Tests
 
-`./gradlew :app:testDebugUnitTest` runs 37 tests on the JVM:
+`./gradlew :app:testDebugUnitTest` runs 39 tests on the JVM:
 
 - `PanelConfigTest` — the captured live panel response, validation, splash scheduling
   (start, end, switch-over, stale forced splash), update decisions, archive identity checks.
@@ -195,7 +196,8 @@ network request, a holiday first seen during a launch appears from the next laun
 - `XtreamClientTest` — real HTTP against a local fake Xtream server: sign-in, wrong
   password, expired account, backup-DNS failover at sign-in and mid-session, all servers down.
 - `UiScreensTest` — renders the real screens at 1080p with Robolectric and drives them with
-  D-pad key events (home → movies → details → favorite → back → live → series), exit
+  D-pad key events (home → movies → continue watching → details → favorite → back → live →
+  series), the three home layouts, a 1280×720 display, exit
   confirmation, sign-in, maintenance and the mandatory-update gate. Screenshots are written
   to `app/build/screens/`. The posters in those screenshots are synthetic test images.
 
@@ -216,8 +218,8 @@ public release, test on a real Android TV device:
 
 - No catch-up/timeshift, no multi-profile, no parental PIN, no external player.
 - EPG uses the provider's short guide for the selected channel; there is no full grid guide.
-- "Featured" is the best provider-rated titles among recent additions and is hidden when
-  the provider supplies no ratings. No ratings or artwork are invented.
+- The home screen has three layouts (Panels, Spotlight, Marquee) selectable on the Account
+  screen. Artwork and counts on it come from the provider; nothing is invented.
 - Credentials are stored in app-private storage (not hardware-encrypted).
 - Playback formats depend on the device's decoders; unsupported codecs show an error
   instead of playing.

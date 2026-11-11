@@ -182,6 +182,11 @@ class SessionStore(context: Context) {
 
     // Announcements the customer has dismissed.
     private val misc = context.getSharedPreferences("app_state", Context.MODE_PRIVATE)
+    /** Home screen layout the customer picked on the Account screen (default: Marquee). */
+    var homeStyle: Int
+        get() = misc.getInt("home_style", DEFAULT_HOME_STYLE)
+        set(value) = misc.edit().putInt("home_style", value).apply()
+
     fun isDismissed(key: String) = misc.getStringSet("dismissed", emptySet())!!.contains(key)
     fun dismiss(key: String) {
         val set = HashSet(misc.getStringSet("dismissed", emptySet())!!)
@@ -189,3 +194,6 @@ class SessionStore(context: Context) {
         misc.edit().putStringSet("dismissed", set).apply()
     }
 }
+
+/** Index into the home layouts: 0 Panels, 1 Spotlight, 2 Marquee. */
+const val DEFAULT_HOME_STYLE = 2

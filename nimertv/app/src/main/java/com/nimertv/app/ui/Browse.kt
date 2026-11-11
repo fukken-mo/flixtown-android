@@ -45,6 +45,8 @@ import com.nimertv.app.data.Channel
 import com.nimertv.app.data.EpgEntry
 import com.nimertv.app.data.Library
 import com.nimertv.app.data.Movie
+import com.nimertv.app.data.Progress
+import com.nimertv.app.data.ProgressRules
 import com.nimertv.app.data.Series
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -76,7 +78,7 @@ private fun CategoryRail(
 ) {
     LazyColumn(
         state = screen.listState("rail"),
-        modifier = Modifier.width(208.dp).fillMaxHeight(),
+        modifier = Modifier.width(RAIL_WIDTH).fillMaxHeight(),
         contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp, start = 4.dp, end = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -130,7 +132,7 @@ fun LiveScreen(screen: Screen.Live, nav: Nav, catalog: Catalog, library: Library
                     d.data.categories, screen.category, { nav.push(Screen.Search()) },
                 ) { screen.category = it }
 
-                Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.width(RAIL_GAP))
 
                 Column(Modifier.weight(1f).fillMaxHeight()) {
                     ScreenTitle("Live TV", "$categoryName  ·  ${channels.size} channels")
@@ -165,8 +167,8 @@ fun LiveScreen(screen: Screen.Live, nav: Nav, catalog: Catalog, library: Library
                     }
                 }
 
-                Spacer(Modifier.width(16.dp))
-                GuidePanel(focused, catalog, Modifier.width(280.dp).fillMaxHeight().padding(bottom = 24.dp))
+                Spacer(Modifier.width(14.dp))
+                GuidePanel(focused, catalog, Modifier.width(204.dp).fillMaxHeight().padding(bottom = 24.dp))
             }
         }
     }
@@ -190,11 +192,12 @@ private fun ChannelRow(
         Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 (if (channel.number > 0) channel.number else position).toString(),
-                style = Type.Caption, color = if (isFocused) Color.White else Palette.TextFaint, modifier = Modifier.width(40.dp),
+                style = Type.Caption, color = if (isFocused) Color.White else Palette.TextFaint, modifier = Modifier.width(34.dp),
             )
-            LogoArt(channel.logo, "", Modifier.size(width = 58.dp, height = 36.dp).background(Color(0x22FFFFFF), RoundedCornerShape(6.dp)), inset = 4.dp)
-            Spacer(Modifier.width(14.dp))
-            Text(channel.name, style = Type.Label.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            LogoArt(channel.logo, "", Modifier.size(width = 52.dp, height = 34.dp).background(Color(0x22FFFFFF), RoundedCornerShape(6.dp)), inset = 4.dp)
+            Spacer(Modifier.width(12.dp))
+            // Full channel name: wraps onto a second line instead of being cut off.
+            Text(channel.name, style = Type.Label.copy(fontWeight = FontWeight.SemiBold), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (favorite) Text("★", color = Palette.Gold, style = Type.Label)
         }
     }
@@ -210,14 +213,14 @@ private fun GuidePanel(channel: Channel?, catalog: Catalog, modifier: Modifier =
         delay(450) // wait until the focus settles before asking the provider
         guide = runCatching { catalog.epg(id) }.getOrDefault(emptyList())
     }
-    Column(modifier.background(Palette.Surface.copy(alpha = 0.7f), RoundedCornerShape(16.dp)).padding(18.dp)) {
+    Column(modifier.background(Palette.Surface.copy(alpha = 0.7f), RoundedCornerShape(16.dp)).padding(14.dp)) {
         if (channel == null) {
             Text("Select a channel to see what's on.", style = Type.Body, color = Palette.TextDim)
             return@Column
         }
-        LogoArt(channel.logo, channel.name, Modifier.fillMaxWidth().height(86.dp).background(Color(0x22FFFFFF), RoundedCornerShape(12.dp)), inset = 12.dp)
-        Spacer(Modifier.height(12.dp))
-        Text(channel.name, style = Type.Section, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        LogoArt(channel.logo, channel.name, Modifier.fillMaxWidth().height(64.dp).background(Color(0x22FFFFFF), RoundedCornerShape(12.dp)), inset = 10.dp)
+        Spacer(Modifier.height(10.dp))
+        Text(channel.name, style = Type.Label.copy(fontWeight = FontWeight.Bold), maxLines = 3, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(14.dp))
         Text("PROGRAM GUIDE", style = Type.Overline)
         Spacer(Modifier.height(8.dp))
@@ -245,7 +248,7 @@ private fun GuidePanel(channel: Channel?, catalog: Catalog, modifier: Modifier =
             }
         }
         Spacer(Modifier.weight(1f))
-        Text("OK  Watch      Hold OK  Favorite", style = Type.Caption, color = Palette.TextFaint)
+        Text("OK  Watch\nHold OK  Favorite", style = Type.Caption, color = Palette.TextFaint)
     }
 }
 
@@ -264,6 +267,8 @@ fun MoviesScreen(screen: Screen.Movies, nav: Nav, catalog: Catalog, library: Lib
         screen = screen, title = "Movies", noun = "movies", data = data,
         category = screen.category, onCategory = { screen.category = it },
         favorites = library.favoriteMovies.toList(),
+        continuing = ProgressRules.continueWatching(library.progress.values.filter { it.kind == Progress.MOVIE }, limit = 60)
+            .mapNotNull { p -> p.id.toIntOrNull()?.let { it to p.fraction } },
         idOf = { it.id }, categoryOf = { it.categoryId }, nameOf = { it.name }, posterOf = { it.poster },
         onOpen = { nav.push(Screen.MovieDetail(it)) },
         onFavorite = { library.toggleMovie(it.id) },
@@ -280,6 +285,8 @@ fun SeriesScreen(screen: Screen.SeriesList, nav: Nav, catalog: Catalog, library:
         screen = screen, title = "Series", noun = "series", data = data,
         category = screen.category, onCategory = { screen.category = it },
         favorites = library.favoriteSeries.toList(),
+        continuing = ProgressRules.continueWatching(library.progress.values.filter { it.kind == Progress.EPISODE }, limit = 60)
+            .map { it.seriesId to it.fraction },
         idOf = { it.id }, categoryOf = { it.categoryId }, nameOf = { it.name }, posterOf = { it.cover },
         onOpen = { nav.push(Screen.SeriesDetail(it)) },
         onFavorite = { library.toggleSeries(it.id) },
@@ -297,6 +304,8 @@ private fun <T : Any> PosterBrowser(
     category: String,
     onCategory: (String) -> Unit,
     favorites: List<Int>,
+    /** Titles with an unfinished movie/episode, newest first, with the watched fraction. */
+    continuing: List<Pair<Int, Float>>,
     idOf: (T) -> Int,
     categoryOf: (T) -> String,
     nameOf: (T) -> String,
@@ -312,36 +321,47 @@ private fun <T : Any> PosterBrowser(
             is Loadable.Failed -> Message("$title unavailable", data.message, Modifier.fillMaxSize(), "Try again", onRetry)
             is Loadable.Ready -> {
                 val section = data.data
-                val items = remember(section, category, favorites) {
+                val progressById = remember(continuing) { continuing.toMap() }
+                val items = remember(section, category, favorites, continuing) {
                     when (category) {
                         Screen.ALL -> section.items
+                        Screen.CONTINUE -> section.items.associateBy(idOf).let { m -> continuing.mapNotNull { m[it.first] } }
                         Screen.FAVORITES -> section.items.associateBy(idOf).let { m -> favorites.mapNotNull(m::get) }
                         else -> section.items.filter { categoryOf(it) == category }
                     }
                 }
                 val categoryName = when (category) {
                     Screen.ALL -> "All $noun"
+                    Screen.CONTINUE -> "Continue watching"
                     Screen.FAVORITES -> "Favorites"
                     else -> section.categories.firstOrNull { it.id == category }?.name.orEmpty()
                 }
 
-                CategoryRail(screen, listOf(Screen.ALL to "All $noun", Screen.FAVORITES to "★  Favorites"), section.categories, category, onSearch, onCategory)
-                Spacer(Modifier.width(16.dp))
+                CategoryRail(
+                    screen,
+                    listOf(Screen.ALL to "All $noun", Screen.CONTINUE to "▶  Continue watching", Screen.FAVORITES to "★  Favorites"),
+                    section.categories, category, onSearch, onCategory,
+                )
+                Spacer(Modifier.width(RAIL_GAP))
                 Column(Modifier.weight(1f).fillMaxHeight()) {
                     ScreenTitle(title, "$categoryName  ·  ${items.size} titles  ·  Hold OK to favorite")
                     if (items.isEmpty()) {
                         Message(
                             "Nothing here yet",
-                            if (category == Screen.FAVORITES) "Hold OK on a title to add it to your favorites." else "This category is empty.",
+                            when (category) {
+                                Screen.FAVORITES -> "Hold OK on a title to add it to your favorites."
+                                Screen.CONTINUE -> "Titles you start watching will appear here so you can pick up where you left off."
+                                else -> "This category is empty."
+                            },
                             Modifier.fillMaxSize(),
                         )
                     } else {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(6),
+                            columns = GridCells.Fixed(5),
                             state = screen.gridState("grid:$category"),
                             contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 32.dp),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(18.dp),
                         ) {
                             items(items, key = { idOf(it) }) { item ->
                                 val id = idOf(item)
@@ -349,6 +369,7 @@ private fun <T : Any> PosterBrowser(
                                     title = nameOf(item),
                                     poster = posterOf(item),
                                     favorite = id in favorites,
+                                    progress = progressById[id],
                                     onClick = { onOpen(item) },
                                     onLongClick = { onFavorite(item) },
                                     modifier = Modifier.rememberFocus(screen.focus, "item:$id"),
@@ -361,3 +382,6 @@ private fun <T : Any> PosterBrowser(
         }
     }
 }
+
+private val RAIL_WIDTH = 190.dp
+private val RAIL_GAP = 26.dp

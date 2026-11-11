@@ -59,6 +59,7 @@ class UiScreensTest {
     )!!
 
     @Before fun setUp() {
+        app.chooseHomeStyle(0)
         app.panel = PanelSnapshot(config(), System.currentTimeMillis(), fresh = true)
         val result = app.client.authenticate("demo", "secret", null)
         app.signIn((result as AuthResult.Success).session)
@@ -112,25 +113,35 @@ class UiScreensTest {
     }
 
     @Test fun homeBrowseAndDetailsWithRemote() {
-        // One half-watched movie and an episode, so Continue Watching has real entries.
+        // One half-watched movie, so the Continue watching entry in Movies has a real title.
         app.library!!.saveProgress(Progress("movie:203", Progress.MOVIE, "203", "فيلم رقم 3", "", "${provider.url}/img/poster4.jpg", "mkv", 0, 1_500_000, 6_000_000, 2))
         app.library!!.toggleChannel(102)
         app.library!!.toggleChannel(105)
         showMain()
         waitForText("60 movies")
         waitForText("40 channels")
+        waitForText("Subscription expires")
         settleArtwork()
-        shot("01_home")
+        shot("01_home_panels")
 
         // Remote: focus starts on LIVE TV; ▶ moves to MOVIES; OK opens it.
         key(Key.DirectionRight)
-        settleArtwork()
-        shot("02_home_movies_focused")
         key(Key.DirectionCenter)
         waitForText("All movies")
         waitForText("60 titles")
         settleArtwork()
         shot("03_movies")
+
+        // ▼ to "Continue watching" in the side menu, OK shows the half-watched movie.
+        key(Key.DirectionDown)
+        key(Key.DirectionCenter)
+        waitForText("1 titles")
+        waitForText("فيلم رقم 3")
+        settleArtwork()
+        shot("03b_movies_continue")
+        key(Key.DirectionUp)
+        key(Key.DirectionCenter)
+        waitForText("60 titles")
 
         // ▶ into the grid, OK opens the first movie.
         key(Key.DirectionRight)
@@ -175,6 +186,45 @@ class UiScreensTest {
         waitForText("Play S1 E1")
         settleArtwork()
         shot("06_series_detail")
+    }
+
+    @Test fun homeConcepts() {
+        showMain()
+        waitForText("60 movies")
+        rule.runOnUiThread { app.chooseHomeStyle(1) }
+        waitForText("Browse the film library")
+        settleArtwork()
+        shot("01_home_spotlight")
+        rule.runOnUiThread { app.chooseHomeStyle(2) }
+        waitForText("NOW BROWSING")
+        key(Key.DirectionRight)
+        settleArtwork()
+        shot("01_home_marquee")
+        // OK on the highlighted MOVIES tab opens Movies in every layout.
+        key(Key.DirectionCenter)
+        waitForText("All movies")
+    }
+
+    /** The same screens on a 1280×720 emulator-sized display (853×480 dp). */
+    @Test
+    @Config(sdk = [34], qualifiers = "w853dp-h480dp-land-hdpi")
+    fun compactScreen() {
+        showMain()
+        waitForText("60 movies")
+        settleArtwork()
+        shot("20_compact_home")
+        key(Key.DirectionCenter)
+        waitForText("All channels")
+        key(Key.DirectionRight)
+        waitForText("PROGRAM GUIDE")
+        settleArtwork()
+        shot("21_compact_live")
+        back()
+        key(Key.DirectionRight)
+        key(Key.DirectionCenter)
+        waitForText("60 titles")
+        settleArtwork()
+        shot("22_compact_movies")
     }
 
     @Test fun searchAndAccount() {

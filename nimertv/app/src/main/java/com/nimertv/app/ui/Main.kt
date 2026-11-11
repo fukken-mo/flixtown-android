@@ -82,6 +82,7 @@ sealed class Screen(initialFocus: Any?) {
         const val ALL = "__all"
         const val FAVORITES = "__favorites"
         const val RECENT = "__recent"
+        const val CONTINUE = "__continue"
     }
 }
 
@@ -156,7 +157,7 @@ fun MainScreens(app: NimerApp, onSignOut: () -> Unit, onShowUpdate: () -> Unit, 
             label = "screen",
         ) { screen ->
             when (screen) {
-                is Screen.Home -> HomeScreen(app, screen, nav, catalog, library, reload, onShowUpdate)
+                is Screen.Home -> HomeScreen(app, screen, nav, catalog, reload, onShowUpdate)
                 is Screen.Live -> LiveScreen(screen, nav, catalog, library, reload)
                 is Screen.Movies -> MoviesScreen(screen, nav, catalog, library, reload)
                 is Screen.SeriesList -> SeriesScreen(screen, nav, catalog, library, reload)

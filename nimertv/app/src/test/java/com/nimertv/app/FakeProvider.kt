@@ -39,9 +39,9 @@ class FakeProvider(private val user: String = "demo", private val pass: String =
     private fun body(q: Map<String, String?>): String =
         when (q["action"]) {
                     null -> """{"user_info":{"username":"$user","auth":1,"status":"$accountStatus","exp_date":"1893456000","is_trial":"0","max_connections":"2","allowed_output_formats":["m3u8","ts"]},"server_info":{"server_protocol":"http"}}"""
-                    "get_live_categories" -> """[{"category_id":"1","category_name":"أخبار","parent_id":0},{"category_id":"2","category_name":"Sports","parent_id":0}]"""
+                    "get_live_categories" -> """[{"category_id":"1","category_name":"أخبار","parent_id":0},{"category_id":"2","category_name":"►AR | ABU DHABI SPORTS NETWORK","parent_id":0}]"""
                     "get_live_streams" -> (1..40).joinToString(",", "[", "]") {
-                        """{"num":$it,"name":"${if (it % 2 == 0) "قناة $it" else "Channel $it"}","stream_type":"live","stream_id":${100 + it},"stream_icon":"${if (art) "$url/img/logo${1 + it % 4}.png" else ""}","category_id":"${1 + it % 2}"}"""
+                        """{"num":$it,"name":"${if (it % 2 == 0) "AR_NS| قناة الأخبار العربية $it HD" else "AR_NS| AL JAZEERA MUBASHER NEWS CHANNEL $it HD"}","stream_type":"live","stream_id":${100 + it},"stream_icon":"${if (art) "$url/img/logo${1 + it % 4}.png" else ""}","category_id":"${1 + it % 2}"}"""
                     }
                     "get_vod_categories" -> """[{"category_id":"10","category_name":"أفلام عربية"},{"category_id":"11","category_name":"Action"}]"""
                     "get_vod_streams" -> (1..60).joinToString(",", "[", "]") {
