@@ -1,5 +1,6 @@
 package com.nimertv.app
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.WindowManager
@@ -462,6 +463,8 @@ class PlayerActivity : ComponentActivity() {
 
     /* ------------------------------------------------------------ remote */
 
+    // ComponentActivity marks this override as library-restricted; handling remote keys here is the intended use.
+    @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val code = event.keyCode
         if (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN || code == KeyEvent.KEYCODE_VOLUME_MUTE) {

@@ -30,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -119,10 +118,11 @@ fun friendlyError(e: Throwable): String = when (e) {
 
 /** Loads [loader] off the main thread and exposes loading / ready / failed; re-runs when a key changes. */
 @Composable
-fun <T> rememberLoadable(vararg keys: Any?, loader: suspend () -> T): State<Loadable<T>> =
-    produceState<Loadable<T>>(Loadable.Loading, *keys) {
-        value = Loadable.Loading
-        value = try {
+fun <T> rememberLoadable(vararg keys: Any?, loader: suspend () -> T): State<Loadable<T>> {
+    val state = remember { mutableStateOf<Loadable<T>>(Loadable.Loading) }
+    LaunchedEffect(*keys) {
+        state.value = Loadable.Loading
+        state.value = try {
             Loadable.Ready(withContext(Dispatchers.Default) { loader() })
         } catch (e: CancellationException) {
             throw e
@@ -130,6 +130,8 @@ fun <T> rememberLoadable(vararg keys: Any?, loader: suspend () -> T): State<Load
             Loadable.Failed(friendlyError(e))
         }
     }
+    return state
+}
 
 fun play(context: Context, request: PlayRequest) {
     (context.applicationContext as NimerApp).playRequest = request
