@@ -1,119 +1,120 @@
-11-12 06:27:06.994  2842  2881 I FlixTownQA: seasonal_refresh_done
-11-12 06:27:21.966  2842  2842 I FlixTown: Refresh started
-11-12 06:27:22.260  2842  2842 I FlixTownQA: splash event=default image=false file= display_ms=1500
-11-12 06:27:23.691  2842  2842 I FlixTown: Refresh finished: updated
-11-12 06:27:23.745  2842  2842 I FlixTownQA: splash end shown_ms=1500
-11-12 06:27:23.865  2842  2842 I FlixTownQA: screen_awake ProfilesActivity=true
-11-12 06:27:35.921  2842  2842 I FlixTownQA: screen_awake ProfilesActivity=false
-11-12 06:27:36.224  2842  2842 I FlixTownQA: home_resumed
-11-12 06:27:36.224  2842  2842 I FlixTownQA: screen_awake HomeActivity=true
-11-12 06:27:36.414  2842  2842 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-11-12 06:27:36.414  2842  2842 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
-11-12 06:27:37.499  2842  2842 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
-11-12 06:27:37.599  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:27:38.112  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:27:42.390  2842  2842 I FlixTownQA: home_card key=movie:1003
-11-12 06:27:43.018  2842  2842 I FlixTownQA: home_focus key=movie:1003 row=trending
-11-12 06:27:43.019  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:27:44.124  2842  2842 I FlixTownQA: home_card key=movie:1000
-11-12 06:27:44.535  2842  2842 I FlixTownQA: home_focus key=movie:1000 row=latest_movies
-11-12 06:27:44.537  2842  2842 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
-11-12 06:27:45.906  2842  2842 I FlixTownQA: home_card key=series:5001
-11-12 06:27:46.306  2842  2842 I FlixTownQA: home_focus key=series:5001 row=latest_series
-11-12 06:27:46.366  2842  2842 I FlixTownQA: home_art key=series:5001 branded (unsuitable 480x270)
-11-12 06:27:49.377  2842  2842 I FlixTownQA: home_card key=movie:1000
-11-12 06:27:49.760  2842  2842 I FlixTownQA: home_focus key=movie:1000 row=latest_movies
-11-12 06:27:49.761  2842  2842 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
-11-12 06:27:49.999  2842  2842 I FlixTownQA: home_card key=movie:1003
-11-12 06:27:50.368  2842  2842 I FlixTownQA: home_focus key=movie:1003 row=trending
-11-12 06:27:50.369  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:27:50.620  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:27:52.742  2842  2842 I FlixTownQA: nav_open
-11-12 06:28:04.838  2842  2842 I FlixTownQA: picker Sort by: Recently Added|Title A–Z|Top Rated|Release Year selected=0
-11-12 06:28:12.663  2842  2842 I FlixTownQA: picker Categories: All Movies|Action|Drama|Comedy|Thriller|Family|Sci-Fi selected=0
-11-12 06:28:21.891  2842  2842 I FlixTownQA: screen_awake HomeActivity=false
-11-12 06:28:21.968  2842  2842 I FlixTownQA: screen_awake DetailsActivity=true
-11-12 06:28:25.374  2842  2842 I FlixTownQA: screen_awake DetailsActivity=false
-11-12 06:28:25.391  2842  2842 I FlixTownQA: home_resumed
-11-12 06:28:25.391  2842  2842 I FlixTownQA: screen_awake HomeActivity=true
-11-12 06:28:28.750  2842  2842 I FlixTownQA: nav_open
-11-12 06:28:38.071  2842  2842 I FlixTownQA: nav_open
-11-12 06:28:44.397  2842  2842 I FlixTownQA: screen_awake HomeActivity=false
-11-12 06:28:49.939  2842  2842 I FlixTown: Back from background
-11-12 06:28:49.940  2842  2842 I FlixTown: Refresh started
-11-12 06:28:50.036  2842  2842 I FlixTownQA: screen_awake HomeActivity=false
-11-12 06:28:50.042  2842  2842 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-11-12 06:28:50.142  2842  2842 I FlixTownQA: screen_awake ProfilesActivity=true
-11-12 06:28:51.748  2842  2842 I FlixTown: Refresh finished: updated
-11-12 06:29:25.416  2842  2842 I FlixTownQA: screen_awake ProfilesActivity=false
-11-12 06:29:25.560  2842  2842 I FlixTownQA: home_resumed
-11-12 06:29:25.560  2842  2842 I FlixTownQA: screen_awake HomeActivity=true
-11-12 06:29:25.652  2842  2842 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-11-12 06:29:25.652  2842  2842 I FlixTownQA: home_art key=movie:1999 branded (unsuitable 480x270)
-11-12 06:29:25.929  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:29:25.942  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:29:25.948  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:29:25.956  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:29:26.265  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:29:30.868  2842  2842 I FlixTownQA: screen_awake HomeActivity=false
-11-12 06:29:30.950  2842  2842 I FlixTownQA: subtitle_builtin_parent=video_frame
-11-12 06:29:31.023  2842  2842 I FlixTownQA: screen_awake PlayerActivity=true
-11-12 06:29:31.028  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio] subs=[Subtitles] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:32.488  2842  2842 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=- | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-12 06:29:32.571  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:33.111  2842  2842 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-12 06:29:33.381  2842  2842 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-12 06:29:33.925  2842  2842 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
-11-12 06:29:34.627  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:35.129  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:37.704  2842  2842 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
-11-12 06:29:38.148  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:39.757  2842  2842 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
-11-12 06:29:40.156  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:40.659  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=progress elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:45.710  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=progress elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:46.722  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=progress elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:47.729  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=progress elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:49.316  2842  2842 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
-11-12 06:29:49.738  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:51.658  2842  2842 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
-11-12 06:29:51.794  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:52.310  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=3 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:53.314  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=4 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:54.319  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=5 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:55.283  2842  2842 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
-11-12 06:29:55.324  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=5 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:55.827  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:56.339  2842  2842 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
-11-12 06:29:56.840  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:29:59.341  2842  2842 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
-11-12 06:29:59.355  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:30:10.970  2842  2842 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
-11-12 06:30:11.403  2842  2842 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:30:12.863  2842  2842 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
-11-12 06:30:12.909  2842  2842 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-12 06:30:13.495  2842  2842 I FlixTownQA: screen_awake PlayerActivity=false
-11-12 06:30:13.520  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:13.528  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:13.541  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:13.542  2842  2842 I FlixTownQA: home_resumed
-11-12 06:30:13.543  2842  2842 I FlixTownQA: screen_awake HomeActivity=true
-11-12 06:30:13.559  2842  2842 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:18.950  5144  5144 I FlixTown: Refresh started
-11-12 06:30:19.017  5144  5144 I FlixTownQA: splash event=default image=false file= display_ms=1500
-11-12 06:30:20.485  5144  5144 I FlixTownQA: splash end shown_ms=1501
-11-12 06:30:20.551  5144  5144 I FlixTownQA: screen_awake ProfilesActivity=true
-11-12 06:30:20.829  5144  5144 I FlixTown: Refresh finished: updated
-11-12 06:30:36.136  5144  5144 I FlixTownQA: screen_awake ProfilesActivity=false
-11-12 06:30:36.332  5144  5144 I FlixTownQA: home_resumed
-11-12 06:30:36.332  5144  5144 I FlixTownQA: screen_awake HomeActivity=true
-11-12 06:30:36.547  5144  5144 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
-11-12 06:30:36.549  5144  5144 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
-11-12 06:30:37.480  5144  5144 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:37.485  5144  5144 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:37.551  5144  5144 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:38.175  5144  5144 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-12 06:30:40.914  5355  5355 I FlixTown: Refresh started
-11-12 06:30:40.969  5355  5355 I FlixTownQA: splash event=default image=false file= display_ms=1500
-11-12 06:30:41.581  5355  5355 I FlixTown: Refresh finished: account expired
-11-12 06:30:42.444  5355  5355 I FlixTownQA: splash end shown_ms=1501
+11-12 18:41:07.390  2783  2831 I FlixTownQA: seasonal_refresh_done
+11-12 18:41:22.029  2783  2783 I FlixTown: Refresh started
+11-12 18:41:22.190  2783  2783 I FlixTownQA: splash event=default image=false file= display_ms=1500
+11-12 18:41:23.644  2783  2783 I FlixTown: Refresh finished: updated
+11-12 18:41:23.681  2783  2783 I FlixTownQA: splash end shown_ms=1500
+11-12 18:41:23.767  2783  2783 I FlixTownQA: screen_awake ProfilesActivity=true
+11-12 18:41:36.563  2783  2783 I FlixTownQA: screen_awake ProfilesActivity=false
+11-12 18:41:36.803  2783  2783 I FlixTownQA: home_resumed
+11-12 18:41:36.804  2783  2783 I FlixTownQA: screen_awake HomeActivity=true
+11-12 18:41:36.972  2783  2783 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+11-12 18:41:36.975  2783  2783 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
+11-12 18:41:37.964  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:41:38.414  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:41:38.415  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:41:43.042  2783  2783 I FlixTownQA: home_card key=movie:1003
+11-12 18:41:43.487  2783  2783 I FlixTownQA: home_focus key=movie:1003 row=trending
+11-12 18:41:43.489  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:41:44.704  2783  2783 I FlixTownQA: home_card key=movie:1000
+11-12 18:41:45.183  2783  2783 I FlixTownQA: home_focus key=movie:1000 row=latest_movies
+11-12 18:41:45.257  2783  2783 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
+11-12 18:41:46.415  2783  2783 I FlixTownQA: home_card key=series:5001
+11-12 18:41:46.821  2783  2783 I FlixTownQA: home_focus key=series:5001 row=latest_series
+11-12 18:41:46.902  2783  2783 I FlixTownQA: home_art key=series:5001 branded (unsuitable 480x270)
+11-12 18:41:49.719  2783  2783 I FlixTownQA: home_card key=movie:1000
+11-12 18:41:50.122  2783  2783 I FlixTownQA: home_focus key=movie:1000 row=latest_movies
+11-12 18:41:50.124  2783  2783 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
+11-12 18:41:50.340  2783  2783 I FlixTownQA: home_card key=movie:1003
+11-12 18:41:50.745  2783  2783 I FlixTownQA: home_focus key=movie:1003 row=trending
+11-12 18:41:50.749  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:41:50.956  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:41:53.024  2783  2783 I FlixTownQA: nav_open
+11-12 18:42:04.573  2783  2783 I FlixTownQA: picker Sort by: Recently Added|Title A–Z|Top Rated|Release Year selected=0
+11-12 18:42:12.081  2783  2783 I FlixTownQA: picker Categories: All Movies|Action|Drama|Comedy|Thriller|Family|Sci-Fi selected=0
+11-12 18:42:21.094  2783  2783 I FlixTownQA: screen_awake HomeActivity=false
+11-12 18:42:21.140  2783  2783 I FlixTownQA: screen_awake DetailsActivity=true
+11-12 18:42:24.492  2783  2783 I FlixTownQA: screen_awake DetailsActivity=false
+11-12 18:42:24.508  2783  2783 I FlixTownQA: home_resumed
+11-12 18:42:24.509  2783  2783 I FlixTownQA: screen_awake HomeActivity=true
+11-12 18:42:27.809  2783  2783 I FlixTownQA: nav_open
+11-12 18:42:36.714  2783  2783 I FlixTownQA: nav_open
+11-12 18:42:42.910  2783  2783 I FlixTownQA: screen_awake HomeActivity=false
+11-12 18:42:48.279  2783  2783 I FlixTown: Back from background
+11-12 18:42:48.279  2783  2783 I FlixTown: Refresh started
+11-12 18:42:48.337  2783  2783 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+11-12 18:42:48.354  2783  2783 I FlixTownQA: screen_awake HomeActivity=false
+11-12 18:42:48.472  2783  2783 I FlixTownQA: screen_awake ProfilesActivity=true
+11-12 18:42:49.980  2783  2783 I FlixTown: Refresh finished: updated
+11-12 18:43:22.991  2783  2783 I FlixTownQA: screen_awake ProfilesActivity=false
+11-12 18:43:23.105  2783  2783 I FlixTownQA: home_resumed
+11-12 18:43:23.106  2783  2783 I FlixTownQA: screen_awake HomeActivity=true
+11-12 18:43:23.217  2783  2783 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+11-12 18:43:23.236  2783  2783 I FlixTownQA: home_art key=movie:1999 branded (unsuitable 480x270)
+11-12 18:43:23.247  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:43:23.254  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:43:23.270  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:43:23.273  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:43:23.706  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:43:28.261  2783  2783 I FlixTownQA: screen_awake HomeActivity=false
+11-12 18:43:28.332  2783  2783 I FlixTownQA: subtitle_builtin_parent=video_frame
+11-12 18:43:28.400  2783  2783 I FlixTownQA: screen_awake PlayerActivity=true
+11-12 18:43:28.407  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio] subs=[Subtitles] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:29.568  2783  2783 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=- | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-12 18:43:29.918  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:30.138  2783  2783 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-12 18:43:30.420  2783  2783 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-12 18:43:30.933  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:31.173  2783  2783 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
+11-12 18:43:31.448  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:31.958  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:34.784  2783  2783 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
+11-12 18:43:34.987  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:36.432  2783  2783 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
+11-12 18:43:36.500  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:37.509  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=progress elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:42.548  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=progress elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:43.058  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=progress elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:44.086  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=progress elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:45.674  2783  2783 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
+11-12 18:43:46.102  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:47.928  2783  2783 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
+11-12 18:43:48.127  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:48.633  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=3 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:49.646  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=4 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:50.657  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=true reporting=false focus=play elapsed=5 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:51.548  2783  2783 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
+11-12 18:43:51.668  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=5 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:52.198  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:52.325  2783  2783 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
+11-12 18:43:52.702  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:43:55.325  2783  2783 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
+11-12 18:43:55.727  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:44:06.944  2783  2783 I FlixTownQA: subtitle_lift controls=true screen=266 frame=266 bar_top=836
+11-12 18:44:07.308  2783  2783 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:44:08.738  2783  2783 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=836
+11-12 18:44:08.820  2783  2783 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · English] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-12 18:44:09.377  2783  2783 I FlixTownQA: screen_awake PlayerActivity=false
+11-12 18:44:09.413  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:09.416  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:09.420  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:09.422  2783  2783 I FlixTownQA: home_resumed
+11-12 18:44:09.422  2783  2783 I FlixTownQA: screen_awake HomeActivity=true
+11-12 18:44:09.433  2783  2783 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:14.456  5201  5201 I FlixTown: Refresh started
+11-12 18:44:14.512  5201  5201 I FlixTownQA: splash event=default image=false file= display_ms=1500
+11-12 18:44:15.985  5201  5201 I FlixTownQA: splash end shown_ms=1501
+11-12 18:44:16.026  5201  5201 I FlixTownQA: screen_awake ProfilesActivity=true
+11-12 18:44:16.230  5201  5201 I FlixTown: Refresh finished: updated
+11-12 18:44:31.186  5201  5201 I FlixTownQA: screen_awake ProfilesActivity=false
+11-12 18:44:31.338  5201  5201 I FlixTownQA: home_resumed
+11-12 18:44:31.339  5201  5201 I FlixTownQA: screen_awake HomeActivity=true
+11-12 18:44:31.516  5201  5201 W FlixTown: Update check failed: Couldn't reach the Flix Town panel. Check the TV's internet connection and try again.
+11-12 18:44:31.516  5201  5201 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
+11-12 18:44:32.074  5201  5201 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:32.283  5201  5201 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:32.330  5201  5201 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:32.805  5201  5201 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-12 18:44:35.756  5419  5419 I FlixTown: Refresh started
+11-12 18:44:35.807  5419  5419 I FlixTownQA: splash event=default image=false file= display_ms=1500
+11-12 18:44:36.496  5419  5419 I FlixTown: Refresh finished: account expired
+11-12 18:44:37.280  5419  5419 I FlixTownQA: splash end shown_ms=1501

@@ -1,96 +1,96 @@
 == home
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                        android.widget.LinearLayout{12178d8 VFE...C.. .F...... 0,0-324,104 aid=1073741825}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                        android.widget.LinearLayout{fd31be3 VFE...C.. .F...... 0,0-324,104 aid=1073741825}
 == row-1
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                      android.widget.FrameLayout{7d0c808 VFE...C.. .F...... 16,10-428,518 aid=1073741826}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                      android.widget.FrameLayout{db2c3d3 VFE...C.. .F...... 16,10-428,518 aid=1073741826}
 == row-2
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                      android.widget.FrameLayout{95ce45d VFE...C.. .F...... 16,10-296,494 aid=1073741827}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                      android.widget.FrameLayout{62ce9bc VFE...C.. .F...... 16,10-296,494 aid=1073741827}
 == row-3
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                      android.widget.FrameLayout{94ca643 VFE...C.. .F...... 16,10-296,494 aid=1073741828}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                      android.widget.FrameLayout{74816ba VFE...C.. .F...... 16,10-296,494 aid=1073741828}
 == row-last-down
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                      android.widget.FrameLayout{94ca643 VFE...C.. .F...... 16,10-296,494 aid=1073741828}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                      android.widget.FrameLayout{74816ba VFE...C.. .F...... 16,10-296,494 aid=1073741828}
 == hero-again
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                        android.widget.LinearLayout{12178d8 VFE...C.. .F...... 0,0-324,104 aid=1073741825}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                        android.widget.LinearLayout{fd31be3 VFE...C.. .F...... 0,0-324,104 aid=1073741825}
 == movies-enter
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{3f826e8 VFE...C.. .F...... 16,8-288,484 aid=1073741831}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{2d116a7 VFE...C.. .F...... 16,8-288,484 aid=1073741831}
 == grid-right
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{846eb00 VFE...C.. .F...... 288,8-560,484 aid=1073741832}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{3f8339f VFE...C.. .F...... 288,8-560,484 aid=1073741832}
 == grid-down
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{6546a90 VFE...C.. .F...... 288,223-560,699 aid=1073741833}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{40d346f VFE...C.. .F...... 288,223-560,699 aid=1073741833}
 == grid-left
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{a098478 VFE...C.. .F...... 16,223-288,699 aid=1073741834}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{b780d77 VFE...C.. .F...... 16,223-288,699 aid=1073741834}
 == grid-up
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{3f826e8 VFE...C.. .F...... 16,8-288,484 aid=1073741831}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{2d116a7 VFE...C.. .F...... 16,8-288,484 aid=1073741831}
 == up-to-sort
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.Button{6a56e08 VFED..C.. .F...... 0,0-385,92 aid=1073741835}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.Button{9d00047 VFED..C.. .F...... 0,0-385,92 aid=1073741835}
 == after-sort
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.Button{db2e725 VFED..C.. .F...... 0,0-294,92 aid=1073741838}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.Button{10278ac VFED..C.. .F...... 0,0-294,92 aid=1073741838}
 == sort-to-grid
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{19476da VFE...C.. .F...... 16,8-288,484 aid=1073741839}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{fc782d5 VFE...C.. .F...... 16,8-288,484 aid=1073741839}
 == category-chip
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.Button{337e0fa VFED..C.. .F...... 314,0-583,92 aid=1073741840}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.Button{fd9f975 VFED..C.. .F...... 314,0-583,92 aid=1073741840}
 == after-category
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.Button{1c66cdf VFED..C.. .F...... 314,0-496,92 aid=1073741844}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.Button{ebaa68e VFED..C.. .F...... 314,0-496,92 aid=1073741844}
 == category-to-grid
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{2e4ff3f VFE...C.. .F...... 16,8-288,484 aid=1073741845}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{d162e6e VFE...C.. .F...... 16,8-288,484 aid=1073741845}
 == grid-moved
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{4496a1e VFE...C.. .F...... 560,392-832,868 aid=1073741848}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{ac32fa9 VFE...C.. .F...... 560,392-832,868 aid=1073741848}
 == back-from-details
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{4496a1e VFE...C.. .F...... 560,392-832,868 aid=1073741848}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{ac32fa9 VFE...C.. .F...... 560,392-832,868 aid=1073741848}
 == tv-enter
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{fe166e3 VFE...C.. .F...... 16,8-288,484 aid=1073741852}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{ffdd64b VFE...C.. .F...... 16,8-288,484 aid=1073741852}
 == tv-moved
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{544452b VFE...C.. .F...... 288,223-560,699 aid=1073741854}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{77b7793 VFE...C.. .F...... 288,223-560,699 aid=1073741854}
 == tv-up
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{c2cf5b VFE...C.. .F...... 288,8-560,484 aid=1073741855}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{e40c3c3 VFE...C.. .F...... 288,8-560,484 aid=1073741855}
 == before-background
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                  android.widget.LinearLayout{1de28a5 VFE...C.. .F...... 560,8-832,484 aid=1073741858}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                  android.widget.LinearLayout{fecd907 VFE...C.. .F...... 560,8-832,484 aid=1073741858}
 == returned
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.LinearLayout{da55d53 VFE...C.. .F...... 24,0-376,377 aid=1073741824}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.LinearLayout{44cdfde VFE...C.. .F...... 24,0-376,377 aid=1073741824}
 == after-refresh
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.LinearLayout{da55d53 VFE...C.. .F...... 24,0-376,377 aid=1073741824}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.LinearLayout{44cdfde VFE...C.. .F...... 24,0-376,377 aid=1073741824}
 == new-title-first
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.LinearLayout{da55d53 VFE...C.. .F...... 24,0-376,377 aid=1073741824}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.LinearLayout{44cdfde VFE...C.. .F...... 24,0-376,377 aid=1073741824}
 == settings-enter
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.LinearLayout{3a98d9b VFE...C.. .F...... 24,0-376,377 aid=1073741826}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.LinearLayout{52d38c6 VFE...C.. .F...... 24,0-376,377 aid=1073741826}
 == settings-autoplay
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.Button{45fece4 VFED..C.. .F...... 784,0-944,88 #3 aid=1073741827}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.Button{7eece23 VFED..C.. .F...... 784,0-944,88 #3 aid=1073741827}
 == settings-lower
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.Button{ab9c5fc VFED..C.. .F...... 784,0-944,88 #9 aid=1073741839}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.Button{98578a5 VFED..C.. .F...... 784,0-944,88 #9 aid=1073741839}
 == sign-out-cancelled
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                      com.flixtown.tv.ProgressLine{c870bfc VFED..... .F...... 0,0-1392,56 aid=1073741826}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                      com.flixtown.tv.ProgressLine{d43d446 VFED..... .F...... 0,0-1392,56 aid=1073741826}
 == launch-home
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.LinearLayout{8d9fa6b VFE...C.. .F...... 24,0-376,377 aid=1073741824}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F....ID 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.LinearLayout{652e0cd VFE...C.. .F...... 24,0-376,377 aid=1073741824}
 == sign-out-row
-                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{2c51a3 VFE...C.. .F.....D 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
-                    android.widget.Button{48be772 VFED..C.. .F...... 784,0-944,88 #2 aid=1073741827}
+                                    com.google.android.tvlauncher.home.view.AddFavoriteAppCardView{4e1b8cb VFE...C.. .F....ID 150,45-336,183 #7f0b0147 app:id/favorite_add_app_banner aid=1073741825}
+                    android.widget.Button{2896a5c VFED..C.. .F...... 784,0-944,88 #2 aid=1073741827}
