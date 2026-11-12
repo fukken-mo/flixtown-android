@@ -28,7 +28,9 @@ focus(){ { echo "== $1"; adb shell dumpsys activity top | grep -E ' [.R]F[.S][.H
 launch --ez demo_reset true
 shot 01-login-qr 4
 sleep 16;                                   shot 02-first-launch-loading 0.1
-sleep 4;                                    shot 03-home 1.5;                focus home
+sleep 4;                                    shot 02b-profile-picker 1.5
+# The profile picker comes first now: OK on the focused profile opens Home.
+key DPAD_CENTER; sleep 4;                   shot 03-home 1.5;                focus home
 
 # --- Home rows (no "Browse by Genre"): Down through every row, Down at the end stays, Up back to the hero ---
 key DPAD_DOWN;                              shot 03a-row-trending 0.8;       focus row-1

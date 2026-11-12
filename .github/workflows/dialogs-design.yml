@@ -53,6 +53,22 @@ jobs:
             app/build/outputs/apk/qa/app-qa.apk
             app/build/outputs/apk/androidTest/qa/app-qa-androidTest.apk
           retention-days: 2
+      - name: Android Lint (report only, never blocks)
+        if: always()
+        run: |
+          ./gradlew :app:lintDebug -PflixPreview=true --console=plain > lint.log 2>&1 || true
+          python3 - <<'EOF'
+          import glob,collections,xml.etree.ElementTree as ET
+          files=glob.glob('app/build/reports/lint-results-*.xml')
+          if not files: print("lint: no report"); raise SystemExit
+          issues=ET.parse(files[0]).getroot().findall('issue')
+          by=collections.Counter((i.get('severity'),i.get('id')) for i in issues)
+          print("lint: %d issues"%len(issues))
+          for (sev,id),n in sorted(by.items()): print("  %-8s %-34s %d"%(sev,id,n))
+          for i in issues:
+              if i.get('severity') in ('Error','Fatal') or i.get('category') in ('Correctness','Security','Performance'):
+                  l=i.find('location'); print("LINT %s %s %s:%s %s"%(i.get('severity'),i.get('id'),(l.get('file') or '').split('/app/')[-1],l.get('line'),i.get('message')[:200]))
+          EOF
   device:
     needs: checks
     runs-on: ubuntu-latest

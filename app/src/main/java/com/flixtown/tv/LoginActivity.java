@@ -191,9 +191,12 @@ public class LoginActivity extends Activity {
         polling=false;pairRound++;handler.removeCallbacksAndMessages(null);pairCode=null;
         status.setText("This code expired. Getting a new one…");startPair();
     }
-    private void saveAndGo(String server,String user,String pass){polling=false;try{
+    /** Runs once, and never after the user has left this screen (a late reply must not reopen the app). */
+    private boolean signedIn;
+    private void saveAndGo(String server,String user,String pass){
+        if(signedIn||isFinishing()||isDestroyed())return;signedIn=true;polling=false;try{
         SignOut.beforeSignIn(this,user);AccountStore.save(this,user,pass,server);continueSignedIn();}
-        catch(Exception e){say("Could not save the account on this TV.",0xFFF0A29F);}}
+        catch(Exception e){signedIn=false;say("Could not save the account on this TV.",0xFFF0A29F);}}
     /** Fresh launch: start the catalog refresh first so it runs during any intro. */
     private void continueSignedIn(){
         if(Api.prefs(this).getBoolean("expired",false)){startActivity(new Intent(this,RenewalActivity.class));finish();return;}
