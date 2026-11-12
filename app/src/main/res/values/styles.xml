@@ -4,7 +4,7 @@
         <item name="android:windowBackground">@color/flix_bg</item>
         <item name="android:colorAccent">@color/flix_accent</item>
         <item name="android:colorControlActivated">@color/flix_glow</item>
-        <item name="android:textColorHighlight">#66AB3A39</item>
+        <item name="android:textColorHighlight">#66B8121B</item>
         <item name="android:navigationBarColor">@color/flix_bg</item>
         <item name="android:statusBarColor">@color/flix_bg</item>
         <item name="android:windowLightStatusBar">false</item>

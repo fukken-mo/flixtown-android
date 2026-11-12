@@ -322,7 +322,7 @@ public class RequestsActivity extends Activity {
             case "available":case "local":return 0xFF6FCF97;
             case "partial":return 0xFF8FD3BE;
             case "approved":return 0xFF6FB5CF;
-            case "pending":return Ui.GOLD;
+            case "pending":return Ui.TEXT;
             case "declined":return 0xFFF0A29F;
             case "unavailable":case "removed":return Ui.TEXT_3;
             default:return Ui.TEXT_2;

@@ -112,7 +112,7 @@ final class HomeCards {
             }
             View dim=new View(c);dim.setBackgroundColor(0x38000000);art.addView(dim,new FrameLayout.LayoutParams(-1,-1));
             TextView badge=new TextView(c);badge.setTextSize(10);badge.setTextColor(Ui.TEXT);badge.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
-            badge.setLetterSpacing(0.12f);badge.setSingleLine(true);badge.setBackground(Ui.rounded(0xE6AB3A39,3,c));badge.setPadding(Ui.dp(c,6),Ui.dp(c,2),Ui.dp(c,6),Ui.dp(c,2));
+            badge.setLetterSpacing(0.12f);badge.setSingleLine(true);badge.setBackground(Ui.rounded(0xE6B8121B,3,c));badge.setPadding(Ui.dp(c,6),Ui.dp(c,2),Ui.dp(c,6),Ui.dp(c,2));
             FrameLayout.LayoutParams gp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.START);gp.setMargins(Ui.dp(c,8),Ui.dp(c,8),0,0);
             art.addView(badge,gp);
             GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(radius);ring.setStroke(Ui.dp(c,2),0xFFE8736F);ring.setColor(0);

@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
  * Flix Town look and shared TV widgets.
  *
  * Colours are sampled from the Flix Town logo (res/drawable-nodpi/flix_logo.png): the lit face of
- * the red marquee letters is #AB3A39 and the gold rim is #B99254. Brighter tones keep the same hue
+ * the red marquee letters. The gold rim is deliberately not used. Brighter tones keep the same hue
  * so focus stays readable on a dark TV. Surfaces are pre-drawn gradients with a hairline edge, never
  * live blur, so they cost nothing on Chromecast-class hardware.
  */
@@ -31,16 +31,17 @@ final class Ui {
     interface Choice { void select(int index); }
 
     static final int BG=0xFF08080B;
-    static final int ACCENT=0xFFAB3A39;        // logo letter face
-    static final int ACCENT_FOCUS=0xFFB53231;  // filled focus state
-    static final int GLOW=0xFFCE4B4A;          // poster glow / focus ring
-    static final int GOLD=0xFFB99254;          // logo rim, used sparingly (ratings)
+    /* Reds taken from the logo's lettering: its deep face, its lit face and its highlight. No gold. */
+    static final int ACCENT=0xFFB8121B;        // resting primary action
+    static final int ACCENT_FOCUS=0xFFC8161F;  // selected edge
+    static final int GLOW=0xFFE5333B;          // focus glow, progress, highlights
     static final int TEXT=0xFFF4F1EE,TEXT_2=0xFFBDB7B2,TEXT_3=0xFF8C8782;
     static final int HAIRLINE=0x2EFFFFFF;
-    /* Buttons: dark charcoal surfaces, a light hairline, modest corners. Red marks focus; a solid red
-       fill is only for the one primary action on a screen. */
-    static final int SURFACE=0xFF1D1C21,SURFACE_EDGE=0x33FFFFFF,FOCUS_FILL=0xFF3B1C1E,PRIMARY_FOCUS=0xFFC4423F;
-    static final int BUTTON_RADIUS=10,HALO=3;
+    /* Buttons: fully rounded. Resting, a quiet translucent surface (solid red for the one primary action);
+       focused, any button lights up in logo red with a thin white ring and a soft red halo. */
+    static final int SURFACE=0xFF1D1C21,SURFACE_EDGE=0x33FFFFFF,FOCUS_FILL=0xFF3A1014,PRIMARY_FOCUS=0xFFD21F2A;
+    static final int BUTTON_SURFACE=0x1FFFFFFF;
+    static final int BUTTON_RADIUS=26,HALO=3;
     static final int SECONDARY=0,PRIMARY=1,SELECTED=2;
     /** Kept for older call sites. */
     static final int RED=ACCENT,CARD=0xFF15161C;
@@ -66,7 +67,7 @@ final class Ui {
     static GradientDrawable pill(Context c,boolean focused,boolean selected,int radius){
         GradientDrawable d=new GradientDrawable();d.setCornerRadius(dp(c,Math.min(radius,12)));
         if(focused){d.setColor(FOCUS_FILL);d.setStroke(dp(c,2),GLOW);}
-        else if(selected){d.setColor(0xFF2A1B1D);d.setStroke(dp(c,1),0x99CE4B4A);}
+        else if(selected){d.setColor(0xFF2A1B1D);d.setStroke(dp(c,1),0x99E5333B);}
         else{d.setColor(SURFACE);d.setStroke(dp(c,1),SURFACE_EDGE);}
         return d;
     }
@@ -84,24 +85,28 @@ final class Ui {
         states.setExitFadeDuration(90);
         return states;
     }
-    private static android.graphics.drawable.Drawable haloed(Context c,int kind,boolean focused){
-        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));
-        if(kind==PRIMARY){surface.setColor(focused?PRIMARY_FOCUS:ACCENT);surface.setStroke(dp(c,focused?2:1),focused?0xE6FFFFFF:0x33FFFFFF);}
-        else if(focused){surface.setColor(FOCUS_FILL);surface.setStroke(dp(c,2),GLOW);}
-        else if(kind==SELECTED){surface.setColor(0xFF2A1B1D);surface.setStroke(dp(c,1),0x99CE4B4A);}
-        else{surface.setColor(SURFACE);surface.setStroke(dp(c,1),SURFACE_EDGE);}
-        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,BUTTON_RADIUS+HALO));
-        halo.setColor(focused?0x3DCE4B4A:0x00000000);
+    /** The focused look shared by every button: lit logo red, a white ring, a soft red halo in the {@link #HALO} margin. */
+    static android.graphics.drawable.Drawable focusedButton(Context c,int radiusDp){
+        GradientDrawable surface=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{GLOW,ACCENT});
+        surface.setCornerRadius(dp(c,radiusDp));surface.setStroke(dp(c,2),0xFFFFFFFF);
+        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,radiusDp+HALO));halo.setColor(0x66E5333B);
         android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
-        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);
-        return layers;
+        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);return layers;
+    }
+    private static android.graphics.drawable.Drawable haloed(Context c,int kind,boolean focused){
+        if(focused)return focusedButton(c,BUTTON_RADIUS);
+        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));
+        if(kind==PRIMARY)surface.setColor(ACCENT);
+        else if(kind==SELECTED){surface.setColor(FOCUS_FILL);surface.setStroke(dp(c,1),0xB3C8161F);}
+        else surface.setColor(BUTTON_SURFACE);
+        int h=dp(c,HALO);return new android.graphics.drawable.InsetDrawable(surface,h,h,h,h);
     }
     static android.content.res.ColorStateList buttonText(int kind){
         return new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused},{}},
             new int[]{Color.WHITE,kind==PRIMARY?Color.WHITE:0xFFE4DFDA});
     }
     /** Small, quick scale on focus; layout size never changes, so nothing reflows. */
-    static void focusScale(View v,boolean focused){v.animate().scaleX(focused?1.04f:1f).scaleY(focused?1.04f:1f).setDuration(120).start();}
+    static void focusScale(View v,boolean focused){v.animate().scaleX(focused?1.05f:1f).scaleY(focused?1.05f:1f).setDuration(120).start();}
     /**
      * Applies the Flix Town button look to any view (Button, or a row holding an icon and label).
      * Keeps a focus listener the caller adds later working by chaining through {@link #focusScale}.
@@ -164,10 +169,9 @@ final class Ui {
         return b;
     }
     private static android.graphics.drawable.Drawable dialogButtonLayer(Context c,boolean focused){
-        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,12));surface.setColor(focused?PRIMARY_FOCUS:DIALOG_BUTTON);
-        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,12+HALO));halo.setColor(focused?0x40CE4B4A:0x00000000);
-        android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
-        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);return layers;
+        if(focused)return focusedButton(c,BUTTON_RADIUS);
+        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));surface.setColor(DIALOG_BUTTON);
+        int h=dp(c,HALO);return new android.graphics.drawable.InsetDrawable(surface,h,h,h,h);
     }
 
     static Dialog newDialog(Activity activity){

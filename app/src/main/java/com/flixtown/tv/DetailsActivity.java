@@ -573,7 +573,7 @@ public class DetailsActivity extends Activity {
     }
     private GradientDrawable castRing(boolean focused){
         GradientDrawable ring=new GradientDrawable();
-        ring.setShape(GradientDrawable.OVAL);ring.setColor(focused?0x33CE4B4A:0x00000000);
+        ring.setShape(GradientDrawable.OVAL);ring.setColor(focused?0x33E5333B:0x00000000);
         ring.setStroke(Ui.dp(this,focused?3:1),focused?0xFFE06A66:0x40FFFFFF);
         return ring;
     }

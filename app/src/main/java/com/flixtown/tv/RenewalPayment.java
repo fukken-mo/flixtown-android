@@ -155,7 +155,7 @@ final class RenewalPayment {
         qrFrame.setVisibility(View.VISIBLE);qr.setAlpha(1f);
         title.setText("Scan to pay with Cash App Pay");plan.setText(label+"  ·  $"+price);
         steps.setText("1   Open the camera on your phone\n2   Scan this code\n3   Approve the payment in Cash App");
-        setState("Waiting for payment…",Ui.GOLD,true);tick();
+        setState("Waiting for payment…",Ui.TEXT,true);tick();
         setButtons("Cancel",(Runnable)this::cancel);
     }
     private void showProcessing(){
@@ -183,7 +183,7 @@ final class RenewalPayment {
         String ref=paymentId==null?"":paymentId.substring(Math.max(0,paymentId.length()-8)).toUpperCase(Locale.US);
         steps.setText("Your payment needs a quick check before your subscription is renewed. Please contact support"
             +(ref.isEmpty()?"":" and mention reference "+ref)+". Please don't pay again.");
-        setState("Renewal needs assistance",Ui.GOLD,true);timer.setText("");
+        setState("Renewal needs assistance",Ui.TEXT,true);timer.setText("");
         setButtons("Close",(Runnable)()->close("needs_assistance"));
     }
     private void showProblem(String head,String body,boolean retry){

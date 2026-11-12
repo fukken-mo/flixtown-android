@@ -8,7 +8,7 @@ name: Dialog design Preview
 on:
   workflow_dispatch:
   push:
-    branches: [claude/dialog-design]
+    branches: [claude/dialog-design, claude/premium-polish]
     paths: ['app/**', '.github/workflows/dialogs-design.yml']
 permissions:
   contents: write

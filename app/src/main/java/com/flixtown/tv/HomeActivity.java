@@ -734,7 +734,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         i.putExtra("category",item.categoryId);if(play)i.putExtra("play_on_open",true);
         if(playMode!=null)i.putExtra("play_mode",playMode);startActivity(i);}
 
-    /** "2019  ·  ★ 7.6  ·  1h 54m  ·  Drama" with a gold star, from whatever is known. */
+    /** "2019  ·  ★ 7.6  ·  1h 54m  ·  Drama" with a white star, from whatever is known. */
     private CharSequence metaLine(Catalog.Item item,JSONObject info){
         if(info==null)info=HERO_INFO.get(item.key());
         List<String> parts=new ArrayList<>();
@@ -750,7 +750,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(!genre.isEmpty())parts.add(genre.split("[,/]")[0].trim());
         SpannableStringBuilder out=new SpannableStringBuilder();
         for(String p:parts){if(out.length()>0)out.append("   ·   ");int start=out.length();out.append(p);
-            if(p.startsWith("★"))out.setSpan(new ForegroundColorSpan(Ui.GOLD),start,start+1,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);}
+            if(p.startsWith("★"))out.setSpan(new ForegroundColorSpan(Ui.TEXT),start,start+1,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);}
         return out;
     }
 
@@ -938,7 +938,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             if(holder instanceof SectionHolder){((SectionHolder)holder).section=null;((SectionHolder)holder).list.setAdapter(null);}
         }
     }
-    private GradientDrawable outline(){GradientDrawable d=new GradientDrawable();d.setCornerRadius(Ui.dp(this,3));d.setStroke(Ui.dp(this,1),0x99CE4B4A);return d;}
+    private GradientDrawable outline(){GradientDrawable d=new GradientDrawable();d.setCornerRadius(Ui.dp(this,3));d.setStroke(Ui.dp(this,1),0x99E5333B);return d;}
 
     /* ---------------- Search header ---------------- */
 

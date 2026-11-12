@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Menu entry: focused, a lit logo-red pill with a white ring; selected, a wine circle behind the icon. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_focused="true"><shape><corners android:radius="12dp"/>
-        <gradient android:angle="0" android:startColor="#40AB3A39" android:endColor="#14AB3A39" />
-        <stroke android:width="1dp" android:color="#59CE4B4A"/></shape></item>
+    <item android:state_focused="true"><shape><corners android:radius="23dp"/>
+        <gradient android:angle="270" android:startColor="#E5333B" android:endColor="#B8121B" />
+        <stroke android:width="2dp" android:color="#FFFFFF"/></shape></item>
+    <item android:state_selected="true"><layer-list>
+        <item android:left="16dp" android:width="44dp" android:height="44dp" android:gravity="left|center_vertical">
+            <shape android:shape="oval"><solid android:color="#3A1014"/><stroke android:width="1.5dp" android:color="#C8161F"/></shape></item>
+    </layer-list></item>
     <item><shape><solid android:color="#00000000"/></shape></item>
 </selector>
