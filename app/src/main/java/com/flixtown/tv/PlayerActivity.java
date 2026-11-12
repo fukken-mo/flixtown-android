@@ -286,6 +286,8 @@ public class PlayerActivity extends Activity {
         super.onStart();
         if(url==null)return;
         stopping=false;
+        // Coming back after an error: a fresh player starts below, so the old "couldn't be played" card must not stay over it.
+        if(card!=null&&card.getVisibility()==View.VISIBLE&&cardForError)hideCard();
         // Xtream servers commonly redirect streams to another host, sometimes from http to https.
         DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true).setConnectTimeoutMs(15000).setReadTimeoutMs(20000);

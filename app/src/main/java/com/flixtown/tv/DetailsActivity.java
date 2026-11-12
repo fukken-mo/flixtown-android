@@ -88,8 +88,11 @@ public class DetailsActivity extends Activity {
         return new Catalog.Item(j,kind);
     }
     private static String join(String a,String b){return a.isEmpty()?b:b.isEmpty()?a:a+"   ·   "+b;}
-    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);if(seasonContent!=null)updateWatchedBadges(seasonContent);}
-    @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
+    /** In front right now. Playback that starts by itself (Watch Now on a show) waits for this, so it never opens over another app. */
+    private boolean resumed,playWhenResumed;
+    @Override protected void onResume(){super.onResume();resumed=true;ScreenAwake.on(this);if(seasonContent!=null)updateWatchedBadges(seasonContent);
+        if(playWhenResumed){playWhenResumed=false;playOnOpen();}}
+    @Override protected void onPause(){resumed=false;ScreenAwake.off(this);super.onPause();}
     @Override protected void onRestart(){super.onRestart();
         if(orderedEpisodes!=null)resolveFinished(orderedEpisodes);   // back from the player: move past a finished episode
         if(watch!=null)watch.setText(watchLabel());}
@@ -582,15 +585,18 @@ public class DetailsActivity extends Activity {
 
     // Continue / Start over is asked by the player itself, so every entry point behaves the same.
     private void play(String streamId,String ext){
-        String url=Api.stream(this,"movie",streamId,ext==null||ext.isEmpty()?"mp4":ext);
+        String url;try{url=Api.stream(this,"movie",streamId,ext==null||ext.isEmpty()?"mp4":ext);}catch(IllegalStateException e){cannotPlay();return;}
         playUrl(url,true);
     }
+    /** The saved account could not be read (signed out meanwhile): say so instead of failing. */
+    private void cannotPlay(){android.widget.Toast.makeText(this,"Couldn't start playback. Please sign in again.",android.widget.Toast.LENGTH_LONG).show();}
     /** Keeps the episode still for the Continue Watching card on Home. */
     private void rememberArt(JSONObject ep){JSONObject info=ep.optJSONObject("info");String art=info==null?"":info.optString("movie_image","");
         if(art.startsWith("http")||art.startsWith("demo:"))Api.prefs(this).edit().putString("resume_art_"+resumeKey(),art).apply();}
     /** Home's "Watch Now" on a TV show: resume the saved episode, otherwise start the first one. */
     private void playOnOpen(){
         if(!getIntent().getBooleanExtra("play_on_open",false) || playedOnOpen || orderedEpisodes==null || orderedEpisodes.isEmpty())return;
+        if(!resumed){playWhenResumed=true;return;}
         playedOnOpen=true;
         openPlayMode=getIntent().getStringExtra("play_mode");
         if(!Api.prefs(this).getString("resume_episode_"+resumeKey(),"").isEmpty()){resumeSeries();return;}
@@ -610,8 +616,9 @@ public class DetailsActivity extends Activity {
         return out.toString();
     }
     private void playEpisode(String streamId,String ext,String nextId,String nextExt,String label,String nextLabel){
-        String url=Api.stream(this,"series",streamId,ext==null||ext.isEmpty()?"mp4":ext);
-        String next=nextId.isEmpty()?"":Api.stream(this,"series",nextId,nextExt);
+        String url,next;
+        try{url=Api.stream(this,"series",streamId,ext==null||ext.isEmpty()?"mp4":ext);next=nextId.isEmpty()?"":Api.stream(this,"series",nextId,nextExt);}
+        catch(IllegalStateException e){cannotPlay();return;}
         Catalog.remember(this,new Catalog.Item(itemJson(),kind));
         Intent intent=new Intent(this,PlayerActivity.class);intent.putExtra("url",url);intent.putExtra("title",title);intent.putExtra("next_url",next);
         intent.putExtra("content_kind",kind);intent.putExtra("content_id",id);

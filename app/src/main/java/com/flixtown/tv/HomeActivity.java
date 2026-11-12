@@ -674,7 +674,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     private void watch(Catalog.Item item,String mode){
         if("movie".equals(item.kind)){
             Catalog.remember(this,item);
-            Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",Api.stream(this,"movie",item.id,item.extension));
+            String url;try{url=Api.stream(this,"movie",item.id,item.extension==null||item.extension.isEmpty()?"mp4":item.extension);}
+            catch(IllegalStateException e){toast("Couldn't start playback. Please sign in again.");return;}   // the saved account could not be read
+            Intent i=new Intent(this,PlayerActivity.class);i.putExtra("url",url);
             i.putExtra("title",item.title);i.putExtra("content_kind",item.kind);i.putExtra("content_id",item.id);
             if(mode!=null)i.putExtra(mode,true);
             startActivity(i);
@@ -764,8 +766,8 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             LinearLayout actions=v.findViewById(R.id.hero_actions);
             primary=heroButton(actions,"Watch Now",true);primaryLabel=(TextView)((LinearLayout)primary).getChildAt(1);
             info=heroButton(actions,"More Info",false);
-            primary.setOnClickListener(x->{Catalog.Item item=current();if(item!=null)watch(item);});
-            info.setOnClickListener(x->{Catalog.Item item=current();if(item!=null)openDetails(item,false);});
+            primary.setOnClickListener(x->{Catalog.Item item=shownHero();if(item!=null)watch(item);});
+            info.setOnClickListener(x->{Catalog.Item item=shownHero();if(item!=null)openDetails(item,false);});
             // The hero is entered from below with FOCUS_UP; always land on the primary action.
             v.setFocusable(true);v.setFocusableInTouchMode(true);
             ((ViewGroup)v).setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
@@ -786,6 +788,9 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         return b;
     }
     private Catalog.Item current(){return featured.isEmpty()?null:featured.get(heroIndex%featured.size());}
+    /** The title whose words are on screen. While the hero rotates, the old words stay a moment after the index moves on; OK must open what is shown. */
+    private Catalog.Item heroShown;
+    private Catalog.Item shownHero(){return heroShown!=null&&featured.contains(heroShown)?heroShown:current();}
     private void bindHero(boolean animate){
         if(hero==null)return;
         Catalog.Item item=current();
@@ -804,7 +809,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             // "#n TRENDING" only for real TMDB trending titles; NEW only with proof (see HomeCards.badge).
             String news="series".equals(item.kind)?SeriesNews.badge(item).label():item.isNew()?"NEW RELEASE":null;
             hero.eyebrow.setText(rank>=0?"#"+(rank+1)+" TRENDING  ·  "+kind:news!=null?news+"  ·  "+kind:"FEATURED  ·  "+kind);
-            hero.title.setText(item.title);
+            hero.title.setText(item.title);heroShown=item;
             hero.meta.setText(metaLine(item,null));
             JSONObject info=HERO_INFO.get(item.key());
             String desc=item.overview.isEmpty()&&info!=null?info.optString("plot",""):item.overview;
@@ -976,6 +981,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
     }
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         int key=event.getKeyCode();
+        if(homeDeferred)return true;   // handing over to the profile picker: this screen was never built
         if(key==KeyEvent.KEYCODE_BACK && event.getAction()==KeyEvent.ACTION_UP)return true; // handled on key down
         if(event.getAction()==KeyEvent.ACTION_DOWN){
             lastKeyAt=SystemClock.uptimeMillis();
