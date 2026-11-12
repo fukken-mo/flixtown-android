@@ -33,5 +33,5 @@ ok   exit Stay→Back #6
 ok   exit Back→Back #6
 ok   notices Got it→next #6
 ok   report picker→Send report? #6
-ok   report Sending→reply #6
-ok   update Update now→progress #6
+FAIL report Sending→reply #6  no dialog opened (Home window focus false)
+ok   update Update now→progress #6  [lost focus notification recovered x1]
