@@ -2,7 +2,7 @@
 # Drives the QA build on a 1080p Android TV emulator with remote key events.
 # Screenshots are written on the device (fast) and pulled at the end. After key steps the
 # focused view is written to qa/focus.txt, so focus movement is checked, not just looked at.
-# Premium polish pass: logo-red focus and rounded buttons (screenshots refreshed).
+# Premium polish pass: logo-red focus and rounded buttons (screenshots refreshed after the bug check).
 set -u
 PKG=com.myflixtown.tv.native.qa
 APK=app/build/outputs/apk/qa/app-qa.apk
