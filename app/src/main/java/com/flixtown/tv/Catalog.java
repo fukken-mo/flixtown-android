@@ -29,7 +29,7 @@ final class Catalog {
             if(!self.categoryId.isEmpty() && self.categoryId.equals(item.categoryId))same.add(item);else rest.add(item);}
         java.util.Comparator<Item> order=(a,b)->{double ra=Ratings.value(a),rb=Ratings.value(b);
             return ra!=rb?Double.compare(rb,ra):Integer.compare(b.added,a.added);};
-        same.sort(order);
+        Collections.sort(same,order);
         ArrayList<Item> out=new ArrayList<>(same.subList(0,Math.min(limit,same.size())));
         if(out.size()<limit)out.addAll(topRated(rest,limit-out.size()));
         return out;
@@ -95,7 +95,7 @@ final class Catalog {
             (a,b)->Integer.compare(a.added,b.added));
         for(Item item:original){if(queue.size()<limit)queue.add(item);
             else if(item.added>queue.peek().added){queue.poll();queue.add(item);}}
-        ArrayList<Item> sorted=new ArrayList<>(queue);sorted.sort((a,b)->Integer.compare(b.added,a.added));return sorted;
+        ArrayList<Item> sorted=new ArrayList<>(queue);Collections.sort(sorted,(a,b)->Integer.compare(b.added,a.added));return sorted;
     }
     /** Best TMDB-rated first (titles without a known rating last, newest first). */
     static List<Item> topRated(List<Item> original,int limit) {
@@ -116,7 +116,7 @@ final class Catalog {
         return new Progress(pos,dur,p.getString("resume_label_"+key,""),p.getString("resume_art_"+key,""),upNext);
     }
     static List<Item> alphabetical(List<Item> original) {
-        ArrayList<Item> sorted=new ArrayList<>(original);sorted.sort((a,b)->a.title.compareToIgnoreCase(b.title));return sorted;
+        ArrayList<Item> sorted=new ArrayList<>(original);Collections.sort(sorted,(a,b)->a.title.compareToIgnoreCase(b.title));return sorted;
     }
     static List<Item> continueWatching(Context c,List<Item> movies,List<Item> series) {
         String[] keys=Api.prefs(c).getString("continue_ids","").split(",");

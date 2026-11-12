@@ -30,7 +30,7 @@ final class AccountSync {
     private final Context app;
     private final SharedPreferences local,journal,initial;
     private final SharedPreferences.OnSharedPreferenceChangeListener listener=this::changed;
-    private final Set<String> dirty=ConcurrentHashMap.newKeySet();
+    private final Set<String> dirty=Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
     // Main-thread state; WORK and NET only compare the generation they were started with.
     private volatile int generation=0;
     private volatile boolean home=false,playing=false;

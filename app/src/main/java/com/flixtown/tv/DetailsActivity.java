@@ -324,7 +324,7 @@ public class DetailsActivity extends Activity {
         for(java.util.Iterator<String> keys=episodes.keys();keys.hasNext();) {
             String value=keys.next();if(!"0".equals(value))seasons.add(value);
         }
-        seasons.sort((a,b)->Integer.compare(parseSeason(a),parseSeason(b)));
+        java.util.Collections.sort(seasons,(a,b)->Integer.compare(parseSeason(a),parseSeason(b)));
         List<JSONObject> ordered=new ArrayList<>();
         for(String season:seasons){JSONArray list=episodes.optJSONArray(season);if(list!=null)for(int i=0;i<list.length();i++){
             JSONObject episode=list.optJSONObject(i);if(episode!=null)ordered.add(episode);

@@ -105,6 +105,6 @@ public class RemoteGuideActivity extends Activity {
         }
         private void arrow(Canvas c,float x,float y,float angle){c.save();c.translate(x,y);c.rotate(angle);
             fill(c,playback&&angle!=180?0xFFE47575:Ui.TEXT_2);Path p=new Path();p.moveTo(0,-6);p.lineTo(6,4);p.lineTo(-6,4);p.close();c.drawPath(p,paint);c.restore();}
-        private void text(Canvas c,String value,float x,float y,float size,int color){fill(c,color);paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(size);paint.setTypeface(android.graphics.Typeface.create("sans-serif-medium",0));c.drawText(value,x,y,paint);}
+        private void text(Canvas c,String value,float x,float y,float size,int color){fill(c,color);paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(size);paint.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));c.drawText(value,x,y,paint);}
     }
 }
