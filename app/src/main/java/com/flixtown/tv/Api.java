@@ -64,6 +64,12 @@ final class Api {
             + "/player_api.php?username=" + enc(account[0])
             + "&password=" + enc(account[1]) + "&action=" + enc(action) + extra;
     }
+    static String subtitles(Context c,String kind,String id) {
+        if(!id.matches("[1-9][0-9]*")||!("movie".equals(kind)||"episode".equals(kind)))throw new IllegalArgumentException();
+        String[] account=AccountStore.read(c);if(account==null)throw new IllegalStateException("Sign in required");
+        return prefs(c).getString("server","http://streamtown.live:8080").replaceAll("/+$", "")
+            +"/api/subtitles/"+kind+"/"+id+"?username="+enc(account[0])+"&password="+enc(account[1]);
+    }
     static String accountUrl(Context c) {
         SharedPreferences p=prefs(c);String[] account=AccountStore.read(c);
         if(account==null)throw new IllegalStateException("Sign in required");
