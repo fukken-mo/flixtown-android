@@ -150,7 +150,7 @@ public class PlayerActivity extends Activity {
         final int generation=++externalGeneration;
         externalTracks=new ArrayList<>();selectedExternal=null;selectExternalPending=false;externalLoading=false;externalUnavailable=false;
         // Test in the side-by-side Preview first. The production variant keeps its existing behavior.
-        if(!BuildConfig.PREVIEW||BuildConfig.DEMO)return;
+        if(BuildConfig.DEMO)return;
         final String endpoint;
         try{endpoint=Api.subtitles(this,"series".equals(kind)?"episode":"movie","series".equals(kind)?episodeId:contentId);}
         catch(Exception ignored){externalUnavailable=true;return;}
