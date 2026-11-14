@@ -60,6 +60,11 @@ public class PlayerActivity extends Activity {
     private long pendingSeek=-1,lastRepeatAt;
     private Dialog dialog;
     private SubtitlePlacement subtitles;
+    private List<ExternalSubtitles.Track> externalTracks=new ArrayList<>();
+    private ExternalSubtitles.Track selectedExternal;private boolean selectExternalPending;
+    private java.util.concurrent.Future<?> externalRequest;
+    private int externalGeneration;private boolean externalLoading,externalUnavailable;
+
     private long lastSavedAt,holdStartedAt;
     private View reportButton,previousButton,nextButton,optionsButton;
     private EpisodeNavigation episodeNavigation;private boolean nextAfterMenu;
@@ -139,6 +144,44 @@ public class PlayerActivity extends Activity {
             if(token!=introGeneration||stopping||isFinishing()||isDestroyed()||!java.util.Objects.equals(requested,episodeId))return;
             introMarker=marker;updateIntroButton();
         }));
+    }
+    private void loadExternalSubtitles(){
+        if(externalRequest!=null){externalRequest.cancel(true);externalRequest=null;}
+        final int generation=++externalGeneration;
+        externalTracks=new ArrayList<>();selectedExternal=null;selectExternalPending=false;externalLoading=false;externalUnavailable=false;
+        // Test in the side-by-side Preview first. The production variant keeps its existing behavior.
+        if(!BuildConfig.PREVIEW||BuildConfig.DEMO)return;
+        final String endpoint;
+        try{endpoint=Api.subtitles(this,"series".equals(kind)?"episode":"movie","series".equals(kind)?episodeId:contentId);}
+        catch(Exception ignored){externalUnavailable=true;return;}
+        externalLoading=true;
+        externalRequest=ExternalSubtitles.load(endpoint,(tracks,unavailable)->runOnUiThread(()->{
+            if(generation!=externalGeneration||stopping||isFinishing()||isDestroyed())return;
+            externalLoading=false;externalUnavailable=unavailable;externalTracks=tracks;
+        }));
+    }
+    private void selectExternalSubtitle(ExternalSubtitles.Track track){
+        if(player==null)return;
+        selectedExternal=track;selectExternalPending=true;
+        long at=Math.max(0,player.getCurrentPosition());boolean ready=player.getPlayWhenReady();
+        MediaItem.SubtitleConfiguration sub=new MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(track.url))
+            .setId(ExternalSubtitles.ID_PREFIX+track.name).setMimeType(track.mime).setLanguage(track.language)
+            .setLabel(track.label()).setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+            .setRoleFlags(track.hearingImpaired?C.ROLE_FLAG_CAPTION:0).build();
+        player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon()
+            .clearOverridesOfType(C.TRACK_TYPE_TEXT).setTrackTypeDisabled(C.TRACK_TYPE_TEXT,false)
+            .setPreferredTextLanguage(track.language).setSelectUndeterminedTextLanguage(true).setIgnoredTextSelectionFlags(0).build());
+        Api.prefs(this).edit().putBoolean(SettingsPage.SUBTITLES_ON,true).putString(SettingsPage.SUBTITLE_LANGUAGE,track.language).apply();
+        if(watchCoverage!=null)watchCoverage.discontinuity();
+        player.setMediaItem(new MediaItem.Builder().setUri(url).setSubtitleConfigurations(java.util.Collections.singletonList(sub)).build(),at);
+        player.prepare();player.setPlayWhenReady(ready);
+    }
+    private boolean recoverExternalSubtitle(){
+        if(player==null||selectedExternal==null)return false;
+        selectedExternal=null;selectExternalPending=false;long at=Math.max(0,player.getCurrentPosition());boolean ready=player.getPlayWhenReady();
+        player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().clearOverridesOfType(C.TRACK_TYPE_TEXT).build());
+        player.setMediaItem(MediaItem.fromUri(url),at);player.prepare();player.setPlayWhenReady(ready);
+        flash("External subtitles unavailable. Video playback retried without them.");return true;
     }
     private void updateIntroButton(){
         if(skipIntro==null)return;
@@ -343,9 +386,21 @@ public class PlayerActivity extends Activity {
             @Override public void onPositionDiscontinuity(Player.PositionInfo oldPosition,Player.PositionInfo newPosition,int reason){
                 if(watchCoverage!=null)watchCoverage.discontinuity();
             }
-            @Override public void onTracksChanged(Tracks tracks){updateTrackLabels();collectAudio(tracks);}
+            @Override public void onTracksChanged(Tracks tracks){
+                if(selectExternalPending&&selectedExternal!=null){
+                    for(Tracks.Group group:tracks.getGroups())if(group.getType()==C.TRACK_TYPE_TEXT){
+                        for(int i=0;i<group.length;i++)if((ExternalSubtitles.ID_PREFIX+selectedExternal.name).equals(group.getTrackFormat(i).id)&&group.isTrackSupported(i)){
+                            selectExternalPending=false;
+                            player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT,false).addOverride(new TrackSelectionOverride(group.getMediaTrackGroup(),i)).build());
+                        }
+                    }
+                }
+                updateTrackLabels();collectAudio(tracks);
+            }
             @Override public void onCues(androidx.media3.common.text.CueGroup cueGroup){if(subtitles!=null)subtitles.show(cueGroup.cues);}
             @Override public void onPlayerError(PlaybackException error){
+                if(recoverExternalSubtitle())return;
                 android.util.Log.w("FlixTownPlayer","Playback failed: "+error.getErrorCodeName()+" "+Logs.safe(error));
                 hideNow();
                 // Connection problems (including a stream that timed out) are not a format problem.
@@ -356,7 +411,7 @@ public class PlayerActivity extends Activity {
             }
         });
         if(watchCoverage!=null)watchCoverage.discontinuity();
-        player.setMediaItem(MediaItem.fromUri(url));loadIntro();
+        player.setMediaItem(MediaItem.fromUri(url));loadIntro();loadExternalSubtitles();
         if(position>0)player.seekTo(position);
         player.setPlayWhenReady(reportRestartReady==null?resumeAsked:reportRestartReady);reportRestartReady=null;
         player.prepare();
@@ -672,18 +727,32 @@ public class PlayerActivity extends Activity {
             for(int i=0;i<group.length;i++){
                 number++;
                 Format f=group.getTrackFormat(i);
+                if(type==C.TRACK_TYPE_TEXT&&f.id!=null&&f.id.startsWith(ExternalSubtitles.ID_PREFIX))continue;
                 String label=trackLabel(f,type,number);
                 if(!group.isTrackSupported(i))label+=" — not supported on this TV";
                 else if(group.isTrackSelected(i) && !anySelected){selected=labels.size();anySelected=true;}
                 labels.add(label);groups.add(group);indexes.add(i);
             }
         }
+        final List<ExternalSubtitles.Track> listedExternal=new ArrayList<>();
+        for(int i=0;i<labels.size();i++)listedExternal.add(null);
+        if(type==C.TRACK_TYPE_TEXT){
+            for(ExternalSubtitles.Track track:externalTracks){
+                if(selectedExternal!=null&&selectedExternal.name.equals(track.name)&&!player.getTrackSelectionParameters().disabledTrackTypes.contains(C.TRACK_TYPE_TEXT))selected=labels.size();
+                labels.add(track.label());groups.add(null);indexes.add(-2);listedExternal.add(track);
+            }
+        }
         if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","tracks type="+type+" count="+labels.size()+" "+labels);
         if(labels.isEmpty() || (type==C.TRACK_TYPE_TEXT && labels.size()==1)){
-            flash(type==C.TRACK_TYPE_TEXT?"This video has no subtitles":"This stream has only one audio track");scheduleHide();return;}
+            if(type==C.TRACK_TYPE_TEXT&&externalLoading)flash("Checking external subtitles. Open this menu again in a moment.");
+            else if(type==C.TRACK_TYPE_TEXT&&externalUnavailable){flash("External subtitles unavailable. Open this menu again to retry.");loadExternalSubtitles();}
+            else flash(type==C.TRACK_TYPE_TEXT?"This video has no subtitles":"This stream has only one audio track");scheduleHide();return;}
         handler.removeCallbacks(hideControls);
         dialog=Ui.picker(this,type==C.TRACK_TYPE_TEXT?"Subtitles":"Audio",labels.toArray(new String[0]),selected,index->{
             if(player==null)return;
+            ExternalSubtitles.Track external=listedExternal.get(index);
+            if(external!=null){selectExternalSubtitle(external);return;}
+            if(type==C.TRACK_TYPE_TEXT)selectExternalPending=false;
             Tracks.Group group=groups.get(index);
             if(group!=null && !group.isTrackSupported(indexes.get(index))){
                 flash("That audio format can't be played on this TV");return;}
@@ -957,7 +1026,7 @@ public class PlayerActivity extends Activity {
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
         queueFollowingEpisode();
         if(watchCoverage!=null)watchCoverage.discontinuity();
-        player.setMediaItem(MediaItem.fromUri(url));loadIntro();player.prepare();player.play();
+        player.setMediaItem(MediaItem.fromUri(url));loadIntro();loadExternalSubtitles();player.prepare();player.play();
     }
     private void syncEpisodeNeighbors(){
         EpisodeNavigation.Episode next=episodeNavigation.adjacent(1);
@@ -993,7 +1062,7 @@ public class PlayerActivity extends Activity {
         // Persist the selected episode immediately, even if Back is pressed before the 15-second save threshold.
         Catalog.selectEpisode(this,contentId,episodeId,episodeExt,nextEpisodeId,nextEpisodeExt,subtitle);
         if(watchCoverage!=null)watchCoverage.discontinuity();
-        player.setMediaItem(MediaItem.fromUri(url));loadIntro();player.prepare();player.setPlayWhenReady(keepPlaying);
+        player.setMediaItem(MediaItem.fromUri(url));loadIntro();loadExternalSubtitles();player.prepare();player.setPlayWhenReady(keepPlaying);
         if(manual){View focus=direction<0?previousButton:nextButton;showControls(focus!=null&&focus.isEnabled()?focus:playButton);}
     }
     /** After moving on to the next episode: the one after it becomes "next" (Up next card, autoplay, Continue Watching). */
@@ -1010,6 +1079,7 @@ public class PlayerActivity extends Activity {
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onStop(){
         if(reporting)reportRestartReady=reportWasPlaying&&!reportFromError;
+        externalGeneration++;if(externalRequest!=null){externalRequest.cancel(true);externalRequest=null;}externalLoading=false;
         stopping=true;if(introRequest!=null){introRequest.cancel(true);introRequest=null;}introGeneration++;introMarker=null;updateIntroButton();reporting=false;episodeLoadGeneration++;loadingEpisodes=false;
         handler.removeCallbacksAndMessages(null);
         if(dialog!=null){dialog.dismiss();dialog=null;}
