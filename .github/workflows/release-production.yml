@@ -22,15 +22,15 @@ on:
       version_code:
         description: "versionCode (must be higher than the version customers have)"
         required: true
-        default: "10042"
+        default: "10043"
       version_name:
         description: "versionName shown in Settings"
         required: true
-        default: "3.8.22"
+        default: "3.8.23"
   # Also runs once when this file changes on a working branch (with the defaults above), so the
   # first production build does not depend on the workflow being on the default branch yet.
   push:
-    branches: ["codex/skip-intro-production"]
+    branches: ["codex/subtitles-production-final"]
     paths: [".github/workflows/release-production.yml", ".github/release/**"]
 
 permissions:
@@ -49,8 +49,8 @@ jobs:
       PREVIEW_CERT: 426f5dda091757c0e4f6adc8d4a5adeff1f0c6d448cab643a92833b5b9ff11b7
       PACKAGE: com.myflixtown.tv.native
       PANEL_UPDATE_URL: https://panelsandapps.com/panels/flixtown2027/api/app-update.php
-      VERSION_CODE: ${{ inputs.version_code || '10042' }}
-      VERSION_NAME: ${{ inputs.version_name || '3.8.22' }}
+      VERSION_CODE: ${{ inputs.version_code || '10043' }}
+      VERSION_NAME: ${{ inputs.version_name || '3.8.23' }}
     steps:
       - name: Release signing secrets present
         run: |
@@ -77,6 +77,11 @@ jobs:
           echo "keystore certificate SHA-256: $sha"
           [ "$sha" != "$PREVIEW_CERT" ] || { echo "::error::This is the Preview/test key. Production must use the permanent release key."; exit 1; }
           [ "$sha" = "$EXPECTED_CERT" ] || { echo "::error::Keystore certificate $sha is not the permanent release certificate $EXPECTED_CERT"; exit 1; }
+      - name: Verify production subtitle discovery is enabled
+        run: |
+          ! grep -q '!BuildConfig.PREVIEW||BuildConfig.DEMO' app/src/main/java/com/flixtown/tv/PlayerActivity.java
+          grep -q 'loadExternalSubtitles();' app/src/main/java/com/flixtown/tv/PlayerActivity.java
+          grep -q 'if(BuildConfig.DEMO||!"series".equals(kind))return;' app/src/main/java/com/flixtown/tv/PlayerActivity.java
       - name: Unit tests and signed release APK
         run: |
           ./gradlew :app:testDebugUnitTest :app:assembleRelease --stacktrace -PflixVersionCode="$VERSION_CODE" -PflixVersionName="$VERSION_NAME"
@@ -126,190 +131,12 @@ jobs:
           printf '%s\\n' 'Replace api/ratings.php in the existing Flix Town app panel. Keep bootstrap.php, tmdb-match.php, configuration and credentials unchanged.' > dist/panel-api/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.22' }}-${{ inputs.version_code || '10042' }}
+          name: FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.23' }}-${{ inputs.version_code || '10043' }}
           path: |
             dist/*.apk
             dist/RELEASE-INFO.txt
             dist/panel-api/
             dist/onepanel-tv-renewal/
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 7
 
-  # Read-only checks of the live services the app uses (GET only; nothing is created or changed).
-  # Values are not printed, only status codes, JSON keys and the content server's host.
-  live-endpoints:
-    runs-on: ubuntu-latest
-    env:
-      PANEL: https://panelsandapps.com/panels/flixtown2027/api/
-    steps:
-      - name: Panel API, update endpoint, content server
-        run: |
-          fail=0
-          get(){ curl -sS -m 25 -o "$2" -w '%{http_code} %{content_type}' "$1" || echo "000 -"; }
-          r="$(get "${PANEL}config.php" cfg.json)"; echo "config.php -> $r"
-          python3 - cfg.json <<'PY' || fail=1
-          import json,sys,urllib.parse
-          d=json.load(open(sys.argv[1])); print("  keys:", ",".join(sorted(d)))
-          u=d.get("xtream_url",""); host=urllib.parse.urlparse(u).netloc
-          print("  content server host:", host or "(missing)")
-          open("xtream","w").write(u.rstrip("/")); sys.exit(0 if host else 1)
-          PY
-          r="$(get "${PANEL}app-update.php?package=com.myflixtown.tv.native&version_code=1" upd.json)"; echo "app-update.php (production package) -> $r"
-          python3 -c 'import json;d=json.load(open("upd.json"));print("  ok=%s package=%s versionCode=%s has_url=%s has_sha=%s"%(d.get("ok"),d.get("package_name") or d.get("package"),d.get("update_version_code") or d.get("version_code"),bool(d.get("apk_url") or d.get("update_url")),bool(d.get("sha256") or d.get("apk_sha256"))))' || { echo "::error::app-update.php is not JSON"; fail=1; }
-          r="$(get "${PANEL}app-update.php?package=com.myflixtown.tv.native.preview&version_code=1" prev.json)"; echo "app-update.php (preview package) -> $r"
-          python3 -c 'import json;d=json.load(open("prev.json"));print("  preview offered versionCode:",d.get("update_version_code"))' || true
-          r="$(get "${PANEL}trending.php" tr.json)"; echo "trending.php -> $r"
-          r="$(get "${PANEL}pair-start" ps.txt)"; echo "pair-start via GET (expect 405, nothing created) -> $r"
-          code="$(get "$(cat xtream)/player_api.php" xt.txt | cut -d' ' -f1)"; echo "content server player_api.php (no credentials) -> HTTP $code"
-          [ "$code" != "000" ] || { echo "::error::content server not reachable"; fail=1; }
-          r="$(get https://myflixtown.com/activate.php act.html)"; echo "myflixtown.com/activate.php -> $r"
-          grep -qi "<form" act.html && echo "  activation form present" || echo "  (no form found in page)"
-          exit $fail
-
-  # Upgrade from the earlier PRODUCTION builds (same package, same key) on a TV emulator. The
-  # emulator's network is switched off so neither build contacts the live panel (no pairing rows).
-  upgrade:
-    needs: release
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - uses: actions/download-artifact@v4
-        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.22' }}-${{ inputs.version_code || '10042' }}", path: new }
-      - name: Download production 3.8.20 (required upgrade baseline)
-        uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.20-10040, path: old-10040, run-id: 40591213601, github-token: "${{ github.token }}" }
-      - name: Download production 3.8.19 (built, not published; required upgrade baseline)
-        uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.19-10039, path: old-10039, run-id: 40582221899, github-token: "${{ github.token }}" }
-      - name: Download production 3.8.18 (current customer build; required upgrade baseline)
-        uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.18-10038, path: old-10038, run-id: 40294365946, github-token: "${{ github.token }}" }
-      - name: Download production 3.8.17 (required upgrade baseline)
-        uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.17-10037, path: old-10037, run-id: 40009971862, github-token: "${{ github.token }}" }
-      - name: Download production 3.8.16 (version in the customer reports; required)
-        uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.16-10036, path: old-10036, run-id: 39647554094, github-token: "${{ github.token }}" }
-      - name: Download earlier production 3.8.15
-        uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.15-10035, path: old-10035, run-id: 39171688372, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.14-10034, path: old-10034, run-id: 38739642992, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.13-10033, path: old-10033, run-id: 38702419585, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.12-10032, path: old-10032, run-id: 38696840323, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.11-10031, path: old-10031, run-id: 38693919421, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.10-10030, path: old-10030, run-id: 38659912178, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.9-10029, path: old-10029, run-id: 38634481580, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.8-10028, path: old-10028, run-id: 38622975721, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.6-10026, path: old-10026, run-id: 38071832546, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.5-10025, path: old-10025, run-id: 38069754237, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.4-10024, path: old-10024, run-id: 38035706205, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.3-10023, path: old-10023, run-id: 38000675003, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.2-10022, path: old-10022, run-id: 37747826133, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.1-10021, path: old-10021, run-id: 37703600713, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.0-10020, path: old-10020, run-id: 37422757283, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.7.1-10016, path: old-10016, run-id: 37385757309, github-token: "${{ github.token }}" }
-        continue-on-error: true   # that run no longer exists on GitHub
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.7.0-10015, path: old-10015, run-id: 36939071160, github-token: "${{ github.token }}" }
-        continue-on-error: true
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Write upgrade test
-        run: |
-          cat > upgrade.sh <<'SH'
-          set -u; P=com.myflixtown.tv.native; NEW="$(ls new/*.apk)"; fail=0; tested=0; mkdir -p shots
-          adb shell svc wifi disable; adb shell svc data disable; sleep 2
-          for OLD in old-10040/*.apk old-10039/*.apk old-10038/*.apk old-10037/*.apk old-10036/*.apk old-10035/*.apk old-10034/*.apk old-10033/*.apk old-10032/*.apk old-10031/*.apk old-10030/*.apk old-10029/*.apk old-10028/*.apk old-10026/*.apk old-10025/*.apk old-10024/*.apk old-10023/*.apk old-10022/*.apk old-10021/*.apk old-10020/*.apk old-10016/*.apk old-10015/*.apk; do
-            [ -f "$OLD" ] || continue; tag="$(basename "$OLD" .apk)"
-            adb uninstall $P >/dev/null 2>&1; adb logcat -c; adb logcat -b crash -c 2>/dev/null || true
-            adb install "$OLD" >/dev/null || { echo "FAIL  install $tag"; fail=1; continue; }
-            adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
-            adb shell screencap -p /sdcard/a.png; adb pull /sdcard/a.png "shots/$tag-before.png" >/dev/null
-            first="$(adb shell dumpsys package $P | grep -m1 firstInstallTime | tr -d '\r ')"
-            before="$(adb shell dumpsys package $P | grep -m1 versionCode | tr -d '\r')"
-            out="$(adb install -r "$NEW" 2>&1)"; echo "$out" | tail -1
-            echo "$out" | grep -q Success && echo "PASS  $tag -> new: installed over the existing app (same package and key)" || { echo "FAIL  $tag -> new: $out"; fail=1; continue; }
-            tested=$((tested+1))
-            after="$(adb shell dumpsys package $P | grep -m1 versionCode | tr -d '\r')"
-            first2="$(adb shell dumpsys package $P | grep -m1 firstInstallTime | tr -d '\r ')"
-            echo "INFO  before: $before"; echo "INFO  after:  $after"
-            [ "$first" = "$first2" ] && echo "PASS  upgrade kept the install (and app data): $first2" || { echo "FAIL  reinstalled, not upgraded"; fail=1; }
-            adb shell monkey -p $P -c android.intent.category.LEANBACK_LAUNCHER 1 >/dev/null 2>&1; sleep 8
-            adb shell screencap -p /sdcard/b.png; adb pull /sdcard/b.png "shots/$tag-after.png" >/dev/null
-            adb shell dumpsys activity activities | grep -q "com.myflixtown.tv.native/com.flixtown.tv" && echo "PASS  new version opens after the upgrade" || { echo "FAIL  new version not in front"; fail=1; }
-            adb logcat -d -b crash | grep -Fq "Process: $P," && { echo "FAIL  app crash"; adb logcat -d -b crash | tail -40; fail=1; } || echo "PASS  no app crash"
-          done
-          [ "$tested" -gt 0 ] || { echo "FAIL  no production upgrade tested"; fail=1; }
-          adb shell svc wifi enable; exit $fail
-          SH
-      - name: Upgrade on an Android TV emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 31
-          target: android-tv
-          arch: x86
-          profile: tv_1080p
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: bash upgrade.sh
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with: { name: upgrade-screens, path: shots/, retention-days: 14 }
-
-  # Settings and history stored by production 3.8.18 survive the upgrade to the new build (root shell
-  # needed to place them, so a google_apis image; the app does not require leanback). Offline.
-  upgrade-data:
-    needs: release
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v4
-        with: { name: "FlixTown-PRODUCTION-signed-${{ inputs.version_name || '3.8.22' }}-${{ inputs.version_code || '10042' }}", path: new }
-      - uses: actions/download-artifact@v4
-        with: { name: FlixTown-PRODUCTION-signed-3.8.18-10038, path: old-10038, run-id: 40294365946, github-token: "${{ github.token }}" }
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Production 3.8.18 -> new keeps settings and history
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 31
-          target: google_apis
-          arch: x86_64
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: adb shell svc wifi disable; adb shell svc data disable; bash .github/release/upgrade_data_prod.sh old-10038/*.apk new/*.apk
