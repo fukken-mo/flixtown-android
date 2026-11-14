@@ -1,0 +1,39 @@
+name: External subtitles Preview
+on:
+  push:
+    branches: [codex/external-subtitles-preview]
+    paths: ['.github/workflows/external-subtitles-preview.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: external-subtitles-preview
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and side-by-side Preview only
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug -PflixPreview=true -PflixVersionCode=10042 -PflixVersionName=3.8.22-subtitles-preview --console=plain
+      - name: Verify Preview package and checksum
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/aapt2" dump badging app/build/outputs/apk/debug/app-debug.apk | head -1 | tee identity.txt
+          grep -q "name='com.myflixtown.tv.native.preview'" identity.txt
+          sha256sum app/build/outputs/apk/debug/app-debug.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: Subtitle-unit-results, path: app/build/test-results/, retention-days: 7}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-3.8.22-External-Subtitles-Preview
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            SHA256SUMS.txt
+            identity.txt
+          retention-days: 14
