@@ -1,0 +1,35 @@
+name: Cast identity fix
+on:
+  push:
+    branches: [codex/cast-match-fix]
+    paths: ['panel/tmdb/**', 'panel/tests/tmdb_cast*', '.github/workflows/cast-match-fix.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl, mbstring, intl, pdo_sqlite
+          coverage: none
+      - name: Cast matching and endpoint regression tests
+        run: |
+          php -l panel/tmdb/tmdb.php
+          php -l panel/tmdb/tmdb-cast-match.php
+          php panel/tests/tmdb_cast_match_test.php
+          python3 panel/tests/tmdb_cast_http_test.py
+          php panel/tests/tmdb_match_test.php
+      - name: Package two-file panel update
+        run: |
+          mkdir -p dist/api
+          cp panel/tmdb/tmdb.php panel/tmdb/tmdb-cast-match.php dist/api/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlixTown-Cast-Matching-Fix
+          path: dist/
+          retention-days: 7
