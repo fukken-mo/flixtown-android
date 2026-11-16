@@ -41,7 +41,9 @@ final class Profiles {
     static boolean entryRequired(Context c){return needsChoice(c)||(scope(c).isEmpty()&&AccountStore.read(c)!=null);}
     static synchronized void chosen(Context c){OPENING.chosen(scope(c));}
     static void appOpened(){OPENING.opened();}
-    static void appForeground(boolean home){OPENING.foreground(home);}
+    static void appForeground(boolean home,String token){OPENING.foreground(home,token);}
+    static void externalLaunched(String token){OPENING.externalLaunched(token);}
+    static void externalResumed(String token){OPENING.externalResumed(token);}
     static void homeResumed(){OPENING.homeResumed();}
     static void returningHome(Context c){OPENING.returningHome(scope(c));}
     static int openingGeneration(){return OPENING.generation();}

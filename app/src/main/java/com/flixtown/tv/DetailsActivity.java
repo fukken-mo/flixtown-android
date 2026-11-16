@@ -81,6 +81,12 @@ public class DetailsActivity extends Activity {
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);
         if(!focused)cancelEpisodePreview();
     }
+    /** Stored on this detail intent so activity recreation can still recognize its trailer return. */
+    String trailerReturnToken(){
+        String token=getIntent().getStringExtra("trailer_return_token");
+        if(token==null){token=java.util.UUID.randomUUID().toString();getIntent().putExtra("trailer_return_token",token);}
+        return token;
+    }
     private Catalog.Item catalogItem(){
         for(Catalog.Item i:movie?Catalog.Store.movies:Catalog.Store.series)if(i.id.equals(id))return i;
         JSONObject j=new JSONObject();
@@ -88,7 +94,7 @@ public class DetailsActivity extends Activity {
         return new Catalog.Item(j,kind);
     }
     private static String join(String a,String b){return a.isEmpty()?b:b.isEmpty()?a:a+"   ·   "+b;}
-    @Override protected void onResume(){super.onResume();ScreenAwake.on(this);if(seasonContent!=null)updateWatchedBadges(seasonContent);}
+    @Override protected void onResume(){super.onResume();Profiles.externalResumed(trailerReturnToken());ScreenAwake.on(this);if(seasonContent!=null)updateWatchedBadges(seasonContent);}
     @Override protected void onPause(){ScreenAwake.off(this);super.onPause();}
     @Override protected void onRestart(){super.onRestart();
         if(orderedEpisodes!=null)resolveFinished(orderedEpisodes);   // back from the player: move past a finished episode
@@ -170,7 +176,11 @@ public class DetailsActivity extends Activity {
         trailerButton.setEnabled(false);trailerButton.setAlpha(.4f);
         trailerButton.setOnClickListener(v->{String url=trailerButton.getTag() instanceof String?(String)trailerButton.getTag():"";
             if(url.startsWith("http") && !url.contains("youtube.com/") && !url.contains("youtu.be/"))playUrl(url,false);
-            else if(!url.isEmpty())startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url.startsWith("http")?url:"https://www.youtube.com/watch?v="+url)));
+            else if(!url.isEmpty()){
+                String token=trailerReturnToken();Profiles.externalLaunched(token);
+                try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url.startsWith("http")?url:"https://www.youtube.com/watch?v="+url)));}
+                catch(android.content.ActivityNotFoundException e){Profiles.externalResumed(token);android.widget.Toast.makeText(this,"No app is available to open this trailer.",android.widget.Toast.LENGTH_SHORT).show();}
+            }
         });
         favorite=Ui.button(this,favoriteLabel());actions.addView(favorite,actionParams(true));
         favorite.setOnClickListener(v->{toggleFavorite();favorite.setText(favoriteLabel());});
