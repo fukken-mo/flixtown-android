@@ -372,7 +372,7 @@ public class PlayerActivity extends Activity {
         player.addListener(new Player.Listener(){
             @Override public void onPlaybackStateChanged(int state){
                 if(state==Player.STATE_ENDED){if(reporting){reportEnded=true;return;}ended=true;finishProgress();
-                    if(Api.prefs(PlayerActivity.this).getBoolean("autoplay_next",true) && !nextCanceled && nextUrl!=null && !nextUrl.isEmpty())playNext();
+                    if(canAutoplayNext())playNext();
                     else finish();}
                 updatePlayIcon();
             }
@@ -407,6 +407,13 @@ public class PlayerActivity extends Activity {
                 boolean network=(error.errorCode>=PlaybackException.ERROR_CODE_IO_UNSPECIFIED && error.errorCode<PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
                     || error.errorCode==PlaybackException.ERROR_CODE_TIMEOUT;
                 lastPlayerError=error.getErrorCodeName();lastErrorNetwork=network;
+                if (!reporting && dialog == null && !stopping && !isFinishing()
+                        && canAutoplayNext() && isTailStreamFailure()) {
+                    ended = true;
+                    finishProgress();
+                    playNext();
+                    return;
+                }
                 if(!reporting)showPlaybackError();
             }
         });
@@ -453,6 +460,16 @@ public class PlayerActivity extends Activity {
         return ("movie".equals(kind)||"series".equals(kind)) && PlaybackReport.id(contentId)>0
             && (!"series".equals(kind)||PlaybackReport.id(episodeId)>0) && !ReportsApi.url(this).isEmpty();
     }
+    private boolean canAutoplayNext() {
+        return Api.prefs(this).getBoolean("autoplay_next", true)
+            && !nextCanceled && nextUrl != null && !nextUrl.isEmpty();
+    }
+
+    private boolean isTailStreamFailure() {
+        return lastErrorNetwork && "series".equals(kind) && player != null && pendingSeek < 0
+            && EpisodeEndRecovery.shouldAdvance(player.getDuration(), player.getCurrentPosition(), lastSavedAt);
+    }
+
     private void showPlaybackError(){
         String message=lastErrorNetwork?"The server didn't send the video. Check the connection and try again.":"This video's format isn't supported on this TV.";
         if(reportable())showCard("This title couldn't be played",message,new String[]{"Try again","Report a problem","Back"},0,i->{
@@ -518,7 +535,7 @@ public class PlayerActivity extends Activity {
         if(reportFromError||player.getPlayerError()!=null){showPlaybackError();return;}
         if(reportEnded){
             ended=true;finishProgress();
-            if(Api.prefs(this).getBoolean("autoplay_next",true)&&!nextCanceled&&nextUrl!=null&&!nextUrl.isEmpty())playNext();else finish();
+            if(canAutoplayNext())playNext();else finish();
             return;
         }
         if(reportWasPlaying)player.play();
