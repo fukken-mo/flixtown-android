@@ -31,7 +31,7 @@ jobs:
           (cd pkg && zip -qr ../flixtown-panel-ratings.zip flixtown-panel-ratings)
           unzip -l flixtown-panel-ratings.zip
       - uses: actions/upload-artifact@v4
-        with: { name: flixtown-panel-ratings, path: flixtown-panel-ratings.zip, if-no-files-found: error, retention-days: 30 }
+        with: { name: flixtown-panel-ratings, path: flixtown-panel-ratings.zip, if-no-files-found: error, retention-days: 3 }
 
   emulator:
     runs-on: ubuntu-latest

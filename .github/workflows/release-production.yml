@@ -133,7 +133,7 @@ jobs:
             dist/panel-api/
             dist/onepanel-tv-renewal/
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
 
   # Read-only checks of the live services the app uses (GET only; nothing is created or changed).
   # Values are not printed, only status codes, JSON keys and the content server's host.
@@ -283,7 +283,7 @@ jobs:
           script: bash upgrade.sh
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: upgrade-screens, path: shots/, retention-days: 14 }
+        with: { name: upgrade-screens, path: shots/, retention-days: "${{ job.status == 'success' && 3 || 7 }}" }
 
   # Settings and history stored by production 3.8.18 survive the upgrade to the new build (root shell
   # needed to place them, so a google_apis image; the app does not require leanback). Offline.
