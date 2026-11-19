@@ -73,9 +73,9 @@ jobs:
           (cd pkg && zip -qr ../flixtown-panel-updates.zip flixtown-panel-updates)
           unzip -l flixtown-panel-updates.zip
       - uses: actions/upload-artifact@v4
-        with: { name: FlixTown-Preview-update-test-APKs, path: "dist/*.apk", if-no-files-found: error, retention-days: 30 }
+        with: { name: FlixTown-Preview-update-test-APKs, path: "dist/*.apk", if-no-files-found: error, retention-days: 3 }
       - uses: actions/upload-artifact@v4
-        with: { name: flixtown-panel-updates, path: flixtown-panel-updates.zip, if-no-files-found: error, retention-days: 30 }
+        with: { name: flixtown-panel-updates, path: flixtown-panel-updates.zip, if-no-files-found: error, retention-days: 3 }
 
   emulator:
     runs-on: ubuntu-latest
