@@ -1,1 +1,2 @@
-OK (44 tests)
+FAILURES!!!
+Tests run: 47,  Failures: 3,  Errors: 0
