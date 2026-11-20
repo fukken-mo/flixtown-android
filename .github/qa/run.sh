@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Drives the QA build on a 1080p Android TV emulator with remote key events.
-# Premium focus pass on 3.8.25: walks past the profile picker on every opening.
+# Focus pass on 3.8.25 (3.8.25 button shape and colours): walks past the profile picker on every opening.
 # Screenshots are written on the device (fast) and pulled at the end. After key steps the
 # focused view is written to qa/focus.txt, so focus movement is checked, not just looked at.
 set -u
