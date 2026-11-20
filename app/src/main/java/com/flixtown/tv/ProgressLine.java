@@ -17,7 +17,7 @@ final class ProgressLine extends View {
     private long duration,position,buffered,pending=-1;
     ProgressLine(Context c){
         super(c);float d=c.getResources().getDisplayMetrics().density;
-        thin=3*d;thick=5*d;knob=7*d;setFocusable(true);setFocusableInTouchMode(true);
+        thin=6*d;thick=10*d;knob=11*d;setFocusable(true);setFocusableInTouchMode(true);
         setOnFocusChangeListener((v,f)->invalidate());
     }
     void set(long duration,long position,long buffered){

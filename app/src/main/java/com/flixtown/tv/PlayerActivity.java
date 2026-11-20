@@ -128,7 +128,7 @@ public class PlayerActivity extends Activity {
         if(!BuildConfig.DEMO){
             skipIntro=Ui.button(this,"Skip intro");skipIntro.setVisibility(View.GONE);
             FrameLayout.LayoutParams sp=new FrameLayout.LayoutParams(-2,Ui.dp(this,48),Gravity.BOTTOM|Gravity.END);
-            sp.rightMargin=Ui.safeX(this);sp.bottomMargin=Ui.dp(this,145);root.addView(skipIntro,sp);
+            sp.rightMargin=Ui.safeX(this);sp.bottomMargin=Ui.dp(this,165);root.addView(skipIntro,sp);
             skipIntro.setOnClickListener(v->{if(player!=null&&introMarker!=null&&introMarker.available(player.getCurrentPosition(),player.getDuration(),player.isCurrentMediaItemSeekable())){
                 clearPendingSeek();if(watchCoverage!=null)watchCoverage.discontinuity();player.seekTo(introMarker.endMs);updateIntroButton();
             }});
@@ -254,12 +254,12 @@ public class PlayerActivity extends Activity {
         boolean round=label==null;
         boolean compact=episodeNavigation!=null;
         PlayerIcon glyph=new PlayerIcon(this,icon);
-        b.addView(glyph,new LinearLayout.LayoutParams(Ui.dp(this,round?22:20),Ui.dp(this,round?22:20)));
-        if(!round){TextView t=Ui.text(this,label,compact?14:15);t.setTextColor(Ui.TEXT);t.setSingleLine(true);
+        b.addView(glyph,new LinearLayout.LayoutParams(Ui.dp(this,round?26:22),Ui.dp(this,round?26:22)));
+        if(!round){TextView t=Ui.text(this,label,compact?15:17);t.setTextColor(Ui.TEXT);t.setSingleLine(true);
             LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-2,-2);tp.leftMargin=Ui.dp(this,compact?6:8);b.addView(t,tp);
             b.setPadding(Ui.dp(this,compact?12:18),0,Ui.dp(this,compact?12:20),0);}
         Ui.styleButton(b,Ui.SECONDARY);
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(round?Ui.dp(this,50):ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,50));
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(round?Ui.dp(this,60):ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,60));
         if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,8);
         parent.addView(b,p);
         b.setOnClickListener(v->{click.run();showControls(null);});

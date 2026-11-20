@@ -69,7 +69,7 @@ final class NavRail {
     boolean isOpen(){return open;}
     void setSelected(String tab){selected=tab;
         for(int i=0;i<tabs.length;i++){boolean on=tabs[i].equals(tab);
-            markers.get(i).setVisibility(on?View.VISIBLE:View.INVISIBLE);icons.get(i).setActive(on);
+            markers.get(i).setVisibility(View.INVISIBLE);entries.get(i).setSelected(on);icons.get(i).setActive(on);
             ((TextView)labels.get(i)).setTextColor(on||entries.get(i).isFocused()?Ui.TEXT:Ui.TEXT_2);}}
     private void setClip(int width){clip.set(0,0,width,root.getResources().getDisplayMetrics().heightPixels);panel.setClipBounds(clip);edge.setTranslationX(width-1);}
     private void animateTo(boolean expand){

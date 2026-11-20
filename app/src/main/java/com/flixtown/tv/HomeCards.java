@@ -37,7 +37,7 @@ final class HomeCards {
     }
     static final int GLOW=8;
     // Artwork sizes in dp (the card adds the glow margin around the art).
-    static final int POSTER_W=124,POSTER_H=186,TREND_W=132,TREND_H=198,TREND_RANK=58,WIDE_W=240,WIDE_H=135,TEXT_H=40;
+    static final int POSTER_W=124,POSTER_H=186,TREND_W=132,TREND_H=198,TREND_RANK=58,WIDE_W=240,WIDE_H=135,TEXT_H=46;
 
     /** Height of a section's card list, including room for the focus scale. */
     static int listHeight(Context c,int type){
@@ -111,8 +111,8 @@ final class HomeCards {
                 art.addView(progressFill,pp);
             }
             View dim=new View(c);dim.setBackgroundColor(0x38000000);art.addView(dim,new FrameLayout.LayoutParams(-1,-1));
-            TextView badge=new TextView(c);badge.setTextSize(10);badge.setTextColor(Ui.TEXT);badge.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
-            badge.setLetterSpacing(0.12f);badge.setSingleLine(true);badge.setBackground(Ui.rounded(0xE6AB3A39,3,c));badge.setPadding(Ui.dp(c,6),Ui.dp(c,2),Ui.dp(c,6),Ui.dp(c,2));
+            TextView badge=new TextView(c);badge.setTextSize(12);badge.setTextColor(Ui.TEXT);badge.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));
+            badge.setLetterSpacing(0.12f);badge.setSingleLine(true);badge.setBackground(Ui.rounded(0xE6B8121B,3,c));badge.setPadding(Ui.dp(c,6),Ui.dp(c,2),Ui.dp(c,6),Ui.dp(c,2));
             FrameLayout.LayoutParams gp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.START);gp.setMargins(Ui.dp(c,8),Ui.dp(c,8),0,0);
             art.addView(badge,gp);
             GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(radius);ring.setStroke(Ui.dp(c,2),0xFFE8736F);ring.setColor(0);
@@ -120,9 +120,9 @@ final class HomeCards {
             LinearLayout text=new LinearLayout(c);text.setOrientation(LinearLayout.VERTICAL);
             FrameLayout.LayoutParams xp=new FrameLayout.LayoutParams(boxW-2*glow,Ui.dp(c,TEXT_H));xp.leftMargin=rankW+glow;xp.topMargin=boxH;
             card.addView(text,xp);
-            TextView title=new TextView(c);title.setTextSize(14);title.setTextColor(Ui.TEXT_2);title.setSingleLine(true);title.setEllipsize(TextUtils.TruncateAt.END);
+            TextView title=new TextView(c);title.setTextSize(16);title.setTextColor(Ui.TEXT_2);Ui.scrollingLabel(title);
             title.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));text.addView(title,new LinearLayout.LayoutParams(-1,-2));
-            TextView meta=new TextView(c);meta.setTextSize(12);meta.setTextColor(Ui.TEXT_3);meta.setSingleLine(true);meta.setEllipsize(TextUtils.TruncateAt.END);
+            TextView meta=new TextView(c);meta.setTextSize(14);meta.setTextColor(Ui.TEXT_2);meta.setSingleLine(true);meta.setEllipsize(TextUtils.TruncateAt.END);
             LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(-1,-2);mp.topMargin=Ui.dp(c,1);text.addView(meta,mp);
 
             Holder h=new Holder(card,box,art,image,fallback,title,meta,badge,dim,progressTrack,progressFill,rank,glowDrawable,ring);
@@ -186,7 +186,7 @@ final class HomeCards {
     /** Scale, glow, brighter art and title. Nothing that changes the card's measured size. */
     static void applyFocus(Holder h,boolean focused,boolean animate,float scale){
         h.glow.setOn(focused);h.art.setForeground(focused?h.ring:null);
-        h.title.setTextColor(focused?Ui.TEXT:Ui.TEXT_2);h.meta.setTextColor(focused?Ui.TEXT_2:Ui.TEXT_3);
+        h.title.setTextColor(focused?Ui.TEXT:Ui.TEXT_2);Ui.scrollLabel(h.title,focused);h.meta.setTextColor(focused?Ui.TEXT:Ui.TEXT_2);
         float s=focused?scale:1f,d=focused?0f:1f;
         if(animate){
             h.box.animate().scaleX(s).scaleY(s).translationZ(focused?h.box.getResources().getDisplayMetrics().density*10:0).setDuration(150).start();

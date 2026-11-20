@@ -6,5 +6,5 @@
     <item><shape><gradient android:angle="90" android:startColor="#FF060608" android:centerY="0.36" android:centerColor="#D9060608" android:endColor="#00060608" /></shape></item>
     <item><shape><gradient android:angle="270" android:startColor="#99060608" android:centerY="0.18" android:centerColor="#1A060608" android:endColor="#00060608" /></shape></item>
     <item><shape><gradient android:type="radial" android:gradientRadius="55%p" android:centerX="0.08" android:centerY="0.92"
-        android:startColor="#2EAB3A39" android:centerColor="#0DAB3A39" android:endColor="#00AB3A39" /></shape></item>
+        android:startColor="#2EB8121B" android:centerColor="#0DB8121B" android:endColor="#00B8121B" /></shape></item>
 </layer-list>

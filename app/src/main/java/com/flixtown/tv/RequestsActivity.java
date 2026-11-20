@@ -322,7 +322,7 @@ public class RequestsActivity extends Activity {
             case "available":case "local":return 0xFF6FCF97;
             case "partial":return 0xFF8FD3BE;
             case "approved":return 0xFF6FB5CF;
-            case "pending":return Ui.GOLD;
+            case "pending":return Ui.TEXT;
             case "declined":return 0xFFF0A29F;
             case "unavailable":case "removed":return Ui.TEXT_3;
             default:return Ui.TEXT_2;
@@ -355,7 +355,7 @@ public class RequestsActivity extends Activity {
             ImageView image=new ImageView(a);image.setScaleType(ImageView.ScaleType.CENTER_CROP);art.addView(image,new FrameLayout.LayoutParams(-1,-1));
             GradientDrawable ring=new GradientDrawable();ring.setCornerRadius(radius);ring.setStroke(Ui.dp(a,2),0xFFE06A66);ring.setColor(0);
             LinearLayout text=Ui.column(a);text.setPadding(glow,Ui.dp(a,4),glow,0);card.addView(text,new LinearLayout.LayoutParams(-1,Ui.dp(a,TEXT_DP)));
-            TextView name=Ui.text(a,"",16);name.setTextColor(Ui.TEXT_2);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);name.setGravity(Gravity.CENTER_HORIZONTAL);
+            TextView name=Ui.text(a,"",16);name.setTextColor(Ui.TEXT_2);Ui.scrollingLabel(name);name.setGravity(Gravity.CENTER_HORIZONTAL);
             TextView meta=Ui.text(a,"",14);meta.setTextColor(Ui.TEXT_2);meta.setSingleLine(true);meta.setEllipsize(TextUtils.TruncateAt.END);meta.setGravity(Gravity.CENTER_HORIZONTAL);
             TextView badge=Ui.text(a,"",14);badge.setSingleLine(true);badge.setEllipsize(TextUtils.TruncateAt.END);badge.setGravity(Gravity.CENTER_HORIZONTAL);
             text.addView(name,new LinearLayout.LayoutParams(-1,-2));text.addView(meta,new LinearLayout.LayoutParams(-1,-2));text.addView(badge,new LinearLayout.LayoutParams(-1,-2));
@@ -364,7 +364,7 @@ public class RequestsActivity extends Activity {
             card.setOnKeyListener((v,code,ev)->{if(ev.getAction()!=KeyEvent.ACTION_DOWN||code!=KeyEvent.KEYCODE_DPAD_UP)return false;
                 int p=c.getBindingAdapterPosition();if(p<0||p>=COLUMNS)return false;
                 (mine?tabMine:field).requestFocus();return true;});
-            card.setOnFocusChangeListener((v,f)->{c.glow.setOn(f);art.setForeground(f?ring:null);name.setTextColor(f?Ui.TEXT:Ui.TEXT_2);
+            card.setOnFocusChangeListener((v,f)->{c.glow.setOn(f);art.setForeground(f?ring:null);name.setTextColor(f?Ui.TEXT:Ui.TEXT_2);Ui.scrollLabel(name,f);
                 float s=f?PosterAdapter.FOCUS_SCALE:1f;poster.animate().scaleX(s).scaleY(s).setDuration(120).start();
                 if(f){int p=c.getBindingAdapterPosition();if(p>=0)maybeLoadMore(p);}});
             card.setOnClickListener(v->{int p=c.getBindingAdapterPosition();if(p>=0&&p<entries.size())details.open(entries.get(p),v);});

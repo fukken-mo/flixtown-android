@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
  * Flix Town look and shared TV widgets.
  *
  * Colours are sampled from the Flix Town logo (res/drawable-nodpi/flix_logo.png): the lit face of
- * the red marquee letters is #AB3A39 and the gold rim is #B99254. Brighter tones keep the same hue
+ * the red marquee letters (#B8121B, lit #E5333B). The gold rim is deliberately not used. Brighter tones keep the same hue
  * so focus stays readable on a dark TV. Surfaces are pre-drawn gradients with a hairline edge, never
  * live blur, so they cost nothing on Chromecast-class hardware.
  */
@@ -31,16 +31,18 @@ final class Ui {
     interface Choice { void select(int index); }
 
     static final int BG=0xFF08080B;
-    static final int ACCENT=0xFFAB3A39;        // logo letter face
-    static final int ACCENT_FOCUS=0xFFB53231;  // filled focus state
-    static final int GLOW=0xFFCE4B4A;          // poster glow / focus ring
-    static final int GOLD=0xFFB99254;          // logo rim, used sparingly (ratings)
+    static final int ACCENT=0xFFB8121B;        // logo letter face (deep)
+    static final int ACCENT_FOCUS=0xFFC8161F;  // selected edge
+    static final int GLOW=0xFFE5333B;          // logo letter face (lit): focus, glow, progress
+    static final int PRIMARY_TEXT=0xFFFF7A74;  // a resting primary action's label: red, but never a red fill
     static final int TEXT=0xFFF4F1EE,TEXT_2=0xFFBDB7B2,TEXT_3=0xFF8C8782;
     static final int HAIRLINE=0x2EFFFFFF;
-    /* Buttons: dark charcoal surfaces, a light hairline, modest corners. Red marks focus; a solid red
-       fill is only for the one primary action on a screen. */
-    static final int SURFACE=0xFF1D1C21,SURFACE_EDGE=0x33FFFFFF,FOCUS_FILL=0xFF3B1C1E,PRIMARY_FOCUS=0xFFC4423F;
-    static final int BUTTON_RADIUS=10,HALO=3;
+    /* One focus rule for every button: only the button the remote is on is lit red (red fill, white ring,
+       soft red halo, slight scale). At rest every button is a quiet charcoal surface; the screen's main
+       action is told apart by its red label, never by a red fill, so it can't be mistaken for focus. */
+    static final int SURFACE=0xFF1D1C21,SURFACE_EDGE=0x33FFFFFF,FOCUS_FILL=0xFF3A1014,PRIMARY_FOCUS=0xFFD21F2A;
+    static final int BUTTON_SURFACE=0xFF232228;
+    static final int BUTTON_RADIUS=26,HALO=3;
     static final int SECONDARY=0,PRIMARY=1,SELECTED=2;
     /** Kept for older call sites. */
     static final int RED=ACCENT,CARD=0xFF15161C;
@@ -66,7 +68,7 @@ final class Ui {
     static GradientDrawable pill(Context c,boolean focused,boolean selected,int radius){
         GradientDrawable d=new GradientDrawable();d.setCornerRadius(dp(c,Math.min(radius,12)));
         if(focused){d.setColor(FOCUS_FILL);d.setStroke(dp(c,2),GLOW);}
-        else if(selected){d.setColor(0xFF2A1B1D);d.setStroke(dp(c,1),0x99CE4B4A);}
+        else if(selected){d.setColor(0xFF2A1B1D);d.setStroke(dp(c,1),0x99E5333B);}
         else{d.setColor(SURFACE);d.setStroke(dp(c,1),SURFACE_EDGE);}
         return d;
     }
@@ -84,24 +86,27 @@ final class Ui {
         states.setExitFadeDuration(90);
         return states;
     }
-    private static android.graphics.drawable.Drawable haloed(Context c,int kind,boolean focused){
-        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));
-        if(kind==PRIMARY){surface.setColor(focused?PRIMARY_FOCUS:ACCENT);surface.setStroke(dp(c,focused?2:1),focused?0xE6FFFFFF:0x33FFFFFF);}
-        else if(focused){surface.setColor(FOCUS_FILL);surface.setStroke(dp(c,2),GLOW);}
-        else if(kind==SELECTED){surface.setColor(0xFF2A1B1D);surface.setStroke(dp(c,1),0x99CE4B4A);}
-        else{surface.setColor(SURFACE);surface.setStroke(dp(c,1),SURFACE_EDGE);}
-        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,BUTTON_RADIUS+HALO));
-        halo.setColor(focused?0x3DCE4B4A:0x00000000);
+    /** The focused look shared by every button: lit logo red, a white ring, a soft red halo in the {@link #HALO} margin. */
+    static android.graphics.drawable.Drawable focusedButton(Context c,int radiusDp){
+        GradientDrawable surface=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{GLOW,ACCENT});
+        surface.setCornerRadius(dp(c,radiusDp));surface.setStroke(dp(c,2),0xFFFFFFFF);
+        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,radiusDp+HALO));halo.setColor(0x66E5333B);
         android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
-        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);
-        return layers;
+        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);return layers;
+    }
+    private static android.graphics.drawable.Drawable haloed(Context c,int kind,boolean focused){
+        if(focused)return focusedButton(c,BUTTON_RADIUS);
+        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));
+        if(kind==SELECTED){surface.setColor(FOCUS_FILL);surface.setStroke(dp(c,1),0xB3C8161F);}
+        else{surface.setColor(BUTTON_SURFACE);surface.setStroke(dp(c,1),0x1FFFFFFF);}
+        int h=dp(c,HALO);return new android.graphics.drawable.InsetDrawable(surface,h,h,h,h);
     }
     static android.content.res.ColorStateList buttonText(int kind){
         return new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused},{}},
-            new int[]{Color.WHITE,kind==PRIMARY?Color.WHITE:0xFFE4DFDA});
+            new int[]{Color.WHITE,kind==PRIMARY?PRIMARY_TEXT:0xFFE4DFDA});
     }
     /** Small, quick scale on focus; layout size never changes, so nothing reflows. */
-    static void focusScale(View v,boolean focused){v.animate().scaleX(focused?1.04f:1f).scaleY(focused?1.04f:1f).setDuration(120).start();}
+    static void focusScale(View v,boolean focused){v.animate().scaleX(focused?1.05f:1f).scaleY(focused?1.05f:1f).setDuration(120).start();}
     /**
      * Applies the Flix Town button look to any view (Button, or a row holding an icon and label).
      * Keeps a focus listener the caller adds later working by chaining through {@link #focusScale}.
@@ -125,7 +130,7 @@ final class Ui {
         styleButton(b,SECONDARY);
         return b;
     }
-    /** The screen's main action: solid logo red. */
+    /** The screen's main action: red label at rest, lit red only when focused (like every button). */
     static Button primaryButton(Context c,String label){Button b=button(c,label);styleButton(b,PRIMARY);return b;}
     /** Dismissive choices (Cancel, Stay, Later…) are never shown as the primary action. */
     static boolean dismissive(String label){
@@ -164,10 +169,9 @@ final class Ui {
         return b;
     }
     private static android.graphics.drawable.Drawable dialogButtonLayer(Context c,boolean focused){
-        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,12));surface.setColor(focused?PRIMARY_FOCUS:DIALOG_BUTTON);
-        GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,12+HALO));halo.setColor(focused?0x40CE4B4A:0x00000000);
-        android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
-        int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);return layers;
+        if(focused)return focusedButton(c,BUTTON_RADIUS);
+        GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));surface.setColor(DIALOG_BUTTON);
+        int h=dp(c,HALO);return new android.graphics.drawable.InsetDrawable(surface,h,h,h,h);
     }
 
     static Dialog newDialog(Activity activity){
@@ -392,6 +396,16 @@ final class Ui {
             @Override public void onGlobalLayout(){view.getViewTreeObserver().removeOnGlobalLayoutListener(this);action.run();}
         });
         view.requestLayout();
+    }
+    /**
+     * A one-line label that, while its card has focus, scrolls sideways to show a title too long to fit
+     * (and ends in "…" otherwise). Never wraps to a second line, so card sizes never change.
+     */
+    static void scrollingLabel(TextView t){t.setSingleLine(true);t.setEllipsize(TextUtils.TruncateAt.END);t.setMarqueeRepeatLimit(-1);t.setHorizontalFadingEdgeEnabled(false);}
+    static void scrollLabel(TextView t,boolean focused){
+        if(t==null)return;
+        t.setEllipsize(focused?TextUtils.TruncateAt.MARQUEE:TextUtils.TruncateAt.END);
+        t.setHorizontalFadingEdgeEnabled(focused);t.setSelected(focused);
     }
     static boolean isSelect(int key){return key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_ENTER||key==KeyEvent.KEYCODE_NUMPAD_ENTER;}
     static int alpha(int color,float a){return (Math.round(a*255)<<24)|(color&0x00FFFFFF);}

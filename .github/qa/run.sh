@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Drives the QA build on a 1080p Android TV emulator with remote key events.
+# Premium focus pass on 3.8.25: walks past the profile picker on every opening.
 # Screenshots are written on the device (fast) and pulled at the end. After key steps the
 # focused view is written to qa/focus.txt, so focus movement is checked, not just looked at.
 set -u
@@ -21,13 +22,16 @@ LAUNCHER="-a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUN
 launch(){ adb shell am start -S -W $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" "$@" > /dev/null; }
 resume(){ adb shell am start -W $LAUNCHER -n "$PKG/com.flixtown.tv.LoginActivity" > /dev/null; }
 # The focused view: class, flags, bounds and id from the live hierarchy (" .F" = focused).
+# The profile picker opens on every launch and return: OK on the focused profile goes on to Home.
+pick(){ sleep 3; if adb shell dumpsys activity activities | grep -E 'ResumedActivity.*ProfilesActivity' > /dev/null; then shot "${1:-profile-picker}" 0.2; key DPAD_CENTER; sleep 3; fi; }
 focus(){ { echo "== $1"; adb shell dumpsys activity top | grep -E ' [.R]F[.S][.H]' | grep -v 'DecorView' | head -3; } >> qa/focus.txt; }
 
 # --- Sign in (clean install) ---
 launch --ez demo_reset true
 shot 01-login-qr 4
 sleep 16;                                   shot 02-first-launch-loading 0.1
-sleep 4;                                    shot 03-home 1.5;                focus home
+pick 02b-profile-picker
+sleep 2;                                    shot 03-home 1.5;                focus home
 
 # --- Home rows (no "Browse by Genre"): Down through every row, Down at the end stays, Up back to the hero ---
 key DPAD_DOWN;                              shot 03a-row-trending 0.8;       focus row-1
@@ -60,6 +64,10 @@ key DPAD_RIGHT DPAD_RIGHT DPAD_DOWN;        shot 19-grid-moved 0.6;           fo
 
 # --- Details and back to the same poster ---
 key DPAD_CENTER;                            shot 20-details 2.5
+# Focus on a secondary action: only it is lit red; Play keeps its red label but no red fill.
+key DPAD_RIGHT;                             shot 20b-details-trailer-focus 0.6
+key DPAD_RIGHT;                             shot 20c-details-mylist-focus 0.6
+key DPAD_LEFT DPAD_LEFT
 key BACK;                                   shot 21-back-same-poster 1.2;     focus back-from-details
 
 # --- Left from the first column opens the menu; TV Shows from the menu ---
@@ -76,7 +84,7 @@ key DPAD_UP DPAD_CENTER;                    sleep 1.5
 key DPAD_RIGHT DPAD_RIGHT;                  shot 28-movies-before-background 0.6; focus before-background
 adb shell input keyevent KEYCODE_HOME;      sleep 4
 shot 29-launcher 0.2
-resume;                                     shot 30-returned 0.6;             focus returned
+resume; pick 29b-picker-on-return;          shot 30-returned 0.6;             focus returned
 sleep 3;                                    shot 31-after-refresh 0.3;        focus after-refresh
 key DPAD_LEFT DPAD_LEFT DPAD_LEFT;          shot 32-new-title-first 0.6;      focus new-title-first
 
@@ -111,6 +119,7 @@ key BACK;                                   shot 56-home-after-player 1.2
 
 # --- Fresh launch with cached titles (no long loading screen) ---
 launch;                                     shot 57-launch-loading 0.2
+pick 57b-picker-on-launch
 sleep 1.5;                                  shot 58-launch-home 0.3;          focus launch-home
 
 # --- Sign out for real (menu opens on Home: Movies, TV Shows, My List, Requests, Settings) ---
@@ -119,6 +128,9 @@ key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_D
 shot 59-sign-out-row 0.4;                   focus sign-out-row
 key DPAD_CENTER DPAD_RIGHT;                 shot 60-sign-out-focus 0.4
 key DPAD_CENTER;                            shot 61-signed-out-login 3
+# Sign in with the remote: the focused field is the only red thing; Sign in shows a red label until focused.
+key DPAD_CENTER;                            shot 61b-remote-form 1.5
+key DPAD_DOWN DPAD_DOWN;                    shot 61c-remote-form-sign-in-focus 0.8
 
 # --- Signing in again to an expired account shows renewal ---
 launch --ez demo_expired true;              sleep 28

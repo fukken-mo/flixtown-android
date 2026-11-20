@@ -8,7 +8,7 @@ name: Dialog design Preview
 on:
   workflow_dispatch:
   push:
-    branches: [claude/dialog-design]
+    branches: [claude/dialog-design, claude/youthful-feynman-v2bnqb]
     paths: ['app/**', '.github/workflows/dialogs-design.yml']
 permissions:
   contents: write
@@ -30,7 +30,7 @@ jobs:
       - name: JVM tests, Preview APK, QA and instrumentation APKs
         run: |
           set -o pipefail
-          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixSyncTests=true -PflixVersionName=3.8.20-dialogs-design-preview --console=plain 2>&1 | tee build.log
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleQa :app:assembleQaAndroidTest -PflixPreview=true -PflixSyncTests=true -PflixVersionCode=10045 -PflixVersionName=3.8.25-premium-focus-preview --console=plain 2>&1 | tee build.log
           python3 - <<'EOF'
           import glob,xml.etree.ElementTree as ET
           t=f=0
@@ -45,7 +45,7 @@ jobs:
         if: always()
         with: {name: dialogs-design-test-results, path: "build.log\napp/build/test-results/", retention-days: 7}
       - uses: actions/upload-artifact@v4
-        with: {name: FlixTown-Dialogs-Design-PREVIEW, path: app/build/outputs/apk/debug/app-debug.apk, retention-days: 14}
+        with: {name: FlixTown-Premium-Focus-3.8.25-PREVIEW, path: app/build/outputs/apk/debug/app-debug.apk, retention-days: 14}
       - uses: actions/upload-artifact@v4
         with:
           name: dialogs-design-device-apks

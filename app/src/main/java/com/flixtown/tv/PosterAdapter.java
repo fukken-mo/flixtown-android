@@ -30,7 +30,7 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     /** Artwork width for horizontal rows, in dp. Height is 1.5× (2:3 artwork). */
     static final int ROW_POSTER_DP=120;
     /** Under grid posters: one line of 14sp title and one line of 12sp year · ★ rating. */
-    static final int NAME_DP=42;
+    static final int NAME_DP=48;
     static final float FOCUS_SCALE=1.05f;
 
     private final Activity activity;
@@ -88,10 +88,9 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         if(names){
             LinearLayout text=new LinearLayout(activity);text.setOrientation(LinearLayout.VERTICAL);text.setPadding(glow,Ui.dp(activity,2),glow,0);
             card.addView(text,new LinearLayout.LayoutParams(-1,Ui.dp(activity,NAME_DP)));
-            name=new TextView(activity);name.setTextColor(Ui.TEXT_2);name.setTextSize(14);name.setSingleLine(true);
-            name.setEllipsize(TextUtils.TruncateAt.END);name.setGravity(Gravity.CENTER_HORIZONTAL);
+            name=new TextView(activity);name.setTextColor(Ui.TEXT_2);name.setTextSize(16);Ui.scrollingLabel(name);name.setGravity(Gravity.CENTER_HORIZONTAL);
             text.addView(name,new LinearLayout.LayoutParams(-1,-2));
-            meta=new TextView(activity);meta.setTextColor(Ui.TEXT_3);meta.setTextSize(12);meta.setSingleLine(true);
+            meta=new TextView(activity);meta.setTextColor(Ui.TEXT_2);meta.setTextSize(14);meta.setSingleLine(true);
             meta.setEllipsize(TextUtils.TruncateAt.END);meta.setGravity(Gravity.CENTER_HORIZONTAL);
             text.addView(meta,new LinearLayout.LayoutParams(-1,-2));
         }
@@ -114,8 +113,8 @@ final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
     private static void showFocus(Holder h,boolean focused,boolean animate){
         h.glow.setOn(focused);
         ((FrameLayout)h.poster.getChildAt(0)).setForeground(focused?h.ring:null);
-        if(h.name!=null)h.name.setTextColor(focused?Ui.TEXT:Ui.TEXT_2);
-        if(h.meta!=null)h.meta.setTextColor(focused?Ui.TEXT_2:Ui.TEXT_3);
+        if(h.name!=null){h.name.setTextColor(focused?Ui.TEXT:Ui.TEXT_2);Ui.scrollLabel(h.name,focused);}
+        if(h.meta!=null)h.meta.setTextColor(focused?Ui.TEXT:Ui.TEXT_2);
         float s=focused?FOCUS_SCALE:1f;
         if(animate)h.poster.animate().scaleX(s).scaleY(s).setDuration(120).start();
         else{h.poster.animate().cancel();h.poster.setScaleX(s);h.poster.setScaleY(s);}
