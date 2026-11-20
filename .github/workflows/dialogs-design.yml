@@ -27,6 +27,11 @@ jobs:
       - run: python -m pip install Pillow==11.3.0
       - run: python .github/qa/check_profile_assets.py
       - uses: gradle/actions/setup-gradle@v4
+      - name: Intro test video for IntroSkipDeviceTest (QA assets only)
+        run: |
+          sudo apt-get install -y ffmpeg > /dev/null
+          mkdir -p app/src/qa/assets
+          ffmpeg -v error -f lavfi -i color=c=black:s=320x180:r=24 -f lavfi -i sine=frequency=440:sample_rate=44100 -t 30 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -movflags +faststart app/src/qa/assets/intro-test.mp4
       - name: JVM tests, Preview APK, QA and instrumentation APKs
         run: |
           set -o pipefail
@@ -93,7 +98,7 @@ jobs:
           grep -E "^OK|^FAILURES|Tests run" device-results.txt || true
           echo "--- rapid close/reopen attempts ---"; cat profiles-ui/race-results.txt || true
           echo "--- input isolation during focus recovery ---"; cat profiles-ui/isolation-results.txt || true
-          grep -q 'OK (44 tests)' device-results.txt
+          grep -q 'OK (47 tests)' device-results.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: "dialogs-design-api${{ matrix.api }}", path: "device-results.txt\nprofiles-ui/\nprofiles-logcat.txt", retention-days: 7}

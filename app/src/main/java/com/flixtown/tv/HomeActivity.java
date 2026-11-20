@@ -780,10 +780,10 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
         if(primary){PlayerIcon icon=new PlayerIcon(this,PlayerIcon.PLAY);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(Ui.dp(this,18),Ui.dp(this,18));ip.rightMargin=Ui.dp(this,10);b.addView(icon,ip);}
         TextView t=Ui.heading(this,label,17);t.setSingleLine(true);b.addView(t);
         // The main action's label is red at rest and white when focused (Ui's one focus rule).
-        if(primary){t.setDuplicateParentStateEnabled(true);t.setTextColor(Ui.buttonText(Ui.PRIMARY));}
+        if(primary)t.setTextColor(Ui.PRIMARY_TEXT);
         LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,52));
         if(parent.getChildCount()>0)p.leftMargin=Ui.dp(this,10);parent.addView(b,p);
-        b.setOnFocusChangeListener((v,f)->{Ui.focusScale(v,f);
+        b.setOnFocusChangeListener((v,f)->{Ui.focusScale(v,f);if(primary)t.setTextColor(f?Ui.TEXT:Ui.PRIMARY_TEXT);
             if(f){lastContentFocus=v;lastKeyAt=SystemClock.uptimeMillis();}});
         return b;
     }

@@ -29,6 +29,11 @@ focus(){ { echo "== $1"; adb shell dumpsys activity top | grep -E ' [.R]F[.S][.H
 # --- Sign in (clean install) ---
 launch --ez demo_reset true
 shot 01-login-qr 4
+# Sign in with the remote (the demo still approves by QR): the focused field is the only red thing;
+# Sign in shows a red label until the remote reaches it. Back returns to the QR code.
+key DPAD_CENTER;                            shot 01b-remote-form 1.2
+key DPAD_DOWN DPAD_DOWN;                    shot 01c-remote-form-sign-in-focus 0.6
+key BACK;                                   sleep 1
 sleep 16;                                   shot 02-first-launch-loading 0.1
 pick 02b-profile-picker
 sleep 2;                                    shot 03-home 1.5;                focus home
@@ -128,9 +133,6 @@ key DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_DOWN DPAD_D
 shot 59-sign-out-row 0.4;                   focus sign-out-row
 key DPAD_CENTER DPAD_RIGHT;                 shot 60-sign-out-focus 0.4
 key DPAD_CENTER;                            shot 61-signed-out-login 3
-# Sign in with the remote: the focused field is the only red thing; Sign in shows a red label until focused.
-key DPAD_CENTER;                            shot 61b-remote-form 1.5
-key DPAD_DOWN DPAD_DOWN;                    shot 61c-remote-form-sign-in-focus 0.8
 
 # --- Signing in again to an expired account shows renewal ---
 launch --ez demo_expired true;              sleep 28
