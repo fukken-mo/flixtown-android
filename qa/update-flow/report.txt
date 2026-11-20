@@ -9,7 +9,7 @@ PASS  playing a title before the update is published
 PASS  same link, newer APK detected (10011)
 PASS  back from the background straight into the player
 PASS  no update popup while the player is open
-FAIL  could not get back to Home (    mResumedActivity: ActivityRecord{bd85a7f u0 com.google.android.tvlauncher/.MainActivity t4})
+FAIL  could not get back to Home (    mResumedActivity: ActivityRecord{bfb876 u0 com.google.android.tvlauncher/.MainActivity t4})
 FAIL  no popup after returning from the background
 PASS  after Later: returning from the background does not ask again
 FAIL  exit confirmation not shown
