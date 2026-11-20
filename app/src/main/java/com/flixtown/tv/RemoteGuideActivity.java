@@ -40,7 +40,8 @@ public class RemoteGuideActivity extends Activity {
         tabs.addView(browsing,new LinearLayout.LayoutParams(Ui.dp(this,150),-1));
         LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(Ui.dp(this,150),-1);wp.leftMargin=Ui.dp(this,12);tabs.addView(watching,wp);
         browsing.setOnClickListener(v->show(false));watching.setOnClickListener(v->show(true));
-        LinearLayout body=Ui.row(this);body.setClipChildren(false);body.setClipToPadding(false);
+        // The list scrolls inside its own area: it must never draw over the note below it (it did at 1080p).
+        LinearLayout body=Ui.row(this);body.setClipChildren(true);body.setClipToPadding(true);
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,0,1);bp.topMargin=Ui.dp(this,14);page.addView(body,bp);
         picture=new RemotePicture(this);body.addView(picture,new LinearLayout.LayoutParams(Ui.dp(this,210),-1));
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);scroll.setClipToPadding(false);

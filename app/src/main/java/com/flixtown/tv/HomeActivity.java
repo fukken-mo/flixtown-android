@@ -940,7 +940,7 @@ public class HomeActivity extends Activity implements StartupRefresh.Listener, H
             if(holder instanceof SectionHolder){((SectionHolder)holder).section=null;((SectionHolder)holder).list.setAdapter(null);}
         }
     }
-    private GradientDrawable outline(){GradientDrawable d=new GradientDrawable();d.setCornerRadius(Ui.dp(this,3));d.setStroke(Ui.dp(this,1),0x99E5333B);return d;}
+    private GradientDrawable outline(){GradientDrawable d=new GradientDrawable();d.setCornerRadius(Ui.dp(this,3));d.setStroke(Ui.dp(this,1),0x99CE4B4A);return d;}
 
     /* ---------------- Search header ---------------- */
 
