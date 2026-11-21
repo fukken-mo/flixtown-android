@@ -1,4 +1,4 @@
-API 31, focus recoveries in total: 13
+API 31, focus recoveries in total: 15
 ok   exit Stay→Back #1
 ok   exit Back→Back #1
 ok   notices Got it→next #1
@@ -15,13 +15,13 @@ ok   exit Stay→Back #3
 ok   exit Back→Back #3
 ok   notices Got it→next #3
 ok   report picker→Send report? #3
-ok   report Sending→reply #3
+ok   report Sending→reply #3  [lost focus notification recovered x1]
 ok   update Update now→progress #3
 ok   exit Stay→Back #4
 ok   exit Back→Back #4
 ok   notices Got it→next #4
 ok   report picker→Send report? #4
-ok   report Sending→reply #4
+ok   report Sending→reply #4  [lost focus notification recovered x1]
 ok   update Update now→progress #4
 ok   exit Stay→Back #5
 ok   exit Back→Back #5
