@@ -1,37 +1,43 @@
 PASS  signed in (demo) and reached Home past the profile picker
 
 == S1 manual playback and a normal end ==
+INFO  opening the episode, attempt 1, did not reach playback (    mResumedActivity: ActivityRecord{b31fc4b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.RequestsActivity t6})
 PASS  S1 an episode opened by hand from Details plays (episode 9101)
 INFO  S1 outcome: next
 PASS  S1 a normal end autoplays the next episode
 
 == S2 the current stream breaks near the end ==
-INFO  S2 outcome: error
+INFO  S2 outcome: next
 INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
-INFO  server: drop /ep.mkv range=bytes=23654258- at byte 27654828 (cut 27654828, size 30172404)
-INFO  server: drop /ep.mkv range=bytes=27654828- at byte 27654828 (cut 27654828, size 30172404)
-INFO  server: drop /ep.mkv range=bytes=27654828- at byte 27654828 (cut 27654828, size 30172404)
-INFO  server: drop /ep.mkv range=bytes=27654828- at byte 27654828 (cut 27654828, size 30172404)
-INFO  server: drop /ep.mkv range=bytes=27654828- at byte 27654828 (cut 27654828, size 30172404)
-INFO  server: drop /ep.mkv range=bytes=27654828- at byte 27654828 (cut 27654828, size 30172404)
-FAIL  S2 a stream failure in the closing seconds still autoplays the next episode (no error card)
+INFO  recovery: action=advance attempt=0 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=109 duration=120 episode=9102
+INFO  server: drop /ep.mkv range=bytes=23652877- at byte 27655716 (cut 27655716, size 30173666)
+INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
+INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
+INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
+INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
+INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
+PASS  S2 a stream failure in the closing seconds still autoplays the next episode (no error card)
 
 == S3 the next episode is refused for 20 s ==
 INFO  S3 refusal armed at 116 s of 120
-INFO  S3 outcome: error
-INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
+INFO  S3 outcome: next
 INFO  player error: Playback failed: ERROR_CODE_IO_BAD_HTTP_STATUS ExoPlaybackException: Source error <- InvalidResponseCodeException: Response code: 403
-INFO  server: arm refuse for 0 s
-INFO  server: arm refuse for 20 s
-INFO  server: refuse /ep.mkv range= (16.3 s left)
-INFO  server: refuse /ep.mkv range= (16.2 s left)
-INFO  server: refuse /ep.mkv range= (15.2 s left)
-INFO  server: refuse /ep.mkv range= (13.2 s left)
-FAIL  S3 the next episode starts once the server accepts it again (no error card)
+INFO  player error: Playback failed: ERROR_CODE_IO_BAD_HTTP_STATUS ExoPlaybackException: Source error <- InvalidResponseCodeException: Response code: 403
+INFO  player error: Playback failed: ERROR_CODE_IO_BAD_HTTP_STATUS ExoPlaybackException: Source error <- InvalidResponseCodeException: Response code: 403
+INFO  recovery: action=retry attempt=0 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
+INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
+INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
+INFO  server: refuse /ep.mkv range= (10.7 s left)
+INFO  server: refuse /ep.mkv range= (8.7 s left)
+INFO  server: refuse /ep.mkv range= (4.7 s left)
+INFO  server: refuse /ep.mkv range= (4.7 s left)
+INFO  server: refuse /ep.mkv range= (3.7 s left)
+INFO  server: refuse /ep.mkv range= (1.7 s left)
+PASS  S3 the next episode starts once the server accepts it again (no error card)
 
 == S4 the stream breaks mid-way ==
-PASS  S4 a lasting failure mid-way still shows the error card and does not skip the episode
+FAIL  S4 a lasting failure mid-way still shows the error card and does not skip the episode
 FAIL  S4 the error card offers Try again
 PASS  no Flix Town crash
 
-autoplay recovery: 5 passed, 3 failed
+autoplay recovery: 6 passed, 2 failed
