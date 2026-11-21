@@ -120,10 +120,13 @@ curl -s "http://127.0.0.1:8000/arm?refuse=0" > /dev/null
 
 # S4 the stream breaks mid-way, for good: nothing may be skipped
 note ""; note "== S4 the stream breaks mid-way =="
+# A clean start (no saved progress), so the first episode plays from 0:00 into the break at 1:00 with a
+# next episode queued: the case where skipping ahead would be wrong.
+launch --ez demo_reset true; sleep 20; to_home 60; sleep 4
 stream "$M/cut50/ep.mkv"; fresh
-player_open; ep4="$(qaf episode)"
-go_to_ok 0 50; r=$(outcome "$ep4" 120); note "INFO  S4 outcome: $r"; evidence; shot S4-outcome 0.1
-check "S4 a lasting failure mid-way still shows the error card and does not skip the episode" '[ "$r" = error ]'
+player_open; ep4="$(qaf episode)"; note "INFO  S4 playing episode $ep4 from $(qaf elapsed) s"
+r=$(outcome "$ep4" 150); note "INFO  S4 outcome: $r at $(qaf elapsed) s"; evidence; shot S4-outcome 0.1
+check "S4 a lasting failure mid-way still shows the error card and does not skip the episode" '[ "$r" = error ] && [ "$(qaf episode)" = "$ep4" ] && [ "$(qaf elapsed)" -ge 50 ] && [ "$(qaf elapsed)" -le 70 ]'
 check "S4 the error card explains the connection problem" 'qaf cardmsg | grep -q "server didn"'
 
 crash="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
