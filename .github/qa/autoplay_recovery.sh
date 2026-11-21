@@ -124,7 +124,7 @@ stream "$M/cut50/ep.mkv"; fresh
 player_open; ep4="$(qaf episode)"
 go_to_ok 0 50; r=$(outcome "$ep4" 120); note "INFO  S4 outcome: $r"; evidence; shot S4-outcome 0.1
 check "S4 a lasting failure mid-way still shows the error card and does not skip the episode" '[ "$r" = error ]'
-check "S4 the error card offers Try again" 'dump; grep -q "Try again" "$OUT/ui.xml"'
+check "S4 the error card explains the connection problem" 'qaf cardmsg | grep -q "server didn"'
 
 crash="$(adb logcat -d -b crash | grep -A1 'FATAL EXCEPTION' | grep -c "Process: $PKG")"
 check "no Flix Town crash" '[ "$crash" = 0 ]'
