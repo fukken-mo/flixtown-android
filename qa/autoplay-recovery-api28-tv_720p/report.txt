@@ -1,7 +1,6 @@
 PASS  signed in (demo) and reached Home past the profile picker
 
 == S1 manual playback and a normal end ==
-INFO  opening the episode, attempt 1, did not reach playback (    mResumedActivity: ActivityRecord{b31fc4b u0 com.myflixtown.tv.native.qa/com.flixtown.tv.RequestsActivity t6})
 PASS  S1 an episode opened by hand from Details plays (episode 9101)
 INFO  S1 outcome: next
 PASS  S1 a normal end autoplays the next episode
@@ -10,12 +9,12 @@ PASS  S1 a normal end autoplays the next episode
 INFO  S2 outcome: next
 INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
 INFO  recovery: action=advance attempt=0 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=109 duration=120 episode=9102
-INFO  server: drop /ep.mkv range=bytes=23652877- at byte 27655716 (cut 27655716, size 30173666)
-INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
-INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
-INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
-INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
-INFO  server: drop /ep.mkv range=bytes=27655716- at byte 27655716 (cut 27655716, size 30173666)
+INFO  server: drop /ep.mkv range=bytes=23653755- at byte 27655415 (cut 27655415, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=27655415- at byte 27655415 (cut 27655415, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=27655415- at byte 27655415 (cut 27655415, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=27655415- at byte 27655415 (cut 27655415, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=27655415- at byte 27655415 (cut 27655415, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=27655415- at byte 27655415 (cut 27655415, size 30171297)
 PASS  S2 a stream failure in the closing seconds still autoplays the next episode (no error card)
 
 == S3 the next episode is refused for 20 s ==
@@ -27,17 +26,35 @@ INFO  player error: Playback failed: ERROR_CODE_IO_BAD_HTTP_STATUS ExoPlaybackEx
 INFO  recovery: action=retry attempt=0 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
-INFO  server: refuse /ep.mkv range= (10.7 s left)
-INFO  server: refuse /ep.mkv range= (8.7 s left)
-INFO  server: refuse /ep.mkv range= (4.7 s left)
-INFO  server: refuse /ep.mkv range= (4.7 s left)
-INFO  server: refuse /ep.mkv range= (3.7 s left)
-INFO  server: refuse /ep.mkv range= (1.7 s left)
+INFO  server: refuse /ep.mkv range= (10.6 s left)
+INFO  server: refuse /ep.mkv range= (8.6 s left)
+INFO  server: refuse /ep.mkv range= (4.5 s left)
+INFO  server: refuse /ep.mkv range= (4.5 s left)
+INFO  server: refuse /ep.mkv range= (3.5 s left)
+INFO  server: refuse /ep.mkv range= (1.5 s left)
 PASS  S3 the next episode starts once the server accepts it again (no error card)
 
 == S4 the stream breaks mid-way ==
-FAIL  S4 a lasting failure mid-way still shows the error card and does not skip the episode
-FAIL  S4 the error card offers Try again
+INFO  Go to time 0:50 attempt 1 reached 29 s; dialog=false
+INFO  Go to time 0:50 attempt 2 reached 115 s; dialog=false
+INFO  S4 outcome: error
+INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
+INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
+INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
+INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
+INFO  recovery: action=retry attempt=0 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=115 duration=120 episode=9104
+INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=115 duration=120 episode=9104
+INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=115 duration=120 episode=9104
+INFO  recovery: action=retry attempt=3 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=115 duration=120 episode=9104
+INFO  recovery: action=error attempt=4 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=115 duration=120 episode=9104
+INFO  server: drop /ep.mkv range=bytes=28678324- at byte 28678324 (cut 15126310, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=28678324- at byte 28678324 (cut 15126310, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=28678324- at byte 28678324 (cut 15126310, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=28678324- at byte 28678324 (cut 15126310, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=28678324- at byte 28678324 (cut 15126310, size 30171297)
+INFO  server: drop /ep.mkv range=bytes=28678324- at byte 28678324 (cut 15126310, size 30171297)
+PASS  S4 a lasting failure mid-way still shows the error card and does not skip the episode
+PASS  S4 the error card explains the connection problem
 PASS  no Flix Town crash
 
-autoplay recovery: 6 passed, 2 failed
+autoplay recovery: 8 passed, 0 failed
