@@ -9,12 +9,12 @@ PASS  S1 a normal end autoplays the next episode
 INFO  S2 outcome: next
 INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
 INFO  recovery: action=advance attempt=0 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=109 duration=120 episode=9102
-INFO  server: drop /ep.mkv range=bytes=23653642- at byte 27657237 (cut 27657237, size 30172758)
-INFO  server: drop /ep.mkv range=bytes=27657237- at byte 27657237 (cut 27657237, size 30172758)
-INFO  server: drop /ep.mkv range=bytes=27657237- at byte 27657237 (cut 27657237, size 30172758)
-INFO  server: drop /ep.mkv range=bytes=27657237- at byte 27657237 (cut 27657237, size 30172758)
-INFO  server: drop /ep.mkv range=bytes=27657237- at byte 27657237 (cut 27657237, size 30172758)
-INFO  server: drop /ep.mkv range=bytes=27657237- at byte 27657237 (cut 27657237, size 30172758)
+INFO  server: drop /ep.mkv range=bytes=23653351- at byte 27656132 (cut 27656132, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=27656132- at byte 27656132 (cut 27656132, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=27656132- at byte 27656132 (cut 27656132, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=27656132- at byte 27656132 (cut 27656132, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=27656132- at byte 27656132 (cut 27656132, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=27656132- at byte 27656132 (cut 27656132, size 30172711)
 PASS  S2 a stream failure in the closing seconds still autoplays the next episode (no error card)
 
 == S3 the next episode is refused for 20 s ==
@@ -26,17 +26,27 @@ INFO  player error: Playback failed: ERROR_CODE_IO_BAD_HTTP_STATUS ExoPlaybackEx
 INFO  recovery: action=retry attempt=0 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
-INFO  server: refuse /ep.mkv range= (10.1 s left)
-INFO  server: refuse /ep.mkv range= (8.1 s left)
-INFO  server: refuse /ep.mkv range= (4.1 s left)
-INFO  server: refuse /ep.mkv range= (4.1 s left)
-INFO  server: refuse /ep.mkv range= (3.1 s left)
-INFO  server: refuse /ep.mkv range= (1.0 s left)
+INFO  server: refuse /ep.mkv range= (10.4 s left)
+INFO  server: refuse /ep.mkv range= (8.4 s left)
+INFO  server: refuse /ep.mkv range= (4.4 s left)
+INFO  server: refuse /ep.mkv range= (4.4 s left)
+INFO  server: refuse /ep.mkv range= (3.4 s left)
+INFO  server: refuse /ep.mkv range= (1.4 s left)
 PASS  S3 the next episode starts once the server accepts it again (no error card)
 
 == S4 the stream breaks mid-way ==
-FAIL  S4 a lasting failure mid-way still shows the error card and does not skip the episode
-FAIL  S4 the error card offers Try again
+INFO  Go to time 0:50 attempt 1 reached 115 s; dialog=false
+INFO  Go to time 0:50 attempt 2 reached 115 s; dialog=false
+INFO  S4 outcome: error
+INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
+INFO  server: drop /ep.mkv range=bytes=15127921- at byte 15127921 (cut 15127921, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=15127921- at byte 15127921 (cut 15127921, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=28677473- at byte 28677473 (cut 15127921, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=28677473- at byte 28677473 (cut 15127921, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=28677473- at byte 28677473 (cut 15127921, size 30172711)
+INFO  server: drop /ep.mkv range=bytes=28677473- at byte 28677473 (cut 15127921, size 30172711)
+PASS  S4 a lasting failure mid-way still shows the error card and does not skip the episode
+PASS  S4 the error card explains the connection problem
 PASS  no Flix Town crash
 
-autoplay recovery: 6 passed, 2 failed
+autoplay recovery: 8 passed, 0 failed
