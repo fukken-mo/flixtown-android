@@ -66,6 +66,8 @@ public class PlayerActivity extends Activity {
     private int externalGeneration;private boolean externalLoading,externalUnavailable;
 
     private long lastSavedAt,holdStartedAt;
+    /** Quiet retries of a connection error (see PlaybackRecovery), and where playback was when the last one began. */
+    private int recoveryAttempts;private long recoveryFrom;
     private View reportButton,previousButton,nextButton,optionsButton;
     private EpisodeNavigation episodeNavigation;private boolean nextAfterMenu;
     private org.json.JSONObject episodeCatalog;private boolean loadingEpisodes;private int episodeLoadGeneration;
@@ -290,7 +292,13 @@ public class PlayerActivity extends Activity {
         if(player.getPlaybackState()==Player.STATE_IDLE){retry();return;}
         if(player.isPlaying())player.pause();else player.play();
     }
-    private void retry(){if(player==null)return;hideCard();player.prepare();player.play();}
+    private void retry(){if(player==null)return;resetRecovery();hideCard();player.prepare();player.play();}
+    /** A quiet retry: the same title from where it stopped, keeping play / pause as it was. */
+    private final Runnable recoverStream=()->{
+        if(player==null||stopping||isFinishing()||reporting||dialog!=null||player.getPlayerError()==null)return;
+        player.prepare();
+    };
+    private void resetRecovery(){recoveryAttempts=0;handler.removeCallbacks(recoverStream);}
     /**
      * Left/Right (and rewind/fast-forward): 10 seconds per press; holding speeds up (see {@link SeekStep}).
      * Presses are combined into one pending target, shown as a time and a white marker on the progress
@@ -360,7 +368,7 @@ public class PlayerActivity extends Activity {
     @Override protected void onStart(){
         super.onStart();
         if(url==null)return;
-        stopping=false;
+        stopping=false;recoveryAttempts=0;
         // Xtream servers commonly redirect streams to another host, sometimes from http to https.
         DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true).setConnectTimeoutMs(15000).setReadTimeoutMs(20000);
@@ -407,12 +415,19 @@ public class PlayerActivity extends Activity {
                 boolean network=(error.errorCode>=PlaybackException.ERROR_CODE_IO_UNSPECIFIED && error.errorCode<PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
                     || error.errorCode==PlaybackException.ERROR_CODE_TIMEOUT;
                 lastPlayerError=error.getErrorCodeName();lastErrorNetwork=network;
-                if (!reporting && dialog == null && !stopping && !isFinishing()
-                        && canAutoplayNext() && isTailStreamFailure()) {
-                    ended = true;
-                    finishProgress();
-                    playNext();
-                    return;
+                if(!reporting && dialog==null && !stopping && !isFinishing() && player!=null){
+                    int action=PlaybackRecovery.decide(network,recoveryAttempts,isTailStreamFailure(),canAutoplayNext());
+                    android.util.Log.i("FlixTownPlayer","Recovery: "+PlaybackRecovery.name(action)+" after "+recoveryAttempts+" retries at "
+                        +player.getCurrentPosition()/1000+" of "+Math.max(0,player.getDuration()/1000)+" s");
+                    if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","playback_recovery action="+PlaybackRecovery.name(action)+" attempt="+recoveryAttempts
+                        +" error="+lastPlayerError+" position="+player.getCurrentPosition()/1000+" duration="+player.getDuration()/1000+" episode="+episodeId);
+                    if(action==PlaybackRecovery.ADVANCE){ended=true;finishProgress();playNext();return;}
+                    if(action==PlaybackRecovery.RETRY){
+                        long wait=PlaybackRecovery.retryDelayMs(recoveryAttempts);recoveryAttempts++;recoveryFrom=player.getCurrentPosition();
+                        handler.removeCallbacks(recoverStream);handler.postDelayed(recoverStream,wait);
+                        if(card.getVisibility()!=View.VISIBLE){showControls(null);flash("Reconnecting to the server…");}
+                        return;
+                    }
                 }
                 if(!reporting)showPlaybackError();
             }
@@ -975,6 +990,7 @@ public class PlayerActivity extends Activity {
         qaState();observeViewing();updateIntroButton();
         long duration=player.getDuration(),current=player.getCurrentPosition();
         if(player.isPlaying() && current>=15000 && current/5000!=lastSavedAt/5000){saveProgress(current,duration);lastSavedAt=current;}
+        if(recoveryAttempts>0 && player.isPlaying() && current-recoveryFrom>=PlaybackRecovery.RECOVERED_AFTER_MS)recoveryAttempts=0;
         if(controlsVisible())updateProgressUi();
         if(duration>0 && duration!=C.TIME_UNSET){
             long left=duration-current;
@@ -1038,6 +1054,7 @@ public class PlayerActivity extends Activity {
         // A seek still waiting to be applied belongs to the episode that just ended, not to the next one.
         clearPendingSeek();
         resetAudioDiagnostics();
+        resetRecovery();
         url=nextUrl;nextUrl="";lastPlayerError="";position=0;promptShown=false;ended=false;lastSavedAt=0;resumeAsked=true;
         episodeId=nextEpisodeId;episodeExt=nextEpisodeExt;nextEpisodeId="";nextEpisodeExt="";
         subtitle=nextSubtitle;nextSubtitle="";showSubtitle();
@@ -1074,6 +1091,7 @@ public class PlayerActivity extends Activity {
         player.pause();nextAfterMenu=false;select.run();
         url=targetUrl;episodeId=target.id;episodeExt=target.extension;subtitle=target.label;
         resetAudioDiagnostics();
+        resetRecovery();
         position=0;lastSavedAt=0;lastPlayerError="";promptShown=false;nextCanceled=false;ended=false;resumeAsked=true;
         syncEpisodeNeighbors();showSubtitle();updateEpisodeButtons();status.setVisibility(View.GONE);
         // Persist the selected episode immediately, even if Back is pressed before the 15-second save threshold.
