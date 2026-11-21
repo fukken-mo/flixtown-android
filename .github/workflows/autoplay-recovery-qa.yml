@@ -1,0 +1,83 @@
+name: Autoplay recovery QA
+
+# "This title couldn't be played" near the end of an episode: reproduces a stream that breaks in the closing
+# seconds, a next episode the server refuses for a moment, and a lasting mid-way failure, on Android TV
+# emulators (QA build, offline demo data, local media server). QA only: nothing is signed for production,
+# published or deployed. Results are committed to qa/autoplay-recovery-api*/ on the same branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/youthful-feynman-v2bnqb"]
+    paths: [".github/workflows/autoplay-recovery-qa.yml", ".github/qa/autoplay_recovery.sh", ".github/qa/media_server.py", "app/src/main/**"]
+permissions:
+  contents: write
+concurrency:
+  group: autoplay-recovery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :app:testDebugUnitTest :app:assembleQa --console=plain
+      - uses: actions/upload-artifact@v4
+        with: { name: autoplay-recovery-qa-apk, path: app/build/outputs/apk/qa/app-qa.apk, retention-days: 2 }
+  tv:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 31, profile: tv_1080p }
+          - { api: 28, profile: tv_720p }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: autoplay-recovery-qa-apk, path: app/build/outputs/apk/qa }
+      - name: Test episode (2 Mbit/s, 120 s) and the media server
+        run: |
+          for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null && break; sleep 10; done
+          mkdir -p media
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i "testsrc2=s=640x360:r=25:d=120" -f lavfi -i "anullsrc=r=48000:cl=stereo" -t 120 \
+            -c:v libx264 -preset ultrafast -b:v 2M -minrate 2M -maxrate 2M -bufsize 2M -x264-params nal-hrd=cbr -g 50 -pix_fmt yuv420p -c:a aac -b:a 64k media/ep.mkv
+          off(){ ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,pos -of csv=p=0 media/ep.mkv | awk -F, -v t=$1 '$1+0>=t && $2!="N/A"{print $2; exit}'; }
+          off 110 > media/ep.mkv.cut-offset; off 60 > media/ep.mkv.cut50-offset
+          echo "cut at 1:50 = byte $(cat media/ep.mkv.cut-offset), mid-way 1:00 = byte $(cat media/ep.mkv.cut50-offset), of $(stat -c %s media/ep.mkv)"
+          nohup python3 .github/qa/media_server.py 8000 media > media.log 2>&1 &
+          sleep 1; curl -sI http://127.0.0.1:8000/ep.mkv | head -1
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Autoplay recovery on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: android-tv
+          arch: x86
+          profile: ${{ matrix.profile }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: QA_OUT=qa/autoplay-recovery-api${{ matrix.api }}-${{ matrix.profile }} bash .github/qa/autoplay_recovery.sh || true
+      - name: Result
+        run: |
+          D=qa/autoplay-recovery-api${{ matrix.api }}-${{ matrix.profile }}
+          cp media.log "$D/media.log" 2>/dev/null || true
+          cat "$D/report.txt" || true
+      - name: Commit results
+        run: |
+          D=qa/autoplay-recovery-api${{ matrix.api }}-${{ matrix.profile }}
+          rm -rf /tmp/res && cp -r "$D" /tmp/res
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3 4 5 6 7 8; do
+            git fetch -q origin ${GITHUB_REF_NAME} && git checkout -q -f -B results FETCH_HEAD && rm -rf "$D" && mkdir -p "$D" && cp -r /tmp/res/. "$D"/ && git add -A "$D" \
+              && { git diff --cached --quiet || git commit -q -m "Autoplay recovery QA, API ${{ matrix.api }} ${{ matrix.profile }} (${GITHUB_SHA::7}) [skip ci]"; } \
+              && git push -q origin HEAD:${GITHUB_REF_NAME} && echo pushed && break
+            sleep $((i*3 + RANDOM % 7))
+          done
+          grep -q "autoplay recovery: [0-9]* passed, 0 failed" "$D/report.txt"

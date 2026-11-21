@@ -7,13 +7,17 @@
                    1 % (where the Matroska index lives) stays readable, so the title opens normally.
   /cut50/<file>    the same for bytes 50–99 % (an interrupted title, mid-way)
   /live/<file>     no length and no Range: an unseekable stream
+  /refuse/<file>   normal file, but while "armed" every request gets HTTP 403 with no body: a server that
+                   briefly refuses a new connection (an IPTV account at its connection limit right after the
+                   previous stream closed). GET /arm?refuse=SECONDS arms it, /arm?refuse=0 disarms.
   /missing/...     404
 Usage: media_server.py PORT DIR
 """
-import os, re, sys
+import os, re, sys, time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 ROOT = os.path.abspath(sys.argv[2])
+REFUSE_UNTIL = [0.0]
 
 class H(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -21,12 +25,20 @@ class H(BaseHTTPRequestHandler):
         sys.stderr.write("%s %s\n" % (self.log_date_time_string(), fmt % a)); sys.stderr.flush()
     def do_GET(self):
         path = self.path.split("?")[0]
+        if path == "/arm":
+            m = re.search(r"refuse=(\d+)", self.path); secs = int(m.group(1)) if m else 0
+            REFUSE_UNTIL[0] = time.time() + secs
+            sys.stderr.write("arm refuse for %d s\n" % secs); sys.stderr.flush()
+            self.send_response(200); self.send_header("Content-Length", "0"); self.end_headers(); return
         mode = "plain"
-        for prefix in ("/cut/", "/cut50/", "/live/"):
+        for prefix in ("/cut/", "/cut50/", "/live/", "/refuse/"):
             if path.startswith(prefix): mode = prefix.strip("/"); path = "/" + path[len(prefix):]
         f = os.path.abspath(os.path.join(ROOT, path.lstrip("/")))
         if not f.startswith(ROOT + os.sep) or not os.path.isfile(f) or path.startswith("/missing/"):
             self.send_response(404); self.send_header("Content-Length", "0"); self.end_headers(); return
+        if mode == "refuse" and time.time() < REFUSE_UNTIL[0]:
+            sys.stderr.write("refuse %s range=%s (%.1f s left)\n" % (path, self.headers.get("Range", ""), REFUSE_UNTIL[0] - time.time())); sys.stderr.flush()
+            self.send_response(403); self.send_header("Content-Length", "0"); self.end_headers(); return
         size = os.path.getsize(f)
         ctype = "image/jpeg" if f.endswith(".jpg") else "video/mp2t" if f.endswith(".ts") else "video/x-matroska"
         with open(f, "rb") as src:
