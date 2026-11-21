@@ -69,7 +69,7 @@ go_to(){ key DPAD_UP; sleep 0.4; key DPAD_UP; sleep 0.4; key DPAD_CENTER; sleep 
   focus_to DPAD_DOWN "Go to time" 3 > /dev/null; key DPAD_CENTER; sleep 1.2
   for f in "$@"; do for (( i=0; i<${#f}; i++ )); do adb shell input keyevent "KEYCODE_${f:$i:1}"; sleep 0.3; done; done
   focus_to DPAD_RIGHT "Go" 4 > /dev/null; key DPAD_CENTER; sleep 2; }
-go_to_ok(){ local want=$(( ${1#0}*60 + ${2#0} )) e a; for a in 1 2; do go_to "$1" "$2"; e=$(qaf elapsed)
+go_to_ok(){ local want=$(( 10#$1*60 + 10#$2 )) e a; for a in 1 2; do go_to "$1" "$2"; e=$(qaf elapsed)
     [ "${e:-0}" -ge $((want-2)) ] && [ "${e:-0}" -le $((want+20)) ] && return 0
     note "INFO  Go to time $1:$2 attempt $a reached ${e:-?} s; dialog=$(qaf dialog)"
     [ "$(qaf dialog)" = "true" ] && { key BACK; sleep 1; }; done; return 1; }

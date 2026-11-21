@@ -200,8 +200,8 @@ public class DialogFocusIsolationDeviceTest extends InstrumentationTestCase {
   Activity player=getInstrumentation().startActivitySync(i);
   try{
    waitFor("player",10000,player::hasWindowFocus);
-   // Let the unreachable stream settle into its error card, so the player's own state is steady.
-   within(20000,()->{View card=player.findViewById(R.id.player_card);return card!=null&&card.getVisibility()==View.VISIBLE&&player.hasWindowFocus();});
+   // Let the unreachable stream settle into its error card (after the player's quiet reconnect tries, about 30 s), so its own state is steady.
+   within(70000,()->{View card=player.findViewById(R.id.player_card);return card!=null&&card.getVisibility()==View.VISIBLE&&player.hasWindowFocus();});
    Thread.sleep(800);
    isolate(player,"Player",true);
    isolate(player,"Player",false);
