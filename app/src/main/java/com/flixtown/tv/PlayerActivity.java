@@ -958,7 +958,7 @@ public class PlayerActivity extends Activity {
     }
     private static String shortLanguage(Format f){
         if(f.language!=null && !f.language.isEmpty() && !"und".equals(f.language)){
-            String name=TrackText.languageLabel(f.language);return name.isEmpty()?f.language:name;}
+            String code=TrackText.languageCode(f.language);return code.isEmpty()?f.language:code;}
         return "On";
     }
     private static String trackLabel(Format f,int type,int number){

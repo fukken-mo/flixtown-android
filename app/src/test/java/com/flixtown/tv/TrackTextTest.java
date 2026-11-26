@@ -6,6 +6,10 @@ import static org.junit.Assert.*;
 public class TrackTextTest {
     @Test public void languagesHaveTheirPlainNames() {
         assertEquals("English", TrackText.languageLabel("en"));
+        assertEquals("EN", TrackText.languageCode("eng"));
+        assertEquals("PT", TrackText.languageCode("pt-br"));
+        assertEquals("DE", TrackText.languageCode("deu"));
+        assertEquals("", TrackText.languageCode("und"));
         assertEquals("English", TrackText.languageLabel("eng"));
         assertEquals("Portuguese (Brazil)", TrackText.languageLabel("pt-br"));
         assertEquals("Portuguese (Brazil)", TrackText.languageLabel("pt_BR"));

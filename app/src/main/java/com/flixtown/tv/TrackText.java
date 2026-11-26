@@ -12,6 +12,15 @@ final class TrackText {
         if(name.isEmpty()||name.equalsIgnoreCase(code))name=new Locale(code).getDisplayLanguage(Locale.US);
         return name.isEmpty()?code:name;
     }
+    /** A short code for the player's control buttons ("EN", "PT"): full names do not fit beside "Audio". */
+    static String languageCode(String code){
+        if(code==null||code.isEmpty()||"und".equals(code))return "";
+        String lang=Locale.forLanguageTag(code.replace('_','-')).getLanguage();
+        if(lang.length()==3)for(String two:Locale.getISOLanguages()){
+            try{if(new Locale(two).getISO3Language().equals(lang)){lang=two;break;}}catch(java.util.MissingResourceException ignored){}
+        }
+        return (lang.isEmpty()?code:lang).toUpperCase(Locale.US);
+    }
     /**
      * One track label ("English · 5.1 · Dolby Digital", "German — not supported on this TV") as the side panel shows
      * it: the language, and plain details below. AAC and MP3 are left out (every TV plays them; they mean nothing to viewers).
