@@ -1,200 +1,200 @@
-11-26 07:46:56.800  3697  3697 I FlixTownQA: screen_awake HomeActivity=false
-11-26 07:46:56.957  3697  3697 I FlixTownQA: subtitle_builtin_parent=video_frame
-11-26 07:46:57.024  3697  3697 I FlixTownQA: screen_awake PlayerActivity=true
-11-26 07:46:57.030  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[] subs=[] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:46:58.259  3697  3697 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=- | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-26 07:46:58.537  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:46:58.835  3697  3697 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-26 07:46:59.035  3697  3697 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-26 07:46:59.582  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:00.608  3697  3697 I FlixTownQA: subtitle_lift controls=true screen=298 frame=298 bar_top=804
-11-26 07:47:00.625  3697  3697 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:03.589  3697  3697 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=804
-11-26 07:47:03.640  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:07.463  3697  3697 I FlixTownQA: screen_awake PlayerActivity=false
-11-26 07:47:10.645  3697  3697 I FlixTown: Back from background in the player: refresh waits
-11-26 07:47:10.656  3697  3697 I FlixTownQA: screen_awake PlayerActivity=true
-11-26 07:47:11.475  3697  3697 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-26 07:47:11.842  3697  3697 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-26 07:47:11.922  3697  3697 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
-11-26 07:47:12.823  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:13.232  3697  3697 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder | errors=underrun
-11-26 07:47:13.360  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:14.394  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=3 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:15.915  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=4 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:16.938  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=5 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:17.942  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:18.994  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=7 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:20.007  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=8 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:21.014  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=9 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:22.020  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=10 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:23.027  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=11 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:24.085  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=12 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:24.581  4625  4625 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:47:24.584  4625  4625 I AndroidRuntime: Using default boot image
-11-26 07:47:24.584  4625  4625 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:47:24.684  4625  4625 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:47:25.098  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=13 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:25.743  4625  4625 D AndroidRuntime: Shutting down VM
-11-26 07:47:26.102  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=14 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:26.725  4694  4694 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:47:26.733  4694  4694 I AndroidRuntime: Using default boot image
-11-26 07:47:26.733  4694  4694 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:47:26.880  4694  4694 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:47:27.107  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=15 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:27.903  4694  4694 D AndroidRuntime: Shutting down VM
-11-26 07:47:28.116  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=16 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:28.915  3697  3697 I FlixTownQA: screen_awake PlayerActivity=false
-11-26 07:47:28.979  3697  3697 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-26 07:47:28.981  3697  3697 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-26 07:47:28.991  3697  3697 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-26 07:47:29.060  3697  3697 I FlixTown: Back from background
-11-26 07:47:29.060  3697  3697 I FlixTown: Refresh started
-11-26 07:47:29.106  3697  3697 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-26 07:47:29.474  3697  4028 W FlixTown: Startup refresh failed; cached titles remain: IOException: Demo: network unreachable
-11-26 07:47:29.535  3697  3697 I FlixTownQA: screen_awake HomeActivity=false
-11-26 07:47:29.642  3697  3697 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=17 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
-11-26 07:47:29.689  3697  3697 I FlixTown: Refresh finished: failed
-11-26 07:47:29.832  3697  3697 I FlixTownQA: screen_awake ProfilesActivity=true
-11-26 07:47:31.265  3697  3697 I FlixTownQA: screen_awake ProfilesActivity=false
-11-26 07:47:42.189  4868  4868 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:47:42.191  4868  4868 I AndroidRuntime: Using default boot image
-11-26 07:47:42.191  4868  4868 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:47:42.258  4868  4868 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:47:43.341  4868  4868 D AndroidRuntime: Shutting down VM
-11-26 07:47:49.833  3697  3697 I FlixTown: Refresh started
-11-26 07:47:49.920  3697  3697 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
-11-26 07:47:49.975  3697  3697 I FlixTown: Back from background
-11-26 07:47:51.417  3697  3697 I FlixTownQA: splash end shown_ms=1501
-11-26 07:47:51.462  3697  3697 I FlixTownQA: screen_awake ProfilesActivity=true
-11-26 07:47:51.764  3697  3697 I FlixTown: Refresh finished: updated
-11-26 07:48:00.906  4938  4938 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:00.908  4938  4938 I AndroidRuntime: Using default boot image
-11-26 07:48:00.908  4938  4938 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:00.975  4938  4938 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:01.991  4938  4938 D AndroidRuntime: Shutting down VM
-11-26 07:48:02.869  4956  4956 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:02.871  4956  4956 I AndroidRuntime: Using default boot image
-11-26 07:48:02.871  4956  4956 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:02.936  4956  4956 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:03.958  4956  4956 D AndroidRuntime: Shutting down VM
-11-26 07:48:04.840  4974  4974 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:04.842  4974  4974 I AndroidRuntime: Using default boot image
-11-26 07:48:04.842  4974  4974 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:04.907  4974  4974 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:05.925  4974  4974 D AndroidRuntime: Shutting down VM
-11-26 07:48:06.775  3697  3697 I FlixTownQA: screen_awake ProfilesActivity=false
-11-26 07:48:08.796  4997  4997 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:08.800  4997  4997 I AndroidRuntime: Using default boot image
-11-26 07:48:08.800  4997  4997 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:09.006  4997  4997 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:11.235  4997  4997 D AndroidRuntime: Shutting down VM
-11-26 07:48:13.850  5021  5021 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:13.852  5021  5021 I AndroidRuntime: Using default boot image
-11-26 07:48:13.852  5021  5021 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:13.920  5021  5021 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:14.964  5021  5021 D AndroidRuntime: Shutting down VM
-11-26 07:48:17.569  5046  5046 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:17.571  5046  5046 I AndroidRuntime: Using default boot image
-11-26 07:48:17.571  5046  5046 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:17.637  5046  5046 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:18.680  5046  5046 D AndroidRuntime: Shutting down VM
-11-26 07:48:24.123  3697  3697 I FlixTown: Refresh skipped: the last one finished under a minute ago
-11-26 07:48:24.194  3697  3697 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
-11-26 07:48:24.207  3697  3697 I FlixTown: Back from background
-11-26 07:48:24.207  3697  3697 I FlixTown: Refresh skipped: the last one finished under a minute ago
-11-26 07:48:25.692  3697  3697 I FlixTownQA: splash end shown_ms=1500
-11-26 07:48:25.746  3697  3697 I FlixTownQA: screen_awake ProfilesActivity=true
-11-26 07:48:41.426  5112  5112 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:41.428  5112  5112 I AndroidRuntime: Using default boot image
-11-26 07:48:41.428  5112  5112 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:41.493  5112  5112 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:42.511  5112  5112 D AndroidRuntime: Shutting down VM
-11-26 07:48:43.393  5144  5144 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:43.395  5144  5144 I AndroidRuntime: Using default boot image
-11-26 07:48:43.395  5144  5144 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:43.459  5144  5144 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:44.478  5144  5144 D AndroidRuntime: Shutting down VM
-11-26 07:48:46.075  3697  3697 I FlixTownQA: screen_awake ProfilesActivity=false
-11-26 07:48:46.146  3697  3697 I FlixTownQA: home_resumed
-11-26 07:48:46.146  3697  3697 I FlixTownQA: screen_awake HomeActivity=true
-11-26 07:48:46.246  3697  3697 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-26 07:48:46.844  3697  3697 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-26 07:48:46.861  3697  3697 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
-11-26 07:48:56.118  5226  5226 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:56.120  5226  5226 I AndroidRuntime: Using default boot image
-11-26 07:48:56.120  5226  5226 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:56.185  5226  5226 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:48:56.863  3697  3697 I FlixTownQA: home_art key=series:5002 branded (unsuitable 480x270)
-11-26 07:48:58.352  5226  5226 D AndroidRuntime: Shutting down VM
-11-26 07:48:59.241  5244  5244 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:48:59.243  5244  5244 I AndroidRuntime: Using default boot image
-11-26 07:48:59.243  5244  5244 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:48:59.316  5244  5244 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:49:00.363  5244  5244 D AndroidRuntime: Shutting down VM
-11-26 07:49:02.247  5282  5282 I FlixTown: Refresh started
-11-26 07:49:02.340  5282  5282 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
-11-26 07:49:03.803  5282  5282 I FlixTownQA: splash end shown_ms=1501
-11-26 07:49:03.867  5282  5282 I FlixTownQA: screen_awake ProfilesActivity=true
-11-26 07:49:04.133  5282  5282 I FlixTown: Refresh finished: updated
-11-26 07:49:19.563  5333  5333 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:49:19.565  5333  5333 I AndroidRuntime: Using default boot image
-11-26 07:49:19.565  5333  5333 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:49:19.633  5333  5333 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:49:20.653  5333  5333 D AndroidRuntime: Shutting down VM
-11-26 07:49:21.524  5282  5282 I FlixTownQA: screen_awake ProfilesActivity=false
-11-26 07:49:23.382  5367  5367 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:49:23.385  5367  5367 I AndroidRuntime: Using default boot image
-11-26 07:49:23.385  5367  5367 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:49:23.450  5367  5367 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:49:24.468  5367  5367 D AndroidRuntime: Shutting down VM
-11-26 07:49:36.563  5419  5419 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:49:36.565  5419  5419 I AndroidRuntime: Using default boot image
-11-26 07:49:36.565  5419  5419 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:49:36.632  5419  5419 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:49:37.678  5419  5419 D AndroidRuntime: Shutting down VM
-11-26 07:49:54.909  5282  5282 I FlixTown: Refresh skipped: the last one finished under a minute ago
-11-26 07:49:54.993  5282  5282 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
-11-26 07:49:55.002  5282  5282 I FlixTown: Back from background
-11-26 07:49:55.002  5282  5282 I FlixTown: Refresh skipped: the last one finished under a minute ago
-11-26 07:49:56.465  5282  5282 I FlixTownQA: splash end shown_ms=1501
-11-26 07:49:56.536  5282  5282 I FlixTownQA: screen_awake ProfilesActivity=true
-11-26 07:50:12.050  5493  5493 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:50:12.052  5493  5493 I AndroidRuntime: Using default boot image
-11-26 07:50:12.052  5493  5493 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:50:12.123  5493  5493 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:50:13.142  5493  5493 D AndroidRuntime: Shutting down VM
-11-26 07:50:14.024  5510  5510 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:50:14.026  5510  5510 I AndroidRuntime: Using default boot image
-11-26 07:50:14.026  5510  5510 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:50:14.091  5510  5510 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:50:15.112  5510  5510 D AndroidRuntime: Shutting down VM
-11-26 07:50:15.991  5529  5529 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:50:15.993  5529  5529 I AndroidRuntime: Using default boot image
-11-26 07:50:15.993  5529  5529 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:50:16.057  5529  5529 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:50:17.074  5529  5529 D AndroidRuntime: Shutting down VM
-11-26 07:50:34.428  5647  5647 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:50:34.431  5647  5647 I AndroidRuntime: Using default boot image
-11-26 07:50:34.431  5647  5647 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:50:34.501  5647  5647 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:50:35.517  5647  5647 D AndroidRuntime: Shutting down VM
-11-26 07:50:36.401  5282  5282 I FlixTownQA: screen_awake ProfilesActivity=false
-11-26 07:50:36.612  5282  5282 I FlixTownQA: home_resumed
-11-26 07:50:36.612  5282  5282 I FlixTownQA: screen_awake HomeActivity=true
-11-26 07:50:36.803  5282  5282 I FlixTownQA: home_art key=movie:1000 branded (unsuitable 480x270)
-11-26 07:50:37.812  5698  5698 I FlixTown: Refresh started
-11-26 07:50:37.898  5698  5698 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
-11-26 07:50:39.359  5698  5698 I FlixTownQA: splash end shown_ms=1501
-11-26 07:50:39.436  5698  5698 I FlixTownQA: screen_awake ProfilesActivity=true
-11-26 07:50:39.678  5698  5698 I FlixTown: Refresh finished: updated
-11-26 07:50:55.130  5747  5747 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:50:55.133  5747  5747 I AndroidRuntime: Using default boot image
-11-26 07:50:55.133  5747  5747 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:50:55.204  5747  5747 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:50:56.221  5747  5747 D AndroidRuntime: Shutting down VM
-11-26 07:50:57.100  5765  5765 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-11-26 07:50:57.102  5765  5765 I AndroidRuntime: Using default boot image
-11-26 07:50:57.102  5765  5765 I AndroidRuntime: Leaving lock profiling enabled
-11-26 07:50:57.166  5765  5765 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
-11-26 07:50:58.185  5765  5765 D AndroidRuntime: Shutting down VM
+11-26 08:57:45.660  4340  4340 I FlixTownQA: screen_awake HomeActivity=false
+11-26 08:57:45.798  4340  4340 I FlixTownQA: subtitle_builtin_parent=video_frame
+11-26 08:57:45.856  4340  4340 I FlixTownQA: screen_awake PlayerActivity=true
+11-26 08:57:45.865  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[] subs=[] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:57:46.748  4340  4340 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=- | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-26 08:57:46.869  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:57:47.382  4340  4340 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=- | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-26 08:57:47.505  4340  4340 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-26 08:57:47.897  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=0 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:57:48.904  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:57:49.409  4340  4340 I FlixTownQA: subtitle_lift controls=true screen=298 frame=298 bar_top=804
+11-26 08:57:49.432  4340  4340 I FlixTownQA: player controls=true pending=-1 status=[] dialog=false playing=false reporting=false focus=play elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:57:52.391  4340  4340 I FlixTownQA: subtitle_lift controls=false screen=0 frame=0 bar_top=804
+11-26 08:57:52.449  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=false reporting=false focus=other elapsed=1 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:57:56.238  4340  4340 I FlixTownQA: screen_awake PlayerActivity=false
+11-26 08:57:59.337  4340  4340 I FlixTown: Back from background in the player: refresh waits
+11-26 08:57:59.344  4340  4340 I FlixTownQA: screen_awake PlayerActivity=true
+11-26 08:57:59.679  4340  4340 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-26 08:58:00.413  4340  4340 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-26 08:58:00.579  4340  4340 I FlixTownQA: audio tracks=aac 2ch en ok *selected, aac 2ch de ok, aac 2ch it ok, aac 2ch fr ok, aac 2ch es ok, aac 6ch en ok | decoder=OMX.google.aac.decoder | output=pcm16 2ch 48k decoded | device=pass=none max10ch out=speaker+telephony dec[aac]=OMX.google.aac.decoder
+11-26 08:58:01.348  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=2 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:02.368  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=3 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:03.373  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=4 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:04.377  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=5 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:05.883  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=6 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:06.889  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=7 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:07.894  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=8 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:08.898  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=9 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:09.903  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=10 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:10.907  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=11 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:11.912  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=12 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:12.921  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=13 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:13.224  5283  5283 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:58:13.227  5283  5283 I AndroidRuntime: Using default boot image
+11-26 08:58:13.227  5283  5283 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:58:13.324  5283  5283 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:58:13.925  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=14 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:14.358  5283  5283 D AndroidRuntime: Shutting down VM
+11-26 08:58:14.937  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=15 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:15.317  5353  5353 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:58:15.324  5353  5353 I AndroidRuntime: Using default boot image
+11-26 08:58:15.324  5353  5353 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:58:15.435  5353  5353 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:58:15.946  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=16 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:16.479  5353  5353 D AndroidRuntime: Shutting down VM
+11-26 08:58:16.975  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=17 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:17.542  4340  4340 I FlixTownQA: screen_awake PlayerActivity=false
+11-26 08:58:17.558  4340  4340 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 08:58:17.561  4340  4340 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 08:58:17.569  4340  4340 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 08:58:17.575  4340  4340 I FlixTown: Back from background
+11-26 08:58:17.575  4340  4340 I FlixTown: Refresh started
+11-26 08:58:17.623  4340  4340 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 08:58:17.759  4340  4340 I FlixTownQA: screen_awake HomeActivity=false
+11-26 08:58:17.982  4340  4340 I FlixTownQA: screen_awake ProfilesActivity=true
+11-26 08:58:18.037  4340  4367 W FlixTown: Startup refresh failed; cached titles remain: IOException: Demo: network unreachable
+11-26 08:58:18.199  4340  4340 I FlixTown: Refresh finished: failed
+11-26 08:58:18.201  4340  4340 I FlixTownQA: player controls=false pending=-1 status=[] dialog=false playing=true reporting=false focus=other elapsed=18 speed=1.0 subtitle_size=1.0 subtitle_style=0 audio=[Audio · EN] subs=[Subtitles · Off] controls_fit=true episode_controls=false episode= previous=false next=false card=[] cardmsg=[] subtitle=
+11-26 08:58:20.594  4340  4340 I FlixTownQA: screen_awake ProfilesActivity=false
+11-26 08:58:31.268  5515  5515 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:58:31.270  5515  5515 I AndroidRuntime: Using default boot image
+11-26 08:58:31.270  5515  5515 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:58:31.337  5515  5515 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:58:32.379  5515  5515 D AndroidRuntime: Shutting down VM
+11-26 08:58:38.821  4340  4340 I FlixTown: Refresh started
+11-26 08:58:38.858  4340  4340 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
+11-26 08:58:38.893  4340  4340 I FlixTown: Back from background
+11-26 08:58:40.357  4340  4340 I FlixTownQA: splash end shown_ms=1501
+11-26 08:58:40.401  4340  4340 I FlixTownQA: screen_awake ProfilesActivity=true
+11-26 08:58:40.404  4340  4340 I FlixTown: Refresh finished: updated
+11-26 08:58:49.677  5583  5583 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:58:49.679  5583  5583 I AndroidRuntime: Using default boot image
+11-26 08:58:49.679  5583  5583 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:58:49.744  5583  5583 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:58:50.761  5583  5583 D AndroidRuntime: Shutting down VM
+11-26 08:58:51.648  5604  5604 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:58:51.650  5604  5604 I AndroidRuntime: Using default boot image
+11-26 08:58:51.650  5604  5604 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:58:51.722  5604  5604 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:58:52.745  5604  5604 D AndroidRuntime: Shutting down VM
+11-26 08:58:53.631  5622  5622 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:58:53.634  5622  5622 I AndroidRuntime: Using default boot image
+11-26 08:58:53.634  5622  5622 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:58:53.699  5622  5622 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:58:54.714  5622  5622 D AndroidRuntime: Shutting down VM
+11-26 08:58:55.575  4340  4340 I FlixTownQA: screen_awake ProfilesActivity=false
+11-26 08:58:57.397  5646  5646 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:58:57.400  5646  5646 I AndroidRuntime: Using default boot image
+11-26 08:58:57.400  5646  5646 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:58:57.503  5646  5646 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:58:58.805  5646  5646 D AndroidRuntime: Shutting down VM
+11-26 08:59:01.638  5669  5669 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:59:01.641  5669  5669 I AndroidRuntime: Using default boot image
+11-26 08:59:01.641  5669  5669 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:59:01.710  5669  5669 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:59:02.749  5669  5669 D AndroidRuntime: Shutting down VM
+11-26 08:59:05.347  5692  5692 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:59:05.350  5692  5692 I AndroidRuntime: Using default boot image
+11-26 08:59:05.350  5692  5692 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:59:05.415  5692  5692 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:59:06.452  5692  5692 D AndroidRuntime: Shutting down VM
+11-26 08:59:11.790  4340  4340 I FlixTown: Refresh skipped: the last one finished under a minute ago
+11-26 08:59:11.852  4340  4340 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
+11-26 08:59:11.865  4340  4340 I FlixTown: Back from background
+11-26 08:59:11.865  4340  4340 I FlixTown: Refresh skipped: the last one finished under a minute ago
+11-26 08:59:13.345  4340  4340 I FlixTownQA: splash end shown_ms=1501
+11-26 08:59:13.382  4340  4340 I FlixTownQA: screen_awake ProfilesActivity=true
+11-26 08:59:29.061  5752  5752 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:59:29.063  5752  5752 I AndroidRuntime: Using default boot image
+11-26 08:59:29.063  5752  5752 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:59:29.127  5752  5752 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:59:30.144  5752  5752 D AndroidRuntime: Shutting down VM
+11-26 08:59:31.031  5773  5773 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:59:31.033  5773  5773 I AndroidRuntime: Using default boot image
+11-26 08:59:31.033  5773  5773 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:59:31.098  5773  5773 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:59:32.114  5773  5773 D AndroidRuntime: Shutting down VM
+11-26 08:59:33.744  4340  4340 I FlixTownQA: screen_awake ProfilesActivity=false
+11-26 08:59:33.843  4340  4340 I FlixTownQA: home_resumed
+11-26 08:59:33.843  4340  4340 I FlixTownQA: screen_awake HomeActivity=true
+11-26 08:59:33.917  4340  4340 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 08:59:34.341  4340  4340 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 08:59:34.707  4340  4340 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 08:59:43.615  5861  5861 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:59:43.618  5861  5861 I AndroidRuntime: Using default boot image
+11-26 08:59:43.618  5861  5861 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:59:43.683  5861  5861 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:59:44.710  4340  4340 I FlixTownQA: home_art key=series:5002 branded (unsuitable 480x270)
+11-26 08:59:44.740  5861  5861 D AndroidRuntime: Shutting down VM
+11-26 08:59:45.616  5880  5880 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 08:59:45.618  5880  5880 I AndroidRuntime: Using default boot image
+11-26 08:59:45.618  5880  5880 I AndroidRuntime: Leaving lock profiling enabled
+11-26 08:59:45.691  5880  5880 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 08:59:46.953  5880  5880 D AndroidRuntime: Shutting down VM
+11-26 08:59:48.606  5909  5909 I FlixTown: Refresh started
+11-26 08:59:48.653  5909  5909 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
+11-26 08:59:50.135  5909  5909 I FlixTownQA: splash end shown_ms=1501
+11-26 08:59:50.195  5909  5909 I FlixTownQA: screen_awake ProfilesActivity=true
+11-26 08:59:50.362  5909  5909 I FlixTown: Refresh finished: updated
+11-26 09:00:05.715  5968  5968 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:00:05.717  5968  5968 I AndroidRuntime: Using default boot image
+11-26 09:00:05.717  5968  5968 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:00:05.785  5968  5968 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:00:06.809  5968  5968 D AndroidRuntime: Shutting down VM
+11-26 09:00:07.668  5909  5909 I FlixTownQA: screen_awake ProfilesActivity=false
+11-26 09:00:09.398  6002  6002 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:00:09.400  6002  6002 I AndroidRuntime: Using default boot image
+11-26 09:00:09.400  6002  6002 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:00:09.465  6002  6002 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:00:10.481  6002  6002 D AndroidRuntime: Shutting down VM
+11-26 09:00:22.271  6048  6048 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:00:22.273  6048  6048 I AndroidRuntime: Using default boot image
+11-26 09:00:22.273  6048  6048 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:00:22.338  6048  6048 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:00:23.377  6048  6048 D AndroidRuntime: Shutting down VM
+11-26 09:00:40.512  5909  5909 I FlixTown: Refresh skipped: the last one finished under a minute ago
+11-26 09:00:40.652  5909  5909 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
+11-26 09:00:40.664  5909  5909 I FlixTown: Back from background
+11-26 09:00:40.664  5909  5909 I FlixTown: Refresh skipped: the last one finished under a minute ago
+11-26 09:00:42.114  5909  5909 I FlixTownQA: splash end shown_ms=1501
+11-26 09:00:42.164  5909  5909 I FlixTownQA: screen_awake ProfilesActivity=true
+11-26 09:00:57.546  6119  6119 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:00:57.549  6119  6119 I AndroidRuntime: Using default boot image
+11-26 09:00:57.549  6119  6119 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:00:57.620  6119  6119 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:00:58.640  6119  6119 D AndroidRuntime: Shutting down VM
+11-26 09:00:59.517  6139  6139 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:00:59.519  6139  6139 I AndroidRuntime: Using default boot image
+11-26 09:00:59.519  6139  6139 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:00:59.585  6139  6139 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:01:00.604  6139  6139 D AndroidRuntime: Shutting down VM
+11-26 09:01:01.477  6157  6157 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:01:01.479  6157  6157 I AndroidRuntime: Using default boot image
+11-26 09:01:01.479  6157  6157 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:01:01.553  6157  6157 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:01:02.573  6157  6157 D AndroidRuntime: Shutting down VM
+11-26 09:01:19.771  6272  6272 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:01:19.773  6272  6272 I AndroidRuntime: Using default boot image
+11-26 09:01:19.773  6272  6272 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:01:19.837  6272  6272 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:01:20.851  6272  6272 D AndroidRuntime: Shutting down VM
+11-26 09:01:21.747  5909  5909 I FlixTownQA: screen_awake ProfilesActivity=false
+11-26 09:01:21.837  5909  5909 I FlixTownQA: home_resumed
+11-26 09:01:21.837  5909  5909 I FlixTownQA: screen_awake HomeActivity=true
+11-26 09:01:22.414  5909  5909 I FlixTownQA: home_art key=movie:1003 branded (unsuitable 480x270)
+11-26 09:01:23.117  6326  6326 I FlixTown: Refresh started
+11-26 09:01:23.177  6326  6326 I FlixTownQA: splash event=thanksgiving image=false file= display_ms=1500
+11-26 09:01:24.638  6326  6326 I FlixTownQA: splash end shown_ms=1501
+11-26 09:01:24.689  6326  6326 I FlixTownQA: screen_awake ProfilesActivity=true
+11-26 09:01:24.872  6326  6326 I FlixTown: Refresh finished: updated
+11-26 09:01:40.285  6375  6375 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:01:40.288  6375  6375 I AndroidRuntime: Using default boot image
+11-26 09:01:40.288  6375  6375 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:01:40.353  6375  6375 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:01:41.376  6375  6375 D AndroidRuntime: Shutting down VM
+11-26 09:01:42.251  6393  6393 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-26 09:01:42.253  6393  6393 I AndroidRuntime: Using default boot image
+11-26 09:01:42.253  6393  6393 I AndroidRuntime: Leaving lock profiling enabled
+11-26 09:01:42.321  6393  6393 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-26 09:01:43.335  6393  6393 D AndroidRuntime: Shutting down VM
