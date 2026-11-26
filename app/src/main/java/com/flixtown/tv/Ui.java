@@ -89,12 +89,23 @@ final class Ui {
         GradientDrawable surface=new GradientDrawable();surface.setCornerRadius(dp(c,BUTTON_RADIUS));
         if(kind==PRIMARY&&focused){surface.setColor(PRIMARY_FOCUS);surface.setStroke(dp(c,2),0xE6FFFFFF);}
         else if(focused){surface.setColor(FOCUS_FILL);surface.setStroke(dp(c,2),GLOW);}
-        else if(kind==SELECTED){surface.setColor(0xFF2A1B1D);surface.setStroke(dp(c,1),0x99CE4B4A);}
         else{surface.setColor(SURFACE);surface.setStroke(dp(c,1),SURFACE_EDGE);}
+        if(kind==SELECTED&&!focused)return selectedTab(c,surface);
         GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,BUTTON_RADIUS+HALO));
         halo.setColor(focused?0x3DCE4B4A:0x00000000);
         android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
         int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);
+        return layers;
+    }
+    /**
+     * The current tab or choice at rest (Search / My Requests, a chosen plan): the charcoal button with a short red
+     * bar under its label. It used to be a wine fill with a red outline, which looked exactly like focus.
+     */
+    private static android.graphics.drawable.Drawable selectedTab(Context c,GradientDrawable surface){
+        GradientDrawable bar=new GradientDrawable();bar.setColor(GLOW);bar.setCornerRadius(dp(c,2));
+        android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{surface,bar});
+        int h=dp(c,HALO);layers.setLayerInset(0,h,h,h,h);
+        layers.setLayerGravity(1,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);layers.setLayerSize(1,dp(c,28),dp(c,3));layers.setLayerInsetBottom(1,h+dp(c,6));
         return layers;
     }
     static android.content.res.ColorStateList buttonText(int kind){
@@ -378,6 +389,78 @@ final class Ui {
         showWindow(activity,dialog,470,false,0);
         manager.scrollToPositionWithOffset(Math.max(0,selected),dp(activity,rows>3&&selected>=0?104:0));
         // Focus the current choice once it is laid out, so one OK press confirms the highlighted row.
+        afterLayout(list,()->{RecyclerView.ViewHolder holder=list.findViewHolderForAdapterPosition(Math.max(0,selected));
+            if(holder!=null)holder.itemView.requestFocus();else list.requestFocus();});
+        return dialog;
+    }
+
+    /**
+     * Audio / Subtitles in the player: a slim panel that slides in from the right over the video (the picture
+     * stays visible on the left). Each row shows the language large and plain details below it
+     * ("5.1 surround · Dolby Digital"); the current choice carries a red check; focus is the app's red fill.
+     * Back closes it. {@code labels} (one line each) are only for the QA log.
+     */
+    static Dialog trackPanel(Activity activity,String title,String[] names,String[] details,boolean[] playable,int selected,String footer,String[] labels,Choice action){
+        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","picker "+title+": "+TextUtils.join("|",labels)+" selected="+selected);
+        Dialog dialog=newDialog(activity);
+        LinearLayout body=column(activity);
+        GradientDrawable panel=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xF2141318,0xFA0E0D11});
+        float r=dp(activity,22);panel.setCornerRadii(new float[]{r,r,0,0,0,0,r,r});body.setBackground(panel);
+        pad(body,activity,30,0,30,0);body.setGravity(Gravity.CENTER_VERTICAL);
+        TextView heading=heading(activity,title,26);body.addView(heading,new LinearLayout.LayoutParams(-1,-2));
+        RecyclerView list=new RecyclerView(activity);list.setClipToPadding(false);list.setClipChildren(false);
+        list.setPadding(0,dp(activity,4),0,dp(activity,4));
+        LinearLayoutManager manager=new LinearLayoutManager(activity);list.setLayoutManager(manager);
+        list.setItemAnimator(null);list.setVerticalScrollBarEnabled(false);
+        list.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>(){
+            @Override public int getItemCount(){return names.length;}
+            @Override public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent,int type){
+                LinearLayout row=row(activity);row.setGravity(Gravity.CENTER_VERTICAL);row.setFocusable(true);row.setFocusableInTouchMode(true);row.setClickable(true);
+                pad(row,activity,18,0,16,0);
+                LinearLayout words=column(activity);
+                TextView name=text(activity,"",19);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
+                name.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));words.addView(name);
+                TextView detail=text(activity,"",14);detail.setSingleLine(true);detail.setEllipsize(TextUtils.TruncateAt.END);
+                LinearLayout.LayoutParams dp2=new LinearLayout.LayoutParams(-2,-2);dp2.topMargin=dp(activity,2);words.addView(detail,dp2);
+                row.addView(words,new LinearLayout.LayoutParams(0,-2,1));
+                TextView check=text(activity,"✓",22);check.setTextColor(GLOW);
+                LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-2,-2);cp.leftMargin=dp(activity,12);row.addView(check,cp);
+                RecyclerView.LayoutParams params=new RecyclerView.LayoutParams(-1,dp(activity,64));params.bottomMargin=dp(activity,6);row.setLayoutParams(params);
+                row.setTag(new TextView[]{name,detail,check});
+                return new RecyclerView.ViewHolder(row){};
+            }
+            @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
+                View row=holder.itemView;TextView[] v=(TextView[])row.getTag();boolean isSelected=position==selected,ok=playable==null||playable[position];
+                v[0].setText(names[position]);
+                String d=details==null||details[position]==null?"":details[position];
+                v[1].setText(d);v[1].setVisibility(d.isEmpty()?View.GONE:View.VISIBLE);
+                v[2].setVisibility(isSelected?View.VISIBLE:View.INVISIBLE);
+                Runnable paint=()->{boolean f=row.isFocused();
+                    row.setBackground(choiceRow(activity,f,false));
+                    v[0].setTextColor(f?Color.WHITE:!ok?TEXT_3:isSelected?TEXT:TEXT_2);
+                    v[1].setTextColor(f?0xD9FFFFFF:!ok?0xFFE0928E:TEXT_3);
+                    v[2].setTextColor(f?Color.WHITE:GLOW);};
+                paint.run();
+                row.setOnFocusChangeListener((x,f)->paint.run());
+                row.setOnClickListener(x->{dialog.dismiss();action.select(position);});
+            }
+        });
+        int rows=Math.min(names.length,7);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(activity,rows*70+8));lp.topMargin=dp(activity,18);
+        body.addView(list,lp);
+        if(footer!=null&&!footer.isEmpty()){TextView hint=text(activity,footer,14);hint.setTextColor(TEXT_3);
+            LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,14);body.addView(hint,hp);}
+        dialog.setContentView(body);
+        showWindow(activity,dialog,440,false,0);
+        Window window=dialog.getWindow();
+        if(window!=null){
+            int screenW=activity.getResources().getDisplayMetrics().widthPixels;
+            window.setGravity(Gravity.END|Gravity.FILL_VERTICAL);
+            window.setLayout(Math.min(dp(activity,440),screenW/2),WindowManager.LayoutParams.MATCH_PARENT);
+            window.setDimAmount(.45f);
+            window.setWindowAnimations(R.style.PanelAnimation);
+        }
+        manager.scrollToPositionWithOffset(Math.max(0,selected),dp(activity,rows>3&&selected>=0?140:0));
         afterLayout(list,()->{RecyclerView.ViewHolder holder=list.findViewHolderForAdapterPosition(Math.max(0,selected));
             if(holder!=null)holder.itemView.requestFocus();else list.requestFocus();});
         return dialog;

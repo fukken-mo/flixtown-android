@@ -48,6 +48,20 @@ jobs:
           off(){ ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,pos -of csv=p=0 media/ep.mkv | awk -F, -v t=$1 '$1+0>=t && $2!="N/A"{print $2; exit}'; }
           off 110 > media/ep.mkv.cut-offset; off 60 > media/ep.mkv.cut50-offset
           echo "cut at 1:50 = byte $(cat media/ep.mkv.cut-offset), mid-way 1:00 = byte $(cat media/ep.mkv.cut50-offset), of $(stat -c %s media/ep.mkv)"
+          # Several audio and subtitle languages for the Audio / Subtitles panel screenshots
+          printf '1\n00:00:01,000 --> 00:00:59,000\nHello from the subtitle track\n' > media/en.srt
+          printf '1\n00:00:01,000 --> 00:00:59,000\nBonjour depuis la piste de sous-titres\n' > media/fr.srt
+          printf '1\n00:00:01,000 --> 00:00:59,000\nOla da faixa de legendas\n' > media/pt.srt
+          tracks(){ ffmpeg -hide_banner -loglevel error -y -f lavfi -i "testsrc2=s=640x360:r=25:d=60" \
+            -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=60" -f lavfi -i "sine=frequency=550:sample_rate=48000:duration=60" \
+            -f lavfi -i "sine=frequency=660:sample_rate=48000:duration=60" -f lavfi -i "sine=frequency=770:sample_rate=48000:duration=60" \
+            -i media/en.srt -i media/fr.srt -i media/pt.srt \
+            -map 0:v -map 1:a -map 2:a -map 3:a -map 4:a -map 5 -map 6 -map 7 -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+            -c:a:0 aac -ac:a:0 2 -c:a:1 ac3 -ac:a:1 6 -c:a:2 aac -ac:a:2 2 -c:a:3 "$1" -strict -2 -ac:a:3 2 -c:s srt \
+            -metadata:s:a:0 language=eng -metadata:s:a:1 language=eng -metadata:s:a:2 language=spa -metadata:s:a:3 language=deu \
+            -metadata:s:s:0 language=eng -metadata:s:s:1 language=fra -metadata:s:s:2 language=por -t 60 media/tracks.mkv; }
+          tracks dca || tracks aac
+          ffprobe -v error -show_entries stream=index,codec_name,channels:stream_tags=language -of csv=p=0 media/tracks.mkv
           nohup python3 .github/qa/media_server.py 8000 media > media.log 2>&1 &
           sleep 1; curl -sI http://127.0.0.1:8000/ep.mkv | head -1
       - name: Enable KVM

@@ -55,7 +55,7 @@
             <LinearLayout android:id="@+id/filters" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:clipChildren="false" android:clipToPadding="false" />
         </LinearLayout>
-        <View android:id="@+id/bottom_fade" android:layout_width="match_parent" android:layout_height="36dp"
+        <View android:id="@+id/bottom_fade" android:layout_width="match_parent" android:layout_height="72dp"
             android:layout_gravity="bottom" android:background="@drawable/bottom_fade" />
         <TextView android:id="@+id/empty_message" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_gravity="center" android:textColor="@color/flix_text_2" android:textSize="17sp" android:visibility="gone" />

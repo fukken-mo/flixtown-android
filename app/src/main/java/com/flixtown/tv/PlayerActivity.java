@@ -780,7 +780,12 @@ public class PlayerActivity extends Activity {
             else if(type==C.TRACK_TYPE_TEXT&&externalUnavailable){flash("External subtitles unavailable. Open this menu again to retry.");loadExternalSubtitles();}
             else flash(type==C.TRACK_TYPE_TEXT?"This video has no subtitles":"This stream has only one audio track");scheduleHide();return;}
         handler.removeCallbacks(hideControls);
-        dialog=Ui.picker(this,type==C.TRACK_TYPE_TEXT?"Subtitles":"Audio",labels.toArray(new String[0]),selected,index->{
+        // The panel shows each choice as a language (large) and plain details (small); the one-line labels stay for logic and QA.
+        String[] all=labels.toArray(new String[0]),names=new String[all.length],details=new String[all.length];boolean[] playable=new boolean[all.length];
+        for(int i=0;i<all.length;i++){String[] parts=TrackText.trackParts(all[i]);names[i]=parts[0];details[i]=parts[1];playable[i]=!all[i].contains("not supported");}
+        if(type==C.TRACK_TYPE_TEXT&&details.length>0)details[0]="No subtitles";
+        dialog=Ui.trackPanel(this,type==C.TRACK_TYPE_TEXT?"Subtitles":"Audio",names,details,playable,selected,
+            type==C.TRACK_TYPE_TEXT?"Size and style: Options › Subtitle size or Subtitle appearance":null,all,index->{
             if(player==null)return;
             ExternalSubtitles.Track external=listedExternal.get(index);
             if(external!=null){selectExternalSubtitle(external);return;}
@@ -953,11 +958,11 @@ public class PlayerActivity extends Activity {
     }
     private static String shortLanguage(Format f){
         if(f.language!=null && !f.language.isEmpty() && !"und".equals(f.language)){
-            String name=new Locale(f.language).getDisplayLanguage(Locale.US);return name.isEmpty()?f.language:name;}
+            String name=TrackText.languageLabel(f.language);return name.isEmpty()?f.language:name;}
         return "On";
     }
     private static String trackLabel(Format f,int type,int number){
-        String language=f.language==null||f.language.isEmpty()||"und".equals(f.language)?"":new Locale(f.language).getDisplayLanguage(Locale.US);
+        String language=TrackText.languageLabel(f.language);
         // Prefer the language; add the stream's own label only when it says something more (e.g. "Commentary").
         boolean usefulLabel=f.label!=null && !f.label.isEmpty() && !f.label.matches("(?i)(stream|track|audio|sub(title)?s?)[ _-]?\\d*") && !f.label.equalsIgnoreCase(language);
         String name=!language.isEmpty()?(usefulLabel?language+" ("+f.label+")":language):usefulLabel?f.label:(type==C.TRACK_TYPE_TEXT?"Subtitle ":"Track ")+number;

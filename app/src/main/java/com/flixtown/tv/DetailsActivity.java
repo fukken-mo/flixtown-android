@@ -37,7 +37,7 @@ import java.util.Locale;
  * action, actor and poster is one D-pad press away and each row remembers its position.
  */
 public class DetailsActivity extends Activity {
-    private static final int SIDE_DP=56,CAST_ROW_DP=92,SECTION_LABEL_DP=30;
+    private static final int SIDE_DP=56,CAST_ROW_DP=92,SECTION_LABEL_DP=38;
     // Fixed heights for the movie layout, so the poster row can be sized once and never overflows.
     private static final int TITLE_DP=46,META_DP=24,SUMMARY_DP=62,ACTIONS_DP=46,CAST_GAP_DP=14,INFO_GAPS_DP=4+8+14;
     private int moreArtWidth,moreArtHeight;

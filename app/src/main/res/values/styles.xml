@@ -9,4 +9,9 @@
         <item name="android:statusBarColor">@color/flix_bg</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+    <!-- Player side panel (Audio, Subtitles) slides in from the right. -->
+    <style name="PanelAnimation">
+        <item name="android:windowEnterAnimation">@anim/panel_in</item>
+        <item name="android:windowExitAnimation">@anim/panel_out</item>
+    </style>
 </resources>
