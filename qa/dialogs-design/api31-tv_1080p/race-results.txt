@@ -1,8 +1,8 @@
-API 31, focus recoveries in total: 12
+API 31, focus recoveries in total: 15
 ok   exit Stay→Back #1
 ok   exit Back→Back #1
 ok   notices Got it→next #1
-ok   report picker→Send report? #1
+ok   report picker→Send report? #1  [lost focus notification recovered x1]
 ok   report Sending→reply #1
 ok   update Update now→progress #1
 ok   exit Stay→Back #2
