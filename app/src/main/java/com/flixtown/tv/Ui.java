@@ -92,22 +92,11 @@ final class Ui {
         if(kind==PRIMARY&&focused){surface.setColor(PRIMARY_FOCUS);surface.setStroke(dp(c,2),0xE6FFFFFF);}
         else if(focused){surface.setColor(FOCUS_FILL);surface.setStroke(dp(c,2),GLOW);}
         else{surface.setColor(SURFACE);surface.setStroke(dp(c,1),SURFACE_EDGE);}
-        if(kind==SELECTED&&!focused)return selectedTab(c,surface);
+        if(kind==SELECTED&&!focused){surface.setColor(0xFF34323A);surface.setStroke(dp(c,1),0x59FFFFFF);}   // current tab: a lighter charcoal, no line
         GradientDrawable halo=new GradientDrawable();halo.setCornerRadius(dp(c,BUTTON_RADIUS+HALO));
         halo.setColor(focused?0x3DCE4B4A:0x00000000);
         android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{halo,surface});
         int h=dp(c,HALO);layers.setLayerInset(1,h,h,h,h);
-        return layers;
-    }
-    /**
-     * The current tab or choice at rest (Search / My Requests, a chosen plan): the charcoal button with a short red
-     * bar under its label. It used to be a wine fill with a red outline, which looked exactly like focus.
-     */
-    private static android.graphics.drawable.Drawable selectedTab(Context c,GradientDrawable surface){
-        GradientDrawable bar=new GradientDrawable();bar.setColor(GLOW);bar.setCornerRadius(dp(c,2));
-        android.graphics.drawable.LayerDrawable layers=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{surface,bar});
-        int h=dp(c,HALO);layers.setLayerInset(0,h,h,h,h);
-        layers.setLayerGravity(1,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);layers.setLayerSize(1,dp(c,28),dp(c,3));layers.setLayerInsetBottom(1,h+dp(c,6));
         return layers;
     }
     static android.content.res.ColorStateList buttonText(int kind){
