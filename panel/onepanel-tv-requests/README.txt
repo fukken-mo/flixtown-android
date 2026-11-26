@@ -72,3 +72,10 @@ Install (when you are ready)
   5. In the Flix Town app panel's config.php answer, add:
         "requests_api_url": "https://<your OnePanel>/api/tv-requests.php"
      The TV app shows "Requests are temporarily unavailable." until this is set.
+
+Update 2026-11-26: customers can remove requests from My Requests
+  Upload api/tv-requests.php and includes/tv_requests.php again and run
+  sql/migrations/2026-11-26-tv-requests-hide.sql once (adds the hidden_ts column). Removing only hides the
+  row from that customer's list: the request in Seerr, the admin page, duplicate checks and limits are
+  unchanged. Until the migration runs, My Requests works as before and Remove answers "temporarily
+  unavailable".

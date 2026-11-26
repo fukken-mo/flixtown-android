@@ -620,7 +620,9 @@ function tvq_request_flix(string $username, string $type, int $id, string $year,
  */
 function tvq_history(PDO $pdo, string $username, int $page): array {
   $per = 20; $off = ($page - 1) * $per;
-  $q = $pdo->prepare('SELECT * FROM tv_media_requests WHERE username=? ORDER BY id DESC LIMIT ' . ($per + 1) . ' OFFSET ' . $off);
+  $limit = ' ORDER BY id DESC LIMIT ' . ($per + 1) . ' OFFSET ' . $off;
+  // Rows the customer removed from My Requests are left out (once the 2026-11-26 migration has run).
+  $q = $pdo->prepare('SELECT * FROM tv_media_requests WHERE username=?' . (tvq_can_hide($pdo) ? ' AND hidden_ts=0' : '') . $limit);
   $q->execute([$username]); $rows = $q->fetchAll(); $q->closeCursor();
   $more = count($rows) > $per; $rows = array_slice($rows, 0, $per);
   $out = [];
@@ -638,7 +640,7 @@ function tvq_history(PDO $pdo, string $username, int $page): array {
             ->execute([(int)$row['last_status'], (int)$row['last_media_status'], time(), (int)$row['id']]);
     }
     $flix = tvq_request_flix($username, (string)$row['media_type'], (int)$row['tmdb_id'], (string)$row['year'], $rowSeasons);
-    $out[] = ['type' => $row['media_type'], 'id' => (int)$row['tmdb_id'], 'title' => (string)$row['title'], 'year' => (string)$row['year'],
+    $out[] = ['ref' => (int)$row['id'], 'type' => $row['media_type'], 'id' => (int)$row['tmdb_id'], 'title' => (string)$row['title'], 'year' => (string)$row['year'],
       'poster' => (string)$row['poster'], 'seasons' => $rowSeasons,
       'requested_at' => (int)$row['created_ts'], 'state' => tvq_history_state((int)$row['last_status'], (int)$row['last_media_status'], $flix)];
   }
@@ -646,3 +648,26 @@ function tvq_history(PDO $pdo, string $username, int $page): array {
 }
 
 }
+
+/*
+ * Removes one of the customer's own requests from My Requests. Only hides it from their list: the request itself
+ * (Seerr, the admin queue, duplicate checks and limits) is unchanged. Another customer's row is "not found".
+ */
+function tvq_can_hide(PDO $pdo): bool {
+  static $has = null;
+  if ($has === null) {
+    try { $c = $pdo->query("SHOW COLUMNS FROM tv_media_requests LIKE 'hidden_ts'"); $has = $c !== false && $c->fetch() !== false; if ($c) $c->closeCursor(); }
+    catch (Throwable $e) { $has = false; }
+  }
+  return $has;
+}
+function tvq_hide(PDO $pdo, string $username, int $ref): void {
+  if (!tvq_can_hide($pdo)) tvq_unavailable('hidden_ts missing: run sql/migrations/2026-11-26-tv-requests-hide.sql');
+  $q = $pdo->prepare('UPDATE tv_media_requests SET hidden_ts=? WHERE id=? AND username=? AND hidden_ts=0');
+  $q->execute([time(), $ref, $username]);
+  if ($q->rowCount() === 0) {
+    $c = $pdo->prepare('SELECT COUNT(*) FROM tv_media_requests WHERE id=? AND username=?'); $c->execute([$ref, $username]);
+    if ((int)$c->fetchColumn() === 0) tvq_fail(404, 'not_found', 'This request was not found.');
+  }
+}
+

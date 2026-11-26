@@ -45,6 +45,8 @@ final class RequestsApi {
     static Reply search(Context c,String query,int page){return call(c,"search",o->o.put("query",query).put("page",page));}
     static Reply details(Context c,String type,int id){return call(c,"details",o->o.put("type",type).put("id",id));}
     static Reply history(Context c,int page){return call(c,"history",o->o.put("page",page));}
+    /** Removes one of the customer's requests from My Requests (the request itself stays with the admin). */
+    static Reply hide(Context c,long ref){return call(c,"hide",o->o.put("ref",ref));}
     static Reply request(Context c,String type,int id,int[] seasons){
         return call(c,"request",o->{o.put("type",type).put("id",id);
             if(seasons!=null&&seasons.length>0){JSONArray a=new JSONArray();for(int n:seasons)a.put(n);o.put("seasons",a);}});

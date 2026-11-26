@@ -7,7 +7,8 @@
  *   search   {session, query, page}             -> movies and series with title, year, poster, state
  *   details  {session, type, id}                -> artwork, synopsis, state, seasons, can_request
  *   request  {session, type, id, seasons?}      -> a Pending request (duplicates refused)
- *   history  {session, page}                    -> this customer's own requests only
+ *   history  {session, page}                    -> this customer's own requests only (each with a ref)
+ *   hide     {session, ref}                     -> removes one of them from My Requests (the request itself stays)
  * States: available, partial, approved, pending, declined, unavailable, requestable (+ removed in history).
  * Errors: {"ok":false,"error":code,"message":text}. Any Seerr/OnePanel problem answers 503
  * "Requests are temporarily unavailable." Answers never contain Seerr users, keys or tokens.
@@ -84,6 +85,13 @@ try {
     if (!is_int($page) || $page < 1 || $page > 50) tvq_err(400, 'page', 'Invalid page.');
     if (!tvq_rate($pdo, 'history:' . $username, 30, 60)) tvq_err(429, 'busy', 'Please wait a moment.');
     tvq_out(['ok' => true] + tvq_history($pdo, $username, $page));
+  }
+  if ($action === 'hide') {
+    $ref = $in['ref'] ?? null;
+    if (!is_int($ref) || $ref < 1) tvq_err(400, 'ref', 'Invalid request.');
+    if (!tvq_rate($pdo, 'hide:' . $username, 60, 600)) tvq_err(429, 'busy', 'Please wait a moment.');
+    tvq_hide($pdo, $username, $ref);
+    tvq_out(['ok' => true]);
   }
   tvq_err(400, 'bad_request', 'Unknown action.');
 } catch (TvqException $e) {

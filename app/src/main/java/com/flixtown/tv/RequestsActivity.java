@@ -26,6 +26,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.leanback.widget.VerticalGridView;
 import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONArray;
@@ -61,7 +62,7 @@ public class RequestsActivity extends Activity {
 
     /** One card: a search result or one of my requests. */
     static final class Entry {
-        String type,title,year,poster,state;int id;int[] seasons=new int[0];long requestedAt;
+        String type,title,year,poster,state;int id;int[] seasons=new int[0];long requestedAt,ref;
     }
 
     @Override public void onCreate(Bundle b){super.onCreate(b);
@@ -234,7 +235,7 @@ public class RequestsActivity extends Activity {
     private Entry historyEntry(JSONObject o){
         Entry e=new Entry();e.type=o.optString("type");e.id=o.optInt("id");e.title=o.optString("title");
         e.year=o.optString("year");e.poster=o.optString("poster");e.state=o.optString("state");
-        e.requestedAt=o.optLong("requested_at");JSONArray s=o.optJSONArray("seasons");
+        e.requestedAt=o.optLong("requested_at");e.ref=o.optLong("ref");JSONArray s=o.optJSONArray("seasons");
         if(s!=null){e.seasons=new int[s.length()];for(int k=0;k<s.length();k++)e.seasons[k]=s.optInt(k);}
         if(localMatch(e)!=null && "movie".equals(e.type))e.state="local";
         return e;
@@ -431,7 +432,9 @@ public class RequestsActivity extends Activity {
             title.setText(e.title);meta.setText(HomeCards.join(e.year,"tv".equals(e.type)?"TV Show":"Movie"));
             setBadge(e.state);overview.setText("");note.setText("Loading…");note.setTextColor(Ui.TEXT_2);
             Images.load(poster,e.poster,Ui.dp(RequestsActivity.this,200));backdrop.setImageDrawable(null);
-            closeSeasons();setButtons(new String[]{"Back"},new Runnable[]{this::close});
+            closeSeasons();
+            if(removable())setButtons(new String[]{"Back","Remove"},new Runnable[]{this::close,this::confirmRemove});
+            else setButtons(new String[]{"Back"},new Runnable[]{this::close});
             grid.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);field.setFocusable(false);
             tabSearch.setFocusable(false);tabMine.setFocusable(false);
             overlay.setVisibility(View.VISIBLE);
@@ -461,6 +464,7 @@ public class RequestsActivity extends Activity {
             if(can){labels.add("tv".equals(entry.type)?"Choose seasons":"Request");runs.add("tv".equals(entry.type)?this::openSeasons:()->submit(null));}
             if(there!=null){labels.add("Watch in Flix Town");runs.add(()->watch(there));}
             labels.add("Back");runs.add(this::close);
+            if(removable()){labels.add("Remove");runs.add(this::confirmRemove);}
             setButtons(labels.toArray(new String[0]),runs.toArray(new Runnable[0]));
             note.setTextColor(Ui.TEXT_2);
             if(movieHere)note.setText("This movie is already in Flix Town.");
@@ -551,6 +555,29 @@ public class RequestsActivity extends Activity {
             intent.putExtra("poster",item.poster);intent.putExtra("backdrop",item.backdrop);
             intent.putExtra("extension",item.extension);intent.putExtra("year",item.year);intent.putExtra("category",item.categoryId);
             startActivity(intent);
+        }
+        /** My Requests only (the server sends a ref for each of the customer's own requests). */
+        boolean removable(){return mine&&entry!=null&&entry.ref>0;}
+        void confirmRemove(){
+            Entry e=entry;
+            Ui.dialog(RequestsActivity.this,"Remove from My Requests?",
+                "pending".equals(e.state)||"approved".equals(e.state)?"It will no longer show here. The request itself is not cancelled.":"It will no longer show here.",
+                new String[]{"Remove","Cancel"},1,i->{if(i==0)remove(e);},null);
+        }
+        void remove(Entry e){
+            int t=token;note.setText("Removing…");note.setTextColor(Ui.TEXT_2);
+            Api.IO.execute(()->{RequestsApi.Reply r=RequestsApi.hide(RequestsActivity.this,e.ref);
+                runOnUiThread(()->{
+                    if(!r.ok){if(t==token&&isOpen()){note.setText(r.message);note.setTextColor(0xFFF0A29F);}return;}
+                    if(BuildConfig.DEMO)Log.i("FlixTownQA","requests removed ref="+e.ref);
+                    int i=entries.indexOf(e);
+                    if(t==token&&isOpen()){from=null;close();}
+                    if(i>=0){entries.remove(i);adapter.notifyItemRemoved(i);}
+                    if(entries.isEmpty()){status.setText("You haven't requested anything yet. Use Search to find a movie or show.");tabMine.requestFocus();}
+                    else{int f=Math.min(i<0?0:i,entries.size()-1);grid.setSelectedPosition(f);
+                        grid.post(()->{RecyclerView.ViewHolder h=grid.findViewHolderForAdapterPosition(f);if(h!=null)h.itemView.requestFocus();});}
+                    Toast.makeText(RequestsActivity.this,"Removed from My Requests",Toast.LENGTH_SHORT).show();
+                });});
         }
         void close(){
             token++;overlay.setVisibility(View.GONE);

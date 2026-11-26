@@ -243,6 +243,27 @@ $pdo->exec('UPDATE tv_media_requests SET last_checked_ts=0');
 $m = []; foreach (call(['action' => 'history', 'session' => $A, 'page' => 1])['j']['requests'] as $x) $m[$x['title']] = $x['state'];
 check('My Requests: Available once Seerr reports it', ($m['Alpha Movie'] ?? '') === 'available');
 check('My Requests: invalid page refused', call(['action' => 'history', 'session' => $A, 'page' => 0])['j']['error'] === 'page');
+// removing a request from My Requests (hidden_ts, from the 2026-11-26 migration)
+$ha = call(['action' => 'history', 'session' => $A, 'page' => 1])['j']['requests']; $alpha = null; foreach ($ha as $x) if ($x['title'] === 'Alpha Movie') $alpha = $x;
+check('My Requests: every row carries its ref', $alpha !== null && is_int($alpha['ref']) && $alpha['ref'] > 0);
+$before = call(['action' => 'hide', 'session' => $A, 'ref' => $alpha['ref']]);
+check('remove before the migration: unavailable (503), list still works', $before['code'] === 503 && call(['action' => 'history', 'session' => $A, 'page' => 1])['code'] === 200);
+$hideSql = file_get_contents("$root/sql/migrations/2026-11-26-tv-requests-hide.sql");
+foreach (array_filter(array_map('trim', explode(';', preg_replace('/^--[^\n]*$/m', '', $hideSql)))) as $stmt) $pdo->exec($stmt);
+$pdo->exec("INSERT INTO tv_media_requests(username,seerr_request_id,media_type,tmdb_id,created_ts,last_status,last_checked_ts) VALUES('bob',991,'movie',9991," . time() . ",1," . time() . ")");
+$bRef = (int)$pdo->lastInsertId(); $hb0 = count(call(['action' => 'history', 'session' => $B, 'page' => 1])['j']['requests']);
+$cross = call(['action' => 'hide', 'session' => $A, 'ref' => $bRef]);
+check('remove: another customer\'s request is "not found" and stays in their list', $cross['code'] === 404 && $cross['j']['error'] === 'not_found'
+  && count(call(['action' => 'history', 'session' => $B, 'page' => 1])['j']['requests']) === $hb0);
+$n0 = count($ha); $ok = call(['action' => 'hide', 'session' => $A, 'ref' => $alpha['ref']]);
+$after = call(['action' => 'history', 'session' => $A, 'page' => 1])['j']['requests'];
+check('remove: the request leaves My Requests', $ok['code'] === 200 && $ok['j']['ok'] === true && count($after) === $n0 - 1 && !in_array('Alpha Movie', $titles($after), true));
+check('remove: again is fine (idempotent)', call(['action' => 'hide', 'session' => $A, 'ref' => $alpha['ref']])['code'] === 200);
+check('remove: the request itself is untouched (still recorded, Seerr not called to delete)',
+  (int)$pdo->query('SELECT COUNT(*) FROM tv_media_requests WHERE id=' . (int)$alpha['ref'] . ' AND hidden_ts>0')->fetchColumn() === 1);
+check('remove: bad ref refused', call(['action' => 'hide', 'session' => $A, 'ref' => 'x'])['j']['error'] === 'ref' && call(['action' => 'hide', 'session' => $A, 'ref' => 0])['code'] === 400);
+check('remove: needs a session', call(['action' => 'hide', 'ref' => $alpha['ref']])['code'] === 401);
+$pdo->exec("DELETE FROM tv_media_requests WHERE username='bob' AND seerr_request_id=991");
 
 $pdo->exec('DELETE FROM tv_request_rate');
 // ---------------- different customers at the same moment ----------------
