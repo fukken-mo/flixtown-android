@@ -1,11 +1,11 @@
 PASS  signed in (demo) and reached Home past the profile picker
 
 == T Audio & Subtitles menu ==
-INFO  picker Audio: English · Stereo · AAC|English · 5.1 · Dolby Digital — not supported on this TV|Spanish · Stereo · AAC|German · Stereo · DTS — not supported on this TV selected=0
-INFO  picker Subtitles: Off|English|French|Portuguese selected=0
-PASS  T the Audio panel opened with every audio track
-PASS  T the Subtitles panel opened with every subtitle track
-PASS  T choosing a subtitle closes the panel and turns subtitles on
+INFO  
+INFO  
+FAIL  T the Audio panel opened with every audio track
+FAIL  T the Subtitles panel opened with every subtitle track
+FAIL  T choosing a subtitle closes the panel and turns subtitles on
 
 == S1 manual playback and a normal end ==
 PASS  S1 an episode opened by hand from Details plays (episode 9101)
@@ -16,12 +16,12 @@ PASS  S1 a normal end autoplays the next episode
 INFO  S2 outcome: next
 INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
 INFO  recovery: action=advance attempt=0 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=109 duration=120 episode=9102
-INFO  server: drop /ep.mkv range=bytes=23653106- at byte 27653896 (cut 27653896, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=27653896- at byte 27653896 (cut 27653896, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=27653896- at byte 27653896 (cut 27653896, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=27653896- at byte 27653896 (cut 27653896, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=27653896- at byte 27653896 (cut 27653896, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=27653896- at byte 27653896 (cut 27653896, size 30172159)
+INFO  server: drop /ep.mkv range=bytes=23654163- at byte 27654398 (cut 27654398, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=27654398- at byte 27654398 (cut 27654398, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=27654398- at byte 27654398 (cut 27654398, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=27654398- at byte 27654398 (cut 27654398, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=27654398- at byte 27654398 (cut 27654398, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=27654398- at byte 27654398 (cut 27654398, size 30171790)
 PASS  S2 a stream failure in the closing seconds still autoplays the next episode (no error card)
 
 == S3 the next episode is refused for 20 s ==
@@ -33,12 +33,12 @@ INFO  player error: Playback failed: ERROR_CODE_IO_BAD_HTTP_STATUS ExoPlaybackEx
 INFO  recovery: action=retry attempt=0 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
-INFO  server: refuse /ep.mkv range= (10.0 s left)
-INFO  server: refuse /ep.mkv range= (8.0 s left)
-INFO  server: refuse /ep.mkv range= (4.0 s left)
-INFO  server: refuse /ep.mkv range= (4.0 s left)
-INFO  server: refuse /ep.mkv range= (3.0 s left)
-INFO  server: refuse /ep.mkv range= (1.0 s left)
+INFO  server: refuse /ep.mkv range= (10.7 s left)
+INFO  server: refuse /ep.mkv range= (8.7 s left)
+INFO  server: refuse /ep.mkv range= (4.7 s left)
+INFO  server: refuse /ep.mkv range= (4.7 s left)
+INFO  server: refuse /ep.mkv range= (3.7 s left)
+INFO  server: refuse /ep.mkv range= (1.7 s left)
 PASS  S3 the next episode starts once the server accepts it again (no error card)
 
 == S4 the stream breaks mid-way ==
@@ -53,14 +53,14 @@ INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_NETWORK_CONNECTION_FA
 INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=59 duration=120 episode=9101
 INFO  recovery: action=retry attempt=3 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=59 duration=120 episode=9101
 INFO  recovery: action=error attempt=4 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=59 duration=120 episode=9101
-INFO  server: drop /ep.mkv range=bytes=15126633- at byte 15126633 (cut 15126633, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=15126633- at byte 15126633 (cut 15126633, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=14622605- at byte 15126633 (cut 15126633, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=15126633- at byte 15126633 (cut 15126633, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=15126633- at byte 15126633 (cut 15126633, size 30172159)
-INFO  server: drop /ep.mkv range=bytes=15126633- at byte 15126633 (cut 15126633, size 30172159)
+INFO  server: drop /ep.mkv range=bytes=15127777- at byte 15127777 (cut 15127777, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=15127777- at byte 15127777 (cut 15127777, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=14623448- at byte 15127777 (cut 15127777, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=15127777- at byte 15127777 (cut 15127777, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=15127777- at byte 15127777 (cut 15127777, size 30171790)
+INFO  server: drop /ep.mkv range=bytes=15127777- at byte 15127777 (cut 15127777, size 30171790)
 PASS  S4 a lasting failure mid-way still shows the error card and does not skip the episode
 PASS  S4 the error card explains the connection problem
 PASS  no Flix Town crash
 
-autoplay recovery: 11 passed, 0 failed
+autoplay recovery: 8 passed, 3 failed
