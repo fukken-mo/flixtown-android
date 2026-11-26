@@ -8,7 +8,8 @@
  *   details  {session, type, id}                -> artwork, synopsis, state, seasons, can_request
  *   request  {session, type, id, seasons?}      -> a Pending request (duplicates refused)
  *   history  {session, page}                    -> this customer's own requests only (each with a ref)
- *   hide     {session, ref}                     -> removes one of them from My Requests (the request itself stays)
+ *   hide     {session, ref} or {session, type, id, seasons}
+ *                                               -> removes one of them from My Requests (the request itself stays)
  * States: available, partial, approved, pending, declined, unavailable, requestable (+ removed in history).
  * Errors: {"ok":false,"error":code,"message":text}. Any Seerr/OnePanel problem answers 503
  * "Requests are temporarily unavailable." Answers never contain Seerr users, keys or tokens.
@@ -88,6 +89,15 @@ try {
   }
   if ($action === 'hide') {
     $ref = $in['ref'] ?? null;
+    if ($ref === null) {   // an app that has no ref names the request instead (type, TMDB id, seasons)
+      $type = (string)($in['type'] ?? ''); $id = $in['id'] ?? null; $seasons = $in['seasons'] ?? [];
+      if (($type !== 'movie' && $type !== 'tv') || !is_int($id) || $id < 1 || !is_array($seasons)) tvq_err(400, 'ref', 'Invalid request.');
+      foreach ($seasons as $n) if (!is_int($n) || $n < 1 || $n > 200) tvq_err(400, 'ref', 'Invalid request.');
+      sort($seasons);
+      $q = $pdo->prepare('SELECT id FROM tv_media_requests WHERE username=? AND media_type=? AND tmdb_id=? AND seasons=? ORDER BY id DESC LIMIT 1');
+      $q->execute([$username, $type, $id, implode(',', $seasons)]); $ref = (int)$q->fetchColumn();
+      if ($ref < 1) tvq_err(404, 'not_found', 'This request was not found.');
+    }
     if (!is_int($ref) || $ref < 1) tvq_err(400, 'ref', 'Invalid request.');
     if (!tvq_rate($pdo, 'hide:' . $username, 60, 600)) tvq_err(429, 'busy', 'Please wait a moment.');
     tvq_hide($pdo, $username, $ref);

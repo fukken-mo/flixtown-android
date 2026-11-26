@@ -46,7 +46,12 @@ final class RequestsApi {
     static Reply details(Context c,String type,int id){return call(c,"details",o->o.put("type",type).put("id",id));}
     static Reply history(Context c,int page){return call(c,"history",o->o.put("page",page));}
     /** Removes one of the customer's requests from My Requests (the request itself stays with the admin). */
-    static Reply hide(Context c,long ref){return call(c,"hide",o->o.put("ref",ref));}
+    static Reply hide(Context c,long ref,String type,int id,int[] seasons){
+        Reply r=call(c,"hide",o->{if(ref>0)o.put("ref",ref);else{o.put("type",type).put("id",id);JSONArray a=new JSONArray();if(seasons!=null)for(int n:seasons)a.put(n);o.put("seasons",a);}});
+        // A panel without this update answers "Unknown action."
+        if(!r.ok&&r.http==400&&"bad_request".equals(r.body.optString("error")))return new Reply(503,new JSONObject());
+        return r;
+    }
     static Reply request(Context c,String type,int id,int[] seasons){
         return call(c,"request",o->{o.put("type",type).put("id",id);
             if(seasons!=null&&seasons.length>0){JSONArray a=new JSONArray();for(int n:seasons)a.put(n);o.put("seasons",a);}});

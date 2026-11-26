@@ -557,7 +557,7 @@ public class RequestsActivity extends Activity {
             startActivity(intent);
         }
         /** My Requests only (the server sends a ref for each of the customer's own requests). */
-        boolean removable(){return mine&&entry!=null&&entry.ref>0;}
+        boolean removable(){return mine&&entry!=null&&entry.id>0;}
         void confirmRemove(){
             Entry e=entry;
             Ui.dialog(RequestsActivity.this,"Remove from My Requests?",
@@ -566,7 +566,7 @@ public class RequestsActivity extends Activity {
         }
         void remove(Entry e){
             int t=token;note.setText("Removing…");note.setTextColor(Ui.TEXT_2);
-            Api.IO.execute(()->{RequestsApi.Reply r=RequestsApi.hide(RequestsActivity.this,e.ref);
+            Api.IO.execute(()->{RequestsApi.Reply r=RequestsApi.hide(RequestsActivity.this,e.ref,e.type,e.id,e.seasons);
                 runOnUiThread(()->{
                     if(!r.ok){if(t==token&&isOpen()){note.setText(r.message);note.setTextColor(0xFFF0A29F);}return;}
                     if(BuildConfig.DEMO)Log.i("FlixTownQA","requests removed ref="+e.ref);

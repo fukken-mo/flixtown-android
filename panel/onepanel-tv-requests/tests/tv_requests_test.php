@@ -262,8 +262,14 @@ check('remove: again is fine (idempotent)', call(['action' => 'hide', 'session' 
 check('remove: the request itself is untouched (still recorded, Seerr not called to delete)',
   (int)$pdo->query('SELECT COUNT(*) FROM tv_media_requests WHERE id=' . (int)$alpha['ref'] . ' AND hidden_ts>0')->fetchColumn() === 1);
 check('remove: bad ref refused', call(['action' => 'hide', 'session' => $A, 'ref' => 'x'])['j']['error'] === 'ref' && call(['action' => 'hide', 'session' => $A, 'ref' => 0])['code'] === 400);
+$show = null; foreach (call(['action' => 'history', 'session' => $A, 'page' => 1])['j']['requests'] as $x) if ($x['type'] === 'tv') { $show = $x; break; }
+$byName = call(['action' => 'hide', 'session' => $A, 'type' => 'tv', 'id' => $show['id'], 'seasons' => $show['seasons']]);
+$left = array_filter(call(['action' => 'history', 'session' => $A, 'page' => 1])['j']['requests'], fn($x) => $x['ref'] === $show['ref']);
+check('remove by type, id and seasons (no ref) works', $byName['code'] === 200 && !$left);
+check('remove by name: another customer\'s title is "not found"', call(['action' => 'hide', 'session' => $B, 'type' => 'tv', 'id' => $show['id'], 'seasons' => $show['seasons']])['code'] === 404);
 check('remove: needs a session', call(['action' => 'hide', 'ref' => $alpha['ref']])['code'] === 401);
 $pdo->exec("DELETE FROM tv_media_requests WHERE username='bob' AND seerr_request_id=991");
+$pdo->exec('UPDATE tv_media_requests SET hidden_ts=0');   // later checks expect the full lists
 
 $pdo->exec('DELETE FROM tv_request_rate');
 // ---------------- different customers at the same moment ----------------
