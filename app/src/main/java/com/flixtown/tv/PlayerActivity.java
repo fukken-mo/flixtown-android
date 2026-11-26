@@ -226,12 +226,9 @@ public class PlayerActivity extends Activity {
         LinearLayout actions=findViewById(R.id.player_actions);
         playButton=controlButton(actions,PlayerIcon.PAUSE,null,this::togglePlay);
         playIcon=(PlayerIcon)playButton.getChildAt(0);
-        LinearLayout audio=controlButton(actions,PlayerIcon.AUDIO,"Audio",()->showTracks(C.TRACK_TYPE_AUDIO));audioButton=audio;
-        audioLabel=(TextView)audio.getChildAt(1);
-        if(episodeNavigation!=null){audioLabel.setMaxWidth(Ui.dp(this,90));audioLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
-        LinearLayout subs=controlButton(actions,PlayerIcon.SUBTITLES,"Subtitles",()->showTracks(C.TRACK_TYPE_TEXT));subsButton=subs;
-        subtitleLabel=(TextView)subs.getChildAt(1);
-        if(episodeNavigation!=null){subtitleLabel.setMaxWidth(Ui.dp(this,100));subtitleLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);}
+        // One button for both, as on the big streaming apps: the menu shows Audio and Subtitles side by side.
+        LinearLayout tracks=controlButton(actions,PlayerIcon.SUBTITLES,"Audio & Subtitles",this::showTracks);audioButton=tracks;subsButton=tracks;
+        audioLabel=new TextView(this);subtitleLabel=new TextView(this);   // current choices (read by the QA state line)
         if(reportable()){
             reportButton=controlButton(actions,PlayerIcon.REPORT,"Report",this::showReport);
             reportButton.setContentDescription("Report a problem");
@@ -746,8 +743,20 @@ public class PlayerActivity extends Activity {
         player.setTrackSelectionParameters(b.build());
     }
 
-    private void showTracks(int type){
+    /** The Audio & Subtitles menu: both lists side by side; choosing a row applies it and closes the menu. */
+    private void showTracks(){
         if(player==null)return;
+        Ui.TrackColumn audio=trackColumn(C.TRACK_TYPE_AUDIO),subtitles=trackColumn(C.TRACK_TYPE_TEXT);
+        if(subtitles.names.length==1){
+            if(externalLoading)subtitles.footer="Looking for more subtitles\u2026 open this menu again in a moment.";
+            else if(externalUnavailable){subtitles.footer="Online subtitles couldn't be loaded. Open this menu again to retry.";loadExternalSubtitles();}
+            else subtitles.footer="This video has no subtitles.";
+        } else subtitles.footer="Size and style: Options \u203a Subtitle size or Subtitle appearance";
+        handler.removeCallbacks(hideControls);
+        dialog=Ui.tracksMenu(this,audio,subtitles,false);
+        dialog.setOnDismissListener(d->{dialog=null;continueAfterMenu();scheduleHide();});
+    }
+    private Ui.TrackColumn trackColumn(int type){
         List<Tracks.Group> groups=new ArrayList<>();
         List<Integer> indexes=new ArrayList<>();
         List<String> labels=new ArrayList<>();
@@ -775,18 +784,13 @@ public class PlayerActivity extends Activity {
             }
         }
         if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","tracks type="+type+" count="+labels.size()+" "+labels);
-        if(labels.isEmpty() || (type==C.TRACK_TYPE_TEXT && labels.size()==1)){
-            if(type==C.TRACK_TYPE_TEXT&&externalLoading)flash("Checking external subtitles. Open this menu again in a moment.");
-            else if(type==C.TRACK_TYPE_TEXT&&externalUnavailable){flash("External subtitles unavailable. Open this menu again to retry.");loadExternalSubtitles();}
-            else flash(type==C.TRACK_TYPE_TEXT?"This video has no subtitles":"This stream has only one audio track");scheduleHide();return;}
-        handler.removeCallbacks(hideControls);
-        // The panel shows each choice as a language (large) and plain details (small); the one-line labels stay for logic and QA.
+        if(labels.isEmpty()){labels.add("Default");groups.add(null);indexes.add(-3);listedExternal.add(null);}
+        // Each row shows the language (large) and plain details (small); the one-line labels stay for logic and QA.
         String[] all=labels.toArray(new String[0]),names=new String[all.length],details=new String[all.length];boolean[] playable=new boolean[all.length];
         for(int i=0;i<all.length;i++){String[] parts=TrackText.trackParts(all[i]);names[i]=parts[0];details[i]=parts[1];playable[i]=!all[i].contains("not supported");}
-        if(type==C.TRACK_TYPE_TEXT&&details.length>0)details[0]="No subtitles";
-        dialog=Ui.trackPanel(this,type==C.TRACK_TYPE_TEXT?"Subtitles":"Audio",names,details,playable,selected,
-            type==C.TRACK_TYPE_TEXT?"Size and style: Options › Subtitle size or Subtitle appearance":null,all,index->{
-            if(player==null)return;
+        if(type==C.TRACK_TYPE_TEXT)details[0]="";
+        return new Ui.TrackColumn(type==C.TRACK_TYPE_TEXT?"Subtitles":"Audio",names,details,playable,selected,all,index->{
+            if(player==null||indexes.get(index)==-3)return;
             ExternalSubtitles.Track external=listedExternal.get(index);
             if(external!=null){selectExternalSubtitle(external);return;}
             if(type==C.TRACK_TYPE_TEXT)selectExternalPending=false;
@@ -807,7 +811,6 @@ public class PlayerActivity extends Activity {
             }
             player.setTrackSelectionParameters(builder.build());
         });
-        dialog.setOnDismissListener(d->{dialog=null;continueAfterMenu();scheduleHide();});
     }
     /** Shows the current choice next to the Audio and Subtitles buttons. */
     private void updateTrackLabels(){

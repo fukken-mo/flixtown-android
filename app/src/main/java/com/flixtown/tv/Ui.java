@@ -15,6 +15,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.FrameLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -400,69 +402,89 @@ final class Ui {
      * ("5.1 surround · Dolby Digital"); the current choice carries a red check; focus is the app's red fill.
      * Back closes it. {@code labels} (one line each) are only for the QA log.
      */
-    static Dialog trackPanel(Activity activity,String title,String[] names,String[] details,boolean[] playable,int selected,String footer,String[] labels,Choice action){
-        if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","picker "+title+": "+TextUtils.join("|",labels)+" selected="+selected);
+    /** One column of the Audio & Subtitles menu. {@code labels} are the one-line labels (QA log). */
+    static final class TrackColumn{
+        final String title;final String[] names,details,labels;final boolean[] playable;final int selected;final Choice action;String footer;
+        TrackColumn(String title,String[] names,String[] details,boolean[] playable,int selected,String[] labels,Choice action){
+            this.title=title;this.names=names;this.details=details;this.playable=playable;this.selected=selected;this.labels=labels;this.action=action;}
+    }
+    /**
+     * Audio & Subtitles: a full-screen menu over the dimmed video with Audio on the left and Subtitles on the right.
+     * Plain rows, no boxes: the row the remote is on turns white and bold on a soft highlight, the current choice
+     * carries a red check, everything else stays grey. Left / Right move between the columns (to their current choice).
+     */
+    static Dialog tracksMenu(Activity activity,TrackColumn audio,TrackColumn subtitles,boolean startOnSubtitles){
         Dialog dialog=newDialog(activity);
-        LinearLayout body=column(activity);
-        GradientDrawable panel=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xF2141318,0xFA0E0D11});
-        float r=dp(activity,22);panel.setCornerRadii(new float[]{r,r,0,0,0,0,r,r});body.setBackground(panel);
-        pad(body,activity,30,0,30,0);body.setGravity(Gravity.CENTER_VERTICAL);
-        TextView heading=heading(activity,title,26);body.addView(heading,new LinearLayout.LayoutParams(-1,-2));
-        RecyclerView list=new RecyclerView(activity);list.setClipToPadding(false);list.setClipChildren(false);
-        list.setPadding(0,dp(activity,4),0,dp(activity,4));
-        LinearLayoutManager manager=new LinearLayoutManager(activity);list.setLayoutManager(manager);
-        list.setItemAnimator(null);list.setVerticalScrollBarEnabled(false);
-        list.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>(){
-            @Override public int getItemCount(){return names.length;}
-            @Override public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent,int type){
+        android.util.DisplayMetrics m=activity.getResources().getDisplayMetrics();
+        FrameLayout root=new FrameLayout(activity);
+        root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xF20A090C,0xE60A090C,0xF20A090C}));
+        LinearLayout columns=row(activity);columns.setClipChildren(false);columns.setClipToPadding(false);
+        int gap=dp(activity,72),side=Math.max(safeX(activity),dp(activity,64));
+        int width=Math.min(dp(activity,480),(m.widthPixels-2*side-gap)/2);
+        FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(-2,-1,Gravity.CENTER_HORIZONTAL);
+        cp.topMargin=Math.max(safeY(activity),m.heightPixels/8);cp.bottomMargin=Math.max(safeY(activity),dp(activity,36));
+        root.addView(columns,cp);
+        View[][] rows=new View[2][];TrackColumn[] all={audio,subtitles};
+        for(int c=0;c<2;c++){
+            TrackColumn col=all[c];
+            if(BuildConfig.DEMO)android.util.Log.i("FlixTownQA","picker "+col.title+": "+TextUtils.join("|",col.labels)+" selected="+col.selected);
+            LinearLayout box=column(activity);box.setClipChildren(false);box.setClipToPadding(false);
+            LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(width,-1);if(c==1)bp.leftMargin=gap;columns.addView(box,bp);
+            TextView heading=heading(activity,col.title,30);pad(heading,activity,48,0,0,0);box.addView(heading,new LinearLayout.LayoutParams(-1,-2));
+            ScrollView scroll=new ScrollView(activity);scroll.setVerticalScrollBarEnabled(false);scroll.setClipChildren(false);scroll.setClipToPadding(false);
+            scroll.setFadingEdgeLength(dp(activity,40));scroll.setVerticalFadingEdgeEnabled(true);
+            LinearLayout list=column(activity);list.setClipChildren(false);list.setClipToPadding(false);pad(list,activity,0,6,0,6);
+            scroll.addView(list,new FrameLayout.LayoutParams(-1,-2));
+            LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,0,1);sp.topMargin=dp(activity,16);box.addView(scroll,sp);
+            if(col.footer!=null&&!col.footer.isEmpty()){TextView hint=text(activity,col.footer,15);hint.setTextColor(TEXT_3);pad(hint,activity,48,0,0,0);
+                LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,14);box.addView(hint,hp);}
+            rows[c]=new View[col.names.length];
+            for(int i=0;i<col.names.length;i++){
+                final int index=i;final boolean isSelected=i==col.selected,ok=col.playable==null||col.playable[i];
                 LinearLayout row=row(activity);row.setGravity(Gravity.CENTER_VERTICAL);row.setFocusable(true);row.setFocusableInTouchMode(true);row.setClickable(true);
-                pad(row,activity,18,0,16,0);
-                LinearLayout words=column(activity);
-                TextView name=text(activity,"",19);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
-                name.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));words.addView(name);
-                TextView detail=text(activity,"",14);detail.setSingleLine(true);detail.setEllipsize(TextUtils.TruncateAt.END);
-                LinearLayout.LayoutParams dp2=new LinearLayout.LayoutParams(-2,-2);dp2.topMargin=dp(activity,2);words.addView(detail,dp2);
-                row.addView(words,new LinearLayout.LayoutParams(0,-2,1));
-                TextView check=text(activity,"✓",22);check.setTextColor(GLOW);
-                LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-2,-2);cp.leftMargin=dp(activity,12);row.addView(check,cp);
-                RecyclerView.LayoutParams params=new RecyclerView.LayoutParams(-1,dp(activity,64));params.bottomMargin=dp(activity,6);row.setLayoutParams(params);
-                row.setTag(new TextView[]{name,detail,check});
-                return new RecyclerView.ViewHolder(row){};
-            }
-            @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
-                View row=holder.itemView;TextView[] v=(TextView[])row.getTag();boolean isSelected=position==selected,ok=playable==null||playable[position];
-                v[0].setText(names[position]);
-                String d=details==null||details[position]==null?"":details[position];
-                v[1].setText(d);v[1].setVisibility(d.isEmpty()?View.GONE:View.VISIBLE);
-                v[2].setVisibility(isSelected?View.VISIBLE:View.INVISIBLE);
+                row.setId(View.generateViewId());pad(row,activity,0,0,16,0);
+                TextView check=text(activity,isSelected?"\u2713":"",24);check.setTextColor(GLOW);check.setGravity(Gravity.CENTER);
+                row.addView(check,new LinearLayout.LayoutParams(dp(activity,48),-1));
+                TextView name=text(activity,col.names[i],22);name.setSingleLine(true);row.addView(name,new LinearLayout.LayoutParams(-2,-2));
+                String d=col.details==null||col.details[i]==null?"":col.details[i];
+                TextView detail=text(activity,d,16);scrollingLabel(detail);detail.setVisibility(d.isEmpty()?View.GONE:View.VISIBLE);
+                LinearLayout.LayoutParams dl=new LinearLayout.LayoutParams(0,-2,1);dl.leftMargin=dp(activity,14);row.addView(detail,dl);
                 Runnable paint=()->{boolean f=row.isFocused();
-                    row.setBackground(choiceRow(activity,f,false));
-                    v[0].setTextColor(f?Color.WHITE:!ok?TEXT_3:isSelected?TEXT:TEXT_2);
-                    v[1].setTextColor(f?0xD9FFFFFF:!ok?0xFFE0928E:TEXT_3);
-                    v[2].setTextColor(f?Color.WHITE:GLOW);};
-                paint.run();
-                row.setOnFocusChangeListener((x,f)->paint.run());
-                row.setOnClickListener(x->{dialog.dismiss();action.select(position);});
+                    GradientDrawable bg=new GradientDrawable();bg.setCornerRadius(dp(activity,10));bg.setColor(f?0x1FFFFFFF:0x00000000);row.setBackground(bg);
+                    name.setTypeface(Typeface.create(f||isSelected?"sans-serif-medium":"sans-serif",Typeface.NORMAL));
+                    name.setTextColor(f?Color.WHITE:!ok?0xFF6E6A67:isSelected?TEXT:TEXT_3);
+                    detail.setTextColor(!ok?(f?0xFFF0A29E:0xFFB0706C):f?TEXT_2:0xFF77736F);
+                    check.setTextColor(f?Color.WHITE:GLOW);scrollLabel(detail,f);};
+                paint.run();row.setOnFocusChangeListener((x,f)->paint.run());
+                row.setOnClickListener(x->{dialog.dismiss();col.action.select(index);});
+                LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,dp(activity,58));rp.bottomMargin=dp(activity,4);list.addView(row,rp);
+                rows[c][i]=row;
             }
-        });
-        int rows=Math.min(names.length,7);
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(activity,rows*70+8));lp.topMargin=dp(activity,18);
-        body.addView(list,lp);
-        if(footer!=null&&!footer.isEmpty()){TextView hint=text(activity,footer,14);hint.setTextColor(TEXT_3);
-            LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(activity,14);body.addView(hint,hp);}
-        dialog.setContentView(body);
-        showWindow(activity,dialog,440,false,0);
+        }
+        // Left / Right land on the other column's current choice; the outer edges and the list ends stay put.
+        for(int c=0;c<2;c++){
+            View[] own=rows[c],other=rows[1-c];if(own.length==0)continue;
+            int target=other.length==0?-1:Math.max(0,Math.min(all[1-c].selected,other.length-1));
+            for(int i=0;i<own.length;i++){
+                View r=own[i];int otherId=target<0?r.getId():other[target].getId();
+                if(c==0){r.setNextFocusRightId(otherId);r.setNextFocusLeftId(r.getId());}else{r.setNextFocusLeftId(otherId);r.setNextFocusRightId(r.getId());}
+                if(i==0)r.setNextFocusUpId(r.getId());if(i==own.length-1)r.setNextFocusDownId(r.getId());
+            }
+        }
+        dialog.setContentView(root);
+        dialog.show();
         Window window=dialog.getWindow();
         if(window!=null){
-            int screenW=activity.getResources().getDisplayMetrics().widthPixels;
-            window.setGravity(Gravity.END|Gravity.FILL_VERTICAL);
-            window.setLayout(Math.min(dp(activity,440),screenW/2),WindowManager.LayoutParams.MATCH_PARENT);
-            window.setDimAmount(.45f);
-            window.setWindowAnimations(R.style.PanelAnimation);
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.MATCH_PARENT);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);window.setDimAmount(.35f);
+            window.setWindowAnimations(R.style.MenuFade);
         }
-        manager.scrollToPositionWithOffset(Math.max(0,selected),dp(activity,rows>3&&selected>=0?140:0));
-        afterLayout(list,()->{RecyclerView.ViewHolder holder=list.findViewHolderForAdapterPosition(Math.max(0,selected));
-            if(holder!=null)holder.itemView.requestFocus();else list.requestFocus();});
+        if(BuildConfig.DEMO)lastShown=dialog;
+        FocusRecovery.dialogShown(activity,dialog);
+        int c=startOnSubtitles&&rows[1].length>0||rows[0].length==0?1:0;
+        View first=rows[c].length==0?null:rows[c][Math.max(0,Math.min(all[c].selected,rows[c].length-1))];
+        if(first!=null)afterLayout(first,first::requestFocus);
         return dialog;
     }
 

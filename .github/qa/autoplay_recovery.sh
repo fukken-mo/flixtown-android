@@ -93,19 +93,18 @@ sleep 4
 
 control(){ key DPAD_DOWN DPAD_DOWN DPAD_UP; for n in $(seq 1 8); do [ "$(qaf focus)" = "$1" ] && return 0; key DPAD_RIGHT; done; note "      could not reach the $1 control"; return 1; }
 # T  the Audio and Subtitles panels (several languages, one track this TV can't play)
-note ""; note "== T Audio and Subtitles panels =="
+note ""; note "== T Audio & Subtitles menu =="
 stream "$M/tracks.mkv"; fresh
 player_open; sleep 3
-control audio; key DPAD_CENTER; sleep 1.5; shot T1-audio-panel 0.3
+control audio; shot T0-control-bar 0.3; key DPAD_CENTER; sleep 1.5; shot T1-tracks-menu 0.3
 note "INFO  $(qa ' picker Audio' | sed 's/^.*picker/picker/')"
-key DPAD_DOWN; shot T2-audio-panel-focus-down 0.4
-key BACK; sleep 1.2
-control subs; key DPAD_CENTER; sleep 1.5; shot T3-subtitles-panel 0.3
 note "INFO  $(qa ' picker Subtitles' | sed 's/^.*picker/picker/')"
+key DPAD_DOWN DPAD_DOWN; shot T2-tracks-menu-focus-down 0.4
+key DPAD_RIGHT; shot T3-tracks-menu-subtitles 0.4
 key DPAD_DOWN; key DPAD_CENTER; sleep 2; shot T4-subtitles-english 0.3
 check "T the Audio panel opened with every audio track" 'qa " picker Audio" | grep -q "Spanish"'
 check "T the Subtitles panel opened with every subtitle track" 'qa " picker Subtitles" | grep -q "French"'
-check "T choosing a subtitle closes the panel and turns subtitles on" '[ "$(qaf dialog)" = "false" ] && qaf subs | grep -qv "^Off$"'
+check "T choosing a subtitle closes the panel and turns subtitles on" '[ "$(qaf dialog)" = "false" ] && qaf subs | grep -qv "Off$"'
 key BACK; sleep 1
 
 # S1 manual playback, then a normal end

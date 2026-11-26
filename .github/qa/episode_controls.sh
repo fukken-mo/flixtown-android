@@ -86,7 +86,7 @@ key MEDIA_PLAY;state 'playing=true';ok 'play after manual navigation'
 # Real EOF/autoplay, not a synthetic navigation hook.
 for n in $(seq 1 100);do qa | grep -q 'episode=9102 ' && break;sleep 1;done
 state 'episode=9102 previous=true next=true';state 'playing=true';ok 'normal EOF autoplay still advances and keeps Previous available'
-key MEDIA_PAUSE;control subs;key DPAD_CENTER;wait_text 'Subtitles';adb logcat -d -s FlixTownQA:I | grep -q 'tracks type=3';key BACK;ok 'Subtitles picker works after autoplay and navigation'
+key MEDIA_PAUSE;control audio;key DPAD_CENTER;wait_text 'Subtitles';adb logcat -d -s FlixTownQA:I | grep -q 'tracks type=3';key BACK;ok 'Subtitles picker works after autoplay and navigation'
 key MEDIA_FAST_FORWARD;state 'elapsed=1[0-4] ';ok 'existing ten-second seeking is unchanged'
 adb shell input keyevent KEYCODE_MEDIA_FAST_FORWARD KEYCODE_MEDIA_NEXT
 state 'episode=9103 ';state 'elapsed=[0-3] ';state 'playing=false';ok 'pending seek from old episode never lands on new episode'
@@ -115,7 +115,7 @@ options;key DPAD_CENTER;wait_text 'Select season';key DPAD_DOWN DPAD_CENTER;wait
 state 'episode=9203 previous=true next=true';state 'playing=false';state 'elapsed=[0-3] '
 ok 'in-player season and episode list jumps to a real episode'
 resume_check 9203;ok 'episode-list choice updates Continue Watching immediately'
-control subs;key DPAD_CENTER;wait_text 'Subtitles';key DPAD_DOWN DPAD_CENTER
+control audio;key DPAD_CENTER;wait_text 'Subtitles';key DPAD_RIGHT DPAD_DOWN DPAD_CENTER
 adb shell "run-as $PKG cat shared_prefs/flix.xml" | grep -q 'name="subtitles_on" value="true"'
 ok 'subtitle selection remembers enabled state'
 key MEDIA_NEXT;state 'episode=9204 ';state 'speed=1.25';state 'subtitle_size=1.2';state 'subtitle_style=2'
