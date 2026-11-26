@@ -16,12 +16,12 @@ PASS  S1 a normal end autoplays the next episode
 INFO  S2 outcome: next
 INFO  player error: Playback failed: ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ExoPlaybackException: Source error <- HttpDataSourceException: java.net.ProtocolException: unexpected end of stream <- ProtocolException: unexpected end of stream
 INFO  recovery: action=advance attempt=0 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=109 duration=120 episode=9102
-INFO  server: drop /ep.mkv range=bytes=23654055- at byte 27654458 (cut 27654458, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=27654458- at byte 27654458 (cut 27654458, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=27654458- at byte 27654458 (cut 27654458, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=27654458- at byte 27654458 (cut 27654458, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=27654458- at byte 27654458 (cut 27654458, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=27654458- at byte 27654458 (cut 27654458, size 30173446)
+INFO  server: drop /ep.mkv range=bytes=23652775- at byte 27654557 (cut 27654557, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=27654557- at byte 27654557 (cut 27654557, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=27654557- at byte 27654557 (cut 27654557, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=27654557- at byte 27654557 (cut 27654557, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=27654557- at byte 27654557 (cut 27654557, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=27654557- at byte 27654557 (cut 27654557, size 30173224)
 PASS  S2 a stream failure in the closing seconds still autoplays the next episode (no error card)
 
 == S3 the next episode is refused for 20 s ==
@@ -33,12 +33,12 @@ INFO  player error: Playback failed: ERROR_CODE_IO_BAD_HTTP_STATUS ExoPlaybackEx
 INFO  recovery: action=retry attempt=0 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
 INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_BAD_HTTP_STATUS position=0 duration=-9223372036854775 episode=9104
-INFO  server: refuse /ep.mkv range= (10.5 s left)
-INFO  server: refuse /ep.mkv range= (8.5 s left)
-INFO  server: refuse /ep.mkv range= (4.5 s left)
-INFO  server: refuse /ep.mkv range= (4.5 s left)
-INFO  server: refuse /ep.mkv range= (3.5 s left)
-INFO  server: refuse /ep.mkv range= (1.5 s left)
+INFO  server: refuse /ep.mkv range= (10.9 s left)
+INFO  server: refuse /ep.mkv range= (8.9 s left)
+INFO  server: refuse /ep.mkv range= (4.8 s left)
+INFO  server: refuse /ep.mkv range= (4.8 s left)
+INFO  server: refuse /ep.mkv range= (3.8 s left)
+INFO  server: refuse /ep.mkv range= (1.8 s left)
 PASS  S3 the next episode starts once the server accepts it again (no error card)
 
 == S4 the stream breaks mid-way ==
@@ -53,12 +53,12 @@ INFO  recovery: action=retry attempt=1 error=ERROR_CODE_IO_NETWORK_CONNECTION_FA
 INFO  recovery: action=retry attempt=2 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=59 duration=120 episode=9101
 INFO  recovery: action=retry attempt=3 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=59 duration=120 episode=9101
 INFO  recovery: action=error attempt=4 error=ERROR_CODE_IO_NETWORK_CONNECTION_FAILED position=59 duration=120 episode=9101
-INFO  server: drop /ep.mkv range=bytes=15127305- at byte 15127305 (cut 15127305, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=15127305- at byte 15127305 (cut 15127305, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=14622742- at byte 15127305 (cut 15127305, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=15127305- at byte 15127305 (cut 15127305, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=15127305- at byte 15127305 (cut 15127305, size 30173446)
-INFO  server: drop /ep.mkv range=bytes=15127305- at byte 15127305 (cut 15127305, size 30173446)
+INFO  server: drop /ep.mkv range=bytes=15127596- at byte 15127596 (cut 15127596, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=15127596- at byte 15127596 (cut 15127596, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=14623314- at byte 15127596 (cut 15127596, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=15127596- at byte 15127596 (cut 15127596, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=15127596- at byte 15127596 (cut 15127596, size 30173224)
+INFO  server: drop /ep.mkv range=bytes=15127596- at byte 15127596 (cut 15127596, size 30173224)
 PASS  S4 a lasting failure mid-way still shows the error card and does not skip the episode
 PASS  S4 the error card explains the connection problem
 PASS  no Flix Town crash
