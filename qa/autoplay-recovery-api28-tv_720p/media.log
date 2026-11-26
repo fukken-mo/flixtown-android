@@ -1,143 +1,141 @@
-26/Nov/2026 08:54:49 code 501, message Unsupported method ('HEAD')
-26/Nov/2026 08:54:49 "HEAD /ep.mkv HTTP/1.1" 501 -
-26/Nov/2026 08:59:09 "GET /tracks.mkv HTTP/1.1" 200 -
-26/Nov/2026 08:59:09 "GET /tracks.mkv HTTP/1.1" 206 -
-26/Nov/2026 08:59:09 "GET /tracks.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:00:11 "GET /ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:00:11 "GET /ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:00:11 "GET /ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:00:11 "GET /ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:00:13 "GET /ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:00:35 "GET /ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:00:50 "GET /ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:00:51 "GET /ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:00:51 "GET /ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:01:29 "GET /cut/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:01:29 "GET /cut/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:01:29 "GET /cut/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:01:50 "GET /cut/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=23653913- at byte 27653451 (cut 27653451, size 30172024)
-26/Nov/2026 09:01:51 "GET /cut/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=27653451- at byte 27653451 (cut 27653451, size 30172024)
-26/Nov/2026 09:01:52 "GET /cut/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=27653451- at byte 27653451 (cut 27653451, size 30172024)
-26/Nov/2026 09:01:54 "GET /cut/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=27653451- at byte 27653451 (cut 27653451, size 30172024)
-26/Nov/2026 09:01:57 "GET /cut/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=27653451- at byte 27653451 (cut 27653451, size 30172024)
-26/Nov/2026 09:02:01 "GET /cut/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=27653451- at byte 27653451 (cut 27653451, size 30172024)
-26/Nov/2026 09:02:05 "GET /cut/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:02:06 "GET /cut/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:02:06 "GET /cut/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:29:54 code 501, message Unsupported method ('HEAD')
+26/Nov/2026 09:29:54 "HEAD /ep.mkv HTTP/1.1" 501 -
+26/Nov/2026 09:32:25 "GET /tracks.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:32:26 "GET /tracks.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:32:26 "GET /tracks.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:33:22 "GET /ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:33:22 "GET /ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:33:22 "GET /ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:33:22 "GET /ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:33:24 "GET /ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:33:44 "GET /ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:33:59 "GET /ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:33:59 "GET /ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:33:59 "GET /ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:34:37 "GET /cut/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:34:38 "GET /cut/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:34:38 "GET /cut/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:34:56 "GET /cut/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=23652297- at byte 27655815 (cut 27655815, size 30175189)
+26/Nov/2026 09:34:57 "GET /cut/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=27655815- at byte 27655815 (cut 27655815, size 30175189)
+26/Nov/2026 09:34:58 "GET /cut/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=27655815- at byte 27655815 (cut 27655815, size 30175189)
+26/Nov/2026 09:35:00 "GET /cut/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=27655815- at byte 27655815 (cut 27655815, size 30175189)
+26/Nov/2026 09:35:03 "GET /cut/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=27655815- at byte 27655815 (cut 27655815, size 30175189)
+26/Nov/2026 09:35:07 "GET /cut/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=27655815- at byte 27655815 (cut 27655815, size 30175189)
+26/Nov/2026 09:35:11 "GET /cut/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:35:11 "GET /cut/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:35:11 "GET /cut/ep.mkv HTTP/1.1" 206 -
 arm refuse for 0 s
-26/Nov/2026 09:02:11 "GET /arm?refuse=0 HTTP/1.1" 200 -
-26/Nov/2026 09:02:44 "GET /refuse/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:02:44 "GET /refuse/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:02:44 "GET /refuse/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:03:05 "GET /refuse/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:35:17 "GET /arm?refuse=0 HTTP/1.1" 200 -
+26/Nov/2026 09:35:50 "GET /refuse/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:35:50 "GET /refuse/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:35:50 "GET /refuse/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:36:08 "GET /refuse/ep.mkv HTTP/1.1" 206 -
 arm refuse for 20 s
-26/Nov/2026 09:03:22 "GET /arm?refuse=20 HTTP/1.1" 200 -
-refuse /ep.mkv range= (16.6 s left)
-26/Nov/2026 09:03:25 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (16.6 s left)
-26/Nov/2026 09:03:25 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (15.5 s left)
-26/Nov/2026 09:03:26 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (13.5 s left)
-26/Nov/2026 09:03:28 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (11.5 s left)
-26/Nov/2026 09:03:30 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (11.5 s left)
-26/Nov/2026 09:03:30 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (10.5 s left)
-26/Nov/2026 09:03:31 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (8.5 s left)
-26/Nov/2026 09:03:33 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (4.5 s left)
-26/Nov/2026 09:03:37 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (4.5 s left)
-26/Nov/2026 09:03:37 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (3.5 s left)
-26/Nov/2026 09:03:38 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-refuse /ep.mkv range= (1.4 s left)
-26/Nov/2026 09:03:40 "GET /refuse/ep.mkv HTTP/1.1" 403 -
-26/Nov/2026 09:03:48 "GET /refuse/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:03:48 "GET /refuse/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:03:48 "GET /refuse/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:36:25 "GET /arm?refuse=20 HTTP/1.1" 200 -
+refuse /ep.mkv range= (17.0 s left)
+26/Nov/2026 09:36:28 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (17.0 s left)
+26/Nov/2026 09:36:28 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (16.0 s left)
+26/Nov/2026 09:36:29 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (14.0 s left)
+26/Nov/2026 09:36:31 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (11.9 s left)
+26/Nov/2026 09:36:33 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (11.9 s left)
+26/Nov/2026 09:36:33 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (10.9 s left)
+26/Nov/2026 09:36:34 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (8.9 s left)
+26/Nov/2026 09:36:36 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (4.9 s left)
+26/Nov/2026 09:36:40 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (4.9 s left)
+26/Nov/2026 09:36:40 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (3.9 s left)
+26/Nov/2026 09:36:41 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+refuse /ep.mkv range= (1.9 s left)
+26/Nov/2026 09:36:43 "GET /refuse/ep.mkv HTTP/1.1" 403 -
+26/Nov/2026 09:36:51 "GET /refuse/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:36:51 "GET /refuse/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:36:51 "GET /refuse/ep.mkv HTTP/1.1" 206 -
 arm refuse for 0 s
-26/Nov/2026 09:03:54 "GET /arm?refuse=0 HTTP/1.1" 200 -
-26/Nov/2026 09:04:57 "GET /cut50/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:04:58 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:04:58 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=768- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:07 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:08 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:10 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:13 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:17 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:22 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:27 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:32 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:37 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:42 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:47 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:52 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:05:57 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:00 "GET /cut50/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:06:00 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:00 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:00 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=14622772- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:01 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:02 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:04 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:08 "GET /cut50/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:06:08 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:08 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:08 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=14622772- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:08 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:09 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:11 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:19 "GET /cut50/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:06:19 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:19 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:19 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=14622772- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:19 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:20 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:22 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:30 "GET /cut50/ep.mkv HTTP/1.1" 200 -
-26/Nov/2026 09:06:31 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:31 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-26/Nov/2026 09:06:31 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=14622772- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:31 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:32 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
-26/Nov/2026 09:06:34 "GET /cut50/ep.mkv HTTP/1.1" 206 -
-drop /ep.mkv range=bytes=15127496- at byte 15127496 (cut 15127496, size 30172024)
+26/Nov/2026 09:36:57 "GET /arm?refuse=0 HTTP/1.1" 200 -
+26/Nov/2026 09:39:40 "GET /cut50/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:39:40 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:39:40 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=768- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:39:49 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:39:50 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:39:52 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:39:55 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:39:59 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:04 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:09 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:14 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:19 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:24 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:29 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:34 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:39 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:42 "GET /cut50/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:40:42 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:40:42 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:40:42 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=14624087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:42 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:43 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:45 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:50 "GET /cut50/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:40:50 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:40:50 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=14624087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:50 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:51 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:40:53 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:01 "GET /cut50/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:41:01 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:41:01 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:41:01 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=14624087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:01 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:02 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:04 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:12 "GET /cut50/ep.mkv HTTP/1.1" 200 -
+26/Nov/2026 09:41:12 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+26/Nov/2026 09:41:12 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=14624087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:12 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:13 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
+26/Nov/2026 09:41:15 "GET /cut50/ep.mkv HTTP/1.1" 206 -
+drop /ep.mkv range=bytes=15128087- at byte 15128087 (cut 15128087, size 30175189)
