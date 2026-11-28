@@ -135,6 +135,21 @@ object XtreamParser {
         return if (e.isJsonPrimitive) e.asString.trim() else ""
     }
 
+    /** Image address as Coil can load it: absolute http(s), spaces encoded, placeholders dropped. */
+    fun imageUrl(raw: String): String {
+        val u = raw.trim().replace(" ", "%20")
+        return when {
+            u.startsWith("http://", true) || u.startsWith("https://", true) -> u
+            u.startsWith("//") -> "http:$u"
+            else -> ""
+        }
+    }
+
+    private fun JsonObject.image(vararg keys: String): String {
+        for (k in keys) imageUrl(s(k)).let { if (it.isNotEmpty()) return it }
+        return ""
+    }
+
     fun JsonObject.first(vararg keys: String): String {
         for (k in keys) s(k).let { if (it.isNotEmpty()) return it }
         return ""
@@ -165,8 +180,8 @@ object XtreamParser {
     private fun JsonObject.backdrop(): String {
         val e = get("backdrop_path") ?: return ""
         return when {
-            e.isJsonArray -> e.asJsonArray.firstOrNull { it.isJsonPrimitive && it.asString.isNotBlank() }?.asString?.trim().orEmpty()
-            e.isJsonPrimitive -> e.asString.trim()
+            e.isJsonArray -> e.asJsonArray.firstNotNullOfOrNull { if (it.isJsonPrimitive) imageUrl(it.asString).ifEmpty { null } else null }.orEmpty()
+            e.isJsonPrimitive -> imageUrl(e.asString)
             else -> ""
         }
     }
@@ -253,7 +268,7 @@ object XtreamParser {
             id = id,
             number = o.int("num"),
             name = o.s("name").ifEmpty { "Channel $id" },
-            logo = o.s("stream_icon"),
+            logo = o.image("stream_icon"),
             categoryId = o.s("category_id"),
             hasArchive = o.s("tv_archive") == "1",
             categoryIds = o.categories(),
@@ -266,7 +281,7 @@ object XtreamParser {
         return Movie(
             id = id,
             name = o.s("name").ifEmpty { "Untitled" },
-            poster = o.first("stream_icon", "cover"),
+            poster = o.image("stream_icon", "cover"),
             categoryId = o.s("category_id"),
             added = o.long("added"),
             rating = o.rating(),
@@ -282,7 +297,7 @@ object XtreamParser {
         return Series(
             id = id,
             name = o.s("name").ifEmpty { "Untitled" },
-            cover = o.first("cover", "stream_icon"),
+            cover = o.image("cover", "stream_icon", "cover_big"),
             categoryId = o.s("category_id"),
             plot = o.first("plot", "description"),
             cast = o.first("cast", "actors"),
@@ -309,7 +324,7 @@ object XtreamParser {
             duration = formatDuration(info.long("duration_secs"), info.s("duration")),
             rating = info.rating().takeIf { it > 0 } ?: fallback.rating,
             backdrop = info.backdrop(),
-            poster = info.first("movie_image", "cover_big", "cover").ifEmpty { fallback.poster },
+            poster = info.image("movie_image", "cover_big", "cover").ifEmpty { fallback.poster },
             ext = data.s("container_extension").ifEmpty { fallback.ext },
         )
     }
@@ -345,7 +360,7 @@ object XtreamParser {
                     title = o.s("title").ifEmpty { "Episode $number" },
                     ext = o.s("container_extension").ifEmpty { "mp4" },
                     plot = epInfo.first("plot", "overview"),
-                    image = epInfo.first("movie_image", "cover_big"),
+                    image = epInfo.image("movie_image", "cover_big"),
                     duration = formatDuration(epInfo.long("duration_secs"), epInfo.s("duration")),
                 ),
             )

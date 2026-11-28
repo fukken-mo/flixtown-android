@@ -119,7 +119,7 @@ fun MovieDetailScreen(screen: Screen.MovieDetail, catalog: Catalog, library: Lib
     Box(Modifier.fillMaxSize()) {
         Backdrop(details?.backdrop.orEmpty().ifBlank { movie.poster })
         Row(Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-            Artwork(details?.poster ?: movie.poster, movie.name, Modifier.width(200.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(14.dp)))
+            Artwork(details?.poster ?: movie.poster, movie.name, fallbackUrl = movie.poster, modifier = Modifier.width(200.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(14.dp)))
             Spacer(Modifier.width(36.dp))
             Column(Modifier.weight(1f)) {
                 Text("MOVIE", style = Type.Overline)
@@ -182,7 +182,7 @@ fun SeriesDetailScreen(screen: Screen.SeriesDetail, catalog: Catalog, library: L
                 all.map { e ->
                     VodItem(
                         Progress.episodeKey(e.id), Progress.EPISODE, e.id, series.name,
-                        "${episodeLabel(e)} · ${e.title}", e.image.ifBlank { series.cover }, e.ext, series.id,
+                        "${episodeLabel(e)} · ${e.title}", series.cover.ifBlank { e.image }, e.ext, series.id,
                     )
                 }
             }
@@ -294,7 +294,7 @@ private fun EpisodeRow(e: Episode, fallbackImage: String, progress: Progress?, m
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(width = 128.dp, height = 72.dp).clip(RoundedCornerShape(8.dp))) {
-                Artwork(e.image.ifBlank { fallbackImage }, "", Modifier.fillMaxSize())
+                Artwork(e.image.ifBlank { fallbackImage }, "", Modifier.fillMaxSize(), fallbackUrl = fallbackImage)
                 if (progress != null && !progress.finished && progress.positionMs > 0) {
                     ProgressBar(progress.fraction, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp))
                 }

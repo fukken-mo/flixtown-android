@@ -662,7 +662,7 @@ class PlayerActivity : ComponentActivity() {
                     .padding(start = 48.dp, end = 48.dp, top = 70.dp, bottom = 30.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    LogoArt(logo, "", Modifier.size(width = 110.dp, height = 66.dp).background(Color(0x33FFFFFF), RoundedCornerShape(12.dp)), inset = 8.dp)
+                    LogoArt(logo, title, Modifier.size(width = 110.dp, height = 66.dp).background(Color(0x33FFFFFF), RoundedCornerShape(12.dp)), inset = 8.dp)
                     Spacer(Modifier.width(18.dp))
                     Column(Modifier.weight(1f)) {
                         Text("LIVE  ·  CH $channelNumber", style = Type.Overline.copy(color = Palette.Gold))

@@ -87,6 +87,18 @@ class XtreamTest {
         assertEquals(9.0, list[2].rating, 0.001)
     }
 
+    @Test fun imageAddressesAreCleaned() {
+        assertEquals("http://img.example.test/a%20b.jpg", XtreamParser.imageUrl(" http://img.example.test/a b.jpg "))
+        assertEquals("http://cdn.example.test/x.png", XtreamParser.imageUrl("//cdn.example.test/x.png"))
+        assertEquals("", XtreamParser.imageUrl("null"))
+        assertEquals("", XtreamParser.imageUrl("images/x.png"))
+        val m = XtreamParser.list(StringReader("""[{"stream_id":1,"name":"A","stream_icon":"","cover":"https://img.example.test/c.jpg"}]"""), XtreamParser::movie)
+        assertEquals("https://img.example.test/c.jpg", m[0].poster)
+        assertEquals("AJ", com.nimertv.app.ui.monogram("AR_NS| AL JAZEERA MUBASHER HD"))
+        assertEquals("مو", com.nimertv.app.ui.monogram("AR - موسى"))
+        assertEquals("TV", com.nimertv.app.ui.monogram("####"))
+    }
+
     @Test fun titlesCanBelongToSeveralCategories() {
         val list = XtreamParser.list(
             StringReader("""[{"stream_id":1,"name":"A","category_id":"10","category_ids":[10,22]},

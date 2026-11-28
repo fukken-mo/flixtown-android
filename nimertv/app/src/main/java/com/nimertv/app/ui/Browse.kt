@@ -194,7 +194,7 @@ private fun ChannelRow(
                 (if (channel.number > 0) channel.number else position).toString(),
                 style = Type.Caption, color = if (isFocused) Color.White else Palette.TextFaint, modifier = Modifier.width(34.dp),
             )
-            LogoArt(channel.logo, "", Modifier.size(width = 52.dp, height = 34.dp).background(Color(0x22FFFFFF), RoundedCornerShape(6.dp)), inset = 4.dp)
+            LogoArt(channel.logo, channel.name, Modifier.size(width = 52.dp, height = 34.dp).background(Color(0x22FFFFFF), RoundedCornerShape(6.dp)), inset = 4.dp)
             Spacer(Modifier.width(12.dp))
             // Full channel name on one line: the text shrinks to fit before it is ever cut off.
             FitText(channel.name, Type.Label.copy(fontWeight = FontWeight.SemiBold), Palette.Text, Modifier.weight(1f), minSize = 10.5f)

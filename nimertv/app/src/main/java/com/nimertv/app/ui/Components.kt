@@ -3,6 +3,9 @@ package com.nimertv.app.ui
 import android.view.KeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -67,6 +70,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import com.nimertv.app.R
+import androidx.compose.ui.res.painterResource
+import androidx.compose.runtime.mutableIntStateOf
 
 /** Remembers which item of a screen had focus so it can be restored when coming back. */
 class FocusMemory(var key: Any? = null)
@@ -240,49 +246,80 @@ fun RailItem(
     }
 }
 
-/** Provider artwork with a typographic fallback, so a missing or broken image never leaves a blank tile. */
+/** Short monogram for a provider name: drops prefixes such as "AR_NS|" or "AR -" and keeps up to two letters. */
+fun monogram(name: String): String {
+    val core = name.substringAfterLast('|').substringAfterLast(" - ").trim().ifEmpty { name.trim() }
+    val words = core.split(Regex("[\\s_\\-:]+")).filter { w -> w.firstOrNull()?.isLetterOrDigit() == true }
+    return when {
+        words.size >= 2 -> "${words[0].first()}${words[1].first()}"
+        words.size == 1 -> words[0].take(2)
+        else -> "TV"
+    }.uppercase()
+}
+
+/**
+ * Provider artwork. Tries [url], then [fallbackUrl]; while nothing has loaded (or when the
+ * provider has no artwork) it shows a branded card with the title, never a blank tile.
+ */
 @Composable
-fun Artwork(url: String, title: String, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop) {
-    var loaded by remember(url) { mutableStateOf(false) }
+fun Artwork(
+    url: String,
+    title: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    fallbackUrl: String = "",
+) {
+    val candidates = remember(url, fallbackUrl) { listOf(url, fallbackUrl).filter { it.isNotBlank() }.distinct() }
+    var index by remember(candidates) { mutableIntStateOf(0) }
+    var loaded by remember(candidates) { mutableStateOf(false) }
     Box(
-        modifier.background(Brush.linearGradient(listOf(Palette.SurfaceHigh, Palette.PurpleDeep.copy(alpha = 0.55f)))),
+        modifier.background(Brush.linearGradient(listOf(Palette.SurfaceHigh, Palette.PurpleDeep.copy(alpha = 0.7f), Palette.Background))),
         contentAlignment = Alignment.Center,
     ) {
         if (!loaded) {
-            Text(
-                title,
-                style = Type.Caption.copy(textAlign = TextAlign.Center),
-                color = Palette.TextDim,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(8.dp),
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(10.dp)) {
+                Image(
+                    painterResource(R.drawable.nimer_logo), null,
+                    Modifier.fillMaxWidth(0.42f).aspectRatio(1f), alpha = 0.35f,
+                )
+                if (title.isNotBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        title,
+                        style = Type.Caption.copy(textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold),
+                        color = Palette.TextDim,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
-        if (url.isNotBlank()) {
+        candidates.getOrNull(index)?.let { current ->
             AsyncImage(
-                model = url,
+                model = current,
                 contentDescription = title,
                 contentScale = contentScale,
                 onSuccess = { loaded = true },
+                onError = { if (index < candidates.lastIndex) index++ },
                 modifier = Modifier.fillMaxSize(),
             )
         }
     }
 }
 
-/** Channel logo: shown whole on a neutral tile, with the channel name as fallback. */
+/** Channel logo, shown whole; a monogram badge stands in when the provider has no usable logo. */
 @Composable
 fun LogoArt(url: String, title: String, modifier: Modifier = Modifier, inset: Dp = 10.dp) {
     var loaded by remember(url) { mutableStateOf(false) }
     Box(modifier, contentAlignment = Alignment.Center) {
-        if (!loaded) {
-            Text(
-                title,
-                style = Type.Caption.copy(textAlign = TextAlign.Center),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(6.dp),
-            )
+        if (!loaded && title.isNotBlank()) {
+            Box(
+                Modifier.fillMaxHeight(0.78f).aspectRatio(1f)
+                    .background(Brush.linearGradient(listOf(Palette.Purple, Palette.PurpleDeep)), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                FitText(monogram(title), Type.Label.copy(fontWeight = FontWeight.Black, textAlign = TextAlign.Center), Color.White, minSize = 7f)
+            }
         }
         if (url.isNotBlank()) {
             AsyncImage(
@@ -308,10 +345,15 @@ fun PosterCard(
     badge: String? = null,
     progress: Float? = null,
     favorite: Boolean = false,
+    fallbackPoster: String = "",
 ) {
+    var hasFocus by remember { mutableStateOf(false) }
     Column(modifier) {
-        FocusSurface(onClick = onClick, onLongClick = onLongClick, onFocused = onFocused, modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) { focused ->
-            Artwork(poster, title, Modifier.fillMaxSize())
+        FocusSurface(
+            onClick = onClick, onLongClick = onLongClick, onFocused = onFocused,
+            modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f).onFocusChanged { hasFocus = it.hasFocus },
+        ) { focused ->
+            Artwork(poster, title, Modifier.fillMaxSize(), fallbackUrl = fallbackPoster)
             if (focused) {
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to Palette.Purple.copy(alpha = 0.45f))))
             }
@@ -332,7 +374,15 @@ fun PosterCard(
             if (progress != null) ProgressBar(progress, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp))
         }
         Spacer(Modifier.height(8.dp))
-        Text(title, style = Type.Label, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+        // One line; the focused title scrolls so the full name can be read.
+        Text(
+            title,
+            style = Type.Label.copy(fontWeight = if (hasFocus) FontWeight.Bold else FontWeight.Medium),
+            color = if (hasFocus) Color.White else Palette.TextDim,
+            maxLines = 1,
+            overflow = if (hasFocus) TextOverflow.Clip else TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().then(if (hasFocus) Modifier.basicMarquee(initialDelayMillis = 900) else Modifier),
+        )
     }
 }
 

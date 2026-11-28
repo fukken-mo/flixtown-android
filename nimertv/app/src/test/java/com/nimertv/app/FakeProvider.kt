@@ -41,11 +41,11 @@ class FakeProvider(private val user: String = "demo", private val pass: String =
                     null -> """{"user_info":{"username":"$user","auth":1,"status":"$accountStatus","exp_date":"1893456000","is_trial":"0","max_connections":"2","allowed_output_formats":["m3u8","ts"]},"server_info":{"server_protocol":"http"}}"""
                     "get_live_categories" -> """[{"category_id":"1","category_name":"أخبار","parent_id":0},{"category_id":"2","category_name":"►AR | ABU DHABI SPORTS NETWORK","parent_id":0}]"""
                     "get_live_streams" -> (1..40).joinToString(",", "[", "]") {
-                        """{"num":$it,"name":"${if (it % 2 == 0) "AR_NS| قناة الأخبار العربية $it HD" else "AR_NS| AL JAZEERA MUBASHER NEWS CHANNEL $it HD"}","stream_type":"live","stream_id":${100 + it},"stream_icon":"${if (art) "$url/img/logo${1 + it % 4}.png" else ""}","category_id":"${1 + it % 2}"}"""
+                        """{"num":$it,"name":"${if (it % 2 == 0) "AR_NS| قناة الأخبار العربية $it HD" else "AR_NS| AL JAZEERA MUBASHER NEWS CHANNEL $it HD"}","stream_type":"live","stream_id":${100 + it},"stream_icon":"${if (art && it % 5 != 0) "$url/img/logo${1 + it % 4}.png" else ""}","category_id":"${1 + it % 2}"}"""
                     }
                     "get_vod_categories" -> """[{"category_id":"10","category_name":"أفلام عربية"},{"category_id":"11","category_name":"Action"}]"""
                     "get_vod_streams" -> (1..60).joinToString(",", "[", "]") {
-                        """{"num":$it,"name":"${if (it % 3 == 0) "فيلم رقم $it" else "Movie $it"}","stream_type":"movie","stream_id":${200 + it},"stream_icon":"${if (art) "$url/img/poster${1 + it % 6}.jpg" else ""}","rating":"${if (it % 4 == 0) "7.${it % 10}" else ""}","added":"${1700000000 + it * 1000}","category_id":"${10 + it % 2}","container_extension":"mkv"}"""
+                        """{"num":$it,"name":"${if (it % 3 == 0) "فيلم رقم $it" else "Movie $it"}","stream_type":"movie","stream_id":${200 + it},"stream_icon":"${if (art && it % 7 != 0) "$url/img/poster${1 + it % 6}.jpg" else ""}","rating":"${if (it % 4 == 0) "7.${it % 10}" else ""}","added":"${1700000000 + it * 1000}","category_id":"${10 + it % 2}","container_extension":"mkv"}"""
                     }
                     "get_series_categories" -> """[{"category_id":"20","category_name":"مسلسلات"}]"""
                     "get_series" -> (1..30).joinToString(",", "[", "]") {
